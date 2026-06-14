@@ -1,12 +1,13 @@
 // ===== Firebase 設定 =====
-// オンライン対戦に必要です。README_ONLINE.md の手順で取得した値に置き換えてください。
-// （ローカル対戦だけならこのファイルは編集不要・無くても動きます）
+// オンライン対戦用。ローカル対戦だけならこのファイルは無くても動きます。
+// （これらの値はクライアントに公開される前提の識別子です。安全性は Realtime Database のルールで担保します）
 window.FIREBASE_CONFIG = {
-  apiKey: "PASTE_YOUR_API_KEY",
-  authDomain: "PASTE_PROJECT.firebaseapp.com",
-  databaseURL: "https://PASTE_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "PASTE_PROJECT",
-  storageBucket: "PASTE_PROJECT.appspot.com",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId: "PASTE_APP_ID"
+  apiKey: "AIzaSyACeVUzUS_lBw6YL95w8JkkUCNwN1ST_Gs",
+  authDomain: "osero-77308.firebaseapp.com",
+  databaseURL: "https://osero-77308-default-rtdb.firebaseio.com",
+  projectId: "osero-77308",
+  storageBucket: "osero-77308.firebasestorage.app",
+  messagingSenderId: "401249829167",
+  appId: "1:401249829167:web:c2649df6ff67f35958a1da",
+  measurementId: "G-VQPXQVRHDG"
 };
