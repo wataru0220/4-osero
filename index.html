@@ -868,6 +868,14 @@ function randCode(n){
   for(let i=0;i<n;i++) s+=al[Math.floor(Math.random()*al.length)];
   return s;
 }
+// ブラウザごとに固定のID。再読み込みしても同じIDなので席に復帰できる
+function getPersistentUid(){
+  try{
+    let u = localStorage.getItem('othello_uid');
+    if(!u){ u = randCode(16); localStorage.setItem('othello_uid', u); }
+    return u;
+  }catch(e){ return randCode(16); }
+}
 
 /* ---- 画面入口 ---- */
 function goOnline(){
@@ -906,7 +914,7 @@ function createRoom(){
   const name=(document.getElementById('my-name').value||'').trim().slice(0,16) || 'ホスト';
   const elim=document.getElementById('opt-elim-online').checked;
   const roomId=randCode(5);
-  online={ db:firebase.database(), roomId, uid:randCode(12), mySeat:null, isHost:true, started:false };
+  online={ db:firebase.database(), roomId, uid:getPersistentUid(), mySeat:null, isHost:true, started:false };
   online.roomRef=online.db.ref('rooms/'+roomId);
   const seats={};
   for(let i=1;i<=4;i++) seats[i]={type:'open', name:'', uid:null};
@@ -925,7 +933,7 @@ function createRoom(){
 
 /* ---- ロビー：参加 ---- */
 function enterRoom(roomId, isHostFlag){
-  online={ db:firebase.database(), roomId, uid:randCode(12), mySeat:null, isHost:!!isHostFlag, started:false };
+  online={ db:firebase.database(), roomId, uid:getPersistentUid(), mySeat:null, isHost:!!isHostFlag, started:false };
   online.roomRef=online.db.ref('rooms/'+roomId);
   online.roomRef.child('lobby').once('value').then(snap=>{
     if(!snap.exists()){
@@ -949,8 +957,8 @@ function subscribeLobby(){
     if(!lobby){ return; }
     online.isHost = (lobby.host===online.uid);
     if(lobby.started){
-      // ゲーム開始済み → ゲームへ
-      if(online.isHost) { /* ホストは自分でstartOnlineGame済み */ }
+      // ゲーム開始済み → ゲームへ（再読み込み時もここで復帰）
+      if(online.isHost){ if(!online._hostActive) resumeHostGame(); }
       else subscribeGameAsGuest();
       return;
     }
@@ -1029,6 +1037,7 @@ function startOnlineGame(){
       const settings=s2.val()||{enableEliminationRule:false};
       buildOnlineGameState(seats, settings);
       online.started=true;
+      online._hostActive=true;   // ホストのエンジン稼働中（再入室の二重起動を防ぐ）
       online.roomRef.child('lobby/started').set(true);
       // ホストは pending を購読して人間の着手を受け付ける
       online.roomRef.child('game/pending').on('value', handlePending);
@@ -1116,26 +1125,30 @@ function pushState(note){
   }).catch(err=>onlineError(err));
 }
 
-let _lastNote=null, _prevBoardStr=null;
-function applyRemoteGame(data){
-  // players 復元
-  const players = data.players.map(sp=>{
+// シリアライズされた game データから state オブジェクトを構築（ホスト/ゲスト共通）
+function stateFromData(data){
+  const players = (data.players||[]).map(sp=>{
     const meta=PLAYER_META[sp.id-1];
     return {id:sp.id, name:sp.name, color:meta.color, cls:meta.cls, label:meta.label,
             isCPU:sp.isCPU, isActive:sp.isActive, pieceCount:0, hasPassedThisCycle:false};
   });
-  // board 復元
   const board=Array.from({length:SIZE}, ()=>Array(SIZE).fill(0));
   const s=data.board||'';
   for(let i=0;i<SIZE*SIZE;i++){ const r=Math.floor(i/SIZE), c=i%SIZE; board[r][c]=parseInt(s[i]||'0',10); }
   const last = data.last ? data.last.split(',').map(Number) : null;
+  return { board, players, currentPlayerIndex:data.cur, turnCount:data.turn,
+           consecutivePassCount:data.pass, phase:data.phase,
+           winner:data.winner||null, lastMove:last, settings:data.settings||{} };
+}
 
-  state={ board, players, currentPlayerIndex:data.cur, turnCount:data.turn,
-          consecutivePassCount:data.pass, phase:data.phase,
-          winner:data.winner||null, lastMove:last, settings:data.settings||{} };
+let _lastNote=null, _prevBoardStr=null;
+function applyRemoteGame(data){
+  const s=data.board||'';
+  state = stateFromData(data);
   recountPieces();
 
   // 差分でアニメ（前回盤面と比較）
+  const last = state.lastMove;
   let flipped=[];
   if(_prevBoardStr && _prevBoardStr.length===s.length){
     for(let i=0;i<s.length;i++){ if(_prevBoardStr[i]!==s[i] && s[i]!=='0'){
@@ -1163,6 +1176,31 @@ function applyRemoteGame(data){
     else if(kind==='resign') toast(`${who}さんが投了しました`);
     else if(kind==='eliminate') toast(`${who}さんが脱落しました`);
   }
+}
+
+/* ---- ホスト：再読み込み後にエンジンを復帰 ---- */
+function resumeHostGame(){
+  if(online._hostActive) return;
+  online._hostActive=true;
+  online.roomRef.child('game').once('value').then(snap=>{
+    const data=snap.val();
+    if(!data || !data.board){ online._hostActive=false; return; }
+    // 自席を確定
+    online.roomRef.child('lobby/seats').once('value').then(s2=>{
+      const seats=s2.val()||{};
+      for(let i=1;i<=4;i++){ if(seats[i] && seats[i].uid===online.uid){ online.mySeat=i; } }
+      state = stateFromData(data);
+      recountPieces();
+      buildBoardDOM();
+      show('screen-game');
+      setupOnlineBar();
+      startTimer();
+      online.roomRef.child('game/pending').on('value', handlePending);
+      toast('対戦に復帰しました');
+      if(state.phase==='ended'){ renderResult(); return; }
+      beginTurn();   // エンジン再開（手番に応じてCPU着手/入力待ち/パスを継続）
+    });
+  }).catch(err=>{ online._hostActive=false; onlineError(err); });
 }
 
 /* ---- ゲスト→ホスト：着手/投了の申請 ---- */
