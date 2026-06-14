@@ -844,6 +844,7 @@ document.getElementById('overlay').addEventListener('click',e=>{
    ===================================================================== */
 let online = null;   // {db, roomRef, roomId, uid, mySeat, isHost, started}
 let fbApp = null, fbReady = false;
+let _myNameDraft = '';   // ロビーの名前入力を再描画でも保持
 
 function isOnline(){ return !!online; }
 function isHost(){ return !!online && online.isHost; }
@@ -995,12 +996,20 @@ function renderLobby(lobby){
   const startBtn = online.isHost
     ? `<button class="btn-primary" onclick="startOnlineGame()">ゲーム開始（空席はCPU）</button>`
     : `<div class="net-note">ホストの開始を待っています…</div>`;
+  const nameInput = (online.mySeat==null)
+    ? `<div class="player-row" style="margin:4px 0 12px">
+         <span class="swatch" style="background:var(--accent)"></span>
+         <input id="lobby-myname" maxlength="16" placeholder="あなたの名前（座る前に入力）" autocomplete="off"
+                value="${escapeHtml(_myNameDraft)}" oninput="_myNameDraft=this.value">
+       </div>`
+    : '';
   document.getElementById('online-card').innerHTML=`
     <div class="roomcode">${online.roomId}</div>
     <div class="share-box">
       <input id="share-url" value="${url}" readonly onclick="this.select()">
       <button class="btn-ghost" onclick="copyShare()">コピー</button>
     </div>
+    ${nameInput}
     ${seatsHtml}
     ${startBtn}
     <button class="btn-ghost" style="width:100%;margin-top:10px" onclick="backToTitle()">退出</button>
@@ -1008,9 +1017,8 @@ function renderLobby(lobby){
 }
 
 function claimSeat(seat){
-  const name=prompt('あなたの名前（最大16文字）','プレイヤー'+seat);
-  if(name===null) return;
-  const nm=(name||'').trim().slice(0,16)||('プレイヤー'+seat);
+  const inp=document.getElementById('lobby-myname');
+  const nm=(((inp&&inp.value)||_myNameDraft)||'').trim().slice(0,16)||('プレイヤー'+seat);
   const ref=online.roomRef.child('lobby/seats/'+seat);
   ref.transaction(cur=>{
     if(cur && cur.type==='open'){ return {type:'human', name:nm, uid:online.uid}; }
