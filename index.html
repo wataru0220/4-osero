@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>4人対戦オセロ</title>
+<!-- リアルタイム対戦用：Firebase Realtime Database（無料）。ローカル対戦のみなら無くても動く -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<!-- あなたのFirebase設定。config.js を作って window.FIREBASE_CONFIG を設定（README参照） -->
+<script src="config.js" onerror="window.__noConfig=true"></script>
+<style>
+  :root{
+    --p1:#1a1a1a; --p1-edge:#444444;
+    --p2:#1565C0; --p2-edge:#0D47A1;
+    --p3:#C62828; --p3-edge:#7F0000;
+    --p4:#F5F5F5; --p4-edge:#BDBDBD;
+    --board:#2d7a2d; --board-line:#1d5a1d;
+    /* 盤面はウィンドウの高さ・幅に合わせて自動縮小（最大50px）。横並びレイアウト時は高さ基準 */
+    --cell: min(50px, calc((100vh - 70px) / 10), calc((100vw - 360px) / 10));
+    --bg:#16321a; --panel:#0f2412; --text:#e8f0e8; --muted:#9fc0a0;
+    --accent:#ffd54f;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; height:100%;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,sans-serif;
+    background:radial-gradient(circle at 50% -10%,#234b28,#0c1f10 70%);
+    color:var(--text); min-height:100%;
+    display:flex; align-items:center; justify-content:center;
+    padding:16px;
+  }
+  .screen{display:none; width:100%;}
+  .screen.active{display:block; animation:fade .35s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+
+  h1.title{
+    text-align:center; font-size:clamp(28px,6vw,52px); margin:0 0 6px;
+    letter-spacing:.08em;
+    background:linear-gradient(90deg,#1a1a1a,#1565C0 33%,#C62828 66%,#fafafa);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    font-weight:900; text-shadow:0 2px 12px rgba(0,0,0,.4);
+  }
+  .subtitle{text-align:center; color:var(--muted); margin:0 0 28px; font-size:14px;}
+
+  .card{
+    background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(0,0,0,.18));
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:18px; padding:24px; max-width:560px; margin:0 auto;
+    box-shadow:0 18px 40px rgba(0,0,0,.45);
+  }
+
+  button{font-family:inherit; cursor:pointer; border:none; border-radius:12px; font-weight:700;}
+  .btn-primary{
+    display:block; width:100%; padding:16px; font-size:18px; color:#102a14;
+    background:linear-gradient(180deg,#ffe082,#ffc107);
+    box-shadow:0 6px 0 #c79100, 0 10px 18px rgba(0,0,0,.3);
+    transition:transform .08s, box-shadow .08s; margin-top:8px;
+  }
+  .btn-primary:active{transform:translateY(4px); box-shadow:0 2px 0 #c79100,0 6px 12px rgba(0,0,0,.3);}
+  .btn-ghost{
+    padding:10px 16px; font-size:14px; color:var(--text);
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14);
+    transition:background .15s;
+  }
+  .btn-ghost:active{background:rgba(255,255,255,.16);}
+
+  /* ---- setup ---- */
+  .player-row{
+    display:flex; align-items:center; gap:12px; padding:10px 12px; margin-bottom:10px;
+    background:rgba(0,0,0,.18); border-radius:12px; border:1px solid rgba(255,255,255,.06);
+  }
+  .swatch{width:30px; height:30px; border-radius:50%; flex:0 0 auto; box-shadow:0 2px 6px rgba(0,0,0,.4);}
+  .player-row input{
+    flex:1; min-width:0; padding:10px 12px; font-size:15px; border-radius:9px;
+    border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.06); color:var(--text);
+  }
+  .player-row input:focus{outline:2px solid var(--accent); outline-offset:0;}
+  .type-sel{
+    flex:0 0 auto; padding:9px 8px; border-radius:9px; font-size:13px; font-family:inherit;
+    border:1px solid rgba(255,255,255,.15); background:#15301a; color:var(--text); cursor:pointer;
+  }
+  .type-sel:focus{outline:2px solid var(--accent);}
+  .cpu-tag{font-size:11px; font-weight:800; color:#102a14; background:var(--accent); padding:1px 6px; border-radius:6px; margin-left:6px;}
+  .opt{display:flex; align-items:center; gap:10px; margin:16px 2px 4px; color:var(--muted); font-size:14px;}
+  .opt input{width:18px; height:18px; accent-color:var(--accent);}
+
+  /* ---- game ---- */
+  .game-wrap{
+    display:flex; gap:22px; align-items:flex-start; justify-content:center; flex-wrap:wrap;
+  }
+  .board-shell{
+    background:var(--board); padding:10px; border-radius:12px;
+    box-shadow:0 14px 40px rgba(0,0,0,.5), inset 0 0 0 3px rgba(0,0,0,.25);
+  }
+  .board{
+    display:grid; grid-template-columns:repeat(10,var(--cell)); grid-template-rows:repeat(10,var(--cell));
+    gap:1px; background:var(--board-line);
+  }
+  .cell{
+    width:var(--cell); height:var(--cell); background:var(--board);
+    display:flex; align-items:center; justify-content:center; position:relative;
+    cursor:default;
+  }
+  .cell.valid{cursor:pointer;}
+  .cell.valid::after{
+    content:""; width:30%; height:30%; border-radius:50%;
+    background:rgba(255,213,79,.55); box-shadow:0 0 8px rgba(255,213,79,.6);
+    animation:pulse 1.3s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{transform:scale(.8); opacity:.5;} 50%{transform:scale(1.1); opacity:.95;}}
+  .cell.valid:hover{background:#3a8f3a;}
+
+  .disc{
+    width:80%; height:80%; border-radius:50%; position:relative;
+    transform-style:preserve-3d;
+    box-shadow:0 3px 5px rgba(0,0,0,.45), inset 0 2px 4px rgba(255,255,255,.18);
+  }
+  .disc.place{animation:place .18s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes place{0%{transform:scale(0);} 70%{transform:scale(1.12);} 100%{transform:scale(1);}}
+  .disc.flip{animation:flip .26s ease;}
+  @keyframes flip{0%{transform:rotateY(0);} 50%{transform:rotateY(90deg) scale(.92);} 100%{transform:rotateY(0);}}
+
+  .disc.p1{background:radial-gradient(circle at 35% 30%,#3a3a3a,var(--p1)); border:1px solid var(--p1-edge);}
+  .disc.p2{background:radial-gradient(circle at 35% 30%,#2f86e0,var(--p2)); border:1px solid var(--p2-edge);}
+  .disc.p3{background:radial-gradient(circle at 35% 30%,#e85555,var(--p3)); border:1px solid var(--p3-edge);}
+  .disc.p4{background:radial-gradient(circle at 35% 30%,#ffffff,var(--p4)); border:1px solid var(--p4-edge);}
+
+  .disc.ghost{opacity:.38;}
+  .last-mark{
+    position:absolute; width:26%; height:26%; border-radius:50%;
+    border:2px solid var(--accent); pointer-events:none;
+    box-shadow:0 0 6px rgba(255,213,79,.8);
+  }
+
+  /* ---- side panel ---- */
+  .panel{
+    width:280px; max-width:90vw; background:var(--panel);
+    border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+  }
+  .panel h2{margin:0 0 12px; font-size:16px; letter-spacing:.04em;}
+  .score-row{
+    display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px;
+    margin-bottom:7px; background:rgba(255,255,255,.03); transition:background .2s, transform .2s;
+    position:relative;
+  }
+  .score-row.current{background:rgba(255,213,79,.16); box-shadow:0 0 0 1px rgba(255,213,79,.4) inset;}
+  .score-row.current::before{
+    content:"▶"; position:absolute; left:-2px; color:var(--accent); font-size:11px;
+  }
+  .score-row.eliminated{opacity:.4; text-decoration:line-through;}
+  .score-row .nm{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700;}
+  .score-row .ct{font-variant-numeric:tabular-nums; font-weight:800; font-size:18px;}
+  .score-row .barwrap{position:absolute; left:0; bottom:0; height:3px; width:100%; background:transparent; border-radius:0 0 10px 10px; overflow:hidden;}
+  .score-row .bar{height:100%; width:0; transition:width .4s ease;}
+
+  .meta{display:flex; justify-content:space-between; color:var(--muted); font-size:13px; margin:12px 2px; font-variant-numeric:tabular-nums;}
+  .panel-actions{display:flex; gap:8px; margin-top:6px;}
+  .panel-actions button{flex:1;}
+
+  /* ---- toast ---- */
+  .toast{
+    position:fixed; top:24px; left:50%; transform:translateX(-50%) translateY(-80px);
+    background:rgba(20,40,22,.96); color:#fff; padding:14px 24px; border-radius:30px;
+    font-weight:700; font-size:16px; box-shadow:0 10px 30px rgba(0,0,0,.5);
+    border:1px solid rgba(255,255,255,.15); opacity:0; transition:transform .35s, opacity .35s;
+    z-index:50; pointer-events:none; max-width:90vw; text-align:center;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0); opacity:1;}
+
+  /* ---- overlay ---- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(4,12,6,.78); backdrop-filter:blur(4px);
+    display:none; align-items:center; justify-content:center; z-index:40; padding:20px;
+  }
+  .overlay.active{display:flex; animation:fade .25s ease;}
+  .overlay .card{width:100%;}
+
+  /* ---- result ---- */
+  .rank-row{
+    display:flex; align-items:center; gap:14px; padding:14px 16px; margin-bottom:10px;
+    border-radius:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+  }
+  .rank-row.win{background:linear-gradient(90deg,rgba(255,213,79,.22),rgba(255,213,79,.05)); border-color:rgba(255,213,79,.5);}
+  .rank-badge{font-size:24px; width:42px; text-align:center; flex:0 0 auto;}
+  .rank-row .nm{flex:1; font-weight:800; font-size:16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .rank-row .ct{font-weight:900; font-size:20px; font-variant-numeric:tabular-nums;}
+  .result-head{text-align:center; font-size:24px; font-weight:900; margin:0 0 18px;}
+
+  /* ---- online lobby ---- */
+  .mode-btns{display:flex; flex-direction:column; gap:10px;}
+  .seat-row{
+    display:flex; align-items:center; gap:12px; padding:12px; margin-bottom:10px;
+    background:rgba(0,0,0,.18); border-radius:12px; border:1px solid rgba(255,255,255,.06);
+  }
+  .seat-row.mine{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset;}
+  .seat-row .seat-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700;}
+  .seat-row .seat-status{font-size:12px; color:var(--muted);}
+  .seat-row .btn-ghost{padding:7px 12px; font-size:13px;}
+  .share-box{
+    display:flex; gap:8px; margin:6px 0 14px;
+  }
+  .share-box input{
+    flex:1; min-width:0; padding:10px 12px; font-size:13px; border-radius:9px;
+    border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.06); color:var(--text);
+  }
+  .roomcode{font-weight:900; letter-spacing:.15em; color:var(--accent); font-size:22px; text-align:center; margin:2px 0 10px;}
+  .net-note{font-size:12px; color:var(--muted); text-align:center; margin-top:10px; line-height:1.6;}
+  .online-bar{
+    display:none; align-items:center; gap:10px; justify-content:center; flex-wrap:wrap;
+    margin:0 auto 12px; padding:8px 14px; max-width:600px;
+    background:var(--panel); border:1px solid rgba(255,255,255,.08); border-radius:12px; font-size:13px;
+  }
+  .online-bar.show{display:flex;}
+  .online-bar .you{color:var(--accent); font-weight:800;}
+  .online-bar .conn{display:inline-block; width:9px; height:9px; border-radius:50%; background:#4caf50; box-shadow:0 0 6px #4caf50;}
+  .online-bar .conn.off{background:#e53935; box-shadow:0 0 6px #e53935;}
+  .turn-banner{
+    text-align:center; font-weight:800; margin:0 auto 10px; max-width:600px; padding:8px;
+    border-radius:10px; background:rgba(255,213,79,.14); color:var(--accent); font-size:14px; display:none;
+  }
+  .turn-banner.show{display:block;}
+
+  /* 横幅が足りない時はパネルを下に積んで、盤面は横幅基準で縮小 */
+  @media (max-width:900px){
+    :root{ --cell: min(50px, calc((100vw - 52px) / 10), calc((100vh - 150px) / 10)); }
+    .game-wrap{ flex-direction:column; align-items:center; gap:14px; }
+    .panel{ width:100%; max-width:480px; }
+  }
+  @media (max-width:520px){
+    .card{padding:18px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== スタート画面 ===== -->
+<section id="screen-start" class="screen active">
+  <h1 class="title">4人対戦オセロ</h1>
+  <p class="subtitle">10×10ボード・ホットシート対戦</p>
+  <div class="card">
+    <p style="margin-top:0;color:var(--muted);line-height:1.7;font-size:14px">
+      8方向に挟んだ相手のコマを自分の色に反転し、最後に一番多くコマを持っていたプレイヤーの勝ちです。
+    </p>
+    <div class="mode-btns">
+      <button class="btn-primary" onclick="goSetup()" style="margin-top:0">🎮 ローカル対戦（この端末で4人）</button>
+      <button class="btn-primary" onclick="goOnline()" style="margin-top:0;background:linear-gradient(180deg,#80d8ff,#29b6f6);box-shadow:0 6px 0 #0288d1,0 10px 18px rgba(0,0,0,.3);color:#062b3a">🌐 オンライン対戦（URLで招待）</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== オンライン・ロビー画面 ===== -->
+<section id="screen-online" class="screen">
+  <h1 class="title">オンライン対戦</h1>
+  <p class="subtitle" id="online-sub">部屋を作って、URLを友達に送ろう</p>
+  <div class="card" id="online-card"></div>
+</section>
+
+<!-- ===== プレイヤー設定画面 ===== -->
+<section id="screen-setup" class="screen">
+  <h1 class="title">プレイヤー設定</h1>
+  <p class="subtitle">名前は最大16文字・空欄ならデフォルト名</p>
+  <div class="card">
+    <div id="setup-players"></div>
+    <label class="opt">
+      <input type="checkbox" id="opt-elim">
+      コマ消滅ルール（コマが0枚になったプレイヤーは脱落）
+    </label>
+    <button class="btn-primary" onclick="startGame()">決定して対戦開始</button>
+    <button class="btn-ghost" style="width:100%;margin-top:10px" onclick="show('screen-start')">戻る</button>
+  </div>
+</section>
+
+<!-- ===== ゲームプレイ画面 ===== -->
+<section id="screen-game" class="screen">
+  <div id="onlineBar" class="online-bar">
+    <span><span class="conn" id="connDot"></span> ルーム <b id="barRoom"></b></span>
+    <span>あなた: <span class="you" id="barSeat"></span></span>
+    <button class="btn-ghost" style="padding:6px 10px;font-size:12px" onclick="copyShare()">招待URLをコピー</button>
+  </div>
+  <div id="turnBanner" class="turn-banner"></div>
+  <div class="game-wrap">
+    <div class="board-shell">
+      <div id="board" class="board"></div>
+    </div>
+    <div class="panel">
+      <h2>スコア</h2>
+      <div id="scorePanel"></div>
+      <div class="meta"><span>ターン数: <b id="turnCount">1</b></span><span>経過: <b id="elapsed">00:00</b></span></div>
+      <div class="panel-actions">
+        <button class="btn-ghost" onclick="openMenu()">メニュー</button>
+        <button class="btn-ghost" onclick="confirmResign()">投了</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 結果画面 ===== -->
+<section id="screen-result" class="screen">
+  <h1 class="title">対戦結果</h1>
+  <div class="card">
+    <div id="result-head" class="result-head"></div>
+    <div id="result-list"></div>
+    <button class="btn-primary" onclick="goSetup()">もう一度</button>
+    <button class="btn-ghost" style="width:100%;margin-top:10px" onclick="show('screen-start')">タイトルへ</button>
+  </div>
+</section>
+
+<!-- ===== オーバーレイ（メニュー / 確認） ===== -->
+<div id="overlay" class="overlay">
+  <div class="card" id="overlay-card"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ============ 定数 ============ */
+const SIZE = 10;
+const DIRS = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
+const PLAYER_META = [
+  {id:1, def:"プレイヤー1", color:"#1a1a1a", label:"黒", cls:"p1"},
+  {id:2, def:"プレイヤー2", color:"#1565C0", label:"青", cls:"p2"},
+  {id:3, def:"プレイヤー3", color:"#C62828", label:"赤", cls:"p3"},
+  {id:4, def:"プレイヤー4", color:"#F5F5F5", label:"白", cls:"p4"},
+];
+
+/* ============ 状態 ============ */
+let state = null;
+let timerId = null;
+let startTime = 0;
+
+/* ============ 画面遷移 ============ */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goSetup(){
+  leaveOnline();   // ローカル設定に入る＝オンラインセッションは終了
+  const box = document.getElementById('setup-players');
+  box.innerHTML = '';
+  PLAYER_META.forEach(p=>{
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+      <span class="swatch" style="background:${p.color}"></span>
+      <input id="name-${p.id}" maxlength="16" placeholder="${p.def}（${p.label}）" autocomplete="off">
+      <select id="type-${p.id}" class="type-sel">
+        <option value="human">人間</option>
+        <option value="cpu"${p.id===1?'':' selected'}>CPU(貪欲)</option>
+      </select>`;
+    box.appendChild(row);
+  });
+  show('screen-setup');
+}
+
+/* ============ ゲーム初期化 ============ */
+function startGame(){
+  const board = Array.from({length:SIZE}, ()=>Array(SIZE).fill(0));
+  // 各プレイヤー2枚・中心(4.5,4.5)まわりに90°回転対称のピンウィール配置（4人完全公平）
+  board[4][4]=1; board[3][4]=1;   // P1 黒（中央＋上）
+  board[4][5]=2; board[4][6]=2;   // P2 青（中央＋右）
+  board[5][5]=3; board[6][5]=3;   // P3 赤（中央＋下）
+  board[5][4]=4; board[5][3]=4;   // P4 白（中央＋左）
+
+  const players = PLAYER_META.map(p=>{
+    let name = (document.getElementById('name-'+p.id)?.value || '').trim();
+    if(!name) name = p.def;
+    if(name.length>16) name = name.slice(0,16);
+    const isCPU = document.getElementById('type-'+p.id)?.value==='cpu';
+    return {id:p.id, name, color:p.color, cls:p.cls, label:p.label, isCPU,
+            pieceCount:2, isActive:true, hasPassedThisCycle:false};
+  });
+
+  state = {
+    board, players,
+    currentPlayerIndex:0,
+    turnCount:1,
+    consecutivePassCount:0,
+    phase:'playing',
+    winner:null,
+    lastMove:null,
+    settings:{ enableEliminationRule: document.getElementById('opt-elim').checked }
+  };
+
+  buildBoardDOM();
+  recountPieces();
+  show('screen-game');
+  startTimer();
+  beginTurn();
+}
+
+/* ============ ボードDOM ============ */
+function buildBoardDOM(){
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  for(let r=0;r<SIZE;r++){
+    for(let c=0;c<SIZE;c++){
+      const cell = document.createElement('div');
+      cell.className='cell'; cell.dataset.r=r; cell.dataset.c=c;
+      cell.addEventListener('click', ()=>onCellClick(r,c));
+      cell.addEventListener('mouseenter', ()=>onCellHover(r,c));
+      cell.addEventListener('mouseleave', clearGhost);
+      boardEl.appendChild(cell);
+    }
+  }
+}
+
+function cellEl(r,c){ return document.getElementById('board').children[r*SIZE+c]; }
+
+/* 盤面の再描画（アニメ対象は引数で指定） */
+function renderBoard(opts={}){
+  const { placed=null, flipped=[] } = opts;
+  // 合法手ハイライトは「自分が着手できる時」だけ表示（オンラインでは自分の手番のみ）
+  const showValid = state.phase==='playing' && (!isOnline() || online.mySeat===currentPlayer().id);
+  const valid = showValid ? getValidMoves(state.board, currentPlayer().id) : [];
+  const validSet = new Set(valid.map(([r,c])=>r*SIZE+c));
+
+  for(let r=0;r<SIZE;r++){
+    for(let c=0;c<SIZE;c++){
+      const el = cellEl(r,c);
+      const v = state.board[r][c];
+      const isValid = validSet.has(r*SIZE+c);
+      el.classList.toggle('valid', isValid);
+
+      // 既存内容を作り直し
+      el.innerHTML='';
+      if(v!==0){
+        const d = document.createElement('div');
+        d.className = 'disc '+PLAYER_META[v-1].cls;
+        if(placed && placed[0]===r && placed[1]===c) d.classList.add('place');
+        const fi = flipped.findIndex(f=>f[0]===r&&f[1]===c);
+        if(fi>=0){ d.classList.add('flip'); d.style.animationDelay=(fi*50)+'ms'; }
+        el.appendChild(d);
+        if(state.lastMove && state.lastMove[0]===r && state.lastMove[1]===c){
+          const m=document.createElement('div'); m.className='last-mark'; el.appendChild(m);
+        }
+      }
+    }
+  }
+}
+
+/* ============ コアロジック ============ */
+function getFlippablePieces(board, row, col, playerId){
+  if(board[row][col]!==0) return [];
+  const out = [];
+  for(const [dr,dc] of DIRS){
+    const line=[]; let r=row+dr, c=col+dc;
+    while(r>=0&&r<SIZE&&c>=0&&c<SIZE&&board[r][c]!==0&&board[r][c]!==playerId){
+      line.push([r,c]); r+=dr; c+=dc;
+    }
+    if(line.length>0 && r>=0&&r<SIZE&&c>=0&&c<SIZE && board[r][c]===playerId){
+      out.push(...line);
+    }
+  }
+  return out;
+}
+
+function getValidMoves(board, playerId){
+  const moves=[];
+  for(let r=0;r<SIZE;r++){
+    for(let c=0;c<SIZE;c++){
+      if(board[r][c]!==0) continue;
+      if(computeFlips(board,r,c,playerId).length>0) moves.push([r,c]);
+    }
+  }
+  return moves;
+}
+
+// 序盤(最初の4手)だけ全滅防止の保護を有効化
+function isOpeningProtected(){ return !!state && state.turnCount <= 4; }
+
+// 実際に反転するコマ列。序盤はどのプレイヤーも0枚にしない（全滅する色は最後の1枚を残す）
+function computeFlips(board, r, c, playerId){
+  const raw = getFlippablePieces(board, r, c, playerId);
+  if(!isOpeningProtected() || raw.length===0) return raw;
+  // 盤上の各色枚数
+  const total = {};
+  for(let rr=0;rr<SIZE;rr++) for(let cc=0;cc<SIZE;cc++){
+    const v=board[rr][cc]; if(v>=1&&v<=4) total[v]=(total[v]||0)+1;
+  }
+  // 反転対象を色別に分類
+  const byOwner = {};
+  for(const [fr,fc] of raw){ const v=board[fr][fc]; (byOwner[v]=byOwner[v]||[]).push([fr,fc]); }
+  const keep = new Set();
+  for(const owner in byOwner){
+    const cells = byOwner[owner];
+    if(total[owner] - cells.length === 0){   // この色が全滅する → 1枚だけ残す
+      const k = cells[cells.length-1];
+      keep.add(k[0]*SIZE + k[1]);
+    }
+  }
+  return keep.size ? raw.filter(([fr,fc])=>!keep.has(fr*SIZE+fc)) : raw;
+}
+
+// グリーディCPU：返せるコマ数が最大の手を選ぶ。同数はランダムタイブレーク。
+function greedyChoice(board, playerId){
+  const moves = getValidMoves(board, playerId);
+  if(moves.length===0) return null;
+  let best=-1, bestList=[];
+  for(const [r,c] of moves){
+    const g = computeFlips(board, r, c, playerId).length;
+    if(g>best){ best=g; bestList=[[r,c]]; }
+    else if(g===best){ bestList.push([r,c]); }
+  }
+  return bestList[Math.floor(Math.random()*bestList.length)];
+}
+
+function recountPieces(){
+  const counts=[0,0,0,0];
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+    const v=state.board[r][c]; if(v>=1&&v<=4) counts[v-1]++;
+  }
+  state.players.forEach((p,i)=>p.pieceCount=counts[i]);
+}
+
+/* ============ ターン進行 ============ */
+function currentPlayer(){ return state.players[state.currentPlayerIndex]; }
+
+function beginTurn(){
+  if(state.phase!=='playing') return;
+
+  // 全員脱落（理論上の保険）／ボード満杯チェック
+  if(activeCount()===0){ endGame(); return; }
+  if(isBoardFull()){ endGame(); return; }
+
+  const p = currentPlayer();
+
+  // 脱落プレイヤーはスキップ（パスカウントには影響させない）
+  if(!p.isActive){
+    state.turnCount++;
+    state.currentPlayerIndex = (state.currentPlayerIndex+1)%4;
+    beginTurn();
+    return;
+  }
+
+  const moves = getValidMoves(state.board, p.id);
+  updatePanel();
+  renderBoard();
+
+  if(moves.length===0){
+    // 強制パス
+    toast(`${p.name}さんはパスです`);
+    p.hasPassedThisCycle = true;
+    if(isHost()) pushState('pass:'+p.name);
+    setTimeout(()=>advanceTurn(true), 1400);
+    return;
+  }
+
+  if(isHost()) pushState();   // 新しい手番の状態を配信
+
+  // CPU手番 → 思考してから自動着手（オンラインではホストのみが実行）
+  if(p.isCPU && (!isOnline() || isHost())){
+    setTimeout(()=>{
+      if(state.phase!=='playing' || currentPlayer().id!==p.id) return; // 状態変化ガード
+      const mv = greedyChoice(state.board, p.id);
+      if(mv) applyMove(mv[0], mv[1]);
+    }, 600);
+  }
+  // 人間で合法手あり → 入力待ち
+  updateTurnBanner();
+}
+
+function advanceTurn(wasPass){
+  if(wasPass){
+    state.consecutivePassCount++;
+  } else {
+    state.consecutivePassCount=0;
+  }
+
+  // 全員パス（1周連続）で終了
+  if(state.consecutivePassCount >= activeCount()){
+    if(activeCount()>0){ endGame(); return; }
+  }
+
+  state.turnCount++;
+  state.currentPlayerIndex = (state.currentPlayerIndex+1)%4;
+  beginTurn();
+}
+
+function activeCount(){ return state.players.filter(p=>p.isActive).length; }
+
+function isBoardFull(){
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(state.board[r][c]===0) return false;
+  return true;
+}
+
+/* ============ 着手 ============ */
+function onCellClick(r,c){
+  if(!state || state.phase!=='playing') return;
+  const p = currentPlayer();
+
+  // オンライン：自分の手番だけ操作可能
+  if(isOnline()){
+    if(online.mySeat !== p.id) return;                 // 自分の番でない
+    if(computeFlips(state.board, r, c, p.id).length===0) return;
+    if(isHost()) applyMove(r,c);                        // ホストは直接適用
+    else sendPendingMove(r,c);                          // ゲストは申請を送る
+    return;
+  }
+
+  // ローカル
+  if(p.isCPU) return;        // CPU手番中は人間の操作を無効化
+  if(!p.isActive) return;
+  if(computeFlips(state.board, r, c, p.id).length===0) return; // 非合法手は無視
+  applyMove(r,c);
+}
+
+// 人間・CPU共通の着手処理
+function applyMove(r,c){
+  const p = currentPlayer();
+  const flip = computeFlips(state.board, r, c, p.id);
+  if(flip.length===0) return;
+
+  clearGhost();
+  // 配置
+  state.board[r][c] = p.id;
+  flip.forEach(([fr,fc])=>state.board[fr][fc]=p.id);
+  state.lastMove = [r,c];
+
+  recountPieces();
+  renderBoard({placed:[r,c], flipped:flip});
+  updatePanel();
+
+  // 脱落判定（オプション）
+  if(state.settings.enableEliminationRule) checkEliminations();
+
+  state.consecutivePassCount = 0;
+  if(isHost()) pushState();   // 着手＋反転を即配信（手番はまだ着手者）
+
+  // 反転アニメ後に次ターン
+  const delay = 260 + flip.length*50 + 150;
+  setTimeout(()=>{
+    state.turnCount++;
+    state.currentPlayerIndex = (state.currentPlayerIndex+1)%4;
+    beginTurn();
+  }, Math.min(delay, 1200));
+}
+
+function checkEliminations(){
+  state.players.forEach(p=>{
+    if(p.isActive && p.pieceCount===0){
+      p.isActive=false;
+      toast(`${p.name}さんが脱落しました`);
+    }
+  });
+}
+
+/* ============ ホバープレビュー ============ */
+let ghostCells=[];
+function onCellHover(r,c){
+  if(!state || state.phase!=='playing') return;
+  const p=currentPlayer(); if(!p.isActive || p.isCPU) return;
+  if(isOnline() && online.mySeat!==p.id) return;   // 自分の手番のみプレビュー
+  const flip=computeFlips(state.board,r,c,p.id);
+  if(flip.length===0) return;
+  clearGhost();
+  // 着手マスのゴースト
+  addGhost(r,c,p.cls,false);
+  flip.forEach(([fr,fc])=>addGhost(fr,fc,p.cls,true));
+}
+function addGhost(r,c,cls,isFlip){
+  const el=cellEl(r,c);
+  if(isFlip){ // 既存ディスクを薄く差し替え
+    const cur=el.querySelector('.disc');
+    if(cur){ cur.classList.add('ghost'); cur.className='disc ghost '+cls; }
+  } else {
+    if(el.querySelector('.disc')) return;
+    const d=document.createElement('div'); d.className='disc ghost '+cls; el.appendChild(d);
+    ghostCells.push([r,c,'added']);
+    return;
+  }
+  ghostCells.push([r,c,'flip']);
+}
+function clearGhost(){
+  if(ghostCells.length===0) return;
+  ghostCells=[];
+  renderBoard();
+}
+
+/* ============ パネル更新 ============ */
+function updatePanel(){
+  const max=Math.max(1,...state.players.map(p=>p.pieceCount));
+  const total=state.players.reduce((s,p)=>s+p.pieceCount,0)||1;
+  const panel=document.getElementById('scorePanel');
+  panel.innerHTML='';
+  state.players.forEach((p,i)=>{
+    const row=document.createElement('div');
+    row.className='score-row'+(i===state.currentPlayerIndex&&state.phase==='playing'?' current':'')
+                 +(!p.isActive?' eliminated':'');
+    row.innerHTML=`
+      <span class="swatch" style="width:20px;height:20px;background:${p.color}"></span>
+      <span class="nm">${escapeHtml(p.name)}（${p.label}）${p.isCPU?'<span class="cpu-tag">CPU</span>':''}</span>
+      <span class="ct">${p.pieceCount}</span>
+      <span class="barwrap"><span class="bar" style="width:${p.pieceCount/total*100}%;background:${p.color}"></span></span>`;
+    panel.appendChild(row);
+  });
+  document.getElementById('turnCount').textContent=state.turnCount;
+}
+
+function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+/* ============ タイマー ============ */
+function startTimer(){
+  startTime=performance.now();
+  clearInterval(timerId);
+  timerId=setInterval(()=>{
+    const s=Math.floor((performance.now()-startTime)/1000);
+    const mm=String(Math.floor(s/60)).padStart(2,'0');
+    const ss=String(s%60).padStart(2,'0');
+    document.getElementById('elapsed').textContent=`${mm}:${ss}`;
+  },500);
+}
+
+/* ============ トースト ============ */
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+/* ============ ゲーム終了 ============ */
+function endGame(){
+  state.phase='ended';
+  clearInterval(timerId);
+  recountPieces();
+  renderBoard();
+
+  const max=Math.max(...state.players.map(p=>p.pieceCount));
+  state.winner=state.players.filter(p=>p.pieceCount===max).map(p=>p.id);
+
+  if(isHost()) pushState('end');
+  renderResult();
+}
+
+// 結果画面の描画（state.winner と pieceCount を使用）。ホスト/ゲスト共通
+function renderResult(){
+  recountPieces();
+  const max=Math.max(...state.players.map(p=>p.pieceCount));
+  if(!state.winner || !state.winner.length){
+    state.winner=state.players.filter(p=>p.pieceCount===max).map(p=>p.id);
+  }
+  // 順位
+  const sorted=[...state.players].sort((a,b)=>b.pieceCount-a.pieceCount);
+  let rank=0,prev=null,shown=0;
+  const list=document.getElementById('result-list');
+  list.innerHTML='';
+  sorted.forEach((p)=>{
+    shown++;
+    if(prev===null||p.pieceCount!==prev){ rank=shown; prev=p.pieceCount; }
+    const medals=['🥇','🥈','🥉','４'];
+    const isWin=p.pieceCount===max;
+    const row=document.createElement('div');
+    row.className='rank-row'+(isWin?' win':'');
+    row.innerHTML=`
+      <span class="rank-badge">${isWin?'👑':medals[Math.min(rank-1,3)]}</span>
+      <span class="swatch" style="width:24px;height:24px;background:${p.color}"></span>
+      <span class="nm">${rank}位　${escapeHtml(p.name)}</span>
+      <span class="ct">${p.pieceCount}枚</span>`;
+    list.appendChild(row);
+  });
+
+  const head=document.getElementById('result-head');
+  if(state.winner.length===1){
+    const w=state.players.find(p=>p.id===state.winner[0]);
+    head.textContent=`🏆 ${w.name} さんの勝利！`;
+  } else {
+    const names=state.winner.map(id=>state.players.find(p=>p.id===id).name).join('・');
+    head.textContent=`引き分け：${names}`;
+  }
+  closeOverlay();
+  show('screen-result');
+}
+
+/* ============ メニュー / 投了 ============ */
+function openMenu(){
+  const card=document.getElementById('overlay-card');
+  card.innerHTML=`
+    <h2 style="margin:0 0 16px;text-align:center">メニュー</h2>
+    <button class="btn-primary" onclick="closeOverlay()">再開</button>
+    <button class="btn-ghost" style="width:100%;margin-top:10px" onclick="backToTitle()">タイトルへ戻る</button>`;
+  document.getElementById('overlay').classList.add('active');
+}
+function resignTargetId(){ return isOnline() ? online.mySeat : currentPlayer().id; }
+
+function confirmResign(){
+  const id = resignTargetId();
+  if(isOnline() && !id){ closeOverlay(); return; } // 観戦者など席なしは不可
+  const p = state.players.find(x=>x.id===id);
+  const card=document.getElementById('overlay-card');
+  card.innerHTML=`
+    <h2 style="margin:0 0 8px;text-align:center">投了の確認</h2>
+    <p style="text-align:center;color:var(--muted);margin:0 0 18px">${escapeHtml(p.name)}さんは本当に投了しますか？<br>コマは全て盤上から除外されます。</p>
+    <button class="btn-primary" onclick="doResign()">投了する</button>
+    <button class="btn-ghost" style="width:100%;margin-top:10px" onclick="closeOverlay()">やめる</button>`;
+  document.getElementById('overlay').classList.add('active');
+}
+function doResign(){
+  closeOverlay();
+  const id = resignTargetId();
+  if(isOnline() && !isHost()){ sendPendingResign(id); return; } // ゲストはホストに申請
+  resignSeat(id);
+}
+// 指定IDの席を投了処理（ローカル/ホスト）。手番中なら次へ進める
+function resignSeat(id){
+  const p = state.players.find(x=>x.id===id);
+  if(!p || !p.isActive) return;
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(state.board[r][c]===id) state.board[r][c]=0;
+  p.isActive=false;
+  recountPieces();
+  toast(`${p.name}さんが投了しました`);
+  renderBoard(); updatePanel();
+  if(isHost()) pushState('resign:'+p.name);
+  if(activeCount()<=1){ endGame(); return; }
+  if(currentPlayer().id===id){
+    // 投了者の手番だった → 次へ
+    state.turnCount++;
+    state.currentPlayerIndex=(state.currentPlayerIndex+1)%4;
+    setTimeout(beginTurn, 300);
+  } else if(isHost()){
+    pushState();
+  }
+}
+function backToTitle(){
+  clearInterval(timerId);
+  leaveOnline();
+  state=null;
+  closeOverlay();
+  if(location.hash) history.replaceState(null,'',location.pathname);
+  show('screen-start');
+}
+function closeOverlay(){ document.getElementById('overlay').classList.remove('active'); }
+document.getElementById('overlay').addEventListener('click',e=>{
+  if(e.target.id==='overlay') closeOverlay();
+});
+
+/* =====================================================================
+   オンライン対戦（Firebase Realtime Database / ホスト権威モデル）
+   - ホスト＝部屋を作った人。ゲームエンジンを実行し全状態を配信
+   - ゲスト＝盤面を受信描画。自分の手番のクリックを pending として送信
+   ===================================================================== */
+let online = null;   // {db, roomRef, roomId, uid, mySeat, isHost, started}
+let fbApp = null, fbReady = false;
+
+function isOnline(){ return !!online; }
+function isHost(){ return !!online && online.isHost; }
+
+function fbConfigOK(){
+  const c = window.FIREBASE_CONFIG;
+  return c && typeof c.apiKey==='string' && c.apiKey.indexOf('PASTE')<0 &&
+         c.apiKey.length>10 && typeof c.databaseURL==='string' && c.databaseURL.indexOf('http')===0;
+}
+function initFirebase(){
+  if(fbReady) return true;
+  if(typeof firebase==='undefined' || !fbConfigOK()) return false;
+  try{
+    fbApp = firebase.initializeApp(window.FIREBASE_CONFIG);
+    fbReady = true;
+    return true;
+  }catch(e){ console.error('Firebase init failed', e); return false; }
+}
+
+function randCode(n){
+  const al='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s='';
+  for(let i=0;i<n;i++) s+=al[Math.floor(Math.random()*al.length)];
+  return s;
+}
+
+/* ---- 画面入口 ---- */
+function goOnline(){
+  if(!initFirebase()){ showConfigNeeded(); return; }
+  const hashRoom = (location.hash.match(/room=([A-Z0-9]+)/i)||[])[1];
+  if(hashRoom){ enterRoom(hashRoom.toUpperCase(), false); }
+  else { renderCreateLobby(); }
+  show('screen-online');
+}
+
+function showConfigNeeded(){
+  show('screen-online');
+  document.getElementById('online-sub').textContent='セットアップが必要です';
+  document.getElementById('online-card').innerHTML=`
+    <p style="margin-top:0;line-height:1.8">オンライン対戦には無料の <b>Firebase</b> 設定が必要です。<br>
+    同じフォルダの <b>README_ONLINE.md</b> の手順で <b>config.js</b> を作成してください。</p>
+    <p class="net-note">ローカル対戦はこの設定なしで遊べます。</p>
+    <button class="btn-ghost" style="width:100%;margin-top:10px" onclick="show('screen-start')">タイトルへ戻る</button>`;
+}
+
+/* ---- ロビー：部屋作成 ---- */
+function renderCreateLobby(){
+  document.getElementById('online-sub').textContent='部屋を作って、URLを友達に送ろう';
+  document.getElementById('online-card').innerHTML=`
+    <div class="player-row" style="margin-bottom:14px">
+      <span class="swatch" style="background:var(--accent)"></span>
+      <input id="my-name" maxlength="16" placeholder="あなたの名前" autocomplete="off">
+    </div>
+    <label class="opt"><input type="checkbox" id="opt-elim-online"> コマ消滅ルール（0枚で脱落）</label>
+    <button class="btn-primary" onclick="createRoom()">部屋を作る</button>
+    <div class="net-note">作成すると招待URLが発行されます。最大4人まで参加でき、空席はCPU（貪欲）になります。</div>
+    <button class="btn-ghost" style="width:100%;margin-top:12px" onclick="show('screen-start')">戻る</button>`;
+}
+
+function createRoom(){
+  const name=(document.getElementById('my-name').value||'').trim().slice(0,16) || 'ホスト';
+  const elim=document.getElementById('opt-elim-online').checked;
+  const roomId=randCode(5);
+  online={ db:firebase.database(), roomId, uid:randCode(12), mySeat:null, isHost:true, started:false };
+  online.roomRef=online.db.ref('rooms/'+roomId);
+  const seats={};
+  for(let i=1;i<=4;i++) seats[i]={type:'open', name:'', uid:null};
+  // ホストはP1席に着席
+  seats[1]={type:'human', name, uid:online.uid};
+  online.mySeat=1;
+  online.roomRef.child('lobby').set({
+    host:online.uid, started:false,
+    settings:{ enableEliminationRule:elim },
+    seats
+  }).then(()=>{
+    history.replaceState(null,'','#room='+roomId);
+    subscribeLobby();
+  }).catch(err=>onlineError(err));
+}
+
+/* ---- ロビー：参加 ---- */
+function enterRoom(roomId, isHostFlag){
+  online={ db:firebase.database(), roomId, uid:randCode(12), mySeat:null, isHost:!!isHostFlag, started:false };
+  online.roomRef=online.db.ref('rooms/'+roomId);
+  online.roomRef.child('lobby').once('value').then(snap=>{
+    if(!snap.exists()){
+      document.getElementById('online-sub').textContent='部屋が見つかりません';
+      document.getElementById('online-card').innerHTML=`
+        <p style="margin-top:0">ルーム <b>${roomId}</b> は存在しないか終了しています。</p>
+        <button class="btn-ghost" style="width:100%;margin-top:10px" onclick="goOnlineFresh()">新しい部屋を作る</button>
+        <button class="btn-ghost" style="width:100%;margin-top:10px" onclick="show('screen-start')">タイトルへ</button>`;
+      return;
+    }
+    // ホスト判定（自分がホストUIDかは作成者のみ。参加者はゲスト）
+    subscribeLobby();
+  }).catch(err=>onlineError(err));
+}
+function goOnlineFresh(){ history.replaceState(null,'',location.pathname); online=null; renderCreateLobby(); }
+
+/* ---- ロビー購読・描画 ---- */
+function subscribeLobby(){
+  online.roomRef.child('lobby').on('value', snap=>{
+    const lobby=snap.val();
+    if(!lobby){ return; }
+    online.isHost = (lobby.host===online.uid);
+    if(lobby.started){
+      // ゲーム開始済み → ゲームへ
+      if(online.isHost) { /* ホストは自分でstartOnlineGame済み */ }
+      else subscribeGameAsGuest();
+      return;
+    }
+    renderLobby(lobby);
+  });
+}
+
+function renderLobby(lobby){
+  document.getElementById('online-sub').textContent='参加者がそろったら開始';
+  const url=location.origin+location.pathname+'#room='+online.roomId;
+  const seats=lobby.seats||{};
+  let seatsHtml='';
+  for(let i=1;i<=4;i++){
+    const s=seats[i]||{type:'open'};
+    const meta=PLAYER_META[i-1];
+    const mine = (s.uid && s.uid===online.uid);
+    let status, action='';
+    if(s.type==='human'){ status = mine?'あなた':'参加中'; }
+    else if(s.type==='cpu'){ status='CPU（貪欲）'; }
+    else { status='空席'; }
+    // 操作ボタン
+    if(s.type==='open' && online.mySeat==null){
+      action=`<button class="btn-ghost" onclick="claimSeat(${i})">ここに座る</button>`;
+    } else if(online.isHost && !mine && s.type!=='human'){
+      action=`<button class="btn-ghost" onclick="toggleCpu(${i},'${s.type==='cpu'?'open':'cpu'}')">${s.type==='cpu'?'空席に':'CPUにする'}</button>`;
+    }
+    seatsHtml+=`<div class="seat-row${mine?' mine':''}">
+      <span class="swatch" style="width:22px;height:22px;background:${meta.color}"></span>
+      <span class="seat-name">${s.name?escapeHtml(s.name):('プレイヤー'+i)}（${meta.label}）</span>
+      <span class="seat-status">${status}</span>
+      ${action}
+    </div>`;
+  }
+  const startBtn = online.isHost
+    ? `<button class="btn-primary" onclick="startOnlineGame()">ゲーム開始（空席はCPU）</button>`
+    : `<div class="net-note">ホストの開始を待っています…</div>`;
+  document.getElementById('online-card').innerHTML=`
+    <div class="roomcode">${online.roomId}</div>
+    <div class="share-box">
+      <input id="share-url" value="${url}" readonly onclick="this.select()">
+      <button class="btn-ghost" onclick="copyShare()">コピー</button>
+    </div>
+    ${seatsHtml}
+    ${startBtn}
+    <button class="btn-ghost" style="width:100%;margin-top:10px" onclick="backToTitle()">退出</button>
+    <div class="net-note">URLを友達に送ると、その人のブラウザで空席に座れます。<br>ホストがタブを閉じると進行が止まる点に注意。</div>`;
+}
+
+function claimSeat(seat){
+  const name=prompt('あなたの名前（最大16文字）','プレイヤー'+seat);
+  if(name===null) return;
+  const nm=(name||'').trim().slice(0,16)||('プレイヤー'+seat);
+  const ref=online.roomRef.child('lobby/seats/'+seat);
+  ref.transaction(cur=>{
+    if(cur && cur.type==='open'){ return {type:'human', name:nm, uid:online.uid}; }
+    return; // 既に埋まっている → 中止
+  }).then(res=>{
+    if(res.committed && res.snapshot.val() && res.snapshot.val().uid===online.uid){
+      online.mySeat=seat;
+    } else {
+      toast('その席は埋まりました');
+    }
+  }).catch(err=>onlineError(err));
+}
+function toggleCpu(seat, to){
+  online.roomRef.child('lobby/seats/'+seat).set(
+    to==='cpu' ? {type:'cpu', name:'CPU', uid:null} : {type:'open', name:'', uid:null}
+  ).catch(err=>onlineError(err));
+}
+
+/* ---- ホスト：ゲーム開始 ---- */
+function startOnlineGame(){
+  online.roomRef.child('lobby/seats').once('value').then(snap=>{
+    const seats=snap.val()||{};
+    online.roomRef.child('lobby/settings').once('value').then(s2=>{
+      const settings=s2.val()||{enableEliminationRule:false};
+      buildOnlineGameState(seats, settings);
+      online.started=true;
+      online.roomRef.child('lobby/started').set(true);
+      // ホストは pending を購読して人間の着手を受け付ける
+      online.roomRef.child('game/pending').on('value', handlePending);
+      enterGameScreen();
+      beginTurn();              // エンジン始動（pushStateで配信）
+    });
+  }).catch(err=>onlineError(err));
+}
+
+function buildOnlineGameState(seats, settings){
+  const board = Array.from({length:SIZE}, ()=>Array(SIZE).fill(0));
+  board[4][4]=1; board[3][4]=1; board[4][5]=2; board[4][6]=2;
+  board[5][5]=3; board[6][5]=3; board[5][4]=4; board[5][3]=4;
+  const players = PLAYER_META.map(p=>{
+    const s=seats[p.id]||{type:'open'};
+    const human = (s.type==='human');
+    let name = human ? (s.name||('プレイヤー'+p.id)) : ('CPU '+p.label);
+    return {id:p.id, name, color:p.color, cls:p.cls, label:p.label,
+            isCPU: !human, isActive:true, pieceCount:2, hasPassedThisCycle:false};
+  });
+  state = { board, players, currentPlayerIndex:0, turnCount:1, consecutivePassCount:0,
+            phase:'playing', winner:null, lastMove:null, settings };
+}
+
+function enterGameScreen(){
+  buildBoardDOM();
+  recountPieces();
+  show('screen-game');
+  setupOnlineBar();
+  startTimer();
+}
+
+/* ---- ゲスト：ゲーム購読 ---- */
+function subscribeGameAsGuest(){
+  if(online._gameSubbed) return;
+  online._gameSubbed=true;
+  enterGameScreenGuestOnce();
+  online.roomRef.child('game').on('value', snap=>{
+    const data=snap.val();
+    if(!data || !data.board) return;
+    applyRemoteGame(data);
+  });
+  // 自分の席を確定（lobbyから）
+  online.roomRef.child('lobby/seats').once('value').then(snap=>{
+    const seats=snap.val()||{};
+    for(let i=1;i<=4;i++){ if(seats[i] && seats[i].uid===online.uid){ online.mySeat=i; } }
+    setupOnlineBar();
+  });
+}
+let _guestScreenReady=false;
+function enterGameScreenGuestOnce(){
+  if(_guestScreenReady) return; _guestScreenReady=true;
+  buildBoardDOM();
+  show('screen-game');
+  setupOnlineBar();
+  startTimer();
+}
+
+/* ---- 状態のシリアライズ / 配信 ---- */
+function serializeState(){
+  let bd='';
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) bd+=state.board[r][c];
+  return {
+    board:bd,
+    cur:state.currentPlayerIndex,
+    turn:state.turnCount,
+    pass:state.consecutivePassCount,
+    phase:state.phase,
+    winner: state.winner||null,
+    last: state.lastMove ? (state.lastMove[0]+','+state.lastMove[1]) : '',
+    players: state.players.map(p=>({id:p.id,name:p.name,isCPU:p.isCPU,isActive:p.isActive})),
+    settings: state.settings,
+    note: '',
+    nonce: Math.floor(Math.random()*1e9)
+  };
+}
+function pushState(note){
+  if(!isHost() || !online) return;
+  const data=serializeState();
+  if(note) data.note=note;
+  online.roomRef.child('game').update({
+    board:data.board, cur:data.cur, turn:data.turn, pass:data.pass, phase:data.phase,
+    winner:data.winner, last:data.last, players:data.players, settings:data.settings,
+    note:data.note, nonce:data.nonce
+  }).catch(err=>onlineError(err));
+}
+
+let _lastNote=null, _prevBoardStr=null;
+function applyRemoteGame(data){
+  // players 復元
+  const players = data.players.map(sp=>{
+    const meta=PLAYER_META[sp.id-1];
+    return {id:sp.id, name:sp.name, color:meta.color, cls:meta.cls, label:meta.label,
+            isCPU:sp.isCPU, isActive:sp.isActive, pieceCount:0, hasPassedThisCycle:false};
+  });
+  // board 復元
+  const board=Array.from({length:SIZE}, ()=>Array(SIZE).fill(0));
+  const s=data.board||'';
+  for(let i=0;i<SIZE*SIZE;i++){ const r=Math.floor(i/SIZE), c=i%SIZE; board[r][c]=parseInt(s[i]||'0',10); }
+  const last = data.last ? data.last.split(',').map(Number) : null;
+
+  state={ board, players, currentPlayerIndex:data.cur, turnCount:data.turn,
+          consecutivePassCount:data.pass, phase:data.phase,
+          winner:data.winner||null, lastMove:last, settings:data.settings||{} };
+  recountPieces();
+
+  // 差分でアニメ（前回盤面と比較）
+  let flipped=[];
+  if(_prevBoardStr && _prevBoardStr.length===s.length){
+    for(let i=0;i<s.length;i++){ if(_prevBoardStr[i]!==s[i] && s[i]!=='0'){
+      const r=Math.floor(i/SIZE), c=i%SIZE;
+      if(!(last && last[0]===r && last[1]===c)) flipped.push([r,c]);
+    }}
+  }
+  _prevBoardStr=s;
+
+  if(state.phase==='ended'){
+    clearInterval(timerId);
+    renderResult();
+    return;
+  }
+  renderBoard({placed:last, flipped});
+  updatePanel();
+  setupOnlineBar();
+  updateTurnBanner();
+
+  // ノート（パス/脱落/投了）をトースト表示
+  if(data.note && data.note!==_lastNote){
+    _lastNote=data.note;
+    const [kind,who]=data.note.split(':');
+    if(kind==='pass') toast(`${who}さんはパスです`);
+    else if(kind==='resign') toast(`${who}さんが投了しました`);
+    else if(kind==='eliminate') toast(`${who}さんが脱落しました`);
+  }
+}
+
+/* ---- ゲスト→ホスト：着手/投了の申請 ---- */
+function sendPendingMove(r,c){
+  if(!online) return;
+  online.roomRef.child('game/pending').set({ seat:online.mySeat, r, c, kind:'move', n:Math.floor(Math.random()*1e9) })
+    .catch(err=>onlineError(err));
+}
+function sendPendingResign(id){
+  if(!online) return;
+  online.roomRef.child('game/pending').set({ seat:id, kind:'resign', n:Math.floor(Math.random()*1e9) })
+    .catch(err=>onlineError(err));
+}
+/* ---- ホスト：申請の処理 ---- */
+function handlePending(snap){
+  const pend=snap.val();
+  if(!pend || !state || state.phase!=='playing') return;
+  const clear=()=>online.roomRef.child('game/pending').remove();
+  if(pend.kind==='resign'){ resignSeat(pend.seat); clear(); return; }
+  // move：その席の手番かつ合法手のみ
+  if(currentPlayer().id!==pend.seat){ clear(); return; }
+  if(currentPlayer().isCPU){ clear(); return; }
+  if(computeFlips(state.board, pend.r, pend.c, pend.seat).length===0){ clear(); return; }
+  clear();
+  applyMove(pend.r, pend.c);
+}
+
+/* ---- オンラインUI ---- */
+function setupOnlineBar(){
+  const bar=document.getElementById('onlineBar');
+  if(!isOnline()){ bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+  document.getElementById('barRoom').textContent=online.roomId;
+  const seat = (online.mySeat && state && state.players) ? state.players.find(p=>p.id===online.mySeat) : null;
+  const meta = online.mySeat ? PLAYER_META[online.mySeat-1] : null;
+  document.getElementById('barSeat').textContent =
+    seat ? `${escapeHtml(seat.name)}（${seat.label}）`
+         : (meta ? `（${meta.label}）` : '観戦');
+}
+function updateTurnBanner(){
+  const b=document.getElementById('turnBanner');
+  if(!isOnline() || !state || state.phase!=='playing'){ b.classList.remove('show'); return; }
+  const cur=currentPlayer();
+  b.classList.add('show');
+  if(online.mySeat===cur.id){ b.textContent='▶ あなたの番です'; b.style.color='var(--accent)'; }
+  else { b.textContent=`${escapeHtml(cur.name)}さんの番…`; b.style.color='var(--muted)'; }
+}
+function copyShare(){
+  const url=location.origin+location.pathname+'#room='+(online?online.roomId:'');
+  navigator.clipboard?.writeText(url).then(()=>toast('招待URLをコピーしました'),()=>toast(url));
+}
+function onlineError(err){
+  console.error(err);
+  toast('通信エラー: '+(err&&err.message?err.message:err));
+}
+function leaveOnline(){
+  if(online && online.roomRef){
+    try{ online.roomRef.child('lobby').off(); online.roomRef.child('game').off(); online.roomRef.child('game/pending').off(); }catch(e){}
+  }
+  online=null; _guestScreenReady=false; _prevBoardStr=null; _lastNote=null;
+  document.getElementById('onlineBar').classList.remove('show');
+  document.getElementById('turnBanner').classList.remove('show');
+}
+
+/* ---- 起動時：URLに #room= があればロビーへ ---- */
+window.addEventListener('load', ()=>{
+  const hashRoom=(location.hash.match(/room=([A-Z0-9]+)/i)||[])[1];
+  if(hashRoom){ goOnline(); }
+});
+</script>
+</body>
+</html>
