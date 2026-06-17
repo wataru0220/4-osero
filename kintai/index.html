@@ -60,6 +60,12 @@
     width:100%; padding:14px; border:0; border-radius:12px; background:var(--line-green); color:#fff;
     font-size:16px; font-weight:800; cursor:pointer; margin-top:10px;
   }
+  .cancelEdit{width:100%; padding:12px; border:1.5px solid var(--line); border-radius:12px; background:#fff; color:var(--sub);
+    font-size:15px; font-weight:700; cursor:pointer; margin-top:8px;}
+  .editbar{background:#fff4e5; color:#8a5a00; border:1px solid #ffd591; border-radius:8px; padding:9px 12px; font-size:13px; margin-bottom:12px; line-height:1.5;}
+  .recbtns{display:flex; gap:8px; margin-top:8px}
+  .recbtns button{flex:1; padding:8px; border:1px solid var(--line); border-radius:8px; background:#fff; font-size:13px; font-weight:700; cursor:pointer; color:var(--brand-dark)}
+  .recbtns button.del{color:var(--warn); border-color:#f0c4c0}
   .toast{
     position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px);
     background:#16324f; color:#fff; padding:12px 18px; border-radius:30px; font-weight:700;
@@ -101,6 +107,7 @@
   </div>
 
   <div class="card">
+    <div id="editBanner" class="editbar" style="display:none">✏️ <b>修正モード</b>：選んだ報告を編集中です。直したら「修正を保存」を押してください。</div>
     <div class="field">
       <label class="req" for="worker">氏名</label>
       <select id="worker"></select>
@@ -156,6 +163,7 @@
     </div>
 
     <button class="submit" id="submitBtn">この内容で報告する</button>
+    <button class="cancelEdit" id="cancelEditBtn" style="display:none">✕ 修正をやめる（新規入力に戻る）</button>
   </div>
 
   <h2 class="sec">最近の報告（自分）</h2>
@@ -181,6 +189,8 @@
   let db=null, dbRoot=(CFG.dbRoot||'kintai');
   let dayUnit = 1;
   let lastReportText = '';
+  let editingKey = null;        // 修正中の記録キー（null=新規）
+  let myRecsMap = {};           // key -> 自分の記録（修正用）
 
   // ---- Firebase 初期化 ----
   function initFirebase(){
@@ -251,19 +261,65 @@
   function loadMyRecords(){
     const name=$('worker').value; const box=$('myRecords');
     if(!name){ box.innerHTML='<div class="hint" style="padding:4px">氏名を選ぶと表示されます。</div>'; return; }
-    ref('records').orderByChild('workerName').equalTo(name).limitToLast(8).on('value', snap=>{
-      const arr=[]; snap.forEach(c=>{ const r=c.val(); r._key=c.key; arr.push(r); });
+    ref('records').orderByChild('workerName').equalTo(name).limitToLast(10).on('value', snap=>{
+      const arr=[]; myRecsMap={}; snap.forEach(c=>{ const r=c.val(); r._key=c.key; myRecsMap[c.key]=r; arr.push(r); });
       arr.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
       if(!arr.length){ box.innerHTML='<div class="hint" style="padding:4px">まだ報告はありません。</div>'; return; }
       box.innerHTML = arr.map(r=>{
         const unit = r.dayUnit===0.5? '半日':'終日';
         const hrs = (r.hours!=null && r.hours!=='')? ('・'+r.hours+'h'):'';
+        const edited = r.updatedAt? '<span class="chip" style="background:#fff4e5;color:#8a5a00">修正済</span> ':'';
         return '<div class="rec"><div class="top"><span>'+esc(r.date)+'</span>'+
-          '<span class="chip">'+unit+hrs+'</span></div>'+
+          '<span>'+edited+'<span class="chip">'+unit+hrs+'</span></span></div>'+
           '<div class="site">'+esc(r.siteName||'')+'</div>'+
-          '<div class="wk">'+esc(r.work||'')+'</div></div>';
+          '<div class="wk">'+esc(r.work||'')+'</div>'+
+          '<div class="recbtns"><button data-edit="'+r._key+'">✏️ 修正</button>'+
+          '<button class="del" data-delrec="'+r._key+'">🗑 削除</button></div></div>';
       }).join('');
+      box.querySelectorAll('[data-edit]').forEach(b=> b.onclick=()=> enterEdit(b.dataset.edit));
+      box.querySelectorAll('[data-delrec]').forEach(b=> b.onclick=()=> deleteMyRecord(b.dataset.delrec));
     });
+  }
+
+  // ---- 自分の記録を修正/削除 ----
+  function setSiteField(siteName){
+    const sel=$('site'); let matched=false;
+    for(const o of sel.options){ if(o.value===siteName){ sel.value=siteName; matched=true; break; } }
+    if(matched){ $('siteOther').style.display='none'; $('siteOther').value=''; }
+    else { sel.value='__other__'; $('siteOther').style.display='block'; $('siteOther').value=siteName; }
+  }
+  function setDayUnit(v){
+    dayUnit=(Number(v)===0.5)?0.5:1;
+    [...$('dayUnitSeg').children].forEach(x=> x.classList.toggle('on', parseFloat(x.dataset.v)===dayUnit));
+  }
+  function enterEdit(key){
+    const r=myRecsMap[key]; if(!r){ toast('記録が見つかりません','err'); return; }
+    editingKey=key;
+    $('date').value=r.date||todayStr();
+    setSiteField(r.siteName||'');
+    setDayUnit(r.dayUnit);
+    $('start').value=r.start||''; $('end').value=r.end||''; $('breakMin').value=(r.breakMin!=null?r.breakMin:0);
+    $('work').value=r.work||''; $('note').value=r.note||'';
+    calcHours();
+    $('editBanner').style.display='block';
+    $('cancelEditBtn').style.display='block';
+    $('submitBtn').textContent='修正を保存';
+    $('doneBox').style.display='none';
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  function exitEdit(){
+    editingKey=null;
+    $('editBanner').style.display='none';
+    $('cancelEditBtn').style.display='none';
+    $('submitBtn').textContent='この内容で報告する';
+    $('work').value=''; $('note').value='';
+    $('date').value=todayStr();
+  }
+  function deleteMyRecord(key){
+    const r=myRecsMap[key]; if(!r) return;
+    if(!confirm('この報告を削除しますか？\n'+(r.date||'')+' / '+(r.siteName||''))) return;
+    ref('records/'+key).remove().then(()=>{ if(editingKey===key) exitEdit(); toast('削除しました','ok'); })
+      .catch(()=> toast('削除に失敗しました','err'));
   }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 
@@ -292,42 +348,49 @@
     if(!db){ toast('サーバー未接続です（設定を確認）','err'); return; }
 
     const hours=calcHours();
-    const selOpt=$('worker').selectedOptions[0];
-    const rec={
-      date, siteName:site, workerName:name,
-      workerId: selOpt? (selOpt.dataset.id||null) : null,
+    const fields={
+      date, siteName:site,
       work, note:$('note').value.trim()||null,
       dayUnit: dayUnit,
       start: $('start').value||null, end: $('end').value||null,
       breakMin: parseInt($('breakMin').value||'0',10)||0,
-      hours: hours,
-      createdAt: Date.now()
+      hours: hours
     };
-    const btn=$('submitBtn'); btn.disabled=true; btn.textContent='送信中…';
+    const btn=$('submitBtn'); const wasEditing=!!editingKey; btn.disabled=true; btn.textContent='送信中…';
     try{
-      await ref('records').push(rec);
-      localStorage.setItem('kintai_worker', name);
-      // 共有用テキストを作成して完了エリアを表示
-      lastReportText = '【勤怠報告】\n'+date+'\n現場: '+site+'\n氏名: '+name+
-        '（'+(dayUnit===0.5?'半日':'終日')+(hours!=null?('・'+hours+'h'):'')+'）\n作業: '+work+
-        ($('note').value.trim()?('\n備考: '+$('note').value.trim()):'');
-      $('doneText').textContent = lastReportText;
-      $('doneBox').style.display='block';
-      $('doneBox').scrollIntoView({behavior:'smooth', block:'start'});
-      toast('報告しました！','ok');
-      $('work').value=''; $('note').value='';
+      if(wasEditing){
+        // 自分の記録を修正（氏名・作成日時はそのまま、更新日時を記録）
+        await ref('records/'+editingKey).update(Object.assign({}, fields, {updatedAt:Date.now()}));
+        toast('修正を保存しました','ok');
+        exitEdit();
+      }else{
+        const selOpt=$('worker').selectedOptions[0];
+        await ref('records').push(Object.assign({}, fields, {
+          workerName:name, workerId: selOpt? (selOpt.dataset.id||null) : null, createdAt: Date.now()
+        }));
+        localStorage.setItem('kintai_worker', name);
+        lastReportText = '【勤怠報告】\n'+date+'\n現場: '+site+'\n氏名: '+name+
+          '（'+(dayUnit===0.5?'半日':'終日')+(hours!=null?('・'+hours+'h'):'')+'）\n作業: '+work+
+          ($('note').value.trim()?('\n備考: '+$('note').value.trim()):'');
+        $('doneText').textContent = lastReportText;
+        $('doneBox').style.display='block';
+        $('doneBox').scrollIntoView({behavior:'smooth', block:'start'});
+        toast('報告しました！','ok');
+        $('work').value=''; $('note').value='';
+      }
     }catch(e){
-      console.error(e); toast('送信に失敗しました','err');
+      console.error(e); toast(wasEditing?'修正に失敗しました':'送信に失敗しました','err');
     }finally{
-      btn.disabled=false; btn.textContent='この内容で報告する';
+      btn.disabled=false; if(editingKey) btn.textContent='修正を保存'; else btn.textContent='この内容で報告する';
     }
   }
 
   // ---- 起動 ----
   function bindUI(){
     $('date').value=todayStr();
-    $('worker').addEventListener('change', ()=>{ updateWho(); loadMyRecords();
+    $('worker').addEventListener('change', ()=>{ if(editingKey) exitEdit(); updateWho(); loadMyRecords();
       localStorage.setItem('kintai_worker', $('worker').value); });
+    $('cancelEditBtn').addEventListener('click', exitEdit);
     ['start','end','breakMin'].forEach(id=> $(id).addEventListener('input', calcHours));
     $('dayUnitSeg').addEventListener('click', e=>{
       const b=e.target.closest('button'); if(!b) return;

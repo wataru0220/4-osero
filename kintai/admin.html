@@ -60,6 +60,18 @@
   .addrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; padding:12px; background:#f7f9fc; border-radius:10px}
   .note{font-size:12px; color:var(--sub); margin-top:8px}
   .lock{font-size:12.5px; color:#8a5a00; background:#fff4e5; border:1px solid #ffd591; border-radius:8px; padding:9px 12px; margin-bottom:12px; line-height:1.5}
+  .modal-ov{position:fixed; inset:0; background:rgba(15,36,54,.5); display:none; align-items:flex-start; justify-content:center; z-index:60; overflow:auto; padding:24px 12px}
+  .modal-ov.show{display:flex}
+  .modal{background:#fff; border-radius:14px; padding:18px; width:100%; max-width:480px; box-shadow:0 12px 40px rgba(0,0,0,.25)}
+  .modal h3{margin:0 0 12px; font-size:16px}
+  .modal .mf{margin-bottom:10px}
+  .modal label{display:block; font-size:12px; font-weight:600; color:var(--sub); margin-bottom:4px}
+  .modal input,.modal select,.modal textarea{width:100%; padding:9px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:14px}
+  .modal textarea{min-height:54px; resize:vertical; font-family:inherit}
+  .modal .mrow{display:flex; gap:8px} .modal .mrow>*{flex:1}
+  .modal .mbtns{display:flex; gap:8px; margin-top:14px}
+  .modal .mbtns button{flex:1; padding:11px; border-radius:9px; font-weight:700; cursor:pointer; border:0}
+  .modal .mbtns .save{background:var(--ok); color:#fff} .modal .mbtns .cancel{background:#fff; color:var(--sub); border:1.5px solid var(--line)}
 </style>
 </head>
 <body>
@@ -217,6 +229,31 @@
 </div>
 </div>
 
+<!-- 記録の編集モーダル -->
+<div class="modal-ov" id="editModal">
+  <div class="modal">
+    <h3>📝 記録を修正</h3>
+    <div class="mf"><label>作業日</label><input type="date" id="eDate"></div>
+    <div class="mf"><label>現場</label><input type="text" id="eSite" list="siteList"><datalist id="siteList"></datalist></div>
+    <div class="mf"><label>氏名</label><input type="text" id="eWorker" list="workerList"><datalist id="workerList"></datalist></div>
+    <div class="mf"><label>作業内容</label><textarea id="eWork"></textarea></div>
+    <div class="mrow">
+      <div class="mf"><label>勤務区分</label><select id="eUnit"><option value="1">終日（1.0日）</option><option value="0.5">半日（0.5日）</option></select></div>
+      <div class="mf"><label>休憩(分)</label><input type="number" id="eBreak" min="0" step="5"></div>
+    </div>
+    <div class="mrow">
+      <div class="mf"><label>開始</label><input type="time" id="eStart" step="300"></div>
+      <div class="mf"><label>終了</label><input type="time" id="eEnd" step="300"></div>
+    </div>
+    <div class="mf"><label>備考</label><input type="text" id="eNote"></div>
+    <div class="muted" id="eCalc" style="font-size:12px"></div>
+    <div class="mbtns">
+      <button class="cancel" id="eCancel">キャンセル</button>
+      <button class="save" id="eSave">保存する</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -283,7 +320,7 @@
     $('app').classList.remove('hide');
     if(!initFirebase()){ toast('Firebase未設定です（config.js）','err'); return; }
     setThisMonth();
-    bindTabs(); bindFilters(); bindMasters(); $('exportBtn').onclick=exportExcel;
+    bindTabs(); bindFilters(); bindMasters(); bindEditModal(); $('exportBtn').onclick=exportExcel;
     ref('workers').on('value',s=>{ workers=s.val()||{}; migrateLegacyWages(); renderWorkers(); fillWorkerFilter(); renderAll(); });
     ref('sites').on('value',s=>{ sites=s.val()||{}; renderSites(); fillSiteFilter(); });
     ref('records').on('value',s=>{ records=s.val()||{}; renderAll(); });
@@ -410,11 +447,58 @@
         '<td>'+esc(r.date)+'</td><td>'+esc(r.siteName)+'</td><td>'+esc(r.workerName)+'</td>'+
         '<td>'+esc(r.work)+'</td><td class="num">'+unit+'</td><td>'+esc(time)+'</td>'+
         '<td class="num">'+(r.hours!=null&&r.hours!==''?round1(r.hours):'')+'</td><td>'+esc(r.note||'')+'</td>'+
-        '<td><button class="sm del" data-del="'+r._key+'">削除</button></td></tr>';
+        '<td style="white-space:nowrap"><button class="sm" data-edit="'+r._key+'">修正</button> '+
+            '<button class="sm del" data-del="'+r._key+'">削除</button></td></tr>';
     }).join('');
+    tb.querySelectorAll('[data-edit]').forEach(b=> b.onclick=()=> openEditModal(b.dataset.edit));
     tb.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>{
       if(confirm('この記録を削除しますか？')) ref('records/'+b.dataset.del).remove().then(()=>toast('削除しました','ok'));
     });
+  }
+
+  // ---------- 記録の編集モーダル（管理者は全記録を修正可能） ----------
+  let editKey=null;
+  function calcH(s,e,b){
+    if(!s||!e) return null;
+    const [sh,sm]=s.split(':').map(Number), [eh,em]=e.split(':').map(Number);
+    let mins=(eh*60+em)-(sh*60+sm); if(mins<0) mins+=24*60; mins-=(parseInt(b||'0',10)||0);
+    if(mins<0) mins=0; return Math.round(mins/60*100)/100;
+  }
+  function updateECalc(){
+    const h=calcH($('eStart').value,$('eEnd').value,$('eBreak').value);
+    $('eCalc').textContent = h!=null? ('実働 '+h+' 時間（休憩除く）で保存されます'):'';
+  }
+  function fillDatalist(id, arr){ const dl=$(id); dl.innerHTML=arr.map(v=>'<option value="'+esc(v)+'"></option>').join(''); }
+  function openEditModal(key){
+    const r=records[key]; if(!r){ toast('記録が見つかりません','err'); return; }
+    editKey=key;
+    fillDatalist('siteList', Object.values(sites).filter(s=>s&&s.active!==false).map(s=>s.name).sort((a,b)=>(a||'').localeCompare(b||'','ja')));
+    fillDatalist('workerList', Object.values(workers).filter(w=>w&&w.active!==false).map(w=>w.name).sort((a,b)=>(a||'').localeCompare(b||'','ja')));
+    $('eDate').value=r.date||''; $('eSite').value=r.siteName||''; $('eWorker').value=r.workerName||'';
+    $('eWork').value=r.work||''; $('eUnit').value=String(r.dayUnit===0.5?0.5:1);
+    $('eBreak').value=(r.breakMin!=null?r.breakMin:0); $('eStart').value=r.start||''; $('eEnd').value=r.end||'';
+    $('eNote').value=r.note||''; updateECalc();
+    $('editModal').classList.add('show');
+  }
+  function closeEditModal(){ editKey=null; $('editModal').classList.remove('show'); }
+  function saveEditModal(){
+    if(!editKey) return;
+    const date=$('eDate').value, site=$('eSite').value.trim(), worker=$('eWorker').value.trim(), work=$('eWork').value.trim();
+    if(!date){ toast('作業日を入力','err'); return; }
+    if(!site){ toast('現場を入力','err'); return; }
+    if(!worker){ toast('氏名を入力','err'); return; }
+    if(!work){ toast('作業内容を入力','err'); return; }
+    const start=$('eStart').value||null, end=$('eEnd').value||null, breakMin=parseInt($('eBreak').value||'0',10)||0;
+    const upd={ date, siteName:site, workerName:worker, work, note:$('eNote').value.trim()||null,
+      dayUnit:parseFloat($('eUnit').value), start, end, breakMin, hours:calcH(start,end,breakMin), updatedAt:Date.now() };
+    ref('records/'+editKey).update(upd).then(()=>{ toast('修正を保存しました','ok'); closeEditModal(); })
+      .catch(()=> toast('保存に失敗しました','err'));
+  }
+  function bindEditModal(){
+    $('eCancel').onclick=closeEditModal;
+    $('eSave').onclick=saveEditModal;
+    ['eStart','eEnd','eBreak'].forEach(id=> $(id).addEventListener('input', updateECalc));
+    $('editModal').addEventListener('click', e=>{ if(e.target===$('editModal')) closeEditModal(); });
   }
 
   // ---------- 従業員マスタ ----------
