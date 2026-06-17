@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#16324f">
+<title>勤怠管理（集計・Excel出力）</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<!-- Excel出力 (SheetJS) -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="config.js"></script>
+<style>
+  :root{
+    --bg:#eef1f5; --card:#fff; --line:#dde3ec; --ink:#16242f; --sub:#5f7185;
+    --brand:#16324f; --accent:#1f6feb; --ok:#1aa260; --warn:#c0392b; --head:#0f2436;
+    --chip:#eef3fb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Yu Gothic",Meiryo,sans-serif;
+    background:var(--bg); color:var(--ink); font-size:14px}
+  header{background:var(--brand); color:#fff; padding:12px 18px; display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  header h1{margin:0; font-size:17px; font-weight:700}
+  header .sp{flex:1}
+  header a{color:#cfe0ff; font-size:13px; text-decoration:none}
+  .wrap{max-width:1100px; margin:0 auto; padding:16px}
+  .tabs{display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap}
+  .tabs button{padding:9px 16px; border:1px solid var(--line); background:#fff; border-radius:9px; cursor:pointer; font-weight:600; color:var(--sub)}
+  .tabs button.on{background:var(--brand); color:#fff; border-color:var(--brand)}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px}
+  .card h2{margin:0 0 12px; font-size:15px}
+  .filters{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:12px}
+  .filters .f{display:flex; flex-direction:column; gap:4px}
+  .filters label{font-size:12px; color:var(--sub); font-weight:600}
+  input,select{padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:14px; background:#fff; color:var(--ink)}
+  button.act{padding:9px 16px; border:0; border-radius:8px; background:var(--accent); color:#fff; font-weight:700; cursor:pointer}
+  button.act.green{background:var(--ok)} button.act.ghost{background:#fff; color:var(--accent); border:1.5px solid var(--accent)}
+  button.sm{padding:5px 10px; font-size:12px; border-radius:7px; border:1px solid var(--line); background:#fff; cursor:pointer; color:var(--sub)}
+  button.sm.del{color:var(--warn); border-color:#f0c4c0}
+  table{width:100%; border-collapse:collapse; font-size:13px}
+  th,td{border:1px solid var(--line); padding:7px 9px; text-align:left; white-space:nowrap}
+  th{background:#f4f7fb; color:var(--sub); position:sticky; top:0}
+  td.num,th.num{text-align:right; font-variant-numeric:tabular-nums}
+  .scroll{overflow:auto; max-height:62vh; border:1px solid var(--line); border-radius:8px}
+  tr.total td{font-weight:800; background:#f0f6ff}
+  .pill{display:inline-block; padding:2px 9px; border-radius:20px; font-size:12px; font-weight:700}
+  .pill.daily{background:#e7f0ff; color:#1759c4} .pill.hourly{background:#eafaf0; color:#178a52}
+  .kpis{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px}
+  .kpi{flex:1; min-width:150px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px}
+  .kpi .v{font-size:24px; font-weight:800; color:var(--brand)} .kpi .l{font-size:12px; color:var(--sub)}
+  .muted{color:var(--sub)} .right{text-align:right}
+  .gate{max-width:360px; margin:14vh auto; background:#fff; border:1px solid var(--line); border-radius:14px; padding:24px; text-align:center}
+  .gate input{width:100%; text-align:center; font-size:22px; letter-spacing:.3em; margin:14px 0}
+  .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px); background:#16324f; color:#fff;
+    padding:11px 18px; border-radius:30px; font-weight:700; opacity:0; pointer-events:none; transition:.25s; z-index:50}
+  .toast.show{opacity:1; transform:translateX(-50%)} .toast.ok{background:var(--ok)} .toast.err{background:var(--warn)}
+  .hide{display:none}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media(max-width:760px){ .grid2{grid-template-columns:1fr} }
+  .addrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; padding:12px; background:#f7f9fc; border-radius:10px}
+  .note{font-size:12px; color:var(--sub); margin-top:8px}
+</style>
+</head>
+<body>
+
+<!-- パスコード -->
+<div id="gate" class="gate hide">
+  <h2 style="margin:0">🔒 管理画面</h2>
+  <p class="muted">パスコードを入力してください</p>
+  <input type="password" id="pass" inputmode="numeric" placeholder="••••">
+  <button class="act" style="width:100%" id="gateBtn">開く</button>
+</div>
+
+<div id="app" class="hide">
+<header>
+  <h1>🏗️ 勤怠管理</h1>
+  <span class="sp"></span>
+  <a href="index.html">＋ 入力フォームへ</a>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button data-tab="summary" class="on">📊 集計・Excel出力</button>
+    <button data-tab="records">📝 記録一覧</button>
+    <button data-tab="workers">👷 従業員</button>
+    <button data-tab="sites">📍 現場</button>
+  </div>
+
+  <!-- 期間フィルタ -->
+  <div class="card" id="filterCard">
+    <div class="filters">
+      <div class="f"><label>開始日</label><input type="date" id="fFrom"></div>
+      <div class="f"><label>終了日</label><input type="date" id="fTo"></div>
+      <div class="f"><label>現場</label><select id="fSite"><option value="">すべて</option></select></div>
+      <div class="f"><label>氏名</label><select id="fWorker"><option value="">すべて</option></select></div>
+      <button class="act ghost" id="thisMonth">今月</button>
+      <button class="act" id="applyFilter">絞り込み</button>
+    </div>
+    <div class="muted" id="filterInfo"></div>
+  </div>
+
+  <!-- 集計タブ -->
+  <section id="tab-summary">
+    <div class="kpis">
+      <div class="kpi"><div class="v" id="kpiDays">0</div><div class="l">延べ出勤日数</div></div>
+      <div class="kpi"><div class="v" id="kpiHours">0</div><div class="l">延べ実働時間</div></div>
+      <div class="kpi"><div class="v" id="kpiWorkers">0</div><div class="l">出勤した人数</div></div>
+      <div class="kpi"><div class="v" id="kpiRecs">0</div><div class="l">報告件数</div></div>
+    </div>
+
+    <div class="card">
+      <h2>👷 従業員別 集計（出勤日数・実働時間）</h2>
+      <div class="scroll">
+        <table id="tblCost">
+          <thead><tr>
+            <th>氏名</th><th class="num">出勤日数</th><th class="num">実働時間</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="note">※ 給与・人件費はこの画面には表示されません。Excel出力後、Excel上で単価を入力すると人件費が自動計算されます。</div>
+    </div>
+
+    <div class="card">
+      <h2>📍 現場 × 氏名（出勤日数）クロス集計</h2>
+      <div class="scroll">
+        <table id="tblCross"><thead></thead><tbody></tbody></table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⬇️ Excel出力（給与・人件費はここで）</h2>
+      <p class="muted">下のボタンで、現在の絞り込み範囲を1つのExcelファイル（複数シート）に出力します。<br>
+        出力したExcelの「<b>従業員マスタ</b>」シートで各人の<b>給与方式・単価を入力</b>すると、「<b>人件費サマリ</b>」シートの人件費が<b>数式で自動計算</b>されます（給与はアプリには保存されません）。</p>
+      <button class="act green" id="exportBtn">📊 Excelファイルをダウンロード</button>
+    </div>
+  </section>
+
+  <!-- 記録一覧タブ -->
+  <section id="tab-records" class="hide">
+    <div class="card">
+      <h2>📝 記録一覧 <span class="muted" id="recCount"></span></h2>
+      <div class="scroll">
+        <table id="tblRecords">
+          <thead><tr>
+            <th>作業日</th><th>現場</th><th>氏名</th><th>作業内容</th>
+            <th class="num">区分</th><th>時間</th><th class="num">実働h</th><th>備考</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 従業員タブ -->
+  <section id="tab-workers" class="hide">
+    <div class="card">
+      <h2>👷 従業員マスタ</h2>
+      <div class="addrow">
+        <input type="text" id="wName" placeholder="氏名" style="width:180px">
+        <button class="act" id="wAdd">追加</button>
+      </div>
+      <div class="scroll">
+        <table id="tblWorkers">
+          <thead><tr><th>氏名</th><th>状態</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="note">ここで登録した氏名が、入力フォームの氏名プルダウンに表示されます。<b>給与・人件費はアプリでは扱いません</b>（Excel出力後にExcel上で入力・計算します）。</div>
+    </div>
+  </section>
+
+  <!-- 現場タブ -->
+  <section id="tab-sites" class="hide">
+    <div class="card">
+      <h2>📍 現場マスタ</h2>
+      <div class="addrow">
+        <input type="text" id="sName" placeholder="現場名（例：◯◯ビル新築）" style="width:240px">
+        <button class="act" id="sAdd">追加</button>
+      </div>
+      <div class="scroll">
+        <table id="tblSites">
+          <thead><tr><th>現場名</th><th>状態</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="note">入力フォームの現場プルダウンに表示されます。職人が「その他」で入力した現場名もそのまま集計されます。</div>
+    </div>
+  </section>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  const CFG=window.KINTAI_CONFIG||{};
+  const $=id=>document.getElementById(id);
+  const dbRoot=CFG.dbRoot||'kintai';
+  const yen=n=> '¥'+Math.round(n||0).toLocaleString('ja-JP');
+  const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const toast=(m,t)=>{const e=$('toast'); e.textContent=m; e.className='toast show'+(t?' '+t:''); clearTimeout(e._t); e._t=setTimeout(()=>e.className='toast',2400);};
+  const z=n=>String(n).padStart(2,'0');
+  const todayStr=()=>{const d=new Date(); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());};
+
+  let db=null;
+  let workers={}, sites={}, records={}; // key -> obj
+
+  // 給与はアプリでは一切扱わない。旧バージョンでFirebaseに給与が残っていたら除去する。
+  function stripCloudWages(){
+    for(const k in workers){ const w=workers[k]; if(!w) continue;
+      if(w.wage!=null || w.wageType!=null){
+        ref('workers/'+k+'/wage').remove(); ref('workers/'+k+'/wageType').remove();
+        delete w.wage; delete w.wageType;
+      }
+    }
+  }
+
+  // ---------- パスコード ----------
+  function gate(){
+    const need=CFG.adminPasscode||'';
+    if(!need){ startApp(); return; }
+    if(sessionStorage.getItem('kintai_admin_ok')==='1'){ startApp(); return; }
+    $('gate').classList.remove('hide');
+    const submit=()=>{ if($('pass').value===String(need)){ sessionStorage.setItem('kintai_admin_ok','1'); $('gate').classList.add('hide'); startApp(); }
+      else { toast('パスコードが違います','err'); $('pass').value=''; } };
+    $('gateBtn').onclick=submit;
+    $('pass').addEventListener('keydown',e=>{if(e.key==='Enter')submit();});
+    $('pass').focus();
+  }
+
+  function initFirebase(){
+    try{ if(typeof firebase==='undefined'||!CFG.firebase||!CFG.firebase.databaseURL) return false;
+      firebase.initializeApp(CFG.firebase); db=firebase.database(); return true;
+    }catch(e){ console.error(e); return false; }
+  }
+  const ref=p=>db.ref(dbRoot+'/'+p);
+
+  function startApp(){
+    $('app').classList.remove('hide');
+    if(!initFirebase()){ toast('Firebase未設定です（config.js）','err'); return; }
+    // 期間：デフォルト今月
+    setThisMonth();
+    bindTabs(); bindFilters(); bindMasters(); $('exportBtn').onclick=exportExcel;
+    // データ購読
+    ref('workers').on('value',s=>{ workers=s.val()||{}; stripCloudWages(); renderWorkers(); fillWorkerFilter(); renderAll(); });
+    ref('sites').on('value',s=>{ sites=s.val()||{}; renderSites(); fillSiteFilter(); });
+    ref('records').on('value',s=>{ records=s.val()||{}; renderAll(); });
+  }
+
+  // ---------- タブ ----------
+  function bindTabs(){
+    document.querySelectorAll('.tabs button').forEach(b=>{
+      b.onclick=()=>{
+        document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
+        b.classList.add('on');
+        ['summary','records','workers','sites'].forEach(t=>$('tab-'+t).classList.add('hide'));
+        $('tab-'+b.dataset.tab).classList.remove('hide');
+        $('filterCard').style.display=(b.dataset.tab==='workers'||b.dataset.tab==='sites')?'none':'';
+      };
+    });
+  }
+
+  // ---------- フィルタ ----------
+  function setThisMonth(){ const d=new Date(); const y=d.getFullYear(),m=d.getMonth();
+    $('fFrom').value=y+'-'+z(m+1)+'-01'; const last=new Date(y,m+1,0).getDate(); $('fTo').value=y+'-'+z(m+1)+'-'+z(last); }
+  function bindFilters(){
+    $('thisMonth').onclick=()=>{ setThisMonth(); renderAll(); };
+    $('applyFilter').onclick=renderAll;
+    ['fFrom','fTo','fSite','fWorker'].forEach(id=>$(id).addEventListener('change',renderAll));
+  }
+  function fillSiteFilter(){ const sel=$('fSite'); const cur=sel.value; sel.innerHTML='<option value="">すべて</option>';
+    Object.values(sites).filter(s=>s&&s.active!==false).sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'))
+      .forEach(s=>{const o=document.createElement('option');o.value=s.name;o.textContent=s.name;sel.appendChild(o);}); sel.value=cur; }
+  function fillWorkerFilter(){ const sel=$('fWorker'); const cur=sel.value; sel.innerHTML='<option value="">すべて</option>';
+    Object.values(workers).filter(w=>w&&w.active!==false).sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'))
+      .forEach(w=>{const o=document.createElement('option');o.value=w.name;o.textContent=w.name;sel.appendChild(o);}); sel.value=cur; }
+
+  function filteredRecords(){
+    const from=$('fFrom').value, to=$('fTo').value, fs=$('fSite').value, fw=$('fWorker').value;
+    const out=[];
+    for(const k in records){ const r=records[k]; if(!r) continue;
+      if(from && (r.date||'')<from) continue;
+      if(to && (r.date||'')>to) continue;
+      if(fs && r.siteName!==fs) continue;
+      if(fw && r.workerName!==fw) continue;
+      out.push(Object.assign({_key:k}, r));
+    }
+    out.sort((a,b)=> (a.date||'').localeCompare(b.date||'') || (a.createdAt||0)-(b.createdAt||0));
+    return out;
+  }
+
+  // ---------- 集計・描画 ----------
+  function renderAll(){
+    if(!db) return;
+    const recs=filteredRecords();
+    $('filterInfo').textContent = recs.length+' 件（'+($('fFrom').value||'最初')+' 〜 '+($('fTo').value||'最後')+'）';
+    // 従業員別集計
+    const byW={}; // name -> {days,hours}
+    let totDays=0, totHours=0;
+    recs.forEach(r=>{ const n=r.workerName||'(未設定)';
+      byW[n]=byW[n]||{days:0,hours:0};
+      const du=(r.dayUnit!=null)?Number(r.dayUnit):1; byW[n].days+=du; totDays+=du;
+      const h=Number(r.hours)||0; byW[n].hours+=h; totHours+=h;
+    });
+    // 従業員別 集計表（出勤日数・実働時間のみ。給与は扱わない）
+    const names=Object.keys(byW).sort((a,b)=>a.localeCompare(b,'ja'));
+    let rows='';
+    names.forEach(n=>{ const a=byW[n];
+      rows+='<tr><td>'+esc(n)+'</td>'+
+        '<td class="num">'+round1(a.days)+'</td><td class="num">'+round1(a.hours)+'</td></tr>';
+    });
+    rows+='<tr class="total"><td>合計</td><td class="num">'+round1(totDays)+'</td><td class="num">'+round1(totHours)+'</td></tr>';
+    $('tblCost').querySelector('tbody').innerHTML = (names.length? rows : '<tr><td colspan="3" class="muted">該当データなし</td></tr>');
+
+    // KPI
+    $('kpiDays').textContent=round1(totDays);
+    $('kpiHours').textContent=round1(totHours);
+    $('kpiWorkers').textContent=names.length;
+    $('kpiRecs').textContent=recs.length;
+
+    // クロス集計（現場×氏名 出勤日数）
+    renderCross(recs, names);
+    // 記録一覧
+    renderRecords(recs);
+  }
+  function round1(n){ return Math.round((n||0)*10)/10; }
+
+  function renderCross(recs, names){
+    const siteSet=[...new Set(recs.map(r=>r.siteName||'(未設定)'))].sort((a,b)=>a.localeCompare(b,'ja'));
+    const cell={}; const colTot={}; const rowTot={};
+    siteSet.forEach(s=>colTot[s]=0);
+    recs.forEach(r=>{ const s=r.siteName||'(未設定)', n=r.workerName||'(未設定)';
+      const du=(r.dayUnit!=null)?Number(r.dayUnit):1;
+      cell[s+'||'+n]=(cell[s+'||'+n]||0)+du; colTot[s]=(colTot[s]||0)+du; rowTot[n]=(rowTot[n]||0)+du; });
+    const useNames = names.length? names : [...new Set(recs.map(r=>r.workerName||'(未設定)'))];
+    let head='<tr><th>現場 ＼ 氏名</th>'+useNames.map(n=>'<th class="num">'+esc(n)+'</th>').join('')+'<th class="num">計</th></tr>';
+    let body='';
+    siteSet.forEach(s=>{ let line='<tr><td>'+esc(s)+'</td>';
+      useNames.forEach(n=>{ const v=cell[s+'||'+n]||0; line+='<td class="num">'+(v?round1(v):'')+'</td>'; });
+      line+='<td class="num"><b>'+round1(colTot[s]||0)+'</b></td></tr>'; body+=line; });
+    let foot='<tr class="total"><td>計</td>'+useNames.map(n=>'<td class="num">'+round1(rowTot[n]||0)+'</td>').join('')+
+      '<td class="num">'+round1(Object.values(colTot).reduce((a,b)=>a+b,0))+'</td></tr>';
+    const t=$('tblCross');
+    t.querySelector('thead').innerHTML=head;
+    t.querySelector('tbody').innerHTML=(body||'<tr><td class="muted">該当データなし</td></tr>')+ (body?foot:'');
+  }
+
+  function renderRecords(recs){
+    $('recCount').textContent='（'+recs.length+'件）';
+    const tb=$('tblRecords').querySelector('tbody');
+    if(!recs.length){ tb.innerHTML='<tr><td colspan="9" class="muted">該当データなし</td></tr>'; return; }
+    tb.innerHTML = recs.slice().reverse().map(r=>{
+      const time=(r.start&&r.end)?(r.start+'〜'+r.end):'';
+      const unit=(r.dayUnit===0.5)?'半日':'終日';
+      return '<tr>'+
+        '<td>'+esc(r.date)+'</td><td>'+esc(r.siteName)+'</td><td>'+esc(r.workerName)+'</td>'+
+        '<td>'+esc(r.work)+'</td><td class="num">'+unit+'</td><td>'+esc(time)+'</td>'+
+        '<td class="num">'+(r.hours!=null&&r.hours!==''?round1(r.hours):'')+'</td><td>'+esc(r.note||'')+'</td>'+
+        '<td><button class="sm del" data-del="'+r._key+'">削除</button></td></tr>';
+    }).join('');
+    tb.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>{
+      if(confirm('この記録を削除しますか？')) ref('records/'+b.dataset.del).remove().then(()=>toast('削除しました','ok'));
+    });
+  }
+
+  // ---------- 従業員マスタ ----------
+  function bindMasters(){
+    $('wAdd').onclick=()=>{ const name=$('wName').value.trim();
+      if(!name){ toast('氏名を入力','err'); return; }
+      ref('workers').push({name, active:true, createdAt:Date.now()})  // クラウドには氏名のみ（給与なし）
+        .then(()=>{ $('wName').value=''; toast('追加しました','ok'); });
+    };
+    $('sAdd').onclick=()=>{ const name=$('sName').value.trim(); if(!name){toast('現場名を入力','err'); return;}
+      ref('sites').push({name, active:true, createdAt:Date.now()}).then(()=>{ $('sName').value=''; toast('追加しました','ok'); });
+    };
+  }
+
+  function renderWorkers(){
+    const tb=$('tblWorkers').querySelector('tbody');
+    const list=Object.entries(workers).map(([k,w])=>Object.assign({_key:k},w)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'));
+    if(!list.length){ tb.innerHTML='<tr><td colspan="3" class="muted">従業員が未登録です。上のフォームから追加してください。</td></tr>'; return; }
+    tb.innerHTML=list.map(w=>{
+      return '<tr>'+
+        '<td><input data-rename="'+w._key+'" data-old="'+esc(w.name)+'" value="'+esc(w.name)+'" style="width:180px"></td>'+
+        '<td>'+(w.active===false?'<span class="muted">無効</span>':'<span class="pill daily">有効</span>')+'</td>'+
+        '<td><button class="sm" data-toggle="'+w._key+'">'+(w.active===false?'有効化':'無効化')+'</button> '+
+            '<button class="sm del" data-delw="'+w._key+'">削除</button></td></tr>';
+    }).join('');
+    // 氏名変更
+    tb.querySelectorAll('input[data-rename]').forEach(el=> el.onchange=()=>{
+      const newName=el.value.trim(), oldName=el.dataset.old;
+      if(!newName){ el.value=oldName; return; }
+      ref('workers/'+el.dataset.rename+'/name').set(newName).then(()=>toast('保存しました','ok'));
+    });
+    tb.querySelectorAll('[data-toggle]').forEach(b=> b.onclick=()=>{ const w=workers[b.dataset.toggle];
+      ref('workers/'+b.dataset.toggle+'/active').set(!(w.active===false)).then(()=>toast('更新しました','ok')); });
+    tb.querySelectorAll('[data-delw]').forEach(b=> b.onclick=()=>{ if(confirm('削除しますか？（過去の記録は残ります）')) ref('workers/'+b.dataset.delw).remove(); });
+  }
+
+  function renderSites(){
+    const tb=$('tblSites').querySelector('tbody');
+    const list=Object.entries(sites).map(([k,s])=>Object.assign({_key:k},s)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'));
+    if(!list.length){ tb.innerHTML='<tr><td colspan="3" class="muted">現場が未登録です。</td></tr>'; return; }
+    tb.innerHTML=list.map(s=>'<tr>'+
+      '<td><input data-sk="'+s._key+'" value="'+esc(s.name)+'" style="width:260px"></td>'+
+      '<td>'+(s.active===false?'<span class="muted">無効</span>':'<span class="pill daily">有効</span>')+'</td>'+
+      '<td><button class="sm" data-stoggle="'+s._key+'">'+(s.active===false?'有効化':'無効化')+'</button> '+
+          '<button class="sm del" data-dels="'+s._key+'">削除</button></td></tr>').join('');
+    tb.querySelectorAll('input[data-sk]').forEach(el=> el.onchange=()=> ref('sites/'+el.dataset.sk+'/name').set(el.value.trim()).then(()=>toast('保存しました','ok')));
+    tb.querySelectorAll('[data-stoggle]').forEach(b=> b.onclick=()=>{ const s=sites[b.dataset.stoggle];
+      ref('sites/'+b.dataset.stoggle+'/active').set(!(s.active===false)).then(()=>toast('更新しました','ok')); });
+    tb.querySelectorAll('[data-dels]').forEach(b=> b.onclick=()=>{ if(confirm('削除しますか？')) ref('sites/'+b.dataset.dels).remove(); });
+  }
+
+  // ---------- Excel出力（数式入り） ----------
+  function exportExcel(){
+    if(typeof XLSX==='undefined'){ toast('Excelライブラリ未読込（ネット接続を確認）','err'); return; }
+    const recs=filteredRecords();
+    if(!recs.length){ toast('出力対象のデータがありません','err'); return; }
+    const wb=XLSX.utils.book_new();
+    const from=$('fFrom').value||'', to=$('fTo').value||'';
+
+    // --- (1) 従業員マスタ（給与方式・単価は管理者がExcel上で入力する欄。初期は日給・空欄） ---
+    const nameSet=new Set(Object.values(workers).filter(w=>w).map(w=>w.name));
+    recs.forEach(r=>{ if(r.workerName) nameSet.add(r.workerName); }); // 記録に出てくるが未登録の氏名も拾う
+    const masterNames=[...nameSet].sort((a,b)=>(a||'').localeCompare(b||'','ja'));
+    const masterAoa=[['氏名','給与方式（日給/時給）','単価(円)']];
+    masterNames.forEach(n=> masterAoa.push([n, '日給', '']));  // ← 単価はここに入力してください
+    const wsMaster=XLSX.utils.aoa_to_sheet(masterAoa);
+    wsMaster['!cols']=[{wch:16},{wch:18},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, wsMaster, '従業員マスタ');
+
+    // --- (2) 勤怠記録（明細） ---
+    const recAoa=[['作業日','現場','氏名','作業内容','勤務区分','工数(日)','開始','終了','休憩(分)','実働(時間)','備考']];
+    recs.forEach(r=> recAoa.push([
+      r.date||'', r.siteName||'', r.workerName||'', r.work||'',
+      (r.dayUnit===0.5?'半日':'終日'), (r.dayUnit!=null?Number(r.dayUnit):1),
+      r.start||'', r.end||'', (r.breakMin!=null?Number(r.breakMin):''),
+      (r.hours!=null&&r.hours!==''?Number(r.hours):''), r.note||''
+    ]));
+    const wsRec=XLSX.utils.aoa_to_sheet(recAoa);
+    wsRec['!cols']=[{wch:11},{wch:18},{wch:12},{wch:28},{wch:9},{wch:8},{wch:7},{wch:7},{wch:9},{wch:9},{wch:18}];
+    XLSX.utils.book_append_sheet(wb, wsRec, '勤怠記録');
+
+    // 集計（氏名別）
+    const byW={};
+    recs.forEach(r=>{ const n=r.workerName||'(未設定)'; byW[n]=byW[n]||{days:0,hours:0};
+      byW[n].days+=(r.dayUnit!=null?Number(r.dayUnit):1); byW[n].hours+=(Number(r.hours)||0); });
+    const names=Object.keys(byW).sort((a,b)=>a.localeCompare(b,'ja'));
+
+    // --- (3) 人件費サマリ（数式入り：マスタ単価を参照） ---
+    // 列: A氏名 B給与方式 C単価(VLOOKUP) D出勤日数 E実働時間 F人件費(IF)
+    const sumAoa=[['氏名','給与方式','単価(円)','出勤日数','実働時間(h)','人件費(円)']];
+    names.forEach(n=> sumAoa.push([n,'','', round1(byW[n].days), round1(byW[n].hours), '']));
+    const wsSum=XLSX.utils.aoa_to_sheet(sumAoa);
+    // 数式を埋め込む（行2..N+1）。給与方式・単価は「従業員マスタ」シートから参照（VLOOKUP）。
+    // 単価は管理者がマスタに入力 → ここの人件費が自動計算される。出力直後は単価未入力なので0。
+    let sumD=0,sumE=0;
+    for(let i=0;i<names.length;i++){
+      const row=i+2; // Excelの行番号
+      sumD+=byW[names[i]].days; sumE+=byW[names[i]].hours;
+      // B: 給与方式 をマスタから取得
+      wsSum['B'+row]={t:'s', v:'日給', f:'IFERROR(VLOOKUP(A'+row+",'従業員マスタ'!$A:$C,2,FALSE),\"日給\")"};
+      // C: 単価 をマスタから取得（マスタの単価セルに入力）
+      wsSum['C'+row]={t:'n', v:0, f:"IFERROR(VLOOKUP(A"+row+",'従業員マスタ'!$A:$C,3,FALSE),0)"};
+      // F: 人件費 = 時給なら 単価×時間, 日給なら 単価×日数
+      wsSum['F'+row]={t:'n', v:0, f:'IF(B'+row+'="時給",C'+row+'*E'+row+',C'+row+'*D'+row+')'};
+    }
+    // 合計行
+    const totalRow=names.length+2;
+    wsSum['A'+totalRow]={t:'s', v:'合計'};
+    wsSum['D'+totalRow]={t:'n', v:round1(sumD), f:'SUM(D2:D'+(totalRow-1)+')'};
+    wsSum['E'+totalRow]={t:'n', v:round1(sumE), f:'SUM(E2:E'+(totalRow-1)+')'};
+    wsSum['F'+totalRow]={t:'n', v:0, f:'SUM(F2:F'+(totalRow-1)+')'};
+    wsSum['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:totalRow-1,c:5}});
+    wsSum['!cols']=[{wch:16},{wch:10},{wch:12},{wch:10},{wch:12},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, wsSum, '人件費サマリ');
+
+    // --- (4) 現場×氏名 クロス集計（出勤日数） ---
+    const siteSet=[...new Set(recs.map(r=>r.siteName||'(未設定)'))].sort((a,b)=>a.localeCompare(b,'ja'));
+    const cell={};
+    recs.forEach(r=>{ const s=r.siteName||'(未設定)', n=r.workerName||'(未設定)';
+      cell[s+'||'+n]=(cell[s+'||'+n]||0)+(r.dayUnit!=null?Number(r.dayUnit):1); });
+    const crossAoa=[['現場 ＼ 氏名', ...names, '計']];
+    siteSet.forEach(s=>{ const row=[s]; let rt=0;
+      names.forEach(n=>{ const v=cell[s+'||'+n]||0; row.push(v?round1(v):''); rt+=v; });
+      row.push(round1(rt)); crossAoa.push(row); });
+    const colTotRow=['計']; names.forEach(n=>{ let c=0; siteSet.forEach(s=> c+=cell[s+'||'+n]||0); colTotRow.push(round1(c)); });
+    colTotRow.push(round1(siteSet.reduce((a,s)=>{names.forEach(n=>a+=cell[s+'||'+n]||0);return a;},0)));
+    crossAoa.push(colTotRow);
+    const wsCross=XLSX.utils.aoa_to_sheet(crossAoa);
+    wsCross['!cols']=[{wch:20}, ...names.map(()=>({wch:9})), {wch:8}];
+    XLSX.utils.book_append_sheet(wb, wsCross, '現場別集計');
+
+    const fname='勤怠_人件費_'+(from||'all')+'_'+(to||'all')+'.xlsx';
+    XLSX.writeFile(wb, fname);
+    toast('Excelを出力しました','ok');
+  }
+
+  // ---------- 起動 ----------
+  document.addEventListener('DOMContentLoaded', gate);
+})();
+</script>
+</body>
+</html>
