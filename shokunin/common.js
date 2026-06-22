@@ -88,5 +88,27 @@
     };
   };
 
+  // 書き込み失敗（Firebaseの権限エラー等）を必ず画面に表示する。
+  // これまでは .catch が無く、失敗してもメッセージが出ない「沈黙の失敗」だった。
+  if (global.DB) {
+    ["set", "update", "remove", "push"].forEach(function (m) {
+      var orig = global.DB[m];
+      if (typeof orig !== "function") return;
+      global.DB[m] = function () {
+        return orig.apply(global.DB, arguments).catch(function (e) {
+          var msg = (e && e.message) || String(e);
+          if (/permission|denied/i.test(msg)) {
+            H.toast("保存できませんでした：Firebaseのルールで書き込みが拒否されています（READMEのルール設定を参照）", "err");
+          } else {
+            H.toast("保存できませんでした：" + msg, "err");
+          }
+          throw e; // 後続の「成功トースト」を実行させないために再スロー
+        });
+      };
+    });
+    // 上の .catch で通知済みの拒否は、未処理拒否の警告として再表示しない
+    global.addEventListener("unhandledrejection", function (e) { e.preventDefault(); });
+  }
+
   global.H = H;
 })(window);

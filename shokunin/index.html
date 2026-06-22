@@ -106,6 +106,12 @@
   .upd-row{display:flex; align-items:center; gap:8px; padding:10px; border:1px solid var(--line); border-radius:11px; margin-bottom:9px}
   .upd-row .nm{font-weight:800; flex:1}
   .upd-row select{width:auto; min-width:104px; padding:8px}
+  .upd-acts{display:flex; gap:7px; margin:-4px 0 12px}
+  .upd-acts .btn{flex:1}
+  .checkgrid{display:flex; flex-wrap:wrap; gap:7px}
+  .checkgrid label{display:inline-flex; align-items:center; gap:5px; background:#f4f6f8; border:1.5px solid var(--line); border-radius:18px; padding:6px 11px; font-size:13px; font-weight:700; color:var(--ink); cursor:pointer; margin:0}
+  .checkgrid input{width:auto; accent-color:var(--brand)}
+  .checkgrid label.on{background:var(--chip); border-color:var(--brand); color:var(--brand-dark)}
 </style>
 </head>
 <body>
@@ -150,12 +156,13 @@
     <div id="coList"></div>
   </section>
 
-  <!-- ============ 空き更新（自社） ============ -->
+  <!-- ============ 自社の職人（登録・空き更新） ============ -->
   <section class="page" id="page-update">
     <div class="card">
       <label for="myCompany">自社（工務店）を選択</label>
       <select id="myCompany"><option value="">— 選択してください —</option></select>
-      <div class="count" style="margin-top:6px">選ぶとこの端末に記憶されます。自社の職人の空き状況をその場で変更できます。</div>
+      <div class="count" style="margin-top:6px">選ぶとこの端末に記憶されます。自社の職人の登録・空き状況の変更ができます。</div>
+      <button class="btn full" id="addCraftBtn" style="margin-top:10px; display:none">＋ 職人を登録</button>
     </div>
     <div id="updateList"></div>
   </section>
@@ -184,12 +191,38 @@
   </div>
 </div>
 
+<!-- 職人 登録/編集モーダル（利用者側・自社の職人用） -->
+<div class="ov" id="craftOv">
+  <div class="sheet">
+    <h3 id="ceTitle">職人を登録</h3>
+    <div class="count" id="ceSub"></div>
+    <div class="field"><label class="req">氏名</label><input type="text" id="ceName" placeholder="例）田中 一郎"></div>
+    <div class="row">
+      <div class="field"><label>年齢</label><input type="number" id="ceAge" min="0" max="99" placeholder="例）42"></div>
+      <div class="field"><label>性別</label>
+        <select id="ceGender"><option value="">—</option><option>男</option><option>女</option><option>その他</option></select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>単価</label><input type="number" id="cePrice" min="0" placeholder="例）22000"></div>
+      <div class="field"><label>単位</label>
+        <select id="ceUnit"><option value="day">日給（/日）</option><option value="hour">時給（/時）</option></select></div>
+    </div>
+    <div class="field"><label>得意作業</label><div class="checkgrid" id="ceGood"></div></div>
+    <div class="field"><label>NG作業</label><div class="checkgrid" id="ceNg"></div></div>
+    <div class="field"><label>保有資格</label><div class="checkgrid" id="ceQual"></div></div>
+    <div class="row">
+      <button class="btn ghost" id="ceCancel">キャンセル</button>
+      <button class="btn" id="ceSave">保存する</button>
+    </div>
+  </div>
+</div>
+
 <!-- 下部タブ -->
 <nav class="tabbar">
   <button class="on" data-page="find"><span class="ic">🔍</span>職人をさがす</button>
   <button data-page="board"><span class="ic">📡</span>空き状況</button>
   <button data-page="co"><span class="ic">🏢</span>工務店</button>
-  <button data-page="update"><span class="ic">🔄</span>空き更新</button>
+  <button data-page="update"><span class="ic">👷</span>自社の職人</button>
 </nav>
 
 <script src="data.js"></script>
@@ -358,9 +391,19 @@ function renderUpdate(){
   const myKey=document.getElementById('myCompany').value||localStorage.getItem('shokunin_mycompany')||'';
   document.getElementById('myCompany').value=myKey;
   const list=document.getElementById('updateList');
-  if(!myKey){ list.innerHTML='<div class="empty">自社を選択すると、自社の職人の空き状況をここで切り替えられます。</div>'; return; }
+  const addBtn=document.getElementById('addCraftBtn');
+  if(!myKey){
+    addBtn.style.display='none';
+    if(!H.toArr(companies).length){
+      list.innerHTML='<div class="empty">まず工務店の登録が必要です。<br>管理画面（admin.html）から自社を登録してください。</div>';
+    }else{
+      list.innerHTML='<div class="empty">自社を選択すると、自社の職人を登録・編集できます。</div>';
+    }
+    return;
+  }
+  addBtn.style.display='block';
   const arr=H.toArr(craftsmen).filter(k=>k.companyKey===myKey);
-  if(!arr.length){ list.innerHTML='<div class="empty">自社の職人が登録されていません。<br>管理画面（admin）から登録してください。</div>'; return; }
+  if(!arr.length){ list.innerHTML='<div class="empty">自社の職人がまだ登録されていません。<br>上の「＋ 職人を登録」から追加してください。</div>'; return; }
   list.innerHTML='<div class="card">'+arr.map(k=>`
     <div class="upd-row">
       <div class="nm">${H.esc(k.name)}</div>
@@ -368,8 +411,12 @@ function renderUpdate(){
         ${H.statuses.map(s=>`<option value="${s.key}" ${k.status===s.key?'selected':''}>${s.label}</option>`).join('')}
       </select>
     </div>
-    <div class="field" style="margin:-2px 0 12px">
+    <div class="field" style="margin:-2px 0 8px">
       <input type="text" class="updMemo" data-key="${k._key}" value="${H.esc(k.availMemo||'')}" placeholder="空き状況メモ（例：来週空きあり）">
+    </div>
+    <div class="upd-acts">
+      <button class="btn ghost sm ce-edit" data-key="${k._key}">✏️ 情報を編集</button>
+      <button class="btn ghost sm ce-del" data-key="${k._key}" style="color:var(--warn);border-color:#f0c4c0">🗑 削除</button>
     </div>`).join('')+'</div>';
   list.querySelectorAll('.updSt').forEach(sel=>sel.onchange=()=>{
     DB.update('craftsmen/'+sel.dataset.key,{status:sel.value,updatedAt:Date.now()}).then(()=>H.toast('空き状況を更新しました','ok'));
@@ -377,7 +424,72 @@ function renderUpdate(){
   list.querySelectorAll('.updMemo').forEach(inp=>{
     inp.onchange=()=>DB.update('craftsmen/'+inp.dataset.key,{availMemo:inp.value.trim(),updatedAt:Date.now()}).then(()=>H.toast('メモを保存しました','ok'));
   });
+  list.querySelectorAll('.ce-edit').forEach(b=>b.onclick=()=>openCraftForm(b.dataset.key));
+  list.querySelectorAll('.ce-del').forEach(b=>b.onclick=()=>{
+    const k=craftsmen[b.dataset.key]||{};
+    if(!confirm('「'+(k.name||'')+'」を削除しますか？')) return;
+    DB.remove('craftsmen/'+b.dataset.key).then(()=>H.toast('削除しました','ok'));
+  });
 }
+
+// ===== 自社の職人 登録/編集モーダル =====
+let editCraftKey=null;
+(function(){
+  buildChecks('ceGood', H.workTypes);
+  buildChecks('ceNg', H.workTypes);
+  buildChecks('ceQual', H.qualifications);
+})();
+function buildChecks(id, arr){
+  const box=document.getElementById(id);
+  box.innerHTML=arr.map(x=>`<label><input type="checkbox" value="${H.esc(x)}">${H.esc(x)}</label>`).join('');
+  box.querySelectorAll('label').forEach(l=>{
+    const cb=l.querySelector('input');
+    const sync=()=>l.classList.toggle('on',cb.checked);
+    cb.addEventListener('change',sync); sync();
+  });
+}
+function getChecked(id){ return [...document.querySelectorAll('#'+id+' input:checked')].map(c=>c.value); }
+function setChecked(id, vals){
+  const set=new Set(vals||[]);
+  document.querySelectorAll('#'+id+' input').forEach(c=>{ c.checked=set.has(c.value); c.parentElement.classList.toggle('on',c.checked); });
+}
+function openCraftForm(key){
+  const myKey=localStorage.getItem('shokunin_mycompany')||'';
+  if(!myKey){ H.toast('先に自社を選択してください','err'); return; }
+  editCraftKey=key||null;
+  const k=key?(craftsmen[key]||{}):{};
+  document.getElementById('ceTitle').textContent=key?'職人の情報を編集':'職人を登録';
+  document.getElementById('ceSub').textContent='所属：'+((companies[myKey]||{}).name||'');
+  document.getElementById('ceName').value=k.name||'';
+  document.getElementById('ceAge').value=k.age||'';
+  document.getElementById('ceGender').value=k.gender||'';
+  document.getElementById('cePrice').value=k.price||'';
+  document.getElementById('ceUnit').value=k.unit||'day';
+  setChecked('ceGood',k.good); setChecked('ceNg',k.ng); setChecked('ceQual',k.quals);
+  document.getElementById('craftOv').classList.add('on');
+}
+document.getElementById('addCraftBtn').onclick=()=>openCraftForm(null);
+function closeCraftForm(){ editCraftKey=null; document.getElementById('craftOv').classList.remove('on'); }
+document.getElementById('ceCancel').onclick=closeCraftForm;
+document.getElementById('craftOv').onclick=e=>{ if(e.target.id==='craftOv') closeCraftForm(); };
+document.getElementById('ceSave').onclick=()=>{
+  const myKey=localStorage.getItem('shokunin_mycompany')||'';
+  const name=document.getElementById('ceName').value.trim();
+  if(!name){ H.toast('氏名を入力してください','err'); return; }
+  const data={
+    name, companyKey:myKey, companyName:(companies[myKey]||{}).name||'',
+    age:+document.getElementById('ceAge').value||null,
+    gender:document.getElementById('ceGender').value,
+    price:+document.getElementById('cePrice').value||null,
+    unit:document.getElementById('ceUnit').value,
+    good:getChecked('ceGood'), ng:getChecked('ceNg'), quals:getChecked('ceQual'),
+    updatedAt:Date.now()
+  };
+  const p=editCraftKey
+    ? DB.update('craftsmen/'+editCraftKey,data)
+    : DB.push('craftsmen', Object.assign({status:'free',availMemo:'',skillSum:0,skillCount:0,skillNotes:'',createdAt:Date.now()},data));
+  p.then(()=>{ document.getElementById('craftOv').classList.remove('on'); H.toast(editCraftKey?'職人情報を更新しました':'職人を登録しました','ok'); });
+};
 
 // ===== LINE共有 =====
 // 公式アカウント不要。スマホは共有シート（LINEを選択）、PC等はコピー＋LINE共有画面を開く。
