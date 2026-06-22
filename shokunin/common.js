@@ -117,10 +117,10 @@
         C3: { name: "鈴木住建", tel: "04-7555-6666", area: "千葉県／東葛エリア", contact: "鈴木 一郎", ownerEmail: "suzuki@example.com", notes: "", createdAt: now }
       },
       craftsmen: {
-        K1: { name: "田中 一郎", companyKey: "C1", companyName: "山田工務店", age: 42, gender: "男", quals: ["建築大工技能士(1級)", "職長・安全衛生責任者"], good: ["造作大工", "建て方", "和室・数寄屋"], ng: ["型枠大工"], price: 24000, unit: "day", status: "free", availMemo: "来週いっぱい空きあり", createdAt: now, updatedAt: now },
-        K2: { name: "高橋 修", companyKey: "C2", companyName: "佐藤建設", age: 35, gender: "男", quals: ["建築大工技能士(2級)", "丸のこ等取扱作業従事者"], good: ["内装下地(軽天・ボード)", "フローリング・床張り"], ng: ["宮大工・社寺"], price: 22000, unit: "day", status: "partial", availMemo: "午前のみ対応可", createdAt: now, updatedAt: now },
-        K3: { name: "伊藤 健", companyKey: "C1", companyName: "山田工務店", age: 29, gender: "男", quals: ["玉掛け", "足場の組立て等作業主任者"], good: ["建て方", "在来軸組"], ng: ["造作大工"], price: 23000, unit: "day", status: "busy", availMemo: "今月末まで埋まっています", createdAt: now, updatedAt: now },
-        K4: { name: "渡辺 大輔", companyKey: "C3", companyName: "鈴木住建", age: 51, gender: "男", quals: ["二級建築施工管理技士"], good: ["リフォーム・改修", "造作大工", "建具・サッシ取付"], ng: [], price: 21000, unit: "day", status: "free", availMemo: "", createdAt: now, updatedAt: now }
+        K1: { name: "田中 一郎", companyKey: "C1", companyName: "山田工務店", age: 42, gender: "男", quals: ["建築大工技能士(1級)", "職長・安全衛生責任者"], good: ["和室内部造作", "建方、構造組立", "構造体墨付け"], ng: [], price: 24000, unit: "day", status: "free", availMemo: "来週いっぱい空きあり", createdAt: now, updatedAt: now },
+        K2: { name: "高橋 修", companyKey: "C2", companyName: "佐藤建設", age: 35, gender: "男", quals: ["建築大工技能士(2級)", "丸のこ等取扱作業従事者"], good: ["ボード張り", "フローリング施工"], ng: ["建方、構造組立"], price: 22000, unit: "day", status: "partial", availMemo: "午前のみ対応可", createdAt: now, updatedAt: now },
+        K3: { name: "伊藤 健", companyKey: "C1", companyName: "山田工務店", age: 29, gender: "男", quals: ["玉掛け", "足場の組立て等作業主任者"], good: ["建方、構造組立", "構造体墨付け"], ng: ["和室内部造作"], price: 23000, unit: "day", status: "busy", availMemo: "今月末まで埋まっています", createdAt: now, updatedAt: now },
+        K4: { name: "渡辺 大輔", companyKey: "C3", companyName: "鈴木住建", age: 51, gender: "男", quals: ["二級建築施工管理技士"], good: ["洋室内部造作", "階段造作", "高気密、高断熱施工"], ng: [], price: 21000, unit: "day", status: "free", availMemo: "", createdAt: now, updatedAt: now }
       },
       reviews: {
         R1: { type: "craftsman", targetKey: "K1", targetName: "田中 一郎", rating: 5, note: "造作が丁寧。納まりの相談に乗ってくれる。", byCompany: "佐藤建設", at: now - 200000 },
