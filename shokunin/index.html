@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#ea580c">
-<title>職人シェア｜工務店ネットワーク</title>
+<title>大工シェア｜工務店ネットワーク</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -63,7 +63,7 @@
   .statusbtns button{flex:1; padding:8px 4px; border:1.5px solid var(--line); background:#fff; border-radius:9px; font-weight:700; font-size:12px; cursor:pointer; color:var(--sub)}
   .statusbtns button.on{color:#fff}
 
-  /* 職人カード */
+  /* 大工カード */
   .kcard{border:1px solid var(--line); border-radius:13px; padding:13px; margin-bottom:11px; background:#fff; position:relative}
   .kcard .head{display:flex; justify-content:space-between; align-items:flex-start; gap:8px}
   .kcard .nm{font-size:17px; font-weight:800}
@@ -129,8 +129,8 @@
 <header>
   <div class="hrow">
     <div>
-      <h1>🪚 職人シェア ネットワーク</h1>
-      <div class="sub">工務店どうしで職人をシェア・空き状況をリアルタイム共有</div>
+      <h1>🪚 大工シェア ネットワーク</h1>
+      <div class="sub">工務店どうしで大工をシェア・空き状況をリアルタイム共有</div>
     </div>
     <button class="hbtn" id="inviteBtn"><span class="ic">📲</span>LINEで招待</button>
   </div>
@@ -139,7 +139,7 @@
 <div class="wrap">
   <div id="modebar"></div>
 
-  <!-- ============ 職人をさがす ============ -->
+  <!-- ============ 大工をさがす ============ -->
   <section class="page on" id="page-find">
     <div class="statusbtns" id="statusFilter"></div>
     <div class="filters">
@@ -156,7 +156,7 @@
     <div class="card" style="padding:11px 14px">
       <b>📡 空き状況ボード</b>
       <div class="count" style="margin:4px 0 8px">各社が更新すると、ここにリアルタイムで反映されます。</div>
-      <button class="btn ln full" id="shareBoardBtn">📲 今すぐ空いている職人をLINEで共有</button>
+      <button class="btn ln full" id="shareBoardBtn">📲 今すぐ空いている大工をLINEで共有</button>
     </div>
     <div id="boardWrap"></div>
   </section>
@@ -167,7 +167,7 @@
     <div id="coList"></div>
   </section>
 
-  <!-- ============ 自社の職人（ログイン制） ============ -->
+  <!-- ============ 自社の大工（ログイン制） ============ -->
   <section class="page" id="page-update">
     <div class="card" id="authBox"></div>
     <div id="updateList"></div>
@@ -177,7 +177,7 @@
   <section class="page" id="page-req">
     <div class="card" style="padding:11px 14px">
       <b>🤝 応援要請</b>
-      <div class="count" style="margin:4px 0 0">他社の職人を借りたいときは「職人をさがす」から要請できます。労働条件・支払い条件のやり取りは当事者だけが見られます（管理者は取引に関与しません）。</div>
+      <div class="count" style="margin:4px 0 0">他社の大工を借りたいときは「大工をさがす」から要請できます。労働条件・支払い条件のやり取りは当事者だけが見られます（管理者は取引に関与しません）。</div>
     </div>
     <div id="reqBox"></div>
   </section>
@@ -206,10 +206,10 @@
   </div>
 </div>
 
-<!-- 職人 登録/編集モーダル（利用者側・自社の職人用） -->
+<!-- 大工 登録/編集モーダル（利用者側・自社の大工用） -->
 <div class="ov" id="craftOv">
   <div class="sheet">
-    <h3 id="ceTitle">職人を登録</h3>
+    <h3 id="ceTitle">大工を登録</h3>
     <div class="count" id="ceSub"></div>
     <div class="field"><label class="req">氏名</label><input type="text" id="ceName" placeholder="例）田中 一郎"></div>
     <div class="row">
@@ -245,10 +245,10 @@
     <div class="field"><label>対応エリア</label><input type="text" id="coeArea" placeholder="例）東京都／23区西部"></div>
     <div class="field"><label>特記事項・メモ</label><textarea id="coeNotes" placeholder="得意分野・支払い条件など"></textarea></div>
 
-    <!-- 新規登録時のみ表示：最初の自社職人（1名以上必須） -->
+    <!-- 新規登録時のみ表示：最初の自社大工（1名以上必須） -->
     <div id="coFirstCraft">
-      <div class="firstcraft-head">最初の自社職人（1名以上の登録が必須です）</div>
-      <div class="field"><label class="req">職人の氏名</label><input type="text" id="coCkName" placeholder="例）田中 一郎"></div>
+      <div class="firstcraft-head">最初の自社大工（1名以上の登録が必須です）</div>
+      <div class="field"><label class="req">大工の氏名</label><input type="text" id="coCkName" placeholder="例）田中 一郎"></div>
       <div class="row">
         <div class="field"><label>単価</label><input type="number" id="coCkPrice" min="0" placeholder="例）22000"></div>
         <div class="field"><label>単位</label>
@@ -285,10 +285,10 @@
 
 <!-- 下部タブ -->
 <nav class="tabbar">
-  <button class="on" data-page="find"><span class="ic">🔍</span>職人をさがす</button>
+  <button class="on" data-page="find"><span class="ic">🔍</span>大工をさがす</button>
   <button data-page="board"><span class="ic">📡</span>空き状況</button>
   <button data-page="co"><span class="ic">🏢</span>工務店</button>
-  <button data-page="update"><span class="ic">👷</span>自社の職人</button>
+  <button data-page="update"><span class="ic">👷</span>自社の大工</button>
   <button data-page="req"><span class="ic">🤝</span>応援</button>
 </nav>
 
@@ -362,7 +362,7 @@ DB.on('craftsmen', v=>{ craftsmen=v||{}; renderFind(); renderBoard(); renderComp
 DB.on('reviews', v=>{ reviews=v||{}; renderFind(); renderCompanies(); });
 DB.on('approvals', v=>{ approvals=v||{}; renderFind(); renderBoard(); renderCompanies(); renderMyArea(); });
 
-// ===== 職人をさがす =====
+// ===== 大工をさがす =====
 function matchFilter(k){
   if(filter.status && k.status!==filter.status) return false;
   if(filter.work && !(k.good||[]).includes(filter.work)) return false;
@@ -377,8 +377,8 @@ function renderFind(){
   const list=document.getElementById('kList');
   const arr=H.toArr(craftsmen).filter(k=>H.isApproved(approvals,k._key)).filter(matchFilter)
     .sort((a,b)=>({free:0,partial:1,busy:2}[a.status]??3)-({free:0,partial:1,busy:2}[b.status]??3));
-  document.getElementById('findCount').textContent=`${arr.length} 名の職人`;
-  if(!arr.length){ list.innerHTML='<div class="empty">該当する職人がいません。</div>'; return; }
+  document.getElementById('findCount').textContent=`${arr.length} 名の大工`;
+  if(!arr.length){ list.innerHTML='<div class="empty">該当する大工がいません。</div>'; return; }
   list.innerHTML=arr.map(kCardHTML).join('');
   bindReviewButtons(list);
   bindShareButtons(list);
@@ -402,7 +402,7 @@ function kCardHTML(k){
     ${(k.ng&&k.ng.length)?`<div class="seclabel">NG作業</div>${H.chips(k.ng,'ng')}`:''}
     ${(k.quals&&k.quals.length)?`<div class="seclabel">保有資格</div>${H.chips(k.quals,'q')}`:''}
     ${r.notes.length?`<div class="note">📝 ${H.esc(r.notes[0].note)}${r.notes[0].by?`<span style="color:var(--sub)"> — ${H.esc(r.notes[0].by)}</span>`:''}</div>`:''}
-    <button class="btn sm req-btn" data-key="${k._key}" style="width:100%;background:var(--accent);color:#fff;margin-top:8px">🤝 この職人に応援要請</button>
+    <button class="btn sm req-btn" data-key="${k._key}" style="width:100%;background:var(--accent);color:#fff;margin-top:8px">🤝 この大工に応援要請</button>
     <div class="actions">
       <button class="btn ln sm ln-share" data-key="${k._key}">📲 LINEで共有</button>
       <button class="btn ghost sm rv" data-type="craftsman" data-key="${k._key}" data-name="${H.esc(k.name)}">⭐ 評価</button>
@@ -445,7 +445,7 @@ function renderCompanies(){
         <div>${H.stars(r.avg)}</div>
       </div>
       <div class="info">📍 ${H.esc(c.area||'—')}　👤 ${H.esc(c.contact||'—')}　📞 ${H.esc(c.tel||'—')}</div>
-      <div class="info">所属職人 ${cnt} 名　評価件数 ${r.count} 件</div>
+      <div class="info">所属大工 ${cnt} 名　評価件数 ${r.count} 件</div>
       ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
       ${r.notes.length?`<div class="note">🗒 ${H.esc(r.notes[0].note)}${r.notes[0].by?`<span style="color:var(--sub)"> — ${H.esc(r.notes[0].by)}</span>`:''}</div>`:''}
       <div class="actions" style="display:flex;margin-top:10px">
@@ -456,7 +456,7 @@ function renderCompanies(){
   bindReviewButtons(list);
 }
 
-// ===== 自社の職人（ログイン制） =====
+// ===== 自社の大工（ログイン制） =====
 function myCompanyEntry(){
   if(!myUser||!myUser.email) return null;
   return H.toArr(companies).find(c=>c.ownerEmail===myUser.email)||null;
@@ -471,7 +471,7 @@ function renderMyArea(){
   if(!loggedIn()){
     box.innerHTML = `
       <b>🔑 工務店ログイン</b>
-      <div class="count" style="margin:4px 0 10px">自社の職人を登録・編集するにはログインしてください（閲覧・評価はログイン不要）。</div>
+      <div class="count" style="margin:4px 0 10px">自社の大工を登録・編集するにはログインしてください（閲覧・評価はログイン不要）。</div>
       <div class="field"><label>メールアドレス</label><input type="email" id="lgEmail" placeholder="you@example.com" autocomplete="username"></div>
       <div class="field"><label>パスワード</label><input type="password" id="lgPass" placeholder="6文字以上" autocomplete="current-password"></div>
       <div class="row">
@@ -493,7 +493,7 @@ function renderMyArea(){
 
   const mine=myCompanyEntry();
   if(!mine){
-    list.innerHTML='<div class="card"><b>🏢 自社の工務店を登録</b><div class="count" style="margin:4px 0 10px">あなたのアカウントに紐づく工務店がまだありません。登録すると自社の職人を管理できます。</div><button class="btn full" id="regCoBtn">＋ 工務店を登録</button></div>';
+    list.innerHTML='<div class="card"><b>🏢 自社の工務店を登録</b><div class="count" style="margin:4px 0 10px">あなたのアカウントに紐づく工務店がまだありません。登録すると自社の大工を管理できます。</div><button class="btn full" id="regCoBtn">＋ 工務店を登録</button></div>';
     document.getElementById('regCoBtn').onclick=()=>openCompanyForm(null);
     return;
   }
@@ -525,9 +525,9 @@ function renderOwnArea(mine){
         <div class="count" style="margin:3px 0 0">📍${H.esc(mine.area||'—')}　📞${H.esc(mine.tel||'—')}</div></div>
         <button class="btn ghost sm" id="editCoBtn">✏️ 会社情報</button>
       </div></div>`;
-  html+='<button class="btn full" id="addCraftBtn" style="margin-bottom:12px">＋ 職人を登録</button>';
+  html+='<button class="btn full" id="addCraftBtn" style="margin-bottom:12px">＋ 大工を登録</button>';
   if(!arr.length){
-    html+='<div class="empty">自社の職人がまだ登録されていません。上の「＋ 職人を登録」から追加してください。</div>';
+    html+='<div class="empty">自社の大工がまだ登録されていません。上の「＋ 大工を登録」から追加してください。</div>';
   }else{
     html+='<div class="card">'+arr.map(k=>`
       <div class="upd-row">
@@ -574,10 +574,10 @@ function openCompanyForm(key){
   document.getElementById('coeTel').value=c.tel||'';
   document.getElementById('coeArea').value=c.area||'';
   document.getElementById('coeNotes').value=c.notes||'';
-  // 新規登録のときだけ「最初の自社職人（必須）」欄を表示
+  // 新規登録のときだけ「最初の自社大工（必須）」欄を表示
   const isNew=!key;
   document.getElementById('coFirstCraft').style.display=isNew?'block':'none';
-  document.getElementById('coeSave').textContent=isNew?'工務店と職人を登録':'保存する';
+  document.getElementById('coeSave').textContent=isNew?'工務店と大工を登録':'保存する';
   if(isNew){
     document.getElementById('coCkName').value='';
     document.getElementById('coCkPrice').value='';
@@ -603,31 +603,31 @@ document.getElementById('coeSave').onclick=()=>{
     DB.update('companies/'+editCoKey,data).then(()=>{ closeCompanyForm(); H.toast('会社情報を更新しました','ok'); });
     return;
   }
-  // 新規登録：自社の職人を1名以上必須にする
+  // 新規登録：自社の大工を1名以上必須にする
   const ckName=document.getElementById('coCkName').value.trim();
-  if(!ckName){ H.toast('最初の自社職人の氏名を入力してください（工務店登録には職人が1名以上必要です）','err'); return; }
+  if(!ckName){ H.toast('最初の自社大工の氏名を入力してください（工務店登録には大工が1名以上必要です）','err'); return; }
   const firstCraft={
     name:ckName,
     price:+document.getElementById('coCkPrice').value||null,
     unit:document.getElementById('coCkUnit').value,
     good:getChecked('coCkGood')
   };
-  // 会社を作成 → 続けて最初の職人を作成（どちらもオーナー＝自分のメール）
+  // 会社を作成 → 続けて最初の大工を作成（どちらもオーナー＝自分のメール）
   DB.push('companies', Object.assign({ownerEmail:myUser.email, createdAt:Date.now()}, data))
     .then(newKey=>DB.push('craftsmen', Object.assign({
       companyKey:newKey, companyName:name, age:null, gender:'', ng:[], quals:[],
       status:'free', availMemo:'', createdAt:Date.now(), updatedAt:Date.now()
     }, firstCraft)))
-    .then(()=>{ closeCompanyForm(); H.toast('工務店と最初の職人を登録しました','ok'); });
+    .then(()=>{ closeCompanyForm(); H.toast('工務店と最初の大工を登録しました','ok'); });
 };
 
-// ===== 自社の職人 登録/編集モーダル =====
+// ===== 自社の大工 登録/編集モーダル =====
 let editCraftKey=null;
 (function(){
   buildChecks('ceGood', H.workTypes);
   buildChecks('ceNg', H.workTypes);
   buildChecks('ceQual', H.qualifications);
-  buildChecks('coCkGood', H.workTypes); // 工務店登録時の最初の職人の得意作業
+  buildChecks('coCkGood', H.workTypes); // 工務店登録時の最初の大工の得意作業
 })();
 function buildChecks(id, arr){
   const box=document.getElementById(id);
@@ -648,7 +648,7 @@ function openCraftForm(key){
   if(!mine){ H.toast('先に自社の工務店を登録してください','err'); return; }
   editCraftKey=key||null;
   const k=key?(craftsmen[key]||{}):{};
-  document.getElementById('ceTitle').textContent=key?'職人の情報を編集':'職人を登録';
+  document.getElementById('ceTitle').textContent=key?'大工の情報を編集':'大工を登録';
   document.getElementById('ceSub').textContent='所属：'+(mine.name||'');
   document.getElementById('ceName').value=k.name||'';
   document.getElementById('ceAge').value=k.age||'';
@@ -678,7 +678,7 @@ document.getElementById('ceSave').onclick=()=>{
   const p=editCraftKey
     ? DB.update('craftsmen/'+editCraftKey,data)
     : DB.push('craftsmen', Object.assign({status:'free',availMemo:'',createdAt:Date.now()},data));
-  p.then(()=>{ document.getElementById('craftOv').classList.remove('on'); H.toast(editCraftKey?'職人情報を更新しました':'職人を登録しました','ok'); });
+  p.then(()=>{ document.getElementById('craftOv').classList.remove('on'); H.toast(editCraftKey?'大工情報を更新しました':'大工を登録しました','ok'); });
 };
 
 // ===== 応援要請 =====
@@ -713,7 +713,7 @@ function openRequestForm(kid){
   const mine=myCompanyEntry();
   if(!mine){ H.toast('先に自社の工務店を登録してください','err'); goTab('update'); return; }
   const k=craftsmen[kid]; if(!k) return;
-  if(k.companyKey===mine._key){ H.toast('自社の職人です','err'); return; }
+  if(k.companyKey===mine._key){ H.toast('自社の大工です','err'); return; }
   reqTargetCraft=Object.assign({_key:kid},k);
   document.getElementById('reqTitle').textContent='応援要請：'+k.name;
   document.getElementById('reqSub').textContent='所属「'+(k.companyName||'')+'」へ依頼します';
@@ -749,11 +749,11 @@ function reqStatusLabel(s){
 function renderRequests(){
   const box=document.getElementById('reqBox'); if(!box) return;
   const mine=myCompanyEntry();
-  if(!mine){ box.innerHTML='<div class="empty">応援要請を使うには、「自社の職人」タブでログインして工務店を登録してください。</div>'; return; }
+  if(!mine){ box.innerHTML='<div class="empty">応援要請を使うには、「自社の大工」タブでログインして工務店を登録してください。</div>'; return; }
   const all=H.toArr(reqByMe).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   const recv=all.filter(r=>r.toCompanyKey===mine._key);
   const sent=all.filter(r=>r.fromCompanyKey===mine._key);
-  box.innerHTML=reqSectionHTML('受信した要請（自社の職人へ）',recv,'recv')+reqSectionHTML('送信した要請（他社の職人へ）',sent,'sent');
+  box.innerHTML=reqSectionHTML('受信した要請（自社の大工へ）',recv,'recv')+reqSectionHTML('送信した要請（他社の大工へ）',sent,'sent');
   bindReqCards(box);
 }
 function reqSectionHTML(title,arr,kind){
@@ -822,7 +822,7 @@ async function shareToLine(text){
 function craftsmanShareText(k){
   if(!k) return '';
   const st=H.statusOf(k.status);
-  const L=['【職人シェア】'+k.name+'（'+(k.companyName||'')+'）'];
+  const L=['【大工シェア】'+k.name+'（'+(k.companyName||'')+'）'];
   L.push('状況：'+st.label);
   L.push('単価：'+H.fmtPrice(k.price,k.unit));
   if(k.age||k.gender) L.push('属性：'+(k.age?k.age+'歳':'')+(k.gender?' '+k.gender:''));
@@ -830,22 +830,22 @@ function craftsmanShareText(k){
   if(k.ng&&k.ng.length) L.push('NG：'+k.ng.join('・'));
   if(k.quals&&k.quals.length) L.push('資格：'+k.quals.join('・'));
   if(k.availMemo) L.push('🗓 '+k.availMemo);
-  L.push('👉 詳細・他の職人はこちら：'+appUrl());
+  L.push('👉 詳細・他の大工はこちら：'+appUrl());
   return L.join('\n');
 }
 function boardShareText(){
   const arr=H.toArr(craftsmen);
   const free=arr.filter(k=>k.status==='free'), partial=arr.filter(k=>k.status==='partial');
-  if(!free.length&&!partial.length) return '【職人シェア】現在すぐ空いている職人はいません。\n👉 '+appUrl();
+  if(!free.length&&!partial.length) return '【大工シェア】現在すぐ空いている大工はいません。\n👉 '+appUrl();
   const fmt=k=>'・'+k.name+'（'+(k.companyName||'')+'）'+H.fmtPrice(k.price,k.unit)+((k.good&&k.good.length)?'／'+k.good.slice(0,3).join('・'):'');
-  const L=['【今すぐ手伝える職人】'];
+  const L=['【今すぐ手伝える大工】'];
   if(free.length){ L.push('✅ 空き'); free.forEach(k=>L.push(fmt(k))); }
   if(partial.length){ L.push('⚠️ 一部空き'); partial.forEach(k=>L.push(fmt(k))); }
   L.push('👉 アプリで詳細：'+appUrl());
   return L.join('\n');
 }
 function inviteText(){
-  return '【職人シェア ネットワーク】\n工務店どうしで職人をシェアし、空き状況をリアルタイムに共有できるアプリです。\n下記から参加できます👇\n'+appUrl();
+  return '【大工シェア ネットワーク】\n工務店どうしで大工をシェアし、空き状況をリアルタイムに共有できるアプリです。\n下記から参加できます👇\n'+appUrl();
 }
 function bindShareButtons(scope){
   scope.querySelectorAll('.ln-share').forEach(b=>b.onclick=()=>shareToLine(craftsmanShareText(craftsmen[b.dataset.key])));
@@ -859,7 +859,7 @@ function bindReviewButtons(scope){
 }
 function openReview(type,key,name){
   reviewTarget={type,key,name}; rvValue=0;
-  document.getElementById('rvTitle').textContent=(type==='craftsman'?'職人を評価':'工務店を評価');
+  document.getElementById('rvTitle').textContent=(type==='craftsman'?'大工を評価':'工務店を評価');
   document.getElementById('rvSub').textContent='対象：'+name;
   const mine=myCompanyEntry();
   document.getElementById('rvBy').value=(mine&&mine.name)||localStorage.getItem('shokunin_mycompany_name')||'';

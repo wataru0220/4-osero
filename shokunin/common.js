@@ -1,4 +1,4 @@
-// ===== 職人シェアアプリ 共通ヘルパー =====
+// ===== 大工シェアアプリ 共通ヘルパー =====
 (function (global) {
   const CFG = global.SHOKUNIN_CONFIG || {};
   const H = {};
@@ -61,7 +61,7 @@
     return m;
   };
 
-  // 職人が管理者に認証済みか（認証情報は管理者だけが書ける approvals パスに保存）
+  // 大工が管理者に認証済みか（認証情報は管理者だけが書ける approvals パスに保存）
   H.isApproved = (approvals, kid) =>
     !!(approvals && approvals.craftsman && approvals.craftsman[kid] === true);
 
@@ -117,15 +117,15 @@
         C3: { name: "鈴木住建", tel: "04-7555-6666", area: "千葉県／東葛エリア", contact: "鈴木 一郎", ownerEmail: "suzuki@example.com", notes: "", createdAt: now }
       },
       craftsmen: {
-        K1: { name: "田中 大工", companyKey: "C1", companyName: "山田工務店", age: 42, gender: "男", quals: ["二級建築士", "職長・安全衛生責任者"], good: ["大工", "内装"], ng: ["塗装"], price: 22000, unit: "day", status: "free", availMemo: "来週いっぱい空きあり", createdAt: now, updatedAt: now },
-        K2: { name: "高橋 塗装", companyKey: "C2", companyName: "佐藤建設", age: 35, gender: "男", quals: ["有機溶剤作業主任者"], good: ["塗装", "防水"], ng: ["電気"], price: 2500, unit: "hour", status: "partial", availMemo: "午前のみ対応可", createdAt: now, updatedAt: now },
-        K3: { name: "伊藤 電工", companyKey: "C1", companyName: "山田工務店", age: 29, gender: "男", quals: ["電気工事士(第二種)", "高所作業車"], good: ["電気"], ng: ["解体", "左官"], price: 24000, unit: "day", status: "busy", availMemo: "今月末まで埋まっています", createdAt: now, updatedAt: now },
-        K4: { name: "渡辺 内装", companyKey: "C3", companyName: "鈴木住建", age: 51, gender: "男", quals: ["二級施工管理技士"], good: ["内装", "クロス", "タイル"], ng: [], price: 21000, unit: "day", status: "free", availMemo: "", createdAt: now, updatedAt: now }
+        K1: { name: "田中 一郎", companyKey: "C1", companyName: "山田工務店", age: 42, gender: "男", quals: ["建築大工技能士(1級)", "職長・安全衛生責任者"], good: ["造作大工", "建て方", "和室・数寄屋"], ng: ["型枠大工"], price: 24000, unit: "day", status: "free", availMemo: "来週いっぱい空きあり", createdAt: now, updatedAt: now },
+        K2: { name: "高橋 修", companyKey: "C2", companyName: "佐藤建設", age: 35, gender: "男", quals: ["建築大工技能士(2級)", "丸のこ等取扱作業従事者"], good: ["内装下地(軽天・ボード)", "フローリング・床張り"], ng: ["宮大工・社寺"], price: 22000, unit: "day", status: "partial", availMemo: "午前のみ対応可", createdAt: now, updatedAt: now },
+        K3: { name: "伊藤 健", companyKey: "C1", companyName: "山田工務店", age: 29, gender: "男", quals: ["玉掛け", "足場の組立て等作業主任者"], good: ["建て方", "在来軸組"], ng: ["造作大工"], price: 23000, unit: "day", status: "busy", availMemo: "今月末まで埋まっています", createdAt: now, updatedAt: now },
+        K4: { name: "渡辺 大輔", companyKey: "C3", companyName: "鈴木住建", age: 51, gender: "男", quals: ["二級建築施工管理技士"], good: ["リフォーム・改修", "造作大工", "建具・サッシ取付"], ng: [], price: 21000, unit: "day", status: "free", availMemo: "", createdAt: now, updatedAt: now }
       },
       reviews: {
-        R1: { type: "craftsman", targetKey: "K1", targetName: "田中 大工", rating: 5, note: "造作が丁寧。納まりの相談に乗ってくれる。", byCompany: "佐藤建設", at: now - 200000 },
-        R2: { type: "craftsman", targetKey: "K1", targetName: "田中 大工", rating: 4, note: "納期もきっちり守ってくれた。", byCompany: "鈴木住建", at: now - 100000 },
-        R3: { type: "craftsman", targetKey: "K2", targetName: "高橋 塗装", rating: 5, note: "外壁塗装の仕上がりがきれい。", byCompany: "山田工務店", at: now - 50000 },
+        R1: { type: "craftsman", targetKey: "K1", targetName: "田中 一郎", rating: 5, note: "造作が丁寧。納まりの相談に乗ってくれる。", byCompany: "佐藤建設", at: now - 200000 },
+        R2: { type: "craftsman", targetKey: "K1", targetName: "田中 一郎", rating: 4, note: "建て方が早く、墨出しも正確。", byCompany: "鈴木住建", at: now - 100000 },
+        R3: { type: "craftsman", targetKey: "K2", targetName: "高橋 修", rating: 5, note: "ボード貼り・床張りの仕上がりがきれい。", byCompany: "山田工務店", at: now - 50000 },
         R4: { type: "company", targetKey: "C1", targetName: "山田工務店", rating: 5, note: "段取りがよく助かった。", byCompany: "鈴木住建", at: now - 80000 },
         R5: { type: "company", targetKey: "C2", targetName: "佐藤建設", rating: 4, note: "現場管理がしっかりしている。", byCompany: "山田工務店", at: now - 30000 }
       },

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0e7490">
-<title>管理画面｜職人シェア</title>
+<title>管理画面｜大工シェア</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -86,8 +86,8 @@
 <header>
   <div class="hrow">
     <div>
-      <h1>🛠 管理画面｜職人シェア</h1>
-      <div class="sub">工務店・職人の登録、技術力／工務店の評価入力</div>
+      <h1>🛠 管理画面｜大工シェア</h1>
+      <div class="sub">工務店・大工の登録、技術力／工務店の評価入力</div>
     </div>
     <button class="hbtn" id="inviteBtn"><span class="ic">📲</span>利用者用URLを共有</button>
   </div>
@@ -102,7 +102,7 @@
   <div id="modebar"></div>
   <div class="tabs">
     <button class="on" data-page="co">🏢 工務店</button>
-    <button data-page="ki">🪚 職人</button>
+    <button data-page="ki">🪚 大工</button>
     <button data-page="eval">⭐ 評価入力</button>
     <button data-page="hist">📜 評価履歴</button>
     <button data-page="req">🤝 応援要請</button>
@@ -120,7 +120,7 @@
       </div>
       <div class="field"><label>対応エリア</label><input type="text" id="coArea" placeholder="例）東京都／23区西部"></div>
       <div class="field"><label>ログイン用メール（この工務店のオーナー）</label><input type="email" id="coOwnerEmail" placeholder="例）yamada@example.com">
-        <div class="count" style="margin-top:4px">このメールでログインした工務店だけが、自社の職人を編集できます。</div></div>
+        <div class="count" style="margin-top:4px">このメールでログインした工務店だけが、自社の大工を編集できます。</div></div>
       <div class="field"><label>特記事項・メモ</label><textarea id="coNotes" placeholder="支払い条件、得意分野など"></textarea></div>
       <div class="row">
         <button class="btn ghost" id="coCancel" style="display:none">キャンセル</button>
@@ -131,11 +131,11 @@
     <div id="coList"></div>
   </section>
 
-  <!-- ========== 職人 ========== -->
+  <!-- ========== 大工 ========== -->
   <section class="page" id="page-ki">
     <div class="card">
       <div id="kiEditBar" class="editbar" style="display:none"></div>
-      <h2 class="sec">職人の登録 / 編集</h2>
+      <h2 class="sec">大工の登録 / 編集</h2>
       <div class="field"><label class="req">氏名</label><input type="text" id="kName" placeholder="例）田中 一郎"></div>
       <div class="field"><label class="req">所属工務店</label><select id="kCompany"></select></div>
       <div class="row">
@@ -156,19 +156,19 @@
         <button class="btn" id="kSave">登録する</button>
       </div>
     </div>
-    <h2 class="sec">登録済みの職人</h2>
+    <h2 class="sec">登録済みの大工</h2>
     <div id="kList"></div>
   </section>
 
   <!-- ========== 評価入力 ========== -->
   <section class="page" id="page-eval">
     <div class="card">
-      <h2 class="sec">⭐ 職人の技術力を評価</h2>
-      <div class="field"><label class="req">対象の職人</label><select id="evKTarget"></select></div>
+      <h2 class="sec">⭐ 大工の技術力を評価</h2>
+      <div class="field"><label class="req">対象の大工</label><select id="evKTarget"></select></div>
       <label>技術力（1〜5）</label>
       <div class="ratepick" id="evKStars"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div>
       <div class="field"><label>評価した工務店名</label><input type="text" id="evKBy" placeholder="例）佐藤建設"></div>
-      <div class="field"><label>特記事項（職人カルテに追記されます）</label><textarea id="evKNote" placeholder="例）造作が丁寧。墨出しが正確。"></textarea></div>
+      <div class="field"><label>特記事項（大工カルテに追記されます）</label><textarea id="evKNote" placeholder="例）造作が丁寧。墨出しが正確。"></textarea></div>
       <button class="btn full" id="evKSave">この技術力評価を登録</button>
     </div>
     <div class="card">
@@ -393,7 +393,7 @@ function editCompany(key){
 function delCompany(key){
   const c=companies[key]||{};
   const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===key).length;
-  if(!confirm('「'+(c.name||'')+'」を削除しますか？'+(cnt?'\n※所属職人 '+cnt+' 名の所属表示が空欄になります。':''))) return;
+  if(!confirm('「'+(c.name||'')+'」を削除しますか？'+(cnt?'\n※所属大工 '+cnt+' 名の所属表示が空欄になります。':''))) return;
   DB.remove('companies/'+key).then(()=>H.toast('削除しました','ok'));
 }
 function renderCoList(){
@@ -408,7 +408,7 @@ function renderCoList(){
         <div><div class="nm">${H.esc(c.name)}</div>
         <div class="meta">📍${H.esc(c.area||'—')}　👤${H.esc(c.contact||'—')}　📞${H.esc(c.tel||'—')}</div>
         <div class="meta">🔑${H.esc(c.ownerEmail||'（ログインメール未設定）')}</div>
-        <div class="meta">所属職人 ${cnt}名　評価 ${H.stars(r.avg)}（${r.count}件）</div></div>
+        <div class="meta">所属大工 ${cnt}名　評価 ${H.stars(r.avg)}（${r.count}件）</div></div>
       </div>
       ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
       <div class="acts">
@@ -418,7 +418,7 @@ function renderCoList(){
   }).join('');
 }
 
-// ===== 職人 =====
+// ===== 大工 =====
 function saveCraftsman(){
   const name=document.getElementById('kName').value.trim();
   const companyKey=document.getElementById('kCompany').value;
@@ -434,11 +434,11 @@ function saveCraftsman(){
     updatedAt:Date.now()
   };
   if(editKi){
-    DB.update('craftsmen/'+editKi._key,data).then(()=>{H.toast('職人を更新しました','ok'); resetKiForm();});
+    DB.update('craftsmen/'+editKi._key,data).then(()=>{H.toast('大工を更新しました','ok'); resetKiForm();});
   }else{
     DB.push('craftsmen', Object.assign({status:'free',availMemo:'',createdAt:Date.now()},data))
       .then(key=>DB.set('approvals/craftsman/'+key, true)) // 管理者登録は自動で認証済み
-      .then(()=>{H.toast('職人を登録しました（認証済み）','ok'); resetKiForm();});
+      .then(()=>{H.toast('大工を登録しました（認証済み）','ok'); resetKiForm();});
   }
 }
 function resetKiForm(){
@@ -507,7 +507,7 @@ function fillCraftsmanSelect(){
 }
 function saveKEval(){
   const key=document.getElementById('evKTarget').value;
-  if(!key){ H.toast('職人を選んでください','err'); return; }
+  if(!key){ H.toast('大工を選んでください','err'); return; }
   if(!evK){ H.toast('技術力（星）を選んでください','err'); return; }
   const by=document.getElementById('evKBy').value.trim();
   const note=document.getElementById('evKNote').value.trim();
@@ -543,7 +543,7 @@ function renderHist(){
   if(!arr.length){ list.innerHTML='<div class="empty">まだ評価がありません。</div>'; return; }
   list.innerHTML=arr.map(r=>`<div class="revrow">
     <div class="h">
-      <span><span class="pill ${r.type==='craftsman'?'k':'c'}">${r.type==='craftsman'?'職人':'工務店'}</span> <b style="color:var(--ink)">${H.esc(r.targetName)}</b></span>
+      <span><span class="pill ${r.type==='craftsman'?'k':'c'}">${r.type==='craftsman'?'大工':'工務店'}</span> <b style="color:var(--ink)">${H.esc(r.targetName)}</b></span>
       <span>${H.fmtDate(r.at)}</span>
     </div>
     <div style="margin-top:4px"><span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
@@ -567,7 +567,7 @@ async function shareToLine(text){
   window.open('https://line.me/R/msg/text/?'+encodeURIComponent(text),'_blank');
 }
 document.getElementById('inviteBtn').onclick=()=>shareToLine(
-  '【職人シェア ネットワーク】\n工務店どうしで職人をシェアし、空き状況をリアルタイムに共有できるアプリです。\n下記から参加できます👇\n'+userAppUrl()
+  '【大工シェア ネットワーク】\n工務店どうしで大工をシェアし、空き状況をリアルタイムに共有できるアプリです。\n下記から参加できます👇\n'+userAppUrl()
 );
 
 // 応援要請の一覧（管理者は概要のみ。条件のやり取り deals は読めない）
@@ -579,7 +579,7 @@ function renderReqList(){
   list.innerHTML=arr.map(r=>`<div class="item">
     <div class="top">
       <div><div class="nm">${H.esc(r.fromCompanyName)} → ${H.esc(r.toCompanyName)}</div>
-      <div class="meta">職人：${H.esc(r.craftsmanName)}　🗓${H.esc(r.dateText||'—')}</div>
+      <div class="meta">大工：${H.esc(r.craftsmanName)}　🗓${H.esc(r.dateText||'—')}</div>
       <div class="meta">📍${H.esc(r.site||'—')}</div></div>
       <div>${stl(r.status)}</div>
     </div>
@@ -588,12 +588,12 @@ function renderReqList(){
   </div>`).join('');
 }
 
-// 職人の認証（管理者のみ・approvalsパスに書き込み）
+// 大工の認証（管理者のみ・approvalsパスに書き込み）
 function approveCraftsman(key){
   DB.set('approvals/craftsman/'+key, true).then(()=>H.toast('認証しました','ok'));
 }
 function unapproveCraftsman(key){
-  if(!confirm('この職人の認証を取り消しますか？（利用者の検索に出なくなります）')) return;
+  if(!confirm('この大工の認証を取り消しますか？（利用者の検索に出なくなります）')) return;
   DB.remove('approvals/craftsman/'+key).then(()=>H.toast('認証を取り消しました','ok'));
 }
 
