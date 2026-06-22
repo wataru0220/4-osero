@@ -36,14 +36,36 @@
     const fdb = firebase.database();
     const ref = (p) => fdb.ref(ROOT + (p ? "/" + p : ""));
 
-    // 匿名サインイン。ルールで auth != null を要求する場合に必要（ログイン操作は不要）。
-    // ・Firebaseコンソールで「Anonymous（匿名）」プロバイダを有効にしておくこと。
-    // ・未有効でもここで握りつぶし、open ルールならそのまま動く（段階移行できる）。
-    DB.ready = (firebase.auth
-      ? firebase.auth().signInAnonymously().then(function () {}, function (e) {
+    // ---- 認証（メール/パスワード＋既定で匿名） ----
+    // ・閲覧・評価は匿名サインインで可能（ルール auth != null を満たす）。
+    // ・工務店は signIn/signUp でメールログインし、自社の職人だけ編集できる（ルールで強制）。
+    // ・Firebaseコンソールで「メール/パスワード」と「匿名」の両方を有効化しておくこと。
+    var fauth = firebase.auth ? firebase.auth() : null;
+    DB.auth = {
+      user: null,
+      _cbs: [],
+      onChange: function (cb) { this._cbs.push(cb); cb(this.user); },
+      _emit: function () { var u = this.user; this._cbs.forEach(function (c) { c(u); }); },
+      signIn: function (email, pass) { return fauth.signInWithEmailAndPassword(email, pass); },
+      signUp: function (email, pass) { return fauth.createUserWithEmailAndPassword(email, pass); },
+      // ログアウト後は匿名に戻し、閲覧・評価を継続できるようにする
+      signOut: function () { return fauth.signOut().then(function () { return fauth.signInAnonymously().catch(function(){}); }); }
+    };
+    DB.ready = new Promise(function (resolve) {
+      if (!fauth) { resolve(); return; }
+      var done = false; function finish() { if (!done) { done = true; resolve(); } }
+      fauth.onAuthStateChanged(function (u) {
+        DB.auth.user = u ? { uid: u.uid, email: u.email || null, isAnonymous: !!u.isAnonymous } : null;
+        DB.auth._emit();
+        if (u) finish(); // ログイン（匿名含む）が確立したら準備完了
+      });
+      if (!fauth.currentUser) {
+        fauth.signInAnonymously().catch(function (e) {
           console.warn("匿名サインインに失敗しました（Anonymousプロバイダが未有効の可能性）:", e && e.message);
-        })
-      : Promise.resolve());
+          finish();
+        });
+      }
+    });
 
     // すべての操作をサインイン完了後に実行する（最初の読み込みが権限拒否になるのを防ぐ）
     DB.on = (path, cb) => {
@@ -138,6 +160,23 @@
     return Promise.resolve();
   };
   DB.ready = Promise.resolve();
+
+  // お試しモードの認証シミュレーション（実際のFirebase認証は使わず、端末内で擬似ログイン）
+  var DEMO_KEY = "shokunin_demouser";
+  DB.auth = {
+    user: (function () { try { return JSON.parse(localStorage.getItem(DEMO_KEY) || "null"); } catch (_) { return null; } })(),
+    _cbs: [],
+    onChange: function (cb) { this._cbs.push(cb); cb(this.user); },
+    _emit: function () { var u = this.user; this._cbs.forEach(function (c) { c(u); }); },
+    _login: function (email) {
+      this.user = { uid: "local:" + email, email: email, isAnonymous: false };
+      localStorage.setItem(DEMO_KEY, JSON.stringify(this.user)); this._emit();
+      return Promise.resolve();
+    },
+    signIn: function (email) { return this._login(email); },
+    signUp: function (email) { return this._login(email); },
+    signOut: function () { this.user = null; localStorage.removeItem(DEMO_KEY); this._emit(); return Promise.resolve(); }
+  };
 
   // お試しモードで中身が空なら、サンプルデータを入れて操作感を確認しやすくする
   DB._seedIfEmpty = function (seed) {

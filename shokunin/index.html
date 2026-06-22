@@ -157,14 +157,9 @@
     <div id="coList"></div>
   </section>
 
-  <!-- ============ 自社の職人（登録・空き更新） ============ -->
+  <!-- ============ 自社の職人（ログイン制） ============ -->
   <section class="page" id="page-update">
-    <div class="card">
-      <label for="myCompany">自社（工務店）を選択</label>
-      <select id="myCompany"><option value="">— 選択してください —</option></select>
-      <div class="count" style="margin-top:6px">選ぶとこの端末に記憶されます。自社の職人の登録・空き状況の変更ができます。</div>
-      <button class="btn full" id="addCraftBtn" style="margin-top:10px; display:none">＋ 職人を登録</button>
-    </div>
+    <div class="card" id="authBox"></div>
     <div id="updateList"></div>
   </section>
 </div>
@@ -218,6 +213,25 @@
   </div>
 </div>
 
+<!-- 工務店 登録/編集モーダル（自社情報） -->
+<div class="ov" id="coOv">
+  <div class="sheet">
+    <h3 id="coeTitle">工務店を登録</h3>
+    <div class="count" id="coeSub"></div>
+    <div class="field"><label class="req">工務店名</label><input type="text" id="coeName" placeholder="例）山田工務店"></div>
+    <div class="row">
+      <div class="field"><label>担当者名</label><input type="text" id="coeContact" placeholder="例）山田 太郎"></div>
+      <div class="field"><label>電話番号</label><input type="text" id="coeTel" placeholder="例）03-1234-5678"></div>
+    </div>
+    <div class="field"><label>対応エリア</label><input type="text" id="coeArea" placeholder="例）東京都／23区西部"></div>
+    <div class="field"><label>特記事項・メモ</label><textarea id="coeNotes" placeholder="得意分野・支払い条件など"></textarea></div>
+    <div class="row">
+      <button class="btn ghost" id="coeCancel">キャンセル</button>
+      <button class="btn" id="coeSave">保存する</button>
+    </div>
+  </div>
+</div>
+
 <!-- 下部タブ -->
 <nav class="tabbar">
   <button class="on" data-page="find"><span class="ic">🔍</span>職人をさがす</button>
@@ -229,9 +243,10 @@
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-let companies = {}, craftsmen = {};
+let companies = {}, craftsmen = {}, reviews = {};
 let filter = { status:'', text:'', work:'', qual:'' };
 let reviewTarget = null, rvValue = 0;
+let myUser = null;
 
 // モード表示
 (function(){
@@ -283,9 +298,13 @@ document.getElementById('qText').oninput = e=>{ filter.text=e.target.value.trim(
 document.getElementById('qWork').onchange = e=>{ filter.work=e.target.value; renderFind(); };
 document.getElementById('qQual').onchange = e=>{ filter.qual=e.target.value; renderFind(); };
 
+// ===== 認証状態（ログイン中の工務店） =====
+DB.auth.onChange(u=>{ myUser=u; renderMyArea(); });
+
 // ===== データ購読（リアルタイム） =====
-DB.on('companies', v=>{ companies=v||{}; renderCompanies(); renderMyCompanyOptions(); renderFind(); renderBoard(); renderUpdate(); });
-DB.on('craftsmen', v=>{ craftsmen=v||{}; renderFind(); renderBoard(); renderUpdate(); });
+DB.on('companies', v=>{ companies=v||{}; renderCompanies(); renderFind(); renderBoard(); renderMyArea(); });
+DB.on('craftsmen', v=>{ craftsmen=v||{}; renderFind(); renderBoard(); renderCompanies(); renderMyArea(); });
+DB.on('reviews', v=>{ reviews=v||{}; renderFind(); renderCompanies(); });
 
 // ===== 職人をさがす =====
 function matchFilter(k){
@@ -310,7 +329,7 @@ function renderFind(){
 }
 function kCardHTML(k){
   const st=H.statusOf(k.status);
-  const skill=H.avg(k.skillSum,k.skillCount);
+  const r=H.ratingFor(reviews,'craftsman',k._key);
   return `<div class="kcard">
     <div class="head">
       <div>
@@ -319,13 +338,13 @@ function kCardHTML(k){
       </div>
       <span class="badge" style="background:${st.color}"><span class="dot"></span>${st.label}</span>
     </div>
-    <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')} ｜ 技術力: ${H.stars(skill)}</div>
+    <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')} ｜ 技術力: ${H.stars(r.avg)}${r.count?`（${r.count}件）`:''}</div>
     <div style="margin-top:6px"><span class="price">${H.fmtPrice(k.price,k.unit)}</span></div>
     ${k.availMemo?`<div class="availmemo">🗓 ${H.esc(k.availMemo)}</div>`:''}
     ${(k.good&&k.good.length)?`<div class="seclabel">得意作業</div>${H.chips(k.good)}`:''}
     ${(k.ng&&k.ng.length)?`<div class="seclabel">NG作業</div>${H.chips(k.ng,'ng')}`:''}
     ${(k.quals&&k.quals.length)?`<div class="seclabel">保有資格</div>${H.chips(k.quals,'q')}`:''}
-    ${k.skillNotes?`<div class="note">📝 ${H.esc(k.skillNotes)}</div>`:''}
+    ${r.notes.length?`<div class="note">📝 ${H.esc(r.notes[0].note)}${r.notes[0].by?`<span style="color:var(--sub)"> — ${H.esc(r.notes[0].by)}</span>`:''}</div>`:''}
     <div class="actions">
       <button class="btn ln sm ln-share" data-key="${k._key}">📲 LINEで共有</button>
       <button class="btn ghost sm rv" data-type="craftsman" data-key="${k._key}" data-name="${H.esc(k.name)}">⭐ 評価</button>
@@ -355,19 +374,21 @@ function renderBoard(){
 // ===== 工務店一覧 =====
 function renderCompanies(){
   const list=document.getElementById('coList');
-  const arr=H.toArr(companies).sort((a,b)=>(H.avg(b.ratingSum,b.ratingCount)||0)-(H.avg(a.ratingSum,a.ratingCount)||0));
+  const rateOf=c=>H.ratingFor(reviews,'company',c._key);
+  const arr=H.toArr(companies).sort((a,b)=>(rateOf(b).avg||0)-(rateOf(a).avg||0));
   if(!arr.length){ list.innerHTML='<div class="empty">工務店がまだ登録されていません。</div>'; return; }
   list.innerHTML=arr.map(c=>{
     const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===c._key).length;
-    const rate=H.avg(c.ratingSum,c.ratingCount);
+    const r=rateOf(c);
     return `<div class="ccard">
       <div style="display:flex;justify-content:space-between;gap:8px">
         <div class="nm">${H.esc(c.name)}</div>
-        <div>${H.stars(rate)}</div>
+        <div>${H.stars(r.avg)}</div>
       </div>
       <div class="info">📍 ${H.esc(c.area||'—')}　👤 ${H.esc(c.contact||'—')}　📞 ${H.esc(c.tel||'—')}</div>
-      <div class="info">所属職人 ${cnt} 名　評価件数 ${c.ratingCount||0} 件</div>
+      <div class="info">所属職人 ${cnt} 名　評価件数 ${r.count} 件</div>
       ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
+      ${r.notes.length?`<div class="note">🗒 ${H.esc(r.notes[0].note)}${r.notes[0].by?`<span style="color:var(--sub)"> — ${H.esc(r.notes[0].by)}</span>`:''}</div>`:''}
       <div class="actions" style="display:flex;margin-top:10px">
         <button class="btn ghost sm rv" data-type="company" data-key="${c._key}" data-name="${H.esc(c.name)}">⭐ この工務店を評価</button>
       </div>
@@ -376,49 +397,89 @@ function renderCompanies(){
   bindReviewButtons(list);
 }
 
-// ===== 空き更新（自社） =====
-function renderMyCompanyOptions(){
-  const sel=document.getElementById('myCompany');
-  const cur=sel.value||localStorage.getItem('shokunin_mycompany')||'';
-  sel.innerHTML='<option value="">— 選択してください —</option>'+
-    H.toArr(companies).map(c=>`<option value="${c._key}">${H.esc(c.name)}</option>`).join('');
-  sel.value=cur;
+// ===== 自社の職人（ログイン制） =====
+function myCompanyEntry(){
+  if(!myUser||!myUser.email) return null;
+  return H.toArr(companies).find(c=>c.ownerEmail===myUser.email)||null;
 }
-document.getElementById('myCompany').onchange=e=>{
-  localStorage.setItem('shokunin_mycompany', e.target.value);
-  renderUpdate();
-};
-function renderUpdate(){
-  const myKey=document.getElementById('myCompany').value||localStorage.getItem('shokunin_mycompany')||'';
-  document.getElementById('myCompany').value=myKey;
+function loggedIn(){ return !!(myUser && myUser.email); } // 匿名はemail無し
+
+function renderMyArea(){
+  const box=document.getElementById('authBox');
   const list=document.getElementById('updateList');
-  const addBtn=document.getElementById('addCraftBtn');
-  if(!myKey){
-    addBtn.style.display='none';
-    if(!H.toArr(companies).length){
-      list.innerHTML='<div class="empty">まず工務店の登録が必要です。<br>管理画面（admin.html）から自社を登録してください。</div>';
-    }else{
-      list.innerHTML='<div class="empty">自社を選択すると、自社の職人を登録・編集できます。</div>';
-    }
+  if(!box||!list) return;
+  if(!loggedIn()){
+    box.innerHTML = `
+      <b>🔑 工務店ログイン</b>
+      <div class="count" style="margin:4px 0 10px">自社の職人を登録・編集するにはログインしてください（閲覧・評価はログイン不要）。</div>
+      <div class="field"><label>メールアドレス</label><input type="email" id="lgEmail" placeholder="you@example.com" autocomplete="username"></div>
+      <div class="field"><label>パスワード</label><input type="password" id="lgPass" placeholder="6文字以上" autocomplete="current-password"></div>
+      <div class="row">
+        <button class="btn ghost" id="signupBtn">新規登録</button>
+        <button class="btn" id="loginBtn">ログイン</button>
+      </div>
+      <div class="count" style="margin-top:8px">初めての方は「新規登録」。管理者からメール指定がある場合は、そのメールで登録してください。</div>`;
+    document.getElementById('loginBtn').onclick=()=>doAuth('in');
+    document.getElementById('signupBtn').onclick=()=>doAuth('up');
+    list.innerHTML='';
     return;
   }
-  addBtn.style.display='block';
-  const arr=H.toArr(craftsmen).filter(k=>k.companyKey===myKey);
-  if(!arr.length){ list.innerHTML='<div class="empty">自社の職人がまだ登録されていません。<br>上の「＋ 職人を登録」から追加してください。</div>'; return; }
-  list.innerHTML='<div class="card">'+arr.map(k=>`
-    <div class="upd-row">
-      <div class="nm">${H.esc(k.name)}</div>
-      <select data-key="${k._key}" class="updSt">
-        ${H.statuses.map(s=>`<option value="${s.key}" ${k.status===s.key?'selected':''}>${s.label}</option>`).join('')}
-      </select>
-    </div>
-    <div class="field" style="margin:-2px 0 8px">
-      <input type="text" class="updMemo" data-key="${k._key}" value="${H.esc(k.availMemo||'')}" placeholder="空き状況メモ（例：来週空きあり）">
-    </div>
-    <div class="upd-acts">
-      <button class="btn ghost sm ce-edit" data-key="${k._key}">✏️ 情報を編集</button>
-      <button class="btn ghost sm ce-del" data-key="${k._key}" style="color:var(--warn);border-color:#f0c4c0">🗑 削除</button>
-    </div>`).join('')+'</div>';
+  box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div><div style="font-weight:800">${H.esc(myUser.email)}</div><div class="count" style="margin:2px 0 0">${H.isAdmin(myUser)?'管理者としてログイン中':'ログイン中'}</div></div>
+      <button class="btn ghost sm" id="logoutBtn">ログアウト</button>
+    </div>`;
+  document.getElementById('logoutBtn').onclick=()=>DB.auth.signOut().then(()=>H.toast('ログアウトしました','ok'));
+
+  const mine=myCompanyEntry();
+  if(!mine){
+    list.innerHTML='<div class="card"><b>🏢 自社の工務店を登録</b><div class="count" style="margin:4px 0 10px">あなたのアカウントに紐づく工務店がまだありません。登録すると自社の職人を管理できます。</div><button class="btn full" id="regCoBtn">＋ 工務店を登録</button></div>';
+    document.getElementById('regCoBtn').onclick=()=>openCompanyForm(null);
+    return;
+  }
+  renderOwnArea(mine);
+}
+
+function doAuth(mode){
+  const email=(document.getElementById('lgEmail').value||'').trim();
+  const pass=(document.getElementById('lgPass').value||'');
+  if(!email){ H.toast('メールアドレスを入力してください','err'); return; }
+  if(DB.mode==='firebase' && pass.length<6){ H.toast('パスワードは6文字以上です','err'); return; }
+  const p = mode==='up' ? DB.auth.signUp(email,pass) : DB.auth.signIn(email,pass);
+  p.then(()=>H.toast(mode==='up'?'登録してログインしました':'ログインしました','ok'))
+   .catch(e=>H.toast('ログインできませんでした：'+((e&&e.message)||e),'err'));
+}
+
+function renderOwnArea(mine){
+  const list=document.getElementById('updateList');
+  const arr=H.toArr(craftsmen).filter(k=>k.companyKey===mine._key);
+  let html='<div class="card">'
+    +`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div><div style="font-weight:800;font-size:16px">${H.esc(mine.name)}</div>
+        <div class="count" style="margin:3px 0 0">📍${H.esc(mine.area||'—')}　📞${H.esc(mine.tel||'—')}</div></div>
+        <button class="btn ghost sm" id="editCoBtn">✏️ 会社情報</button>
+      </div></div>`;
+  html+='<button class="btn full" id="addCraftBtn" style="margin-bottom:12px">＋ 職人を登録</button>';
+  if(!arr.length){
+    html+='<div class="empty">自社の職人がまだ登録されていません。上の「＋ 職人を登録」から追加してください。</div>';
+  }else{
+    html+='<div class="card">'+arr.map(k=>`
+      <div class="upd-row">
+        <div class="nm">${H.esc(k.name)}</div>
+        <select data-key="${k._key}" class="updSt">
+          ${H.statuses.map(s=>`<option value="${s.key}" ${k.status===s.key?'selected':''}>${s.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field" style="margin:-2px 0 8px">
+        <input type="text" class="updMemo" data-key="${k._key}" value="${H.esc(k.availMemo||'')}" placeholder="空き状況メモ（例：来週空きあり）">
+      </div>
+      <div class="upd-acts">
+        <button class="btn ghost sm ce-edit" data-key="${k._key}">✏️ 情報を編集</button>
+        <button class="btn ghost sm ce-del" data-key="${k._key}" style="color:var(--warn);border-color:#f0c4c0">🗑 削除</button>
+      </div>`).join('')+'</div>';
+  }
+  list.innerHTML=html;
+  document.getElementById('editCoBtn').onclick=()=>openCompanyForm(mine._key);
+  document.getElementById('addCraftBtn').onclick=()=>openCraftForm(null);
   list.querySelectorAll('.updSt').forEach(sel=>sel.onchange=()=>{
     DB.update('craftsmen/'+sel.dataset.key,{status:sel.value,updatedAt:Date.now()}).then(()=>H.toast('空き状況を更新しました','ok'));
   });
@@ -432,6 +493,46 @@ function renderUpdate(){
     DB.remove('craftsmen/'+b.dataset.key).then(()=>H.toast('削除しました','ok'));
   });
 }
+
+// ===== 工務店 登録/編集モーダル（自社情報） =====
+let editCoKey=null;
+function openCompanyForm(key){
+  if(!loggedIn()){ H.toast('先にログインしてください','err'); return; }
+  editCoKey=key||null;
+  const c=key?(companies[key]||{}):{};
+  document.getElementById('coeTitle').textContent=key?'会社情報を編集':'工務店を登録';
+  document.getElementById('coeSub').textContent='オーナー：'+myUser.email;
+  document.getElementById('coeName').value=c.name||'';
+  document.getElementById('coeContact').value=c.contact||'';
+  document.getElementById('coeTel').value=c.tel||'';
+  document.getElementById('coeArea').value=c.area||'';
+  document.getElementById('coeNotes').value=c.notes||'';
+  document.getElementById('coOv').classList.add('on');
+}
+function closeCompanyForm(){ editCoKey=null; document.getElementById('coOv').classList.remove('on'); }
+document.getElementById('coeCancel').onclick=closeCompanyForm;
+document.getElementById('coOv').onclick=e=>{ if(e.target.id==='coOv') closeCompanyForm(); };
+document.getElementById('coeSave').onclick=()=>{
+  const name=document.getElementById('coeName').value.trim();
+  if(!name){ H.toast('工務店名を入力してください','err'); return; }
+  const data={
+    name, contact:document.getElementById('coeContact').value.trim(),
+    tel:document.getElementById('coeTel').value.trim(),
+    area:document.getElementById('coeArea').value.trim(),
+    notes:document.getElementById('coeNotes').value.trim()
+  };
+  let p;
+  if(editCoKey){
+    p=DB.update('companies/'+editCoKey,data);
+  }else{
+    // 新規登録：オーナーを自分のメールに設定（このメールだけが編集可能になる）
+    p=DB.push('companies', Object.assign({ownerEmail:myUser.email, createdAt:Date.now()}, data))
+      .then(key=>{ // 既存の自社職人の表示名を更新する必要は無い（新規なので）
+        return key;
+      });
+  }
+  p.then(()=>{ closeCompanyForm(); H.toast(editCoKey?'会社情報を更新しました':'工務店を登録しました','ok'); });
+};
 
 // ===== 自社の職人 登録/編集モーダル =====
 let editCraftKey=null;
@@ -455,12 +556,12 @@ function setChecked(id, vals){
   document.querySelectorAll('#'+id+' input').forEach(c=>{ c.checked=set.has(c.value); c.parentElement.classList.toggle('on',c.checked); });
 }
 function openCraftForm(key){
-  const myKey=localStorage.getItem('shokunin_mycompany')||'';
-  if(!myKey){ H.toast('先に自社を選択してください','err'); return; }
+  const mine=myCompanyEntry();
+  if(!mine){ H.toast('先に自社の工務店を登録してください','err'); return; }
   editCraftKey=key||null;
   const k=key?(craftsmen[key]||{}):{};
   document.getElementById('ceTitle').textContent=key?'職人の情報を編集':'職人を登録';
-  document.getElementById('ceSub').textContent='所属：'+((companies[myKey]||{}).name||'');
+  document.getElementById('ceSub').textContent='所属：'+(mine.name||'');
   document.getElementById('ceName').value=k.name||'';
   document.getElementById('ceAge').value=k.age||'';
   document.getElementById('ceGender').value=k.gender||'';
@@ -469,16 +570,16 @@ function openCraftForm(key){
   setChecked('ceGood',k.good); setChecked('ceNg',k.ng); setChecked('ceQual',k.quals);
   document.getElementById('craftOv').classList.add('on');
 }
-document.getElementById('addCraftBtn').onclick=()=>openCraftForm(null);
 function closeCraftForm(){ editCraftKey=null; document.getElementById('craftOv').classList.remove('on'); }
 document.getElementById('ceCancel').onclick=closeCraftForm;
 document.getElementById('craftOv').onclick=e=>{ if(e.target.id==='craftOv') closeCraftForm(); };
 document.getElementById('ceSave').onclick=()=>{
-  const myKey=localStorage.getItem('shokunin_mycompany')||'';
+  const mine=myCompanyEntry();
+  if(!mine){ H.toast('先に自社の工務店を登録してください','err'); return; }
   const name=document.getElementById('ceName').value.trim();
   if(!name){ H.toast('氏名を入力してください','err'); return; }
   const data={
-    name, companyKey:myKey, companyName:(companies[myKey]||{}).name||'',
+    name, companyKey:mine._key, companyName:mine.name||'',
     age:+document.getElementById('ceAge').value||null,
     gender:document.getElementById('ceGender').value,
     price:+document.getElementById('cePrice').value||null,
@@ -488,7 +589,7 @@ document.getElementById('ceSave').onclick=()=>{
   };
   const p=editCraftKey
     ? DB.update('craftsmen/'+editCraftKey,data)
-    : DB.push('craftsmen', Object.assign({status:'free',availMemo:'',skillSum:0,skillCount:0,skillNotes:'',createdAt:Date.now()},data));
+    : DB.push('craftsmen', Object.assign({status:'free',availMemo:'',createdAt:Date.now()},data));
   p.then(()=>{ document.getElementById('craftOv').classList.remove('on'); H.toast(editCraftKey?'職人情報を更新しました':'職人を登録しました','ok'); });
 };
 
@@ -544,7 +645,8 @@ function openReview(type,key,name){
   reviewTarget={type,key,name}; rvValue=0;
   document.getElementById('rvTitle').textContent=(type==='craftsman'?'職人を評価':'工務店を評価');
   document.getElementById('rvSub').textContent='対象：'+name;
-  document.getElementById('rvBy').value=localStorage.getItem('shokunin_mycompany_name')||'';
+  const mine=myCompanyEntry();
+  document.getElementById('rvBy').value=(mine&&mine.name)||localStorage.getItem('shokunin_mycompany_name')||'';
   document.getElementById('rvNote').value='';
   paintStars(0);
   document.getElementById('reviewOv').classList.add('on');
@@ -560,16 +662,8 @@ document.getElementById('rvSubmit').onclick=async()=>{
   localStorage.setItem('shokunin_mycompany_name', by);
   const note=document.getElementById('rvNote').value.trim();
   const {type,key,name}=reviewTarget;
-  // レビュー履歴を保存
+  // 評価は reviews に保存（平均は表示時に算出。匿名でも投稿可）
   await DB.push('reviews',{type,targetKey:key,targetName:name,rating:rvValue,note,byCompany:by,at:Date.now()});
-  // 対象の集計（sum/count）を加算
-  if(type==='craftsman'){
-    const k=craftsmen[key]||{};
-    await DB.update('craftsmen/'+key,{skillSum:(k.skillSum||0)+rvValue, skillCount:(k.skillCount||0)+1});
-  }else{
-    const c=companies[key]||{};
-    await DB.update('companies/'+key,{ratingSum:(c.ratingSum||0)+rvValue, ratingCount:(c.ratingCount||0)+1});
-  }
   document.getElementById('reviewOv').classList.remove('on');
   H.toast('評価を送信しました。ありがとうございます！','ok');
 };

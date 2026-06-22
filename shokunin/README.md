@@ -47,61 +47,71 @@
 ### B. 本番運用（複数の工務店で共有）
 1. `config.js` の `firebase` に Firebase Realtime Database の設定を入れる
    （既存のオセロ／勤怠アプリのプロジェクトを流用可。データは `shokunin/` パスに保存され混ざりません）
-2. **【必須】Firebase のセキュリティルールで `shokunin` パスへの読み書きを許可する**（下記）
-3. GitHub Pages などに `shokunin/` を公開
-4. 各工務店の担当者に **`index.html` のURL** を共有（LINEグループに貼る運用も可）
-5. 運営は **`admin.html`** から工務店を登録し、評価を入力
+2. `config.js` の `adminEmails` に**管理者のメール**を入れる（admin.html はこのメールでログイン）
+3. **【必須】Firebase で認証を有効化＋セキュリティルールを設定**（下記）
+4. GitHub Pages などに `shokunin/` を公開
+5. 各工務店の担当者に **`index.html` のURL** を共有（LINEグループに貼る運用も可）
 
-### ⚠️ 工務店・職人を登録できないときは（Firebaseルール）
-「登録できない」「保存できませんでした：…書き込みが拒否されています」と出る場合、**Firebase 側で `shokunin` パスへの書き込みが許可されていない**のが原因です（既存の勤怠アプリ等の `kintai` だけ許可されている状態）。
+### 権限モデル（だれが何を編集できるか）
+- **工務店アカウント**：`index.html`「自社の職人」タブで**メール/パスワードでログイン**。各工務店レコードの `ownerEmail` ＝ 自分のメールの場合だけ、**自社の職人を登録・編集・削除**できます（Firebaseルールで強制）。
+- **管理者**：`config.js` の `adminEmails` のメールでログインすると、`admin.html` から**全件編集**できます。
+- **評価（職人・工務店）**：ログイン不要（**匿名でも投稿可**）。評価の平均は `reviews` から自動計算して表示します。
+- 閲覧・検索・評価は匿名サインインで動くので、見るだけの人にログインは不要です。
 
-Firebase コンソール → Realtime Database → **ルール** に、`shokunin` の許可を追加してください（既存ルールと**マージ**します）。
+### 【必須】Firebase コンソールでの設定
+**(1) 認証を有効化**：Authentication → Sign-in method（ログイン方法）で
+- **「メール/パスワード」** を有効化
+- **「匿名（Anonymous）」** を有効化
 
-**(A) まず動かす（誰でも読み書き可・簡易）**
+**(2) Realtime Database → ルール**（既存ルールと**マージ**。`ADMIN_EMAIL_HERE` は `config.js` の `adminEmails` と同じ管理者メールに置き換え）
 ```json
 {
   "rules": {
-    "kintai":   { ".read": true, ".write": true },
-    "shokunin": { ".read": true, ".write": true }
+    "kintai": { ".read": true, ".write": true },
+    "shokunin": {
+      ".read": "auth != null",
+      "companies": {
+        "$cid": {
+          ".write": "auth != null && ( auth.token.email === 'ADMIN_EMAIL_HERE' || ( (!data.exists() || data.child('ownerEmail').val() === auth.token.email) && (!newData.exists() || newData.child('ownerEmail').val() === auth.token.email) ) )"
+        }
+      },
+      "craftsmen": {
+        "$kid": {
+          ".write": "auth != null && ( auth.token.email === 'ADMIN_EMAIL_HERE' || ( (!data.exists() || root.child('shokunin/companies').child(data.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) && (!newData.exists() || root.child('shokunin/companies').child(newData.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) ) )"
+        }
+      },
+      "reviews": {
+        "$rid": { ".write": "auth != null" }
+      }
+    }
   }
 }
 ```
+- 管理者を複数にする場合は `auth.token.email === 'a@x.com' || auth.token.email === 'b@x.com'` のように増やします。
+- ルール公開後、反映まで数十秒かかることがあります。
 
-**(B) 推奨：認証されたアプリからのみ読み書き可（`auth != null`）**
-このアプリは画面ロード時に**匿名サインイン**するので、利用者にログイン操作は発生しません。DBのURLを直接叩く外部アクセスを排除できます。
-```json
-{
-  "rules": {
-    "kintai":   { ".read": true, ".write": true },
-    "shokunin": { ".read": "auth != null", ".write": "auth != null" }
-  }
-}
-```
-**(B) を使うには、匿名サインインの有効化が必須です：**
-Firebase コンソール → **Authentication → Sign-in method（ログイン方法）→ 「匿名（Anonymous）」を有効化**。
-
-> 有効化しないまま (B) のルールにすると、サインインできず読み書きが全て拒否されます。まず (A) で動作確認 →（B）へ移行する流れが安全です。ルール公開後、反映まで数十秒かかることがあります。
->
-> ※匿名認証は「アプリ経由のアクセスのみ許可」する基本対策です。工務店ごとにアクセスを分けたい等、さらに厳密な制御が必要な場合はメール/パスワード認証＋ユーザー単位のルールをご検討ください。
+> 段階的に始めたい場合は、まず `"shokunin": { ".read": true, ".write": true }` で動作確認してから上記の厳格ルールへ移行すると安全です。
 
 ## 運用の流れ（例）
-1. 運営が `admin.html` で参加工務店を登録（パスコード保護）
-2. 各工務店は `index.html` の「自社の職人」タブで、**自社の職人を自分で登録**し、空き状況を更新
+1. 運営が `admin.html`（管理者メールでログイン）で参加工務店を登録。**「ログイン用メール」に各工務店のメールを設定**
+2. 各工務店は `index.html`「自社の職人」タブで、その**メール/パスワードでログイン（初回は新規登録）**し、自社の職人を登録・空き状況を更新
+   - ※工務店が自分で `index.html` から会社ごと新規登録することもできます（その場合オーナーは登録した本人のメール）
 3. 他社は「職人をさがす／空き状況ボード」で空いている職人を確認
-4. 実際に手伝ってもらった後、`index.html` または `admin.html` から職人・工務店を評価
+4. 実際に手伝ってもらった後、`index.html` または `admin.html` から職人・工務店を評価（匿名可）
 5. 評価は数値（★平均）として全員に共有され、次回のマッチングに活用
 
 ## LINE共有のしくみ
 公式アカウントやBotは不要です。共有ボタンを押すと、スマホでは**共有シート**が開くので「LINE（グループ）」を選んで送るだけ。共有APIに対応していないPC等では、内容を**クリップボードにコピー**したうえでLINEの共有画面を開きます。送られる文面にはアプリのURLが含まれ、受け取った人がタップしてそのまま開けます。
 
 ## データ構造（Firebase: `shokunin/`）
-- `companies/{id}` … 工務店（name, tel, area, contact, notes, ratingSum, ratingCount）
-- `craftsmen/{id}` … 職人（name, companyKey, age, gender, quals[], good[], ng[], price, unit, status, availMemo, skillSum, skillCount, skillNotes）
-- `reviews/{id}` … 評価履歴（type, targetKey, targetName, rating, note, byCompany, at）
+- `companies/{id}` … 工務店（name, tel, area, contact, **ownerEmail**, notes, createdAt）
+- `craftsmen/{id}` … 職人（name, companyKey, age, gender, quals[], good[], ng[], price, unit, status, availMemo, createdAt）
+- `reviews/{id}` … 評価（type, targetKey, targetName, rating, note, byCompany, at）
 
-> ★平均は `ratingSum / ratingCount`（職人は `skillSum / skillCount`）で算出して表示します。
+> ★平均は集計値を持たず、表示時に `reviews` から都度計算します（職人＝type:"craftsman"、工務店＝type:"company" を targetKey で集計）。集計値の改ざんを防げます。
+> `ownerEmail` がその工務店の編集権限を持つログインメールです。
 
 ## セキュリティの注意
 - `config.js` の値はクライアントに公開される前提の識別子です。**機密保護は Firebase のセキュリティルールで担保**してください。
-- 管理画面のパスコードは簡易的な目隠しです。確実なアクセス制御は Firebase 側で設定してください。
+- 工務店ごとの編集制限・管理者権限は上記ルールで強制されます（`config.js` の `adminEmails` はアプリ表示用。実際の許可はルールの管理者メールで決まるので、両者を一致させてください）。
 - 単価・評価など取り扱いに配慮が必要な情報を含みます。公開範囲（URLの配布先）に注意してください。

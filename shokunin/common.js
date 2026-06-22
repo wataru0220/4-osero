@@ -31,6 +31,27 @@
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
     );
 
+  // 評価は reviews コレクションから都度算出する（集計値はレコードに持たない）。
+  // type: "craftsman" | "company", targetKey: 対象のキー
+  // → { avg: 平均(0〜5)|null, count: 件数, notes: [{rating, note, by, at}...] 新しい順 }
+  H.ratingFor = (reviewsObj, type, targetKey) => {
+    const arr = H.toArr(reviewsObj).filter((r) => r.type === type && r.targetKey === targetKey);
+    const count = arr.length;
+    const sum = arr.reduce((a, r) => a + (Number(r.rating) || 0), 0);
+    const notes = arr
+      .filter((r) => r.note)
+      .sort((a, b) => (b.at || 0) - (a.at || 0))
+      .map((r) => ({ rating: r.rating, note: r.note, by: r.byCompany || "", at: r.at }));
+    return { avg: H.avg(sum, count), count, notes };
+  };
+
+  // この利用者が対象の工務店を編集できるか（自社のオーナー or 管理者）
+  H.isAdmin = (user) =>
+    !!(user && user.email && (CFG.adminEmails || []).indexOf(user.email) >= 0);
+  H.ownsCompany = (user, company) =>
+    !!(user && user.email && company && company.ownerEmail === user.email);
+  H.canEditCompany = (user, company) => H.isAdmin(user) || H.ownsCompany(user, company);
+
   // 配列（得意/NG/資格）をチップHTMLに
   H.chips = (arr, cls) =>
     (arr || []).map((x) => `<span class="chip ${cls || ""}">${H.esc(x)}</span>`).join("");
@@ -71,19 +92,22 @@
     const now = Date.now();
     return {
       companies: {
-        C1: { name: "山田工務店", tel: "03-1111-2222", area: "東京都／23区西部", contact: "山田 太郎", ratingSum: 9, ratingCount: 2, notes: "支払いが早く対応も丁寧。", createdAt: now },
-        C2: { name: "佐藤建設", tel: "045-333-4444", area: "神奈川県／横浜・川崎", contact: "佐藤 健", ratingSum: 4, ratingCount: 1, notes: "現場管理がしっかりしている。", createdAt: now },
-        C3: { name: "鈴木住建", tel: "04-7555-6666", area: "千葉県／東葛エリア", contact: "鈴木 一郎", ratingSum: 0, ratingCount: 0, notes: "", createdAt: now }
+        C1: { name: "山田工務店", tel: "03-1111-2222", area: "東京都／23区西部", contact: "山田 太郎", ownerEmail: "yamada@example.com", notes: "支払いが早く対応も丁寧。", createdAt: now },
+        C2: { name: "佐藤建設", tel: "045-333-4444", area: "神奈川県／横浜・川崎", contact: "佐藤 健", ownerEmail: "sato@example.com", notes: "現場管理がしっかりしている。", createdAt: now },
+        C3: { name: "鈴木住建", tel: "04-7555-6666", area: "千葉県／東葛エリア", contact: "鈴木 一郎", ownerEmail: "suzuki@example.com", notes: "", createdAt: now }
       },
       craftsmen: {
-        K1: { name: "田中 大工", companyKey: "C1", companyName: "山田工務店", age: 42, gender: "男", quals: ["二級建築士", "職長・安全衛生責任者"], good: ["大工", "内装"], ng: ["塗装"], price: 22000, unit: "day", status: "free", availMemo: "来週いっぱい空きあり", skillSum: 14, skillCount: 3, skillNotes: "造作が丁寧。納まりの相談に乗ってくれる。", createdAt: now, updatedAt: now },
-        K2: { name: "高橋 塗装", companyKey: "C2", companyName: "佐藤建設", age: 35, gender: "男", quals: ["有機溶剤作業主任者"], good: ["塗装", "防水"], ng: ["電気"], price: 2500, unit: "hour", status: "partial", availMemo: "午前のみ対応可", skillSum: 9, skillCount: 2, skillNotes: "外壁塗装の仕上がりがきれい。", createdAt: now, updatedAt: now },
-        K3: { name: "伊藤 電工", companyKey: "C1", companyName: "山田工務店", age: 29, gender: "男", quals: ["電気工事士(第二種)", "高所作業車"], good: ["電気"], ng: ["解体", "左官"], price: 24000, unit: "day", status: "busy", availMemo: "今月末まで埋まっています", skillSum: 5, skillCount: 1, skillNotes: "", createdAt: now, updatedAt: now },
-        K4: { name: "渡辺 内装", companyKey: "C3", companyName: "鈴木住建", age: 51, gender: "男", quals: ["二級施工管理技士"], good: ["内装", "クロス", "タイル"], ng: [], price: 21000, unit: "day", status: "free", availMemo: "", skillSum: 0, skillCount: 0, skillNotes: "", createdAt: now, updatedAt: now }
+        K1: { name: "田中 大工", companyKey: "C1", companyName: "山田工務店", age: 42, gender: "男", quals: ["二級建築士", "職長・安全衛生責任者"], good: ["大工", "内装"], ng: ["塗装"], price: 22000, unit: "day", status: "free", availMemo: "来週いっぱい空きあり", createdAt: now, updatedAt: now },
+        K2: { name: "高橋 塗装", companyKey: "C2", companyName: "佐藤建設", age: 35, gender: "男", quals: ["有機溶剤作業主任者"], good: ["塗装", "防水"], ng: ["電気"], price: 2500, unit: "hour", status: "partial", availMemo: "午前のみ対応可", createdAt: now, updatedAt: now },
+        K3: { name: "伊藤 電工", companyKey: "C1", companyName: "山田工務店", age: 29, gender: "男", quals: ["電気工事士(第二種)", "高所作業車"], good: ["電気"], ng: ["解体", "左官"], price: 24000, unit: "day", status: "busy", availMemo: "今月末まで埋まっています", createdAt: now, updatedAt: now },
+        K4: { name: "渡辺 内装", companyKey: "C3", companyName: "鈴木住建", age: 51, gender: "男", quals: ["二級施工管理技士"], good: ["内装", "クロス", "タイル"], ng: [], price: 21000, unit: "day", status: "free", availMemo: "", createdAt: now, updatedAt: now }
       },
       reviews: {
-        R1: { type: "craftsman", targetKey: "K1", targetName: "田中 大工", rating: 5, note: "納期もきっちり守ってくれた。", byCompany: "佐藤建設", at: now },
-        R2: { type: "company", targetKey: "C1", targetName: "山田工務店", rating: 5, note: "段取りがよく助かった。", byCompany: "鈴木住建", at: now }
+        R1: { type: "craftsman", targetKey: "K1", targetName: "田中 大工", rating: 5, note: "造作が丁寧。納まりの相談に乗ってくれる。", byCompany: "佐藤建設", at: now - 200000 },
+        R2: { type: "craftsman", targetKey: "K1", targetName: "田中 大工", rating: 4, note: "納期もきっちり守ってくれた。", byCompany: "鈴木住建", at: now - 100000 },
+        R3: { type: "craftsman", targetKey: "K2", targetName: "高橋 塗装", rating: 5, note: "外壁塗装の仕上がりがきれい。", byCompany: "山田工務店", at: now - 50000 },
+        R4: { type: "company", targetKey: "C1", targetName: "山田工務店", rating: 5, note: "段取りがよく助かった。", byCompany: "鈴木住建", at: now - 80000 },
+        R5: { type: "company", targetKey: "C2", targetName: "佐藤建設", rating: 4, note: "現場管理がしっかりしている。", byCompany: "山田工務店", at: now - 30000 }
       }
     };
   };

@@ -90,12 +90,17 @@
   </div>
 </header>
 
-<!-- パスコードゲート -->
+<!-- 管理者ログイン -->
 <div id="gate" class="wrap" style="display:none">
   <div class="card gate">
-    <h2 class="sec" style="font-size:15px">🔒 管理パスコード</h2>
-    <div class="field"><input type="password" id="pass" placeholder="パスコード"></div>
-    <button class="btn full" id="passBtn">入る</button>
+    <h2 class="sec" style="font-size:15px">🔒 管理者ログイン</h2>
+    <div class="field"><input type="email" id="adEmail" placeholder="管理者メール" autocomplete="username"></div>
+    <div class="field"><input type="password" id="adPass" placeholder="パスワード" autocomplete="current-password"></div>
+    <div class="row">
+      <button class="btn ghost" id="adSignup">新規登録</button>
+      <button class="btn" id="adLogin">ログイン</button>
+    </div>
+    <div class="count" id="gateMsg" style="margin-top:10px">config.js の adminEmails に登録したメールでログインしてください。</div>
   </div>
 </div>
 
@@ -119,6 +124,8 @@
         <div class="field"><label>電話番号</label><input type="text" id="coTel" placeholder="例）03-1234-5678"></div>
       </div>
       <div class="field"><label>対応エリア</label><input type="text" id="coArea" placeholder="例）東京都／23区西部"></div>
+      <div class="field"><label>ログイン用メール（この工務店のオーナー）</label><input type="email" id="coOwnerEmail" placeholder="例）yamada@example.com">
+        <div class="count" style="margin-top:4px">このメールでログインした工務店だけが、自社の職人を編集できます。</div></div>
       <div class="field"><label>特記事項・メモ</label><textarea id="coNotes" placeholder="支払い条件、得意分野など"></textarea></div>
       <div class="row">
         <button class="btn ghost" id="coCancel" style="display:none">キャンセル</button>
@@ -193,27 +200,55 @@
 let companies={}, craftsmen={}, reviews={};
 let editCo=null, editKi=null;
 let evK=0, evC=0;
+let myUser=null, booted=false;
 
-// ---- パスコード ----
-const PASS = (H.cfg.adminPasscode||'');
+// ---- 管理者ログイン ----
+function isAdminUser(){ return H.isAdmin(myUser) || DB.mode==='local'; } // 端末内お試しは無条件で管理可
+function showGate(msg){
+  document.getElementById('app').style.display='none';
+  document.getElementById('gate').style.display='block';
+  if(msg) document.getElementById('gateMsg').textContent=msg;
+}
 function startApp(){
   document.getElementById('gate').style.display='none';
   document.getElementById('app').style.display='block';
-  boot();
+  if(!booted){ booted=true; boot(); }
 }
-if(!PASS || sessionStorage.getItem('shokunin_admin')==='1'){ startApp(); }
-else{ document.getElementById('gate').style.display='block'; }
-document.getElementById('passBtn').onclick=()=>{
-  if(document.getElementById('pass').value===PASS){ sessionStorage.setItem('shokunin_admin','1'); startApp(); }
-  else H.toast('パスコードが違います','err');
-};
-document.getElementById('pass').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('passBtn').click(); });
+DB.auth.onChange(u=>{
+  myUser=u;
+  if(DB.mode==='local'){ startApp(); return; } // 端末内お試しは無条件で開く
+  if(u && u.email){
+    if(isAdminUser()) startApp();
+    else showGate('このメール（'+u.email+'）は管理者として登録されていません。config.js の adminEmails に追加してください。');
+  } else {
+    showGate(); // 未ログイン（匿名含む）
+  }
+});
+function adAuth(mode){
+  const email=(document.getElementById('adEmail').value||'').trim();
+  const pass=(document.getElementById('adPass').value||'');
+  if(!email){ H.toast('メールを入力してください','err'); return; }
+  if(DB.mode==='firebase' && pass.length<6){ H.toast('パスワードは6文字以上です','err'); return; }
+  const p = mode==='up' ? DB.auth.signUp(email,pass) : DB.auth.signIn(email,pass);
+  p.catch(e=>H.toast('ログインできませんでした：'+((e&&e.message)||e),'err'));
+}
+document.getElementById('adLogin').onclick=()=>adAuth('in');
+document.getElementById('adSignup').onclick=()=>adAuth('up');
+document.getElementById('adPass').addEventListener('keydown',e=>{ if(e.key==='Enter') adAuth('in'); });
 
 function boot(){
   // モード表示
   const m=document.getElementById('modebar');
   if(DB.mode==='local'){ m.className='modebar local'; m.innerHTML='⚠️ <b>お試しモード</b>：この端末内だけで動作中。共有するには config.js に Firebase を設定してください。'; DB._seedIfEmpty(H.seed()); }
-  else{ m.className='modebar live'; m.innerHTML='🟢 <b>共有モード</b>：Firebase に保存され、利用者アプリへリアルタイム反映されます。'; }
+  else{ m.className='modebar live'; m.innerHTML='🟢 <b>共有モード</b>：'+(myUser&&myUser.email?'管理者 '+H.esc(myUser.email)+' でログイン中。':'')+'Firebaseに保存され利用者アプリへ反映されます。'; }
+
+  // ログアウトボタン（ヘッダー）
+  if(!document.getElementById('adLogout')){
+    const lo=document.createElement('button'); lo.className='hbtn'; lo.id='adLogout';
+    lo.innerHTML='<span class="ic">🚪</span>ログアウト';
+    lo.onclick=()=>DB.auth.signOut().then(()=>H.toast('ログアウトしました','ok'));
+    document.querySelector('header .hrow').appendChild(lo);
+  }
 
   // チェックグリッド生成
   buildChecks('kGood', H.workTypes);
@@ -241,8 +276,8 @@ function boot(){
 
   // 購読
   DB.on('companies', v=>{ companies=v||{}; renderCoList(); fillCompanySelects(); renderKList(); });
-  DB.on('craftsmen', v=>{ craftsmen=v||{}; renderKList(); fillCraftsmanSelect(); });
-  DB.on('reviews', v=>{ reviews=v||{}; renderHist(); });
+  DB.on('craftsmen', v=>{ craftsmen=v||{}; renderKList(); fillCraftsmanSelect(); renderCoList(); });
+  DB.on('reviews', v=>{ reviews=v||{}; renderHist(); renderCoList(); renderKList(); });
 }
 
 function buildChecks(id, arr){
@@ -282,17 +317,18 @@ function saveCompany(){
     name, contact:document.getElementById('coContact').value.trim(),
     tel:document.getElementById('coTel').value.trim(),
     area:document.getElementById('coArea').value.trim(),
+    ownerEmail:document.getElementById('coOwnerEmail').value.trim(),
     notes:document.getElementById('coNotes').value.trim()
   };
   if(editCo){
     DB.update('companies/'+editCo,data).then(()=>{H.toast('工務店を更新しました','ok'); resetCoForm();});
   }else{
-    DB.push('companies', Object.assign({ratingSum:0,ratingCount:0,createdAt:Date.now()},data)).then(()=>{H.toast('工務店を登録しました','ok'); resetCoForm();});
+    DB.push('companies', Object.assign({createdAt:Date.now()},data)).then(()=>{H.toast('工務店を登録しました','ok'); resetCoForm();});
   }
 }
 function resetCoForm(){
   editCo=null;
-  ['coName','coContact','coTel','coArea','coNotes'].forEach(id=>document.getElementById(id).value='');
+  ['coName','coContact','coTel','coArea','coOwnerEmail','coNotes'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('coSave').textContent='登録する';
   document.getElementById('coCancel').style.display='none';
   document.getElementById('coEditBar').style.display='none';
@@ -303,6 +339,7 @@ function editCompany(key){
   document.getElementById('coContact').value=c.contact||'';
   document.getElementById('coTel').value=c.tel||'';
   document.getElementById('coArea').value=c.area||'';
+  document.getElementById('coOwnerEmail').value=c.ownerEmail||'';
   document.getElementById('coNotes').value=c.notes||'';
   document.getElementById('coSave').textContent='更新する';
   document.getElementById('coCancel').style.display='block';
@@ -321,11 +358,13 @@ function renderCoList(){
   if(!arr.length){ list.innerHTML='<div class="empty">まだ登録がありません。</div>'; return; }
   list.innerHTML=arr.map(c=>{
     const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===c._key).length;
+    const r=H.ratingFor(reviews,'company',c._key);
     return `<div class="item">
       <div class="top">
         <div><div class="nm">${H.esc(c.name)}</div>
         <div class="meta">📍${H.esc(c.area||'—')}　👤${H.esc(c.contact||'—')}　📞${H.esc(c.tel||'—')}</div>
-        <div class="meta">所属職人 ${cnt}名　評価 ${H.stars(H.avg(c.ratingSum,c.ratingCount))}（${c.ratingCount||0}件）</div></div>
+        <div class="meta">🔑${H.esc(c.ownerEmail||'（ログインメール未設定）')}</div>
+        <div class="meta">所属職人 ${cnt}名　評価 ${H.stars(r.avg)}（${r.count}件）</div></div>
       </div>
       ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
       <div class="acts">
@@ -353,7 +392,7 @@ function saveCraftsman(){
   if(editKi){
     DB.update('craftsmen/'+editKi._key,data).then(()=>{H.toast('職人を更新しました','ok'); resetKiForm();});
   }else{
-    DB.push('craftsmen', Object.assign({status:'free',availMemo:'',skillSum:0,skillCount:0,skillNotes:'',createdAt:Date.now()},data))
+    DB.push('craftsmen', Object.assign({status:'free',availMemo:'',createdAt:Date.now()},data))
       .then(()=>{H.toast('職人を登録しました','ok'); resetKiForm();});
   }
 }
@@ -393,15 +432,16 @@ function renderKList(){
   if(!arr.length){ list.innerHTML='<div class="empty">まだ登録がありません。</div>'; return; }
   list.innerHTML=arr.map(k=>{
     const st=H.statusOf(k.status);
+    const r=H.ratingFor(reviews,'craftsman',k._key);
     return `<div class="item">
       <div class="top">
         <div><div class="nm">${H.esc(k.name)} <span class="meta">/ ${H.esc(k.companyName||'未所属')}</span></div>
-        <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')}　${H.fmtPrice(k.price,k.unit)}　技術力 ${H.stars(H.avg(k.skillSum,k.skillCount))}（${k.skillCount||0}件）</div></div>
+        <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')}　${H.fmtPrice(k.price,k.unit)}　技術力 ${H.stars(r.avg)}（${r.count}件）</div></div>
         <span class="pill" style="background:${st.color};color:#fff">${st.label}</span>
       </div>
       <div>${H.chips(k.good,'o')}${H.chips(k.ng,'ng')}</div>
       ${(k.quals&&k.quals.length)?`<div>${H.chips(k.quals)}</div>`:''}
-      ${k.skillNotes?`<div class="note">📝 技術評価メモ：${H.esc(k.skillNotes)}</div>`:''}
+      ${r.notes.length?`<div class="note">📝 ${H.esc(r.notes[0].note)}${r.notes[0].by?'（'+H.esc(r.notes[0].by)+'）':''}</div>`:''}
       <div class="acts">
         <button class="btn ghost sm" onclick="editCraftsman('${k._key}')">編集</button>
         <button class="btn danger sm" onclick="delCraftsman('${k._key}')">削除</button>
@@ -421,12 +461,8 @@ function saveKEval(){
   const by=document.getElementById('evKBy').value.trim();
   const note=document.getElementById('evKNote').value.trim();
   const k=craftsmen[key]||{};
-  const upd={skillSum:(k.skillSum||0)+evK, skillCount:(k.skillCount||0)+1};
-  if(note) upd.skillNotes=note; // 最新の特記事項をカルテに反映
-  Promise.all([
-    DB.update('craftsmen/'+key,upd),
-    DB.push('reviews',{type:'craftsman',targetKey:key,targetName:k.name||'',rating:evK,note,byCompany:by,at:Date.now()})
-  ]).then(()=>{
+  DB.push('reviews',{type:'craftsman',targetKey:key,targetName:k.name||'',rating:evK,note,byCompany:by,at:Date.now()})
+  .then(()=>{
     H.toast('技術力評価を登録しました','ok');
     evK=0; setStars('evKStars',0);
     document.getElementById('evKBy').value=''; document.getElementById('evKNote').value='';
@@ -440,12 +476,8 @@ function saveCEval(){
   const by=document.getElementById('evCBy').value.trim();
   const note=document.getElementById('evCNote').value.trim();
   const c=companies[key]||{};
-  const upd={ratingSum:(c.ratingSum||0)+evC, ratingCount:(c.ratingCount||0)+1};
-  if(note) upd.notes=note;
-  Promise.all([
-    DB.update('companies/'+key,upd),
-    DB.push('reviews',{type:'company',targetKey:key,targetName:c.name||'',rating:evC,note,byCompany:by,at:Date.now()})
-  ]).then(()=>{
+  DB.push('reviews',{type:'company',targetKey:key,targetName:c.name||'',rating:evC,note,byCompany:by,at:Date.now()})
+  .then(()=>{
     H.toast('工務店評価を登録しました','ok');
     evC=0; setStars('evCStars',0);
     document.getElementById('evCBy').value=''; document.getElementById('evCNote').value='';
