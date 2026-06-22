@@ -36,20 +36,34 @@
     const fdb = firebase.database();
     const ref = (p) => fdb.ref(ROOT + (p ? "/" + p : ""));
 
+    // 匿名サインイン。ルールで auth != null を要求する場合に必要（ログイン操作は不要）。
+    // ・Firebaseコンソールで「Anonymous（匿名）」プロバイダを有効にしておくこと。
+    // ・未有効でもここで握りつぶし、open ルールならそのまま動く（段階移行できる）。
+    DB.ready = (firebase.auth
+      ? firebase.auth().signInAnonymously().then(function () {}, function (e) {
+          console.warn("匿名サインインに失敗しました（Anonymousプロバイダが未有効の可能性）:", e && e.message);
+        })
+      : Promise.resolve());
+
+    // すべての操作をサインイン完了後に実行する（最初の読み込みが権限拒否になるのを防ぐ）
     DB.on = (path, cb) => {
-      const r = ref(path);
-      const handler = r.on("value", (snap) => cb(snap.val()));
-      return () => r.off("value", handler);
+      let off = function () {}, active = true;
+      DB.ready.then(function () {
+        if (!active) return;
+        const r = ref(path);
+        const handler = r.on("value", (snap) => cb(snap.val()));
+        off = function () { r.off("value", handler); };
+      });
+      return function () { active = false; off(); };
     };
-    DB.get = (path) => ref(path).once("value").then((s) => s.val());
-    DB.push = (path, obj) => {
+    DB.get = (path) => DB.ready.then(() => ref(path).once("value")).then((s) => s.val());
+    DB.push = (path, obj) => DB.ready.then(function () {
       const r = ref(path).push();
       return r.set(obj).then(() => r.key);
-    };
-    DB.set = (path, obj) => ref(path).set(obj);
-    DB.update = (path, obj) => ref(path).update(obj);
-    DB.remove = (path) => ref(path).remove();
-    DB.ready = Promise.resolve();
+    });
+    DB.set = (path, obj) => DB.ready.then(() => ref(path).set(obj));
+    DB.update = (path, obj) => DB.ready.then(() => ref(path).update(obj));
+    DB.remove = (path) => DB.ready.then(() => ref(path).remove());
     return void (global.DB = DB);
   }
 
