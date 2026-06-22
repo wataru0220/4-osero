@@ -101,6 +101,7 @@
   .modebar.local{background:#fff4e5; color:#8a5a00; border:1px solid #ffd591}
   .modebar.live{background:#eafaf0; color:#1a7a45; border:1px solid #b6e6c8}
   .lgerr{margin-top:10px; background:#fdeceb; color:var(--warn); border:1px solid #f0c4c0; border-radius:9px; padding:9px 11px; font-size:13px; line-height:1.5}
+  .firstcraft-head{margin:14px 0 8px; padding-top:14px; border-top:1px solid var(--line); font-weight:800; font-size:14px}
   .count{font-size:12px; color:var(--sub); margin:0 2px 8px}
   .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%) translateY(20px); background:#16324f; color:#fff; padding:11px 18px; border-radius:30px; font-weight:700; opacity:0; pointer-events:none; transition:.25s; z-index:60; max-width:90%}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
@@ -226,7 +227,21 @@
     </div>
     <div class="field"><label>対応エリア</label><input type="text" id="coeArea" placeholder="例）東京都／23区西部"></div>
     <div class="field"><label>特記事項・メモ</label><textarea id="coeNotes" placeholder="得意分野・支払い条件など"></textarea></div>
-    <div class="row">
+
+    <!-- 新規登録時のみ表示：最初の自社職人（1名以上必須） -->
+    <div id="coFirstCraft">
+      <div class="firstcraft-head">最初の自社職人（1名以上の登録が必須です）</div>
+      <div class="field"><label class="req">職人の氏名</label><input type="text" id="coCkName" placeholder="例）田中 一郎"></div>
+      <div class="row">
+        <div class="field"><label>単価</label><input type="number" id="coCkPrice" min="0" placeholder="例）22000"></div>
+        <div class="field"><label>単位</label>
+          <select id="coCkUnit"><option value="day">日給（/日）</option><option value="hour">時給（/時）</option></select></div>
+      </div>
+      <div class="field"><label>得意作業</label><div class="checkgrid" id="coCkGood"></div></div>
+      <div class="count">※ 年齢・性別・NG作業・資格などの詳細は、登録後に「✏️ 情報を編集」から追加できます。</div>
+    </div>
+
+    <div class="row" style="margin-top:6px">
       <button class="btn ghost" id="coeCancel">キャンセル</button>
       <button class="btn" id="coeSave">保存する</button>
     </div>
@@ -515,6 +530,16 @@ function openCompanyForm(key){
   document.getElementById('coeTel').value=c.tel||'';
   document.getElementById('coeArea').value=c.area||'';
   document.getElementById('coeNotes').value=c.notes||'';
+  // 新規登録のときだけ「最初の自社職人（必須）」欄を表示
+  const isNew=!key;
+  document.getElementById('coFirstCraft').style.display=isNew?'block':'none';
+  document.getElementById('coeSave').textContent=isNew?'工務店と職人を登録':'保存する';
+  if(isNew){
+    document.getElementById('coCkName').value='';
+    document.getElementById('coCkPrice').value='';
+    document.getElementById('coCkUnit').value='day';
+    setChecked('coCkGood',[]);
+  }
   document.getElementById('coOv').classList.add('on');
 }
 function closeCompanyForm(){ editCoKey=null; document.getElementById('coOv').classList.remove('on'); }
@@ -529,17 +554,27 @@ document.getElementById('coeSave').onclick=()=>{
     area:document.getElementById('coeArea').value.trim(),
     notes:document.getElementById('coeNotes').value.trim()
   };
-  let p;
+  // 既存会社の編集：会社情報だけ更新
   if(editCoKey){
-    p=DB.update('companies/'+editCoKey,data);
-  }else{
-    // 新規登録：オーナーを自分のメールに設定（このメールだけが編集可能になる）
-    p=DB.push('companies', Object.assign({ownerEmail:myUser.email, createdAt:Date.now()}, data))
-      .then(key=>{ // 既存の自社職人の表示名を更新する必要は無い（新規なので）
-        return key;
-      });
+    DB.update('companies/'+editCoKey,data).then(()=>{ closeCompanyForm(); H.toast('会社情報を更新しました','ok'); });
+    return;
   }
-  p.then(()=>{ closeCompanyForm(); H.toast(editCoKey?'会社情報を更新しました':'工務店を登録しました','ok'); });
+  // 新規登録：自社の職人を1名以上必須にする
+  const ckName=document.getElementById('coCkName').value.trim();
+  if(!ckName){ H.toast('最初の自社職人の氏名を入力してください（工務店登録には職人が1名以上必要です）','err'); return; }
+  const firstCraft={
+    name:ckName,
+    price:+document.getElementById('coCkPrice').value||null,
+    unit:document.getElementById('coCkUnit').value,
+    good:getChecked('coCkGood')
+  };
+  // 会社を作成 → 続けて最初の職人を作成（どちらもオーナー＝自分のメール）
+  DB.push('companies', Object.assign({ownerEmail:myUser.email, createdAt:Date.now()}, data))
+    .then(newKey=>DB.push('craftsmen', Object.assign({
+      companyKey:newKey, companyName:name, age:null, gender:'', ng:[], quals:[],
+      status:'free', availMemo:'', createdAt:Date.now(), updatedAt:Date.now()
+    }, firstCraft)))
+    .then(()=>{ closeCompanyForm(); H.toast('工務店と最初の職人を登録しました','ok'); });
 };
 
 // ===== 自社の職人 登録/編集モーダル =====
@@ -548,6 +583,7 @@ let editCraftKey=null;
   buildChecks('ceGood', H.workTypes);
   buildChecks('ceNg', H.workTypes);
   buildChecks('ceQual', H.qualifications);
+  buildChecks('coCkGood', H.workTypes); // 工務店登録時の最初の職人の得意作業
 })();
 function buildChecks(id, arr){
   const box=document.getElementById(id);
