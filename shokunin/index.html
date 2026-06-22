@@ -100,6 +100,7 @@
   .modebar{font-size:12px; padding:7px 11px; border-radius:9px; margin-bottom:12px; line-height:1.5}
   .modebar.local{background:#fff4e5; color:#8a5a00; border:1px solid #ffd591}
   .modebar.live{background:#eafaf0; color:#1a7a45; border:1px solid #b6e6c8}
+  .lgerr{margin-top:10px; background:#fdeceb; color:var(--warn); border:1px solid #f0c4c0; border-radius:9px; padding:9px 11px; font-size:13px; line-height:1.5}
   .count{font-size:12px; color:var(--sub); margin:0 2px 8px}
   .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%) translateY(20px); background:#16324f; color:#fff; padding:11px 18px; border-radius:30px; font-weight:700; opacity:0; pointer-events:none; transition:.25s; z-index:60; max-width:90%}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
@@ -418,6 +419,7 @@ function renderMyArea(){
         <button class="btn ghost" id="signupBtn">新規登録</button>
         <button class="btn" id="loginBtn">ログイン</button>
       </div>
+      <div id="lgErr" class="lgerr" style="display:none"></div>
       <div class="count" style="margin-top:8px">初めての方は「新規登録」。管理者からメール指定がある場合は、そのメールで登録してください。</div>`;
     document.getElementById('loginBtn').onclick=()=>doAuth('in');
     document.getElementById('signupBtn').onclick=()=>doAuth('up');
@@ -439,14 +441,20 @@ function renderMyArea(){
   renderOwnArea(mine);
 }
 
+function lgError(msg){
+  const el=document.getElementById('lgErr');
+  if(el){ el.textContent='⚠️ '+msg; el.style.display='block'; }
+  H.toast(msg,'err');
+}
 function doAuth(mode){
   const email=(document.getElementById('lgEmail').value||'').trim();
   const pass=(document.getElementById('lgPass').value||'');
-  if(!email){ H.toast('メールアドレスを入力してください','err'); return; }
-  if(DB.mode==='firebase' && pass.length<6){ H.toast('パスワードは6文字以上です','err'); return; }
+  if(!email){ lgError('メールアドレスを入力してください'); return; }
+  if(DB.mode==='firebase' && pass.length<6){ lgError('パスワードは6文字以上にしてください'); return; }
+  const el=document.getElementById('lgErr'); if(el) el.style.display='none';
   const p = mode==='up' ? DB.auth.signUp(email,pass) : DB.auth.signIn(email,pass);
   p.then(()=>H.toast(mode==='up'?'登録してログインしました':'ログインしました','ok'))
-   .catch(e=>H.toast('ログインできませんでした：'+((e&&e.message)||e),'err'));
+   .catch(e=>lgError(H.authErrMsg(e)));
 }
 
 function renderOwnArea(mine){

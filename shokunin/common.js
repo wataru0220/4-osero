@@ -45,6 +45,22 @@
     return { avg: H.avg(sum, count), count, notes };
   };
 
+  // Firebase認証エラーを分かりやすい日本語に変換
+  H.authErrMsg = (e) => {
+    const m = (e && (e.code || e.message)) ? (e.code || e.message) : String(e);
+    if (/operation-not-allowed/.test(m)) return "メール/パスワード認証が有効化されていません。Firebaseコンソール → Authentication → ログイン方法 で「メール/パスワード」を有効にしてください。";
+    if (/configuration-not-found/.test(m)) return "認証が設定されていません。Firebaseコンソールで「メール/パスワード」と「匿名」を有効にしてください。";
+    if (/email-already-in-use/.test(m)) return "このメールは登録済みです。「ログイン」を押してください。";
+    if (/invalid-email/.test(m)) return "メールアドレスの形式が正しくありません。";
+    if (/(weak-password|password.*6)/i.test(m)) return "パスワードは6文字以上にしてください。";
+    if (/(wrong-password|invalid-credential|invalid-login)/.test(m)) return "メールまたはパスワードが違います。";
+    if (/user-not-found/.test(m)) return "そのメールのアカウントがありません。「新規登録」を押してください。";
+    if (/too-many-requests/.test(m)) return "試行回数が多すぎます。しばらく待ってからお試しください。";
+    if (/network-request-failed/.test(m)) return "通信エラーです。ネット接続を確認してください。";
+    if (/permission|denied/i.test(m)) return "保存が拒否されました。Firebaseのセキュリティルール設定を確認してください（READMEのルールを参照）。";
+    return m;
+  };
+
   // この利用者が対象の工務店を編集できるか（自社のオーナー or 管理者）
   H.isAdmin = (user) =>
     !!(user && user.email && (CFG.adminEmails || []).indexOf(user.email) >= 0);

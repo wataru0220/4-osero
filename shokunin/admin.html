@@ -71,7 +71,8 @@
   .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px); background:#16324f; color:#fff; padding:11px 18px; border-radius:30px; font-weight:700; opacity:0; pointer-events:none; transition:.25s; z-index:60; max-width:90%}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
   .toast.ok{background:var(--ok)} .toast.err{background:var(--warn)}
-  .gate{max-width:340px; margin:60px auto; text-align:center}
+  .gate{max-width:360px; margin:60px auto}
+  .gateerr{margin-top:12px; background:#fdeceb; color:var(--warn); border:1px solid #f0c4c0; border-radius:9px; padding:9px 11px; font-size:13px; line-height:1.5; text-align:left}
   .editbar{background:#fff4e5; color:#8a5a00; border:1px solid #ffd591; border-radius:8px; padding:8px 11px; font-size:13px; margin-bottom:10px; font-weight:700}
   .revrow{border:1px solid var(--line); border-radius:10px; padding:9px 11px; margin-bottom:8px}
   .revrow .h{display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--sub)}
@@ -222,7 +223,8 @@ function renderGate(mode){
       <div class="row">
         <button class="btn ghost" id="adSignup">新規登録</button>
         <button class="btn" id="adLogin">ログイン</button>
-      </div>`;
+      </div>
+      <div id="gateErr" class="gateerr" style="display:none"></div>`;
     document.getElementById('adLogin').onclick=()=>adAuth('in');
     document.getElementById('adSignup').onclick=()=>adAuth('up');
     document.getElementById('adPass').addEventListener('keydown',e=>{ if(e.key==='Enter') adAuth('in'); });
@@ -233,9 +235,11 @@ function renderGate(mode){
       <h2 class="sec" style="font-size:15px">👑 管理者になる</h2>
       <div class="count" style="margin-bottom:10px">ログイン中：<b>${H.esc(myUser.email)}</b><br>まだ管理者がいません。下のボタンであなたを管理者として登録します。</div>
       <button class="btn full" id="claimBtn">このアカウントを管理者にする</button>
-      <button class="btn ghost full" id="switchBtn" style="margin-top:8px">別のアカウントでログインし直す</button>`;
+      <button class="btn ghost full" id="switchBtn" style="margin-top:8px">別のアカウントでログインし直す</button>
+      <div id="gateErr" class="gateerr" style="display:none"></div>`;
     document.getElementById('claimBtn').onclick=()=>{
-      DB.set('admins/'+myUser.uid, true).then(()=>H.toast('管理者として登録しました','ok'));
+      DB.set('admins/'+myUser.uid, true).then(()=>H.toast('管理者として登録しました','ok'))
+        .catch(e=>gateError(H.authErrMsg(e)));
     };
     document.getElementById('switchBtn').onclick=()=>DB.auth.signOut();
     return;
@@ -247,13 +251,19 @@ function renderGate(mode){
     <button class="btn ghost full" id="switchBtn">別のアカウントでログインし直す</button>`;
   document.getElementById('switchBtn').onclick=()=>DB.auth.signOut();
 }
+function gateError(msg){
+  const el=document.getElementById('gateErr');
+  if(el){ el.textContent='⚠️ '+msg; el.style.display='block'; }
+  H.toast(msg,'err');
+}
 function adAuth(mode){
   const email=(document.getElementById('adEmail').value||'').trim();
   const pass=(document.getElementById('adPass').value||'');
-  if(!email){ H.toast('メールを入力してください','err'); return; }
-  if(pass.length<6){ H.toast('パスワードは6文字以上です','err'); return; }
+  if(!email){ gateError('メールアドレスを入力してください'); return; }
+  if(pass.length<6){ gateError('パスワードは6文字以上にしてください'); return; }
+  const el=document.getElementById('gateErr'); if(el) el.style.display='none';
   const p = mode==='up' ? DB.auth.signUp(email,pass) : DB.auth.signIn(email,pass);
-  p.catch(e=>H.toast((mode==='up'?'登録':'ログイン')+'できませんでした：'+((e&&e.message)||e),'err'));
+  p.catch(e=>gateError(H.authErrMsg(e)));
 }
 DB.on('admins', v=>{ admins=v||{}; adminsLoaded=true; route(); });
 DB.auth.onChange(u=>{ myUser=u; route(); });
