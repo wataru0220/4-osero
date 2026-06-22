@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#ea580c">
+<title>職人シェア｜工務店ネットワーク</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="config.js"></script>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --line:#e4e8ee; --ink:#1b2430; --sub:#5d6b7c;
+    --brand:#ea580c; --brand-dark:#c2410c; --accent:#0e7490;
+    --ok:#1aa260; --warn:#c0392b; --chip:#fdf0e7; --line-green:#06c755;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    background:var(--bg); color:var(--ink); font-size:15px; line-height:1.5; padding-bottom:72px;
+  }
+  header{
+    background:linear-gradient(135deg,var(--brand),var(--brand-dark)); color:#fff;
+    padding:14px 16px; position:sticky; top:0; z-index:10; box-shadow:0 2px 8px rgba(0,0,0,.12);
+  }
+  header h1{margin:0; font-size:17px; font-weight:800; letter-spacing:.02em}
+  header .sub{font-size:12px; opacity:.92; margin-top:2px}
+  .hrow{display:flex; justify-content:space-between; align-items:center; gap:10px}
+  .hbtn{flex:none; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.45); color:#fff; border-radius:11px; padding:7px 11px; font-weight:800; font-size:11px; display:flex; flex-direction:column; align-items:center; gap:1px; cursor:pointer}
+  .hbtn .ic{font-size:18px; line-height:1}
+  .hbtn:active{transform:translateY(1px)}
+  .wrap{max-width:620px; margin:0 auto; padding:14px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  label{display:block; font-size:12px; font-weight:700; color:var(--sub); margin:0 0 5px}
+  input,select,textarea,button{font-family:inherit; font-size:15px}
+  input[type=text],input[type=number],select,textarea{
+    width:100%; padding:11px; border:1.5px solid var(--line); border-radius:10px; background:#fff; color:var(--ink);
+  }
+  input:focus,select:focus,textarea:focus{outline:none; border-color:var(--brand)}
+  textarea{resize:vertical; min-height:60px}
+  .field{margin-bottom:12px}
+  .row{display:flex; gap:10px} .row>*{flex:1}
+  .btn{padding:11px 14px; border:0; border-radius:10px; background:var(--brand); color:#fff; font-weight:800; cursor:pointer}
+  .btn.ghost{background:#fff; color:var(--brand-dark); border:1.5px solid var(--line)}
+  .btn.ln{background:var(--line-green); color:#fff}
+  .btn.full{width:100%}
+  .btn.sm{padding:7px 11px; font-size:13px; border-radius:8px}
+  .btn:active{transform:translateY(1px)}
+
+  /* タブ（下部ナビ） */
+  .tabbar{position:fixed; left:0; right:0; bottom:0; z-index:20; display:flex; background:#fff; border-top:1px solid var(--line); box-shadow:0 -2px 10px rgba(0,0,0,.06)}
+  .tabbar button{flex:1; border:0; background:none; padding:9px 2px 7px; color:var(--sub); font-size:11px; font-weight:700; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px}
+  .tabbar button .ic{font-size:20px; line-height:1}
+  .tabbar button.on{color:var(--brand)}
+  .page{display:none} .page.on{display:block}
+
+  /* フィルタ */
+  .filters{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px}
+  .filters select,.filters input{flex:1; min-width:120px}
+  .statusbtns{display:flex; gap:6px; margin-bottom:10px}
+  .statusbtns button{flex:1; padding:8px 4px; border:1.5px solid var(--line); background:#fff; border-radius:9px; font-weight:700; font-size:12px; cursor:pointer; color:var(--sub)}
+  .statusbtns button.on{color:#fff}
+
+  /* 職人カード */
+  .kcard{border:1px solid var(--line); border-radius:13px; padding:13px; margin-bottom:11px; background:#fff; position:relative}
+  .kcard .head{display:flex; justify-content:space-between; align-items:flex-start; gap:8px}
+  .kcard .nm{font-size:17px; font-weight:800}
+  .kcard .co{font-size:12px; color:var(--sub); margin-top:1px}
+  .kcard .meta{font-size:12px; color:var(--sub); margin-top:6px}
+  .kcard .price{font-size:16px; font-weight:800; color:var(--brand-dark)}
+  .badge{display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border-radius:20px; color:#fff; font-weight:800; font-size:12px; white-space:nowrap}
+  .badge .dot{width:7px;height:7px;border-radius:50%;background:#fff;opacity:.9}
+  .seclabel{font-size:11px; font-weight:700; color:var(--sub); margin:9px 0 4px}
+  .chip{display:inline-block; background:var(--chip); color:var(--brand-dark); border-radius:18px; padding:3px 9px; font-size:12px; font-weight:700; margin:0 4px 4px 0}
+  .chip.q{background:#eef6f8; color:var(--accent)}
+  .chip.ng{background:#fdeceb; color:var(--warn)}
+  .stars{color:#f5a623; letter-spacing:1px} .starnum{font-weight:800; font-size:13px}
+  .nostar{color:#9aa7b5; font-size:12px; font-weight:700}
+  .kcard .actions{display:flex; gap:8px; margin-top:11px}
+  .kcard .actions .btn{flex:1}
+  .availmemo{font-size:12px; color:#8a5a00; background:#fff7e8; border:1px solid #ffe1a8; border-radius:8px; padding:6px 9px; margin-top:8px}
+
+  /* 工務店カード */
+  .ccard{border:1px solid var(--line); border-radius:13px; padding:13px; margin-bottom:11px; background:#fff}
+  .ccard .nm{font-size:16px; font-weight:800}
+  .ccard .info{font-size:12px; color:var(--sub); margin-top:3px}
+  .note{font-size:13px; background:#f7f9fb; border:1px solid var(--line); border-radius:8px; padding:7px 9px; margin-top:8px; color:var(--ink)}
+
+  /* モーダル */
+  .ov{position:fixed; inset:0; background:rgba(15,23,32,.5); z-index:40; display:none; align-items:flex-end; justify-content:center}
+  .ov.on{display:flex}
+  .sheet{background:#fff; width:100%; max-width:620px; border-radius:18px 18px 0 0; padding:18px; max-height:88vh; overflow:auto}
+  .sheet h3{margin:0 0 12px; font-size:17px}
+  .sheet .close{position:absolute}
+  .ratepick{display:flex; gap:6px; justify-content:center; font-size:34px; color:#dfe4ea; margin:6px 0 12px}
+  .ratepick span{cursor:pointer; transition:.1s} .ratepick span.on{color:#f5a623}
+  .empty{text-align:center; color:var(--sub); padding:30px 10px; font-size:14px}
+  .modebar{font-size:12px; padding:7px 11px; border-radius:9px; margin-bottom:12px; line-height:1.5}
+  .modebar.local{background:#fff4e5; color:#8a5a00; border:1px solid #ffd591}
+  .modebar.live{background:#eafaf0; color:#1a7a45; border:1px solid #b6e6c8}
+  .count{font-size:12px; color:var(--sub); margin:0 2px 8px}
+  .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%) translateY(20px); background:#16324f; color:#fff; padding:11px 18px; border-radius:30px; font-weight:700; opacity:0; pointer-events:none; transition:.25s; z-index:60; max-width:90%}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  .toast.ok{background:var(--ok)} .toast.err{background:var(--warn)}
+  .upd-row{display:flex; align-items:center; gap:8px; padding:10px; border:1px solid var(--line); border-radius:11px; margin-bottom:9px}
+  .upd-row .nm{font-weight:800; flex:1}
+  .upd-row select{width:auto; min-width:104px; padding:8px}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <div>
+      <h1>🪚 職人シェア ネットワーク</h1>
+      <div class="sub">工務店どうしで職人をシェア・空き状況をリアルタイム共有</div>
+    </div>
+    <button class="hbtn" id="inviteBtn"><span class="ic">📲</span>LINEで招待</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="modebar"></div>
+
+  <!-- ============ 職人をさがす ============ -->
+  <section class="page on" id="page-find">
+    <div class="statusbtns" id="statusFilter"></div>
+    <div class="filters">
+      <input type="text" id="qText" placeholder="🔍 名前・工務店で検索">
+      <select id="qWork"><option value="">得意作業（すべて）</option></select>
+      <select id="qQual"><option value="">資格（すべて）</option></select>
+    </div>
+    <div class="count" id="findCount"></div>
+    <div id="kList"></div>
+  </section>
+
+  <!-- ============ 空き状況ボード ============ -->
+  <section class="page" id="page-board">
+    <div class="card" style="padding:11px 14px">
+      <b>📡 空き状況ボード</b>
+      <div class="count" style="margin:4px 0 8px">各社が更新すると、ここにリアルタイムで反映されます。</div>
+      <button class="btn ln full" id="shareBoardBtn">📲 今すぐ空いている職人をLINEで共有</button>
+    </div>
+    <div id="boardWrap"></div>
+  </section>
+
+  <!-- ============ 工務店一覧 ============ -->
+  <section class="page" id="page-co">
+    <div class="count">登録工務店の情報と評価（数値）。</div>
+    <div id="coList"></div>
+  </section>
+
+  <!-- ============ 空き更新（自社） ============ -->
+  <section class="page" id="page-update">
+    <div class="card">
+      <label for="myCompany">自社（工務店）を選択</label>
+      <select id="myCompany"><option value="">— 選択してください —</option></select>
+      <div class="count" style="margin-top:6px">選ぶとこの端末に記憶されます。自社の職人の空き状況をその場で変更できます。</div>
+    </div>
+    <div id="updateList"></div>
+  </section>
+</div>
+
+<!-- 評価モーダル -->
+<div class="ov" id="reviewOv">
+  <div class="sheet">
+    <h3 id="rvTitle">評価する</h3>
+    <div class="count" id="rvSub"></div>
+    <div class="ratepick" id="rvStars">
+      <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
+    </div>
+    <div class="field">
+      <label>あなたの工務店名</label>
+      <input type="text" id="rvBy" placeholder="例）山田工務店">
+    </div>
+    <div class="field">
+      <label>特記事項・コメント（任意）</label>
+      <textarea id="rvNote" placeholder="例）仕事が丁寧、納期を守ってくれた など"></textarea>
+    </div>
+    <div class="row">
+      <button class="btn ghost" id="rvCancel">キャンセル</button>
+      <button class="btn" id="rvSubmit">この内容で評価を送る</button>
+    </div>
+  </div>
+</div>
+
+<!-- 下部タブ -->
+<nav class="tabbar">
+  <button class="on" data-page="find"><span class="ic">🔍</span>職人をさがす</button>
+  <button data-page="board"><span class="ic">📡</span>空き状況</button>
+  <button data-page="co"><span class="ic">🏢</span>工務店</button>
+  <button data-page="update"><span class="ic">🔄</span>空き更新</button>
+</nav>
+
+<script src="data.js"></script>
+<script src="common.js"></script>
+<script>
+let companies = {}, craftsmen = {};
+let filter = { status:'', text:'', work:'', qual:'' };
+let reviewTarget = null, rvValue = 0;
+
+// モード表示
+(function(){
+  const m = document.getElementById('modebar');
+  if (DB.mode === 'local') {
+    m.className = 'modebar local';
+    m.innerHTML = '⚠️ <b>お試しモード</b>：この端末内だけで動作中（他端末とは共有されません）。共有するには config.js に Firebase を設定してください。';
+    DB._seedIfEmpty(H.seed());
+  } else {
+    m.className = 'modebar live';
+    m.innerHTML = '🟢 <b>共有モード</b>：登録した情報は参加工務店どうしでリアルタイムに共有されます。';
+  }
+})();
+
+// セレクト初期化
+(function(){
+  const w = document.getElementById('qWork'), q = document.getElementById('qQual');
+  H.workTypes.forEach(t => w.insertAdjacentHTML('beforeend', `<option>${H.esc(t)}</option>`));
+  H.qualifications.forEach(t => q.insertAdjacentHTML('beforeend', `<option>${H.esc(t)}</option>`));
+  // ステータスフィルタ
+  const sf = document.getElementById('statusFilter');
+  const all = document.createElement('button'); all.textContent='すべて'; all.className='on';
+  all.style.background='#475569'; all.onclick=()=>setStatusFilter('', all);
+  sf.appendChild(all);
+  H.statuses.forEach(s=>{
+    const b=document.createElement('button'); b.textContent=s.label; b.dataset.k=s.key;
+    b.onclick=()=>setStatusFilter(s.key,b,s.color); sf.appendChild(b);
+  });
+})();
+function setStatusFilter(key,btn,color){
+  filter.status=key;
+  document.querySelectorAll('#statusFilter button').forEach(b=>{b.classList.remove('on'); b.style.background='#fff'; b.style.color='var(--sub)';});
+  btn.classList.add('on'); btn.style.background=color||'#475569'; btn.style.color='#fff';
+  renderFind();
+}
+
+// タブ切替
+document.querySelectorAll('.tabbar button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.tabbar button').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+    b.classList.add('on');
+    document.getElementById('page-'+b.dataset.page).classList.add('on');
+  };
+});
+
+// フィルタ入力
+document.getElementById('qText').oninput = e=>{ filter.text=e.target.value.trim(); renderFind(); };
+document.getElementById('qWork').onchange = e=>{ filter.work=e.target.value; renderFind(); };
+document.getElementById('qQual').onchange = e=>{ filter.qual=e.target.value; renderFind(); };
+
+// ===== データ購読（リアルタイム） =====
+DB.on('companies', v=>{ companies=v||{}; renderCompanies(); renderMyCompanyOptions(); renderFind(); renderBoard(); renderUpdate(); });
+DB.on('craftsmen', v=>{ craftsmen=v||{}; renderFind(); renderBoard(); renderUpdate(); });
+
+// ===== 職人をさがす =====
+function matchFilter(k){
+  if(filter.status && k.status!==filter.status) return false;
+  if(filter.work && !(k.good||[]).includes(filter.work)) return false;
+  if(filter.qual && !(k.quals||[]).includes(filter.qual)) return false;
+  if(filter.text){
+    const t=filter.text.toLowerCase();
+    if(!((k.name||'').toLowerCase().includes(t) || (k.companyName||'').toLowerCase().includes(t))) return false;
+  }
+  return true;
+}
+function renderFind(){
+  const list=document.getElementById('kList');
+  const arr=H.toArr(craftsmen).filter(matchFilter)
+    .sort((a,b)=>({free:0,partial:1,busy:2}[a.status]??3)-({free:0,partial:1,busy:2}[b.status]??3));
+  document.getElementById('findCount').textContent=`${arr.length} 名の職人`;
+  if(!arr.length){ list.innerHTML='<div class="empty">該当する職人がいません。</div>'; return; }
+  list.innerHTML=arr.map(kCardHTML).join('');
+  bindReviewButtons(list);
+  bindShareButtons(list);
+}
+function kCardHTML(k){
+  const st=H.statusOf(k.status);
+  const skill=H.avg(k.skillSum,k.skillCount);
+  return `<div class="kcard">
+    <div class="head">
+      <div>
+        <div class="nm">${H.esc(k.name)}</div>
+        <div class="co">🏢 ${H.esc(k.companyName||'—')}</div>
+      </div>
+      <span class="badge" style="background:${st.color}"><span class="dot"></span>${st.label}</span>
+    </div>
+    <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')} ｜ 技術力: ${H.stars(skill)}</div>
+    <div style="margin-top:6px"><span class="price">${H.fmtPrice(k.price,k.unit)}</span></div>
+    ${k.availMemo?`<div class="availmemo">🗓 ${H.esc(k.availMemo)}</div>`:''}
+    ${(k.good&&k.good.length)?`<div class="seclabel">得意作業</div>${H.chips(k.good)}`:''}
+    ${(k.ng&&k.ng.length)?`<div class="seclabel">NG作業</div>${H.chips(k.ng,'ng')}`:''}
+    ${(k.quals&&k.quals.length)?`<div class="seclabel">保有資格</div>${H.chips(k.quals,'q')}`:''}
+    ${k.skillNotes?`<div class="note">📝 ${H.esc(k.skillNotes)}</div>`:''}
+    <div class="actions">
+      <button class="btn ln sm ln-share" data-key="${k._key}">📲 LINEで共有</button>
+      <button class="btn ghost sm rv" data-type="craftsman" data-key="${k._key}" data-name="${H.esc(k.name)}">⭐ 評価</button>
+    </div>
+  </div>`;
+}
+
+// ===== 空き状況ボード =====
+function renderBoard(){
+  const wrap=document.getElementById('boardWrap');
+  const groups=H.statuses.map(s=>({s,items:H.toArr(craftsmen).filter(k=>k.status===s.key)}));
+  wrap.innerHTML=groups.map(g=>`
+    <div class="card" style="padding:11px 13px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span class="badge" style="background:${g.s.color}"><span class="dot"></span>${g.s.label}</span>
+        <b style="font-size:13px">${g.items.length} 名</b>
+      </div>
+      ${g.items.length? g.items.map(k=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)">
+          <div><b>${H.esc(k.name)}</b> <span style="color:var(--sub);font-size:12px">/ ${H.esc(k.companyName||'')}</span>
+          <div style="font-size:12px;color:var(--sub)">${H.chips((k.good||[]).slice(0,3))}</div></div>
+          <div style="text-align:right;white-space:nowrap"><span class="price" style="font-size:14px">${H.fmtPrice(k.price,k.unit)}</span>
+          ${k.availMemo?`<div style="font-size:11px;color:#8a5a00">${H.esc(k.availMemo)}</div>`:''}</div>
+        </div>`).join('') : '<div style="color:var(--sub);font-size:13px;padding:4px 0">—</div>'}
+    </div>`).join('');
+}
+
+// ===== 工務店一覧 =====
+function renderCompanies(){
+  const list=document.getElementById('coList');
+  const arr=H.toArr(companies).sort((a,b)=>(H.avg(b.ratingSum,b.ratingCount)||0)-(H.avg(a.ratingSum,a.ratingCount)||0));
+  if(!arr.length){ list.innerHTML='<div class="empty">工務店がまだ登録されていません。</div>'; return; }
+  list.innerHTML=arr.map(c=>{
+    const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===c._key).length;
+    const rate=H.avg(c.ratingSum,c.ratingCount);
+    return `<div class="ccard">
+      <div style="display:flex;justify-content:space-between;gap:8px">
+        <div class="nm">${H.esc(c.name)}</div>
+        <div>${H.stars(rate)}</div>
+      </div>
+      <div class="info">📍 ${H.esc(c.area||'—')}　👤 ${H.esc(c.contact||'—')}　📞 ${H.esc(c.tel||'—')}</div>
+      <div class="info">所属職人 ${cnt} 名　評価件数 ${c.ratingCount||0} 件</div>
+      ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
+      <div class="actions" style="display:flex;margin-top:10px">
+        <button class="btn ghost sm rv" data-type="company" data-key="${c._key}" data-name="${H.esc(c.name)}">⭐ この工務店を評価</button>
+      </div>
+    </div>`;
+  }).join('');
+  bindReviewButtons(list);
+}
+
+// ===== 空き更新（自社） =====
+function renderMyCompanyOptions(){
+  const sel=document.getElementById('myCompany');
+  const cur=sel.value||localStorage.getItem('shokunin_mycompany')||'';
+  sel.innerHTML='<option value="">— 選択してください —</option>'+
+    H.toArr(companies).map(c=>`<option value="${c._key}">${H.esc(c.name)}</option>`).join('');
+  sel.value=cur;
+}
+document.getElementById('myCompany').onchange=e=>{
+  localStorage.setItem('shokunin_mycompany', e.target.value);
+  renderUpdate();
+};
+function renderUpdate(){
+  const myKey=document.getElementById('myCompany').value||localStorage.getItem('shokunin_mycompany')||'';
+  document.getElementById('myCompany').value=myKey;
+  const list=document.getElementById('updateList');
+  if(!myKey){ list.innerHTML='<div class="empty">自社を選択すると、自社の職人の空き状況をここで切り替えられます。</div>'; return; }
+  const arr=H.toArr(craftsmen).filter(k=>k.companyKey===myKey);
+  if(!arr.length){ list.innerHTML='<div class="empty">自社の職人が登録されていません。<br>管理画面（admin）から登録してください。</div>'; return; }
+  list.innerHTML='<div class="card">'+arr.map(k=>`
+    <div class="upd-row">
+      <div class="nm">${H.esc(k.name)}</div>
+      <select data-key="${k._key}" class="updSt">
+        ${H.statuses.map(s=>`<option value="${s.key}" ${k.status===s.key?'selected':''}>${s.label}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field" style="margin:-2px 0 12px">
+      <input type="text" class="updMemo" data-key="${k._key}" value="${H.esc(k.availMemo||'')}" placeholder="空き状況メモ（例：来週空きあり）">
+    </div>`).join('')+'</div>';
+  list.querySelectorAll('.updSt').forEach(sel=>sel.onchange=()=>{
+    DB.update('craftsmen/'+sel.dataset.key,{status:sel.value,updatedAt:Date.now()}).then(()=>H.toast('空き状況を更新しました','ok'));
+  });
+  list.querySelectorAll('.updMemo').forEach(inp=>{
+    inp.onchange=()=>DB.update('craftsmen/'+inp.dataset.key,{availMemo:inp.value.trim(),updatedAt:Date.now()}).then(()=>H.toast('メモを保存しました','ok'));
+  });
+}
+
+// ===== LINE共有 =====
+// 公式アカウント不要。スマホは共有シート（LINEを選択）、PC等はコピー＋LINE共有画面を開く。
+function appUrl(){ return location.origin + location.pathname; }
+async function shareToLine(text){
+  if(navigator.share){
+    try{ await navigator.share({text}); return; }catch(e){ if(e&&e.name==='AbortError') return; }
+  }
+  try{ await navigator.clipboard.writeText(text); H.toast('内容をコピーしました。LINEに貼り付けて送ってください','ok'); }catch(_){}
+  window.open('https://line.me/R/msg/text/?'+encodeURIComponent(text),'_blank');
+}
+function craftsmanShareText(k){
+  if(!k) return '';
+  const st=H.statusOf(k.status);
+  const L=['【職人シェア】'+k.name+'（'+(k.companyName||'')+'）'];
+  L.push('状況：'+st.label);
+  L.push('単価：'+H.fmtPrice(k.price,k.unit));
+  if(k.age||k.gender) L.push('属性：'+(k.age?k.age+'歳':'')+(k.gender?' '+k.gender:''));
+  if(k.good&&k.good.length) L.push('得意：'+k.good.join('・'));
+  if(k.ng&&k.ng.length) L.push('NG：'+k.ng.join('・'));
+  if(k.quals&&k.quals.length) L.push('資格：'+k.quals.join('・'));
+  if(k.availMemo) L.push('🗓 '+k.availMemo);
+  L.push('👉 詳細・他の職人はこちら：'+appUrl());
+  return L.join('\n');
+}
+function boardShareText(){
+  const arr=H.toArr(craftsmen);
+  const free=arr.filter(k=>k.status==='free'), partial=arr.filter(k=>k.status==='partial');
+  if(!free.length&&!partial.length) return '【職人シェア】現在すぐ空いている職人はいません。\n👉 '+appUrl();
+  const fmt=k=>'・'+k.name+'（'+(k.companyName||'')+'）'+H.fmtPrice(k.price,k.unit)+((k.good&&k.good.length)?'／'+k.good.slice(0,3).join('・'):'');
+  const L=['【今すぐ手伝える職人】'];
+  if(free.length){ L.push('✅ 空き'); free.forEach(k=>L.push(fmt(k))); }
+  if(partial.length){ L.push('⚠️ 一部空き'); partial.forEach(k=>L.push(fmt(k))); }
+  L.push('👉 アプリで詳細：'+appUrl());
+  return L.join('\n');
+}
+function inviteText(){
+  return '【職人シェア ネットワーク】\n工務店どうしで職人をシェアし、空き状況をリアルタイムに共有できるアプリです。\n下記から参加できます👇\n'+appUrl();
+}
+function bindShareButtons(scope){
+  scope.querySelectorAll('.ln-share').forEach(b=>b.onclick=()=>shareToLine(craftsmanShareText(craftsmen[b.dataset.key])));
+}
+document.getElementById('inviteBtn').onclick=()=>shareToLine(inviteText());
+document.getElementById('shareBoardBtn').onclick=()=>shareToLine(boardShareText());
+
+// ===== 評価モーダル =====
+function bindReviewButtons(scope){
+  scope.querySelectorAll('.rv').forEach(b=>b.onclick=()=>openReview(b.dataset.type,b.dataset.key,b.dataset.name));
+}
+function openReview(type,key,name){
+  reviewTarget={type,key,name}; rvValue=0;
+  document.getElementById('rvTitle').textContent=(type==='craftsman'?'職人を評価':'工務店を評価');
+  document.getElementById('rvSub').textContent='対象：'+name;
+  document.getElementById('rvBy').value=localStorage.getItem('shokunin_mycompany_name')||'';
+  document.getElementById('rvNote').value='';
+  paintStars(0);
+  document.getElementById('reviewOv').classList.add('on');
+}
+function paintStars(v){ document.querySelectorAll('#rvStars span').forEach(s=>s.classList.toggle('on', +s.dataset.v<=v)); }
+document.querySelectorAll('#rvStars span').forEach(s=>s.onclick=()=>{ rvValue=+s.dataset.v; paintStars(rvValue); });
+document.getElementById('rvCancel').onclick=()=>document.getElementById('reviewOv').classList.remove('on');
+document.getElementById('reviewOv').onclick=e=>{ if(e.target.id==='reviewOv') e.currentTarget.classList.remove('on'); };
+document.getElementById('rvSubmit').onclick=async()=>{
+  if(!rvValue){ H.toast('星（1〜5）を選んでください','err'); return; }
+  const by=document.getElementById('rvBy').value.trim();
+  if(!by){ H.toast('あなたの工務店名を入力してください','err'); return; }
+  localStorage.setItem('shokunin_mycompany_name', by);
+  const note=document.getElementById('rvNote').value.trim();
+  const {type,key,name}=reviewTarget;
+  // レビュー履歴を保存
+  await DB.push('reviews',{type,targetKey:key,targetName:name,rating:rvValue,note,byCompany:by,at:Date.now()});
+  // 対象の集計（sum/count）を加算
+  if(type==='craftsman'){
+    const k=craftsmen[key]||{};
+    await DB.update('craftsmen/'+key,{skillSum:(k.skillSum||0)+rvValue, skillCount:(k.skillCount||0)+1});
+  }else{
+    const c=companies[key]||{};
+    await DB.update('companies/'+key,{ratingSum:(c.ratingSum||0)+rvValue, ratingCount:(c.ratingCount||0)+1});
+  }
+  document.getElementById('reviewOv').classList.remove('on');
+  H.toast('評価を送信しました。ありがとうございます！','ok');
+};
+</script>
+</body>
+</html>

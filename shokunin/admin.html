@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0e7490">
+<title>管理画面｜職人シェア</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="config.js"></script>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --line:#e4e8ee; --ink:#1b2430; --sub:#5d6b7c;
+    --brand:#0e7490; --brand-dark:#0b5e75; --accent:#ea580c;
+    --ok:#1aa260; --warn:#c0392b; --chip:#e7f3f6;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    background:var(--bg); color:var(--ink); font-size:15px; line-height:1.5; padding-bottom:40px}
+  header{background:linear-gradient(135deg,var(--brand),var(--brand-dark)); color:#fff; padding:14px 16px; position:sticky; top:0; z-index:10; box-shadow:0 2px 8px rgba(0,0,0,.12)}
+  header h1{margin:0; font-size:17px; font-weight:800}
+  header .sub{font-size:12px; opacity:.92; margin-top:2px}
+  .hrow{display:flex; justify-content:space-between; align-items:center; gap:10px}
+  .hbtn{flex:none; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.45); color:#fff; border-radius:11px; padding:7px 11px; font-weight:800; font-size:11px; display:flex; flex-direction:column; align-items:center; gap:1px; cursor:pointer}
+  .hbtn .ic{font-size:18px; line-height:1}
+  .hbtn:active{transform:translateY(1px)}
+  .wrap{max-width:680px; margin:0 auto; padding:14px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  label{display:block; font-size:12px; font-weight:700; color:var(--sub); margin:0 0 5px}
+  .req::after{content:" *"; color:var(--warn)}
+  input,select,textarea,button{font-family:inherit; font-size:15px}
+  input[type=text],input[type=number],input[type=password],select,textarea{
+    width:100%; padding:11px; border:1.5px solid var(--line); border-radius:10px; background:#fff; color:var(--ink)}
+  input:focus,select:focus,textarea:focus{outline:none; border-color:var(--brand)}
+  textarea{resize:vertical; min-height:60px}
+  .field{margin-bottom:12px}
+  .row{display:flex; gap:10px} .row>*{flex:1}
+  .btn{padding:11px 14px; border:0; border-radius:10px; background:var(--brand); color:#fff; font-weight:800; cursor:pointer}
+  .btn.ghost{background:#fff; color:var(--brand-dark); border:1.5px solid var(--line)}
+  .btn.danger{background:#fff; color:var(--warn); border:1.5px solid #f0c4c0}
+  .btn.sm{padding:7px 11px; font-size:13px; border-radius:8px}
+  .btn.full{width:100%}
+  .btn:active{transform:translateY(1px)}
+  .tabs{display:flex; gap:6px; margin-bottom:12px; overflow:auto}
+  .tabs button{flex:1; min-width:88px; padding:10px 6px; border:1.5px solid var(--line); background:#fff; border-radius:10px; font-weight:800; font-size:13px; color:var(--sub); cursor:pointer; white-space:nowrap}
+  .tabs button.on{background:var(--brand); color:#fff; border-color:var(--brand)}
+  .page{display:none} .page.on{display:block}
+  h2.sec{font-size:13px; color:var(--sub); margin:4px 2px 8px; font-weight:800}
+  .checkgrid{display:flex; flex-wrap:wrap; gap:7px}
+  .checkgrid label{display:inline-flex; align-items:center; gap:5px; background:#f4f7f9; border:1.5px solid var(--line); border-radius:18px; padding:6px 11px; font-size:13px; font-weight:700; color:var(--ink); cursor:pointer; margin:0}
+  .checkgrid input{width:auto; accent-color:var(--brand)}
+  .checkgrid label.on{background:var(--chip); border-color:var(--brand); color:var(--brand-dark)}
+  .item{border:1px solid var(--line); border-radius:11px; padding:11px 12px; margin-bottom:9px; background:#fff}
+  .item .top{display:flex; justify-content:space-between; gap:8px; align-items:flex-start}
+  .item .nm{font-weight:800; font-size:15px}
+  .item .meta{font-size:12px; color:var(--sub); margin-top:2px}
+  .item .acts{display:flex; gap:7px; margin-top:9px}
+  .chip{display:inline-block; background:var(--chip); color:var(--brand-dark); border-radius:18px; padding:2px 9px; font-size:12px; font-weight:700; margin:3px 4px 0 0}
+  .chip.ng{background:#fdeceb; color:var(--warn)} .chip.o{background:#fdf0e7; color:var(--accent)}
+  .stars{color:#f5a623; letter-spacing:1px} .starnum{font-weight:800; font-size:13px}
+  .nostar{color:#9aa7b5; font-size:12px; font-weight:700}
+  .empty{text-align:center; color:var(--sub); padding:26px 10px; font-size:14px}
+  .note{font-size:13px; background:#f7f9fb; border:1px solid var(--line); border-radius:8px; padding:7px 9px; margin-top:7px}
+  .ratepick{display:flex; gap:6px; font-size:30px; color:#dfe4ea; margin:4px 0 10px}
+  .ratepick span{cursor:pointer} .ratepick span.on{color:#f5a623}
+  .modebar{font-size:12px; padding:7px 11px; border-radius:9px; margin-bottom:12px; line-height:1.5}
+  .modebar.local{background:#fff4e5; color:#8a5a00; border:1px solid #ffd591}
+  .modebar.live{background:#e7f3f6; color:#0b5e75; border:1px solid #b6dfe8}
+  .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px); background:#16324f; color:#fff; padding:11px 18px; border-radius:30px; font-weight:700; opacity:0; pointer-events:none; transition:.25s; z-index:60; max-width:90%}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  .toast.ok{background:var(--ok)} .toast.err{background:var(--warn)}
+  .gate{max-width:340px; margin:60px auto; text-align:center}
+  .editbar{background:#fff4e5; color:#8a5a00; border:1px solid #ffd591; border-radius:8px; padding:8px 11px; font-size:13px; margin-bottom:10px; font-weight:700}
+  .revrow{border:1px solid var(--line); border-radius:10px; padding:9px 11px; margin-bottom:8px}
+  .revrow .h{display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--sub)}
+  .pill{display:inline-block; font-size:11px; font-weight:800; border-radius:6px; padding:1px 7px}
+  .pill.k{background:#fdf0e7; color:var(--accent)} .pill.c{background:#e7f3f6; color:var(--brand)}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <div>
+      <h1>🛠 管理画面｜職人シェア</h1>
+      <div class="sub">工務店・職人の登録、技術力／工務店の評価入力</div>
+    </div>
+    <button class="hbtn" id="inviteBtn"><span class="ic">📲</span>利用者用URLを共有</button>
+  </div>
+</header>
+
+<!-- パスコードゲート -->
+<div id="gate" class="wrap" style="display:none">
+  <div class="card gate">
+    <h2 class="sec" style="font-size:15px">🔒 管理パスコード</h2>
+    <div class="field"><input type="password" id="pass" placeholder="パスコード"></div>
+    <button class="btn full" id="passBtn">入る</button>
+  </div>
+</div>
+
+<div id="app" class="wrap" style="display:none">
+  <div id="modebar"></div>
+  <div class="tabs">
+    <button class="on" data-page="co">🏢 工務店</button>
+    <button data-page="ki">🪚 職人</button>
+    <button data-page="eval">⭐ 評価入力</button>
+    <button data-page="hist">📜 評価履歴</button>
+  </div>
+
+  <!-- ========== 工務店 ========== -->
+  <section class="page on" id="page-co">
+    <div class="card">
+      <div id="coEditBar" class="editbar" style="display:none"></div>
+      <h2 class="sec">工務店の登録 / 編集</h2>
+      <div class="field"><label class="req">工務店名</label><input type="text" id="coName" placeholder="例）山田工務店"></div>
+      <div class="row">
+        <div class="field"><label>担当者名</label><input type="text" id="coContact" placeholder="例）山田 太郎"></div>
+        <div class="field"><label>電話番号</label><input type="text" id="coTel" placeholder="例）03-1234-5678"></div>
+      </div>
+      <div class="field"><label>対応エリア</label><input type="text" id="coArea" placeholder="例）東京都／23区西部"></div>
+      <div class="field"><label>特記事項・メモ</label><textarea id="coNotes" placeholder="支払い条件、得意分野など"></textarea></div>
+      <div class="row">
+        <button class="btn ghost" id="coCancel" style="display:none">キャンセル</button>
+        <button class="btn" id="coSave">登録する</button>
+      </div>
+    </div>
+    <h2 class="sec">登録済みの工務店</h2>
+    <div id="coList"></div>
+  </section>
+
+  <!-- ========== 職人 ========== -->
+  <section class="page" id="page-ki">
+    <div class="card">
+      <div id="kiEditBar" class="editbar" style="display:none"></div>
+      <h2 class="sec">職人の登録 / 編集</h2>
+      <div class="field"><label class="req">氏名</label><input type="text" id="kName" placeholder="例）田中 一郎"></div>
+      <div class="field"><label class="req">所属工務店</label><select id="kCompany"></select></div>
+      <div class="row">
+        <div class="field"><label>年齢</label><input type="number" id="kAge" min="0" max="99" placeholder="例）42"></div>
+        <div class="field"><label>性別</label>
+          <select id="kGender"><option value="">—</option><option>男</option><option>女</option><option>その他</option></select></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>単価</label><input type="number" id="kPrice" min="0" placeholder="例）22000"></div>
+        <div class="field"><label>単位</label>
+          <select id="kUnit"><option value="day">日給（/日）</option><option value="hour">時給（/時）</option></select></div>
+      </div>
+      <div class="field"><label>得意作業</label><div class="checkgrid" id="kGood"></div></div>
+      <div class="field"><label>NG作業</label><div class="checkgrid" id="kNg"></div></div>
+      <div class="field"><label>保有資格</label><div class="checkgrid" id="kQual"></div></div>
+      <div class="row">
+        <button class="btn ghost" id="kCancel" style="display:none">キャンセル</button>
+        <button class="btn" id="kSave">登録する</button>
+      </div>
+    </div>
+    <h2 class="sec">登録済みの職人</h2>
+    <div id="kList"></div>
+  </section>
+
+  <!-- ========== 評価入力 ========== -->
+  <section class="page" id="page-eval">
+    <div class="card">
+      <h2 class="sec">⭐ 職人の技術力を評価</h2>
+      <div class="field"><label class="req">対象の職人</label><select id="evKTarget"></select></div>
+      <label>技術力（1〜5）</label>
+      <div class="ratepick" id="evKStars"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div>
+      <div class="field"><label>評価した工務店名</label><input type="text" id="evKBy" placeholder="例）佐藤建設"></div>
+      <div class="field"><label>特記事項（職人カルテに追記されます）</label><textarea id="evKNote" placeholder="例）造作が丁寧。墨出しが正確。"></textarea></div>
+      <button class="btn full" id="evKSave">この技術力評価を登録</button>
+    </div>
+    <div class="card">
+      <h2 class="sec">⭐ 工務店を評価</h2>
+      <div class="field"><label class="req">対象の工務店</label><select id="evCTarget"></select></div>
+      <label>評価（1〜5）</label>
+      <div class="ratepick" id="evCStars"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div>
+      <div class="field"><label>評価した工務店名</label><input type="text" id="evCBy" placeholder="例）鈴木住建"></div>
+      <div class="field"><label>特記事項</label><textarea id="evCNote" placeholder="例）支払いが早い。段取りが良い。"></textarea></div>
+      <button class="btn full" id="evCSave">この工務店評価を登録</button>
+    </div>
+  </section>
+
+  <!-- ========== 評価履歴 ========== -->
+  <section class="page" id="page-hist">
+    <h2 class="sec">📜 これまでの評価（新しい順）</h2>
+    <div id="histList"></div>
+  </section>
+</div>
+
+<script src="data.js"></script>
+<script src="common.js"></script>
+<script>
+let companies={}, craftsmen={}, reviews={};
+let editCo=null, editKi=null;
+let evK=0, evC=0;
+
+// ---- パスコード ----
+const PASS = (H.cfg.adminPasscode||'');
+function startApp(){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('app').style.display='block';
+  boot();
+}
+if(!PASS || sessionStorage.getItem('shokunin_admin')==='1'){ startApp(); }
+else{ document.getElementById('gate').style.display='block'; }
+document.getElementById('passBtn').onclick=()=>{
+  if(document.getElementById('pass').value===PASS){ sessionStorage.setItem('shokunin_admin','1'); startApp(); }
+  else H.toast('パスコードが違います','err');
+};
+document.getElementById('pass').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('passBtn').click(); });
+
+function boot(){
+  // モード表示
+  const m=document.getElementById('modebar');
+  if(DB.mode==='local'){ m.className='modebar local'; m.innerHTML='⚠️ <b>お試しモード</b>：この端末内だけで動作中。共有するには config.js に Firebase を設定してください。'; DB._seedIfEmpty(H.seed()); }
+  else{ m.className='modebar live'; m.innerHTML='🟢 <b>共有モード</b>：Firebase に保存され、利用者アプリへリアルタイム反映されます。'; }
+
+  // チェックグリッド生成
+  buildChecks('kGood', H.workTypes);
+  buildChecks('kNg', H.workTypes);
+  buildChecks('kQual', H.qualifications);
+
+  // タブ
+  document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+    b.classList.add('on'); document.getElementById('page-'+b.dataset.page).classList.add('on');
+  });
+
+  // 星ピッカー
+  bindStars('evKStars', v=>evK=v);
+  bindStars('evCStars', v=>evC=v);
+
+  // ボタン
+  document.getElementById('coSave').onclick=saveCompany;
+  document.getElementById('coCancel').onclick=()=>resetCoForm();
+  document.getElementById('kSave').onclick=saveCraftsman;
+  document.getElementById('kCancel').onclick=()=>resetKiForm();
+  document.getElementById('evKSave').onclick=saveKEval;
+  document.getElementById('evCSave').onclick=saveCEval;
+
+  // 購読
+  DB.on('companies', v=>{ companies=v||{}; renderCoList(); fillCompanySelects(); renderKList(); });
+  DB.on('craftsmen', v=>{ craftsmen=v||{}; renderKList(); fillCraftsmanSelect(); });
+  DB.on('reviews', v=>{ reviews=v||{}; renderHist(); });
+}
+
+function buildChecks(id, arr){
+  const box=document.getElementById(id);
+  box.innerHTML=arr.map(x=>`<label><input type="checkbox" value="${H.esc(x)}">${H.esc(x)}</label>`).join('');
+  box.querySelectorAll('label').forEach(l=>{
+    const cb=l.querySelector('input');
+    const sync=()=>l.classList.toggle('on',cb.checked);
+    cb.addEventListener('change',sync); sync();
+  });
+}
+function getChecked(id){ return [...document.querySelectorAll('#'+id+' input:checked')].map(c=>c.value); }
+function setChecked(id, vals){
+  const set=new Set(vals||[]);
+  document.querySelectorAll('#'+id+' input').forEach(c=>{ c.checked=set.has(c.value); c.parentElement.classList.toggle('on',c.checked); });
+}
+function bindStars(id, cb){
+  const box=document.getElementById(id);
+  box.querySelectorAll('span').forEach(s=>s.onclick=()=>{
+    const v=+s.dataset.v; cb(v);
+    box.querySelectorAll('span').forEach(x=>x.classList.toggle('on',+x.dataset.v<=v));
+  });
+}
+function setStars(id,v){ document.querySelectorAll('#'+id+' span').forEach(s=>s.classList.toggle('on',+s.dataset.v<=v)); }
+
+// ===== 工務店 =====
+function fillCompanySelects(){
+  const opts='<option value="">— 選択 —</option>'+H.toArr(companies).map(c=>`<option value="${c._key}">${H.esc(c.name)}</option>`).join('');
+  document.getElementById('kCompany').innerHTML=opts;
+  document.getElementById('evCTarget').innerHTML=opts;
+  if(editKi&&editKi.companyKey) document.getElementById('kCompany').value=editKi.companyKey;
+}
+function saveCompany(){
+  const name=document.getElementById('coName').value.trim();
+  if(!name){ H.toast('工務店名を入力してください','err'); return; }
+  const data={
+    name, contact:document.getElementById('coContact').value.trim(),
+    tel:document.getElementById('coTel').value.trim(),
+    area:document.getElementById('coArea').value.trim(),
+    notes:document.getElementById('coNotes').value.trim()
+  };
+  if(editCo){
+    DB.update('companies/'+editCo,data).then(()=>{H.toast('工務店を更新しました','ok'); resetCoForm();});
+  }else{
+    DB.push('companies', Object.assign({ratingSum:0,ratingCount:0,createdAt:Date.now()},data)).then(()=>{H.toast('工務店を登録しました','ok'); resetCoForm();});
+  }
+}
+function resetCoForm(){
+  editCo=null;
+  ['coName','coContact','coTel','coArea','coNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('coSave').textContent='登録する';
+  document.getElementById('coCancel').style.display='none';
+  document.getElementById('coEditBar').style.display='none';
+}
+function editCompany(key){
+  const c=companies[key]; if(!c) return; editCo=key;
+  document.getElementById('coName').value=c.name||'';
+  document.getElementById('coContact').value=c.contact||'';
+  document.getElementById('coTel').value=c.tel||'';
+  document.getElementById('coArea').value=c.area||'';
+  document.getElementById('coNotes').value=c.notes||'';
+  document.getElementById('coSave').textContent='更新する';
+  document.getElementById('coCancel').style.display='block';
+  const bar=document.getElementById('coEditBar'); bar.style.display='block'; bar.textContent='✏️ 「'+(c.name||'')+'」を編集中';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function delCompany(key){
+  const c=companies[key]||{};
+  const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===key).length;
+  if(!confirm('「'+(c.name||'')+'」を削除しますか？'+(cnt?'\n※所属職人 '+cnt+' 名の所属表示が空欄になります。':''))) return;
+  DB.remove('companies/'+key).then(()=>H.toast('削除しました','ok'));
+}
+function renderCoList(){
+  const list=document.getElementById('coList');
+  const arr=H.toArr(companies).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  if(!arr.length){ list.innerHTML='<div class="empty">まだ登録がありません。</div>'; return; }
+  list.innerHTML=arr.map(c=>{
+    const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===c._key).length;
+    return `<div class="item">
+      <div class="top">
+        <div><div class="nm">${H.esc(c.name)}</div>
+        <div class="meta">📍${H.esc(c.area||'—')}　👤${H.esc(c.contact||'—')}　📞${H.esc(c.tel||'—')}</div>
+        <div class="meta">所属職人 ${cnt}名　評価 ${H.stars(H.avg(c.ratingSum,c.ratingCount))}（${c.ratingCount||0}件）</div></div>
+      </div>
+      ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
+      <div class="acts">
+        <button class="btn ghost sm" onclick="editCompany('${c._key}')">編集</button>
+        <button class="btn danger sm" onclick="delCompany('${c._key}')">削除</button>
+      </div></div>`;
+  }).join('');
+}
+
+// ===== 職人 =====
+function saveCraftsman(){
+  const name=document.getElementById('kName').value.trim();
+  const companyKey=document.getElementById('kCompany').value;
+  if(!name){ H.toast('氏名を入力してください','err'); return; }
+  if(!companyKey){ H.toast('所属工務店を選んでください','err'); return; }
+  const data={
+    name, companyKey, companyName:(companies[companyKey]||{}).name||'',
+    age:+document.getElementById('kAge').value||null,
+    gender:document.getElementById('kGender').value,
+    price:+document.getElementById('kPrice').value||null,
+    unit:document.getElementById('kUnit').value,
+    good:getChecked('kGood'), ng:getChecked('kNg'), quals:getChecked('kQual'),
+    updatedAt:Date.now()
+  };
+  if(editKi){
+    DB.update('craftsmen/'+editKi._key,data).then(()=>{H.toast('職人を更新しました','ok'); resetKiForm();});
+  }else{
+    DB.push('craftsmen', Object.assign({status:'free',availMemo:'',skillSum:0,skillCount:0,skillNotes:'',createdAt:Date.now()},data))
+      .then(()=>{H.toast('職人を登録しました','ok'); resetKiForm();});
+  }
+}
+function resetKiForm(){
+  editKi=null;
+  ['kName','kAge','kPrice'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('kCompany').value='';
+  document.getElementById('kGender').value='';
+  document.getElementById('kUnit').value='day';
+  setChecked('kGood',[]); setChecked('kNg',[]); setChecked('kQual',[]);
+  document.getElementById('kSave').textContent='登録する';
+  document.getElementById('kCancel').style.display='none';
+  document.getElementById('kiEditBar').style.display='none';
+}
+function editCraftsman(key){
+  const k=craftsmen[key]; if(!k) return; editKi=Object.assign({_key:key},k);
+  document.getElementById('kName').value=k.name||'';
+  document.getElementById('kCompany').value=k.companyKey||'';
+  document.getElementById('kAge').value=k.age||'';
+  document.getElementById('kGender').value=k.gender||'';
+  document.getElementById('kPrice').value=k.price||'';
+  document.getElementById('kUnit').value=k.unit||'day';
+  setChecked('kGood',k.good); setChecked('kNg',k.ng); setChecked('kQual',k.quals);
+  document.getElementById('kSave').textContent='更新する';
+  document.getElementById('kCancel').style.display='block';
+  const bar=document.getElementById('kiEditBar'); bar.style.display='block'; bar.textContent='✏️ 「'+(k.name||'')+'」を編集中';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function delCraftsman(key){
+  const k=craftsmen[key]||{};
+  if(!confirm('「'+(k.name||'')+'」を削除しますか？')) return;
+  DB.remove('craftsmen/'+key).then(()=>H.toast('削除しました','ok'));
+}
+function renderKList(){
+  const list=document.getElementById('kList');
+  const arr=H.toArr(craftsmen).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  if(!arr.length){ list.innerHTML='<div class="empty">まだ登録がありません。</div>'; return; }
+  list.innerHTML=arr.map(k=>{
+    const st=H.statusOf(k.status);
+    return `<div class="item">
+      <div class="top">
+        <div><div class="nm">${H.esc(k.name)} <span class="meta">/ ${H.esc(k.companyName||'未所属')}</span></div>
+        <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')}　${H.fmtPrice(k.price,k.unit)}　技術力 ${H.stars(H.avg(k.skillSum,k.skillCount))}（${k.skillCount||0}件）</div></div>
+        <span class="pill" style="background:${st.color};color:#fff">${st.label}</span>
+      </div>
+      <div>${H.chips(k.good,'o')}${H.chips(k.ng,'ng')}</div>
+      ${(k.quals&&k.quals.length)?`<div>${H.chips(k.quals)}</div>`:''}
+      ${k.skillNotes?`<div class="note">📝 技術評価メモ：${H.esc(k.skillNotes)}</div>`:''}
+      <div class="acts">
+        <button class="btn ghost sm" onclick="editCraftsman('${k._key}')">編集</button>
+        <button class="btn danger sm" onclick="delCraftsman('${k._key}')">削除</button>
+      </div></div>`;
+  }).join('');
+}
+
+// ===== 評価入力 =====
+function fillCraftsmanSelect(){
+  document.getElementById('evKTarget').innerHTML='<option value="">— 選択 —</option>'+
+    H.toArr(craftsmen).map(k=>`<option value="${k._key}">${H.esc(k.name)}（${H.esc(k.companyName||'')}）</option>`).join('');
+}
+function saveKEval(){
+  const key=document.getElementById('evKTarget').value;
+  if(!key){ H.toast('職人を選んでください','err'); return; }
+  if(!evK){ H.toast('技術力（星）を選んでください','err'); return; }
+  const by=document.getElementById('evKBy').value.trim();
+  const note=document.getElementById('evKNote').value.trim();
+  const k=craftsmen[key]||{};
+  const upd={skillSum:(k.skillSum||0)+evK, skillCount:(k.skillCount||0)+1};
+  if(note) upd.skillNotes=note; // 最新の特記事項をカルテに反映
+  Promise.all([
+    DB.update('craftsmen/'+key,upd),
+    DB.push('reviews',{type:'craftsman',targetKey:key,targetName:k.name||'',rating:evK,note,byCompany:by,at:Date.now()})
+  ]).then(()=>{
+    H.toast('技術力評価を登録しました','ok');
+    evK=0; setStars('evKStars',0);
+    document.getElementById('evKBy').value=''; document.getElementById('evKNote').value='';
+    document.getElementById('evKTarget').value='';
+  });
+}
+function saveCEval(){
+  const key=document.getElementById('evCTarget').value;
+  if(!key){ H.toast('工務店を選んでください','err'); return; }
+  if(!evC){ H.toast('評価（星）を選んでください','err'); return; }
+  const by=document.getElementById('evCBy').value.trim();
+  const note=document.getElementById('evCNote').value.trim();
+  const c=companies[key]||{};
+  const upd={ratingSum:(c.ratingSum||0)+evC, ratingCount:(c.ratingCount||0)+1};
+  if(note) upd.notes=note;
+  Promise.all([
+    DB.update('companies/'+key,upd),
+    DB.push('reviews',{type:'company',targetKey:key,targetName:c.name||'',rating:evC,note,byCompany:by,at:Date.now()})
+  ]).then(()=>{
+    H.toast('工務店評価を登録しました','ok');
+    evC=0; setStars('evCStars',0);
+    document.getElementById('evCBy').value=''; document.getElementById('evCNote').value='';
+    document.getElementById('evCTarget').value='';
+  });
+}
+
+// ===== 評価履歴 =====
+function renderHist(){
+  const list=document.getElementById('histList');
+  const arr=H.toArr(reviews).sort((a,b)=>(b.at||0)-(a.at||0));
+  if(!arr.length){ list.innerHTML='<div class="empty">まだ評価がありません。</div>'; return; }
+  list.innerHTML=arr.map(r=>`<div class="revrow">
+    <div class="h">
+      <span><span class="pill ${r.type==='craftsman'?'k':'c'}">${r.type==='craftsman'?'職人':'工務店'}</span> <b style="color:var(--ink)">${H.esc(r.targetName)}</b></span>
+      <span>${H.fmtDate(r.at)}</span>
+    </div>
+    <div style="margin-top:4px"><span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
+      ${r.byCompany?`<span class="meta" style="font-size:12px;color:var(--sub)"> by ${H.esc(r.byCompany)}</span>`:''}</div>
+    ${r.note?`<div class="note">${H.esc(r.note)}</div>`:''}
+  </div>`).join('');
+}
+
+// ---- 利用者アプリのURLをLINEで共有（運営が参加工務店へ配布） ----
+function userAppUrl(){
+  var p=location.pathname;
+  if(/admin\.html$/.test(p)) p=p.replace(/admin\.html$/,'index.html');
+  else if(/\/$/.test(p)) p=p+'index.html';
+  return location.origin+p;
+}
+async function shareToLine(text){
+  if(navigator.share){
+    try{ await navigator.share({text}); return; }catch(e){ if(e&&e.name==='AbortError') return; }
+  }
+  try{ await navigator.clipboard.writeText(text); H.toast('内容をコピーしました。LINEに貼り付けて送ってください','ok'); }catch(_){}
+  window.open('https://line.me/R/msg/text/?'+encodeURIComponent(text),'_blank');
+}
+document.getElementById('inviteBtn').onclick=()=>shareToLine(
+  '【職人シェア ネットワーク】\n工務店どうしで職人をシェアし、空き状況をリアルタイムに共有できるアプリです。\n下記から参加できます👇\n'+userAppUrl()
+);
+
+// グローバル公開（onclick用）
+window.editCompany=editCompany; window.delCompany=delCompany;
+window.editCraftsman=editCraftsman; window.delCraftsman=delCraftsman;
+</script>
+</body>
+</html>
