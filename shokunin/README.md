@@ -47,14 +47,21 @@
 ### B. 本番運用（複数の工務店で共有）
 1. `config.js` の `firebase` に Firebase Realtime Database の設定を入れる
    （既存のオセロ／勤怠アプリのプロジェクトを流用可。データは `shokunin/` パスに保存され混ざりません）
-2. `config.js` の `adminEmails` に**管理者のメール**を入れる（admin.html はこのメールでログイン）
-3. **【必須】Firebase で認証を有効化＋セキュリティルールを設定**（下記）
-4. GitHub Pages などに `shokunin/` を公開
+2. **【必須】Firebase で認証を有効化＋セキュリティルールを設定**（下記。コピペするだけ、メール書き換え不要）
+3. GitHub Pages などに `shokunin/` を公開
+4. **`admin.html` を開いて管理者アカウントを作る**（次項）
 5. 各工務店の担当者に **`index.html` のURL** を共有（LINEグループに貼る運用も可）
+
+### 管理者の登録（とても簡単・3ステップ）
+1. `admin.html` を開く
+2. メールアドレスと**新しく決めたパスワード（6文字以上）**を入れて **「新規登録」** を押す
+3. 「このアカウントを管理者にする」ボタンを押す → 完了（以後このアカウントで全件管理）
+
+> **最初に登録した人が管理者**になります。`config.js` やルールにメールを書き込む必要はありません。2回目以降は「ログイン」を押すだけ。管理者を増やしたい場合は、Firebaseコンソール → Realtime Database の `shokunin/admins` に、追加したい人の `ユーザーUID: true` を足します（UIDは Authentication → Users で確認）。
 
 ### 権限モデル（だれが何を編集できるか）
 - **工務店アカウント**：`index.html`「自社の職人」タブで**メール/パスワードでログイン**。各工務店レコードの `ownerEmail` ＝ 自分のメールの場合だけ、**自社の職人を登録・編集・削除**できます（Firebaseルールで強制）。
-- **管理者**：`config.js` の `adminEmails` のメールでログインすると、`admin.html` から**全件編集**できます。
+- **管理者**：`admin.html` で登録したアカウント。**全件編集**できます。
 - **評価（職人・工務店）**：ログイン不要（**匿名でも投稿可**）。評価の平均は `reviews` から自動計算して表示します。
 - 閲覧・検索・評価は匿名サインインで動くので、見るだけの人にログインは不要です。
 
@@ -63,21 +70,26 @@
 - **「メール/パスワード」** を有効化
 - **「匿名（Anonymous）」** を有効化
 
-**(2) Realtime Database → ルール**（既存ルールと**マージ**。`ADMIN_EMAIL_HERE` は `config.js` の `adminEmails` と同じ管理者メールに置き換え）
+**(2) Realtime Database → ルール**（既存ルールと**マージ**。下記は**そのままコピペでOK**、書き換え不要）
 ```json
 {
   "rules": {
     "kintai": { ".read": true, ".write": true },
     "shokunin": {
       ".read": "auth != null",
+      "admins": {
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && (!root.child('shokunin/admins').exists() || root.child('shokunin/admins').child(auth.uid).val() === true)"
+        }
+      },
       "companies": {
         "$cid": {
-          ".write": "auth != null && ( auth.token.email === 'ADMIN_EMAIL_HERE' || ( (!data.exists() || data.child('ownerEmail').val() === auth.token.email) && (!newData.exists() || newData.child('ownerEmail').val() === auth.token.email) ) )"
+          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( (!data.exists() || data.child('ownerEmail').val() === auth.token.email) && (!newData.exists() || newData.child('ownerEmail').val() === auth.token.email) ) )"
         }
       },
       "craftsmen": {
         "$kid": {
-          ".write": "auth != null && ( auth.token.email === 'ADMIN_EMAIL_HERE' || ( (!data.exists() || root.child('shokunin/companies').child(data.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) && (!newData.exists() || root.child('shokunin/companies').child(newData.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) ) )"
+          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( (!data.exists() || root.child('shokunin/companies').child(data.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) && (!newData.exists() || root.child('shokunin/companies').child(newData.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) ) )"
         }
       },
       "reviews": {
@@ -87,13 +99,13 @@
   }
 }
 ```
-- 管理者を複数にする場合は `auth.token.email === 'a@x.com' || auth.token.email === 'b@x.com'` のように増やします。
+- `admins` は「最初の1人だけ自分を登録でき、その後は既存管理者しか追加できない」ルールです。**運営が最初に admin.html で登録**してください（先に他人が登録すると、その人が管理者になります）。
 - ルール公開後、反映まで数十秒かかることがあります。
 
 > 段階的に始めたい場合は、まず `"shokunin": { ".read": true, ".write": true }` で動作確認してから上記の厳格ルールへ移行すると安全です。
 
 ## 運用の流れ（例）
-1. 運営が `admin.html`（管理者メールでログイン）で参加工務店を登録。**「ログイン用メール」に各工務店のメールを設定**
+1. 運営が `admin.html` で**管理者アカウントを登録**（上記3ステップ）。続けて参加工務店を登録し、**「ログイン用メール」に各工務店のメールを設定**
 2. 各工務店は `index.html`「自社の職人」タブで、その**メール/パスワードでログイン（初回は新規登録）**し、自社の職人を登録・空き状況を更新
    - ※工務店が自分で `index.html` から会社ごと新規登録することもできます（その場合オーナーは登録した本人のメール）
 3. 他社は「職人をさがす／空き状況ボード」で空いている職人を確認

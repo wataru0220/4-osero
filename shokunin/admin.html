@@ -90,18 +90,9 @@
   </div>
 </header>
 
-<!-- 管理者ログイン -->
+<!-- 管理者ログイン（内容は route()/renderGate() が動的に描画） -->
 <div id="gate" class="wrap" style="display:none">
-  <div class="card gate">
-    <h2 class="sec" style="font-size:15px">🔒 管理者ログイン</h2>
-    <div class="field"><input type="email" id="adEmail" placeholder="管理者メール" autocomplete="username"></div>
-    <div class="field"><input type="password" id="adPass" placeholder="パスワード" autocomplete="current-password"></div>
-    <div class="row">
-      <button class="btn ghost" id="adSignup">新規登録</button>
-      <button class="btn" id="adLogin">ログイン</button>
-    </div>
-    <div class="count" id="gateMsg" style="margin-top:10px">config.js の adminEmails に登録したメールでログインしてください。</div>
-  </div>
+  <div class="card gate" id="gateBody"></div>
 </div>
 
 <div id="app" class="wrap" style="display:none">
@@ -200,41 +191,72 @@
 let companies={}, craftsmen={}, reviews={};
 let editCo=null, editKi=null;
 let evK=0, evC=0;
-let myUser=null, booted=false;
+let myUser=null, booted=false, admins={}, adminsLoaded=false;
 
-// ---- 管理者ログイン ----
-function isAdminUser(){ return H.isAdmin(myUser) || DB.mode==='local'; } // 端末内お試しは無条件で管理可
-function showGate(msg){
-  document.getElementById('app').style.display='none';
-  document.getElementById('gate').style.display='block';
-  if(msg) document.getElementById('gateMsg').textContent=msg;
-}
+// ---- 管理者ログイン（最初に登録した人が管理者になる方式） ----
+function amAdmin(){ return DB.mode==='local' || !!(myUser && myUser.uid && admins[myUser.uid]===true); }
+function anyAdmin(){ return Object.keys(admins).length>0; }
 function startApp(){
   document.getElementById('gate').style.display='none';
   document.getElementById('app').style.display='block';
   if(!booted){ booted=true; boot(); }
 }
-DB.auth.onChange(u=>{
-  myUser=u;
-  if(DB.mode==='local'){ startApp(); return; } // 端末内お試しは無条件で開く
-  if(u && u.email){
-    if(isAdminUser()) startApp();
-    else showGate('このメール（'+u.email+'）は管理者として登録されていません。config.js の adminEmails に追加してください。');
-  } else {
-    showGate(); // 未ログイン（匿名含む）
+function route(){
+  if(DB.mode==='local'){ startApp(); return; }            // 端末内お試しは無条件で開く
+  if(!myUser || !myUser.email){ renderGate('login'); return; }
+  if(!adminsLoaded){ renderGate('loading'); return; }
+  if(amAdmin()){ startApp(); return; }
+  renderGate(anyAdmin() ? 'denied' : 'claim');
+}
+function renderGate(mode){
+  document.getElementById('app').style.display='none';
+  document.getElementById('gate').style.display='block';
+  const b=document.getElementById('gateBody');
+  if(mode==='loading'){ b.innerHTML='<div class="count">確認中…</div>'; return; }
+  if(mode==='login'){
+    b.innerHTML=`
+      <h2 class="sec" style="font-size:15px">🔒 管理者ログイン</h2>
+      <div class="count" style="margin-bottom:10px">メールとパスワードでログインします。<br><b>初めての方は「新規登録」</b>を押してください（最初に登録した方が管理者になります）。</div>
+      <div class="field"><input type="email" id="adEmail" placeholder="メールアドレス" autocomplete="username"></div>
+      <div class="field"><input type="password" id="adPass" placeholder="パスワード（6文字以上）" autocomplete="current-password"></div>
+      <div class="row">
+        <button class="btn ghost" id="adSignup">新規登録</button>
+        <button class="btn" id="adLogin">ログイン</button>
+      </div>`;
+    document.getElementById('adLogin').onclick=()=>adAuth('in');
+    document.getElementById('adSignup').onclick=()=>adAuth('up');
+    document.getElementById('adPass').addEventListener('keydown',e=>{ if(e.key==='Enter') adAuth('in'); });
+    return;
   }
-});
+  if(mode==='claim'){
+    b.innerHTML=`
+      <h2 class="sec" style="font-size:15px">👑 管理者になる</h2>
+      <div class="count" style="margin-bottom:10px">ログイン中：<b>${H.esc(myUser.email)}</b><br>まだ管理者がいません。下のボタンであなたを管理者として登録します。</div>
+      <button class="btn full" id="claimBtn">このアカウントを管理者にする</button>
+      <button class="btn ghost full" id="switchBtn" style="margin-top:8px">別のアカウントでログインし直す</button>`;
+    document.getElementById('claimBtn').onclick=()=>{
+      DB.set('admins/'+myUser.uid, true).then(()=>H.toast('管理者として登録しました','ok'));
+    };
+    document.getElementById('switchBtn').onclick=()=>DB.auth.signOut();
+    return;
+  }
+  // denied
+  b.innerHTML=`
+    <h2 class="sec" style="font-size:15px">🚫 アクセス権がありません</h2>
+    <div class="count" style="margin-bottom:10px">ログイン中：<b>${H.esc(myUser.email)}</b><br>すでに別の管理者が登録されています。</div>
+    <button class="btn ghost full" id="switchBtn">別のアカウントでログインし直す</button>`;
+  document.getElementById('switchBtn').onclick=()=>DB.auth.signOut();
+}
 function adAuth(mode){
   const email=(document.getElementById('adEmail').value||'').trim();
   const pass=(document.getElementById('adPass').value||'');
   if(!email){ H.toast('メールを入力してください','err'); return; }
-  if(DB.mode==='firebase' && pass.length<6){ H.toast('パスワードは6文字以上です','err'); return; }
+  if(pass.length<6){ H.toast('パスワードは6文字以上です','err'); return; }
   const p = mode==='up' ? DB.auth.signUp(email,pass) : DB.auth.signIn(email,pass);
-  p.catch(e=>H.toast('ログインできませんでした：'+((e&&e.message)||e),'err'));
+  p.catch(e=>H.toast((mode==='up'?'登録':'ログイン')+'できませんでした：'+((e&&e.message)||e),'err'));
 }
-document.getElementById('adLogin').onclick=()=>adAuth('in');
-document.getElementById('adSignup').onclick=()=>adAuth('up');
-document.getElementById('adPass').addEventListener('keydown',e=>{ if(e.key==='Enter') adAuth('in'); });
+DB.on('admins', v=>{ admins=v||{}; adminsLoaded=true; route(); });
+DB.auth.onChange(u=>{ myUser=u; route(); });
 
 function boot(){
   // モード表示
