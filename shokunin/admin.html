@@ -78,6 +78,8 @@
   .revrow .h{display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--sub)}
   .pill{display:inline-block; font-size:11px; font-weight:800; border-radius:6px; padding:1px 7px}
   .pill.k{background:#fdf0e7; color:var(--accent)} .pill.c{background:#e7f3f6; color:var(--brand)}
+  .okbadge{display:inline-block; font-size:11px; font-weight:800; color:#1a7a45; background:#eafaf0; border:1px solid #b6e6c8; border-radius:6px; padding:1px 6px}
+  .waitbadge{display:inline-block; font-size:11px; font-weight:800; color:#8a5a00; background:#fff7e8; border:1px solid #ffe1a8; border-radius:6px; padding:1px 6px}
 </style>
 </head>
 <body>
@@ -103,6 +105,7 @@
     <button data-page="ki">🪚 職人</button>
     <button data-page="eval">⭐ 評価入力</button>
     <button data-page="hist">📜 評価履歴</button>
+    <button data-page="req">🤝 応援要請</button>
   </div>
 
   <!-- ========== 工務店 ========== -->
@@ -184,12 +187,19 @@
     <h2 class="sec">📜 これまでの評価（新しい順）</h2>
     <div id="histList"></div>
   </section>
+
+  <!-- ========== 応援要請（管理者は概要のみ閲覧） ========== -->
+  <section class="page" id="page-req">
+    <h2 class="sec">🤝 応援要請の一覧（概要のみ・新しい順）</h2>
+    <div class="modebar" style="background:#eef3fb;color:#1759c4;border:1px solid #c7dbff">管理者は要請の概要のみ閲覧できます。労働条件・支払い条件のやり取りは当事者だけが見られ、管理者・運営は取引には関与しません。</div>
+    <div id="reqList"></div>
+  </section>
 </div>
 
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-let companies={}, craftsmen={}, reviews={};
+let companies={}, craftsmen={}, reviews={}, approvals={}, requests={};
 let editCo=null, editKi=null;
 let evK=0, evC=0;
 let myUser=null, booted=false, admins={}, adminsLoaded=false;
@@ -310,6 +320,8 @@ function boot(){
   DB.on('companies', v=>{ companies=v||{}; renderCoList(); fillCompanySelects(); renderKList(); });
   DB.on('craftsmen', v=>{ craftsmen=v||{}; renderKList(); fillCraftsmanSelect(); renderCoList(); });
   DB.on('reviews', v=>{ reviews=v||{}; renderHist(); renderCoList(); renderKList(); });
+  DB.on('approvals', v=>{ approvals=v||{}; renderKList(); });
+  DB.on('requests', v=>{ requests=v||{}; renderReqList(); });
 }
 
 function buildChecks(id, arr){
@@ -425,7 +437,8 @@ function saveCraftsman(){
     DB.update('craftsmen/'+editKi._key,data).then(()=>{H.toast('職人を更新しました','ok'); resetKiForm();});
   }else{
     DB.push('craftsmen', Object.assign({status:'free',availMemo:'',createdAt:Date.now()},data))
-      .then(()=>{H.toast('職人を登録しました','ok'); resetKiForm();});
+      .then(key=>DB.set('approvals/craftsman/'+key, true)) // 管理者登録は自動で認証済み
+      .then(()=>{H.toast('職人を登録しました（認証済み）','ok'); resetKiForm();});
   }
 }
 function resetKiForm(){
@@ -462,12 +475,15 @@ function renderKList(){
   const list=document.getElementById('kList');
   const arr=H.toArr(craftsmen).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   if(!arr.length){ list.innerHTML='<div class="empty">まだ登録がありません。</div>'; return; }
+  // 認証待ちを上に表示
+  arr.sort((a,b)=>(H.isApproved(approvals,a._key)?1:0)-(H.isApproved(approvals,b._key)?1:0));
   list.innerHTML=arr.map(k=>{
     const st=H.statusOf(k.status);
     const r=H.ratingFor(reviews,'craftsman',k._key);
+    const ok=H.isApproved(approvals,k._key);
     return `<div class="item">
       <div class="top">
-        <div><div class="nm">${H.esc(k.name)} <span class="meta">/ ${H.esc(k.companyName||'未所属')}</span></div>
+        <div><div class="nm">${H.esc(k.name)} <span class="meta">/ ${H.esc(k.companyName||'未所属')}</span> ${ok?'<span class="okbadge">認証済✓</span>':'<span class="waitbadge">認証待ち</span>'}</div>
         <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')}　${H.fmtPrice(k.price,k.unit)}　技術力 ${H.stars(r.avg)}（${r.count}件）</div></div>
         <span class="pill" style="background:${st.color};color:#fff">${st.label}</span>
       </div>
@@ -475,6 +491,9 @@ function renderKList(){
       ${(k.quals&&k.quals.length)?`<div>${H.chips(k.quals)}</div>`:''}
       ${r.notes.length?`<div class="note">📝 ${H.esc(r.notes[0].note)}${r.notes[0].by?'（'+H.esc(r.notes[0].by)+'）':''}</div>`:''}
       <div class="acts">
+        ${ok
+          ? `<button class="btn ghost sm" onclick="unapproveCraftsman('${k._key}')">認証を取消</button>`
+          : `<button class="btn sm" onclick="approveCraftsman('${k._key}')">✓ 認証する</button>`}
         <button class="btn ghost sm" onclick="editCraftsman('${k._key}')">編集</button>
         <button class="btn danger sm" onclick="delCraftsman('${k._key}')">削除</button>
       </div></div>`;
@@ -551,9 +570,37 @@ document.getElementById('inviteBtn').onclick=()=>shareToLine(
   '【職人シェア ネットワーク】\n工務店どうしで職人をシェアし、空き状況をリアルタイムに共有できるアプリです。\n下記から参加できます👇\n'+userAppUrl()
 );
 
+// 応援要請の一覧（管理者は概要のみ。条件のやり取り deals は読めない）
+function renderReqList(){
+  const list=document.getElementById('reqList'); if(!list) return;
+  const arr=H.toArr(requests).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  if(!arr.length){ list.innerHTML='<div class="empty">まだ応援要請はありません。</div>'; return; }
+  const stl=s=>s==='accepted'?'<span class="okbadge">承認</span>':s==='declined'?'<span class="waitbadge" style="color:var(--warn);background:#fdeceb;border-color:#f0c4c0">辞退</span>':'<span class="waitbadge">申請中</span>';
+  list.innerHTML=arr.map(r=>`<div class="item">
+    <div class="top">
+      <div><div class="nm">${H.esc(r.fromCompanyName)} → ${H.esc(r.toCompanyName)}</div>
+      <div class="meta">職人：${H.esc(r.craftsmanName)}　🗓${H.esc(r.dateText||'—')}</div>
+      <div class="meta">📍${H.esc(r.site||'—')}</div></div>
+      <div>${stl(r.status)}</div>
+    </div>
+    ${r.work?`<div class="meta">🛠 ${H.esc(r.work)}</div>`:''}
+    <div class="meta">${H.fmtDate(r.createdAt)}</div>
+  </div>`).join('');
+}
+
+// 職人の認証（管理者のみ・approvalsパスに書き込み）
+function approveCraftsman(key){
+  DB.set('approvals/craftsman/'+key, true).then(()=>H.toast('認証しました','ok'));
+}
+function unapproveCraftsman(key){
+  if(!confirm('この職人の認証を取り消しますか？（利用者の検索に出なくなります）')) return;
+  DB.remove('approvals/craftsman/'+key).then(()=>H.toast('認証を取り消しました','ok'));
+}
+
 // グローバル公開（onclick用）
 window.editCompany=editCompany; window.delCompany=delCompany;
 window.editCraftsman=editCraftsman; window.delCraftsman=delCraftsman;
+window.approveCraftsman=approveCraftsman; window.unapproveCraftsman=unapproveCraftsman;
 </script>
 </body>
 </html>

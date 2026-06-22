@@ -59,11 +59,12 @@
 
 > **最初に登録した人が管理者**になります。`config.js` やルールにメールを書き込む必要はありません。2回目以降は「ログイン」を押すだけ。管理者を増やしたい場合は、Firebaseコンソール → Realtime Database の `shokunin/admins` に、追加したい人の `ユーザーUID: true` を足します（UIDは Authentication → Users で確認）。
 
-### 権限モデル（だれが何を編集できるか）
-- **工務店アカウント**：`index.html`「自社の職人」タブで**メール/パスワードでログイン**。各工務店レコードの `ownerEmail` ＝ 自分のメールの場合だけ、**自社の職人を登録・編集・削除**できます（Firebaseルールで強制）。
-- **管理者**：`admin.html` で登録したアカウント。**全件編集**できます。
-- **評価（職人・工務店）**：ログイン不要（**匿名でも投稿可**）。評価の平均は `reviews` から自動計算して表示します。
-- 閲覧・検索・評価は匿名サインインで動くので、見るだけの人にログインは不要です。
+### 権限モデル（だれが何をできるか）
+- **工務店アカウント**：`index.html`でメール/パスワードでログイン。各工務店の `ownerEmail` ＝ 自分のメールの場合だけ、**自社の職人を登録・編集・削除**できます（ルールで強制）。
+- **職人の認証（承認制）**：利用者が登録した職人は**認証されるまで検索・空き状況に出ません**。管理者が `admin.html` で「✓認証する」と公開されます（認証情報は管理者だけが書ける `approvals` パス）。管理者が登録した職人は自動で認証済み。
+- **管理者**：`admin.html` で登録したアカウント。職人の認証、全件編集ができます。
+- **評価**：ログイン不要（**匿名でも投稿可**）。平均は `reviews` から自動計算。
+- **応援要請**：他社の職人を借りる依頼。要請の概要は「依頼元・相手工務店・管理者」が閲覧可。**労働条件・支払い条件のやり取り（`deals`）は当事者2社だけ**が閲覧でき、**管理者は見られません**（運営は取引・紹介料に関与しない設計）。
 
 ### 【必須】Firebase コンソールでの設定
 **(1) 認証を有効化**：Authentication → Sign-in method（ログイン方法）で
@@ -76,30 +77,58 @@
   "rules": {
     "kintai": { ".read": true, ".write": true },
     "shokunin": {
-      ".read": "auth != null",
       "admins": {
+        ".read": "auth != null",
         "$uid": {
           ".write": "auth != null && auth.uid === $uid && (!root.child('shokunin/admins').exists() || root.child('shokunin/admins').child(auth.uid).val() === true)"
         }
       },
       "companies": {
+        ".read": "auth != null",
         "$cid": {
           ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( (!data.exists() || data.child('ownerEmail').val() === auth.token.email) && (!newData.exists() || newData.child('ownerEmail').val() === auth.token.email) ) )"
         }
       },
       "craftsmen": {
+        ".read": "auth != null",
         "$kid": {
           ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( (!data.exists() || root.child('shokunin/companies').child(data.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) && (!newData.exists() || root.child('shokunin/companies').child(newData.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) ) )"
         }
       },
       "reviews": {
+        ".read": "auth != null",
         "$rid": { ".write": "auth != null" }
+      },
+      "approvals": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
+      },
+      "reqIndex": {
+        "$ck": {
+          ".read": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || root.child('shokunin/companies').child($ck).child('ownerEmail').val() === auth.token.email )",
+          ".write": "auth != null"
+        }
+      },
+      "requests": {
+        ".read": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true",
+        "$rid": {
+          ".read": "auth != null && ( data.child('fromEmail').val() === auth.token.email || data.child('toOwnerEmail').val() === auth.token.email )",
+          ".write": "auth != null && ( (!data.exists() && newData.child('fromEmail').val() === auth.token.email) || (data.exists() && (data.child('fromEmail').val() === auth.token.email || data.child('toOwnerEmail').val() === auth.token.email)) || root.child('shokunin/admins').child(auth.uid).val() === true )"
+        }
+      },
+      "deals": {
+        "$rid": {
+          ".read": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email )",
+          ".write": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email )"
+        }
       }
     }
   }
 }
 ```
-- `admins` は「最初の1人だけ自分を登録でき、その後は既存管理者しか追加できない」ルールです。**運営が最初に admin.html で登録**してください（先に他人が登録すると、その人が管理者になります）。
+- `admins` は「最初の1人だけ自分を登録でき、その後は既存管理者しか追加できない」ルール。**運営が最初に admin.html で登録**してください。
+- `deals`（条件のやり取り）は当事者2社だけが読み書き可。**管理者は対象外**＝取引内容は見られません。
+- 旧バージョンから更新する場合は、`shokunin` 直下の `".read": "auth != null"` を**消して**上記の各コレクションごとの `.read` に置き換えてください（応援要請を当事者限定にするため）。
 - ルール公開後、反映まで数十秒かかることがあります。
 
 > 段階的に始めたい場合は、まず `"shokunin": { ".read": true, ".write": true }` で動作確認してから上記の厳格ルールへ移行すると安全です。
@@ -119,11 +148,15 @@
 - `companies/{id}` … 工務店（name, tel, area, contact, **ownerEmail**, notes, createdAt）
 - `craftsmen/{id}` … 職人（name, companyKey, age, gender, quals[], good[], ng[], price, unit, status, availMemo, createdAt）
 - `reviews/{id}` … 評価（type, targetKey, targetName, rating, note, byCompany, at）
+- `admins/{uid}: true` … 管理者（最初に登録した人）
+- `approvals/craftsman/{kid}: true` … 管理者が認証した職人（管理者のみ書込）
+- `requests/{rid}` … 応援要請の概要（from/to 会社・職人・現場・希望日・連絡先・メッセージ・status）。当事者2社＋管理者が閲覧
+- `reqIndex/{companyKey}/{rid}: true` … 各社が自社関連の要請を引くための索引
+- `deals/{rid}/{mid}` … **労働条件・支払い条件のやり取り（当事者2社のみ閲覧、管理者は不可）**
 
-> ★平均は集計値を持たず、表示時に `reviews` から都度計算します（職人＝type:"craftsman"、工務店＝type:"company" を targetKey で集計）。集計値の改ざんを防げます。
-> `ownerEmail` がその工務店の編集権限を持つログインメールです。
+> ★平均は集計値を持たず `reviews` から都度計算（改ざん防止）。`ownerEmail` がその工務店の編集権限を持つログインメール。職人は `approvals` に載るまで検索に出ません。
 
 ## セキュリティの注意
 - `config.js` の値はクライアントに公開される前提の識別子です。**機密保護は Firebase のセキュリティルールで担保**してください。
-- 工務店ごとの編集制限・管理者権限は上記ルールで強制されます（`config.js` の `adminEmails` はアプリ表示用。実際の許可はルールの管理者メールで決まるので、両者を一致させてください）。
-- 単価・評価など取り扱いに配慮が必要な情報を含みます。公開範囲（URLの配布先）に注意してください。
+- 工務店ごとの編集制限・管理者権限・応援要請の当事者限定・条件のやり取りの非公開は、すべて上記ルールで強制されます。
+- 単価・評価・連絡先など取り扱いに配慮が必要な情報を含みます。公開範囲（URLの配布先）に注意してください。

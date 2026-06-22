@@ -102,6 +102,14 @@
   .modebar.live{background:#eafaf0; color:#1a7a45; border:1px solid #b6e6c8}
   .lgerr{margin-top:10px; background:#fdeceb; color:var(--warn); border:1px solid #f0c4c0; border-radius:9px; padding:9px 11px; font-size:13px; line-height:1.5}
   .firstcraft-head{margin:14px 0 8px; padding-top:14px; border-top:1px solid var(--line); font-weight:800; font-size:14px}
+  .okbadge{display:inline-block; font-size:11px; font-weight:800; color:#1a7a45; background:#eafaf0; border:1px solid #b6e6c8; border-radius:6px; padding:1px 6px; vertical-align:middle}
+  .waitbadge{display:inline-block; font-size:11px; font-weight:800; color:#8a5a00; background:#fff7e8; border:1px solid #ffe1a8; border-radius:6px; padding:1px 6px; vertical-align:middle}
+  .reqsec{font-size:13px; color:var(--sub); font-weight:800; margin:14px 4px 8px}
+  .reqcard{border:1px solid var(--line); border-radius:13px; padding:13px; margin-bottom:11px; background:#fff}
+  .meta2{font-size:13px; color:var(--ink); margin-top:4px}
+  .dealbox{margin-top:10px; border-top:1px dashed var(--line); padding-top:10px}
+  .dealmsg{background:#f7f9fb; border:1px solid var(--line); border-radius:8px; padding:7px 9px; margin-bottom:6px; font-size:14px; line-height:1.5}
+  .dealtime{font-size:11px; color:var(--sub); margin-top:2px}
   .count{font-size:12px; color:var(--sub); margin:0 2px 8px}
   .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%) translateY(20px); background:#16324f; color:#fff; padding:11px 18px; border-radius:30px; font-weight:700; opacity:0; pointer-events:none; transition:.25s; z-index:60; max-width:90%}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
@@ -163,6 +171,15 @@
   <section class="page" id="page-update">
     <div class="card" id="authBox"></div>
     <div id="updateList"></div>
+  </section>
+
+  <!-- ============ 応援要請（ログイン制） ============ -->
+  <section class="page" id="page-req">
+    <div class="card" style="padding:11px 14px">
+      <b>🤝 応援要請</b>
+      <div class="count" style="margin:4px 0 0">他社の職人を借りたいときは「職人をさがす」から要請できます。労働条件・支払い条件のやり取りは当事者だけが見られます（管理者は取引に関与しません）。</div>
+    </div>
+    <div id="reqBox"></div>
   </section>
 </div>
 
@@ -248,21 +265,43 @@
   </div>
 </div>
 
+<!-- 応援要請モーダル（送信） -->
+<div class="ov" id="reqOv">
+  <div class="sheet">
+    <h3 id="reqTitle">応援要請</h3>
+    <div class="count" id="reqSub"></div>
+    <div class="field"><label class="req">現場住所</label><input type="text" id="reqSite" placeholder="例）仙台市青葉区〇〇 1-2-3"></div>
+    <div class="field"><label class="req">希望日・期間</label><input type="text" id="reqDate" placeholder="例）6/25〜6/28（4日間）"></div>
+    <div class="field"><label>現場・作業内容</label><textarea id="reqWork" placeholder="例）木造2階の内装下地・ボード貼り"></textarea></div>
+    <div class="field"><label>依頼元の連絡先</label><input type="text" id="reqContact" placeholder="例）090-1234-5678（担当：〇〇）"></div>
+    <div class="field"><label>メッセージ（任意）</label><textarea id="reqMsg" placeholder="ご相談など"></textarea></div>
+    <div class="count">※ 労働条件・支払い条件は、送信後に表示される「条件のやり取り」で当事者だけで相談できます。</div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost" id="reqCancel">キャンセル</button>
+      <button class="btn" id="reqSend">この内容で要請する</button>
+    </div>
+  </div>
+</div>
+
 <!-- 下部タブ -->
 <nav class="tabbar">
   <button class="on" data-page="find"><span class="ic">🔍</span>職人をさがす</button>
   <button data-page="board"><span class="ic">📡</span>空き状況</button>
   <button data-page="co"><span class="ic">🏢</span>工務店</button>
   <button data-page="update"><span class="ic">👷</span>自社の職人</button>
+  <button data-page="req"><span class="ic">🤝</span>応援</button>
 </nav>
 
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-let companies = {}, craftsmen = {}, reviews = {};
+let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { status:'', text:'', work:'', qual:'' };
 let reviewTarget = null, rvValue = 0;
 let myUser = null;
+// 応援要請
+let reqByMe = {}, reqUnsub = {}, reqIndexUnsub = null, reqCompanyKey = null, reqTargetCraft = null;
+let openDealRid = null, dealUnsub = null, dealMsgs = [];
 
 // モード表示
 (function(){
@@ -321,6 +360,7 @@ DB.auth.onChange(u=>{ myUser=u; renderMyArea(); });
 DB.on('companies', v=>{ companies=v||{}; renderCompanies(); renderFind(); renderBoard(); renderMyArea(); });
 DB.on('craftsmen', v=>{ craftsmen=v||{}; renderFind(); renderBoard(); renderCompanies(); renderMyArea(); });
 DB.on('reviews', v=>{ reviews=v||{}; renderFind(); renderCompanies(); });
+DB.on('approvals', v=>{ approvals=v||{}; renderFind(); renderBoard(); renderCompanies(); renderMyArea(); });
 
 // ===== 職人をさがす =====
 function matchFilter(k){
@@ -335,13 +375,14 @@ function matchFilter(k){
 }
 function renderFind(){
   const list=document.getElementById('kList');
-  const arr=H.toArr(craftsmen).filter(matchFilter)
+  const arr=H.toArr(craftsmen).filter(k=>H.isApproved(approvals,k._key)).filter(matchFilter)
     .sort((a,b)=>({free:0,partial:1,busy:2}[a.status]??3)-({free:0,partial:1,busy:2}[b.status]??3));
   document.getElementById('findCount').textContent=`${arr.length} 名の職人`;
   if(!arr.length){ list.innerHTML='<div class="empty">該当する職人がいません。</div>'; return; }
   list.innerHTML=arr.map(kCardHTML).join('');
   bindReviewButtons(list);
   bindShareButtons(list);
+  list.querySelectorAll('.req-btn').forEach(b=>b.onclick=()=>openRequestForm(b.dataset.key));
 }
 function kCardHTML(k){
   const st=H.statusOf(k.status);
@@ -361,6 +402,7 @@ function kCardHTML(k){
     ${(k.ng&&k.ng.length)?`<div class="seclabel">NG作業</div>${H.chips(k.ng,'ng')}`:''}
     ${(k.quals&&k.quals.length)?`<div class="seclabel">保有資格</div>${H.chips(k.quals,'q')}`:''}
     ${r.notes.length?`<div class="note">📝 ${H.esc(r.notes[0].note)}${r.notes[0].by?`<span style="color:var(--sub)"> — ${H.esc(r.notes[0].by)}</span>`:''}</div>`:''}
+    <button class="btn sm req-btn" data-key="${k._key}" style="width:100%;background:var(--accent);color:#fff;margin-top:8px">🤝 この職人に応援要請</button>
     <div class="actions">
       <button class="btn ln sm ln-share" data-key="${k._key}">📲 LINEで共有</button>
       <button class="btn ghost sm rv" data-type="craftsman" data-key="${k._key}" data-name="${H.esc(k.name)}">⭐ 評価</button>
@@ -371,7 +413,8 @@ function kCardHTML(k){
 // ===== 空き状況ボード =====
 function renderBoard(){
   const wrap=document.getElementById('boardWrap');
-  const groups=H.statuses.map(s=>({s,items:H.toArr(craftsmen).filter(k=>k.status===s.key)}));
+  const approvedArr=H.toArr(craftsmen).filter(k=>H.isApproved(approvals,k._key));
+  const groups=H.statuses.map(s=>({s,items:approvedArr.filter(k=>k.status===s.key)}));
   wrap.innerHTML=groups.map(g=>`
     <div class="card" style="padding:11px 13px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
@@ -394,7 +437,7 @@ function renderCompanies(){
   const arr=H.toArr(companies).sort((a,b)=>(rateOf(b).avg||0)-(rateOf(a).avg||0));
   if(!arr.length){ list.innerHTML='<div class="empty">工務店がまだ登録されていません。</div>'; return; }
   list.innerHTML=arr.map(c=>{
-    const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===c._key).length;
+    const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===c._key && H.isApproved(approvals,k._key)).length;
     const r=rateOf(c);
     return `<div class="ccard">
       <div style="display:flex;justify-content:space-between;gap:8px">
@@ -424,6 +467,7 @@ function renderMyArea(){
   const box=document.getElementById('authBox');
   const list=document.getElementById('updateList');
   if(!box||!list) return;
+  ensureReqSubscription();
   if(!loggedIn()){
     box.innerHTML = `
       <b>🔑 工務店ログイン</b>
@@ -487,7 +531,7 @@ function renderOwnArea(mine){
   }else{
     html+='<div class="card">'+arr.map(k=>`
       <div class="upd-row">
-        <div class="nm">${H.esc(k.name)}</div>
+        <div class="nm">${H.esc(k.name)} ${H.isApproved(approvals,k._key)?'<span class="okbadge">認証済✓</span>':'<span class="waitbadge">認証待ち</span>'}</div>
         <select data-key="${k._key}" class="updSt">
           ${H.statuses.map(s=>`<option value="${s.key}" ${k.status===s.key?'selected':''}>${s.label}</option>`).join('')}
         </select>
@@ -636,6 +680,134 @@ document.getElementById('ceSave').onclick=()=>{
     : DB.push('craftsmen', Object.assign({status:'free',availMemo:'',createdAt:Date.now()},data));
   p.then(()=>{ document.getElementById('craftOv').classList.remove('on'); H.toast(editCraftKey?'職人情報を更新しました':'職人を登録しました','ok'); });
 };
+
+// ===== 応援要請 =====
+function goTab(page){ const b=document.querySelector('.tabbar button[data-page="'+page+'"]'); if(b) b.click(); }
+function rqVal(id){ return document.getElementById(id).value; }
+
+// 自社のreqIndexを購読し、含まれる要請を個別に購読する（当事者だけが読める設計）
+function ensureReqSubscription(){
+  const ck=(myCompanyEntry()||{})._key||null;
+  if(ck===reqCompanyKey) return;
+  reqCompanyKey=ck;
+  if(reqIndexUnsub){ reqIndexUnsub(); reqIndexUnsub=null; }
+  Object.values(reqUnsub).forEach(fn=>fn()); reqUnsub={}; reqByMe={};
+  if(!ck){ renderRequests(); return; }
+  reqIndexUnsub=DB.on('reqIndex/'+ck, idx=>{
+    const ids=Object.keys(idx||{});
+    ids.forEach(rid=>{
+      if(!reqUnsub[rid]){
+        reqUnsub[rid]=DB.on('requests/'+rid, r=>{
+          if(r) reqByMe[rid]=Object.assign({_key:rid},r); else delete reqByMe[rid];
+          renderRequests();
+        });
+      }
+    });
+    Object.keys(reqUnsub).forEach(rid=>{ if(ids.indexOf(rid)<0){ reqUnsub[rid](); delete reqUnsub[rid]; delete reqByMe[rid]; } });
+    renderRequests();
+  });
+}
+
+function openRequestForm(kid){
+  if(!loggedIn()){ H.toast('応援要請にはログインが必要です','err'); goTab('update'); return; }
+  const mine=myCompanyEntry();
+  if(!mine){ H.toast('先に自社の工務店を登録してください','err'); goTab('update'); return; }
+  const k=craftsmen[kid]; if(!k) return;
+  if(k.companyKey===mine._key){ H.toast('自社の職人です','err'); return; }
+  reqTargetCraft=Object.assign({_key:kid},k);
+  document.getElementById('reqTitle').textContent='応援要請：'+k.name;
+  document.getElementById('reqSub').textContent='所属「'+(k.companyName||'')+'」へ依頼します';
+  ['reqSite','reqDate','reqWork','reqContact','reqMsg'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('reqContact').value=mine.tel||'';
+  document.getElementById('reqOv').classList.add('on');
+}
+document.getElementById('reqCancel').onclick=()=>document.getElementById('reqOv').classList.remove('on');
+document.getElementById('reqOv').onclick=e=>{ if(e.target.id==='reqOv') e.currentTarget.classList.remove('on'); };
+document.getElementById('reqSend').onclick=()=>{
+  const mine=myCompanyEntry(), k=reqTargetCraft; if(!mine||!k) return;
+  const site=rqVal('reqSite').trim(), date=rqVal('reqDate').trim();
+  if(!site){ H.toast('現場住所を入力してください','err'); return; }
+  if(!date){ H.toast('希望日・期間を入力してください','err'); return; }
+  const toCo=companies[k.companyKey]||{};
+  const rec={
+    fromCompanyKey:mine._key, fromCompanyName:mine.name||'', fromEmail:myUser.email,
+    toCompanyKey:k.companyKey, toCompanyName:k.companyName||toCo.name||'', toOwnerEmail:toCo.ownerEmail||'',
+    craftsmanKey:k._key, craftsmanName:k.name||'',
+    site, dateText:date, work:rqVal('reqWork').trim(), contact:rqVal('reqContact').trim(), message:rqVal('reqMsg').trim(),
+    status:'pending', createdAt:Date.now()
+  };
+  DB.push('requests', rec)
+    .then(rid=>Promise.all([DB.set('reqIndex/'+mine._key+'/'+rid,true), DB.set('reqIndex/'+k.companyKey+'/'+rid,true)]))
+    .then(()=>{ document.getElementById('reqOv').classList.remove('on'); H.toast('応援要請を送信しました','ok'); goTab('req'); });
+};
+
+function reqStatusLabel(s){
+  if(s==='accepted') return '<span class="okbadge">承認</span>';
+  if(s==='declined') return '<span class="waitbadge" style="color:var(--warn);background:#fdeceb;border-color:#f0c4c0">辞退</span>';
+  return '<span class="waitbadge">申請中</span>';
+}
+function renderRequests(){
+  const box=document.getElementById('reqBox'); if(!box) return;
+  const mine=myCompanyEntry();
+  if(!mine){ box.innerHTML='<div class="empty">応援要請を使うには、「自社の職人」タブでログインして工務店を登録してください。</div>'; return; }
+  const all=H.toArr(reqByMe).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  const recv=all.filter(r=>r.toCompanyKey===mine._key);
+  const sent=all.filter(r=>r.fromCompanyKey===mine._key);
+  box.innerHTML=reqSectionHTML('受信した要請（自社の職人へ）',recv,'recv')+reqSectionHTML('送信した要請（他社の職人へ）',sent,'sent');
+  bindReqCards(box);
+}
+function reqSectionHTML(title,arr,kind){
+  let h='<h2 class="reqsec">'+title+'（'+arr.length+'）</h2>';
+  if(!arr.length){ h+='<div class="empty" style="padding:12px">まだありません。</div>'; return h; }
+  return h+arr.map(r=>reqCardHTML(r,kind)).join('');
+}
+function reqCardHTML(r,kind){
+  const opened=openDealRid===r._key;
+  return `<div class="reqcard">
+    <div style="display:flex;justify-content:space-between;gap:8px">
+      <div><b>${H.esc(r.craftsmanName)}</b> <span class="count" style="display:inline">${kind==='recv'?'← '+H.esc(r.fromCompanyName):'→ '+H.esc(r.toCompanyName)}</span></div>
+      <div>${reqStatusLabel(r.status)}</div>
+    </div>
+    <div class="meta2">📍 ${H.esc(r.site||'—')}　🗓 ${H.esc(r.dateText||'—')}</div>
+    ${r.work?`<div class="meta2">🛠 ${H.esc(r.work)}</div>`:''}
+    ${r.contact?`<div class="meta2">📞 ${H.esc(r.contact)}</div>`:''}
+    ${r.message?`<div class="note">💬 ${H.esc(r.message)}</div>`:''}
+    ${(kind==='recv'&&r.status==='pending')?`<div class="row" style="margin-top:8px">
+        <button class="btn sm acc" data-rid="${r._key}">承認する</button>
+        <button class="btn ghost sm dec" data-rid="${r._key}" style="color:var(--warn);border-color:#f0c4c0">辞退</button>
+      </div>`:''}
+    <button class="btn ghost sm deal-toggle" data-rid="${r._key}" style="width:100%;margin-top:8px">${opened?'▲ 条件のやり取りを閉じる':'💴 労働条件・支払い条件のやり取り'}</button>
+    ${opened?`<div class="dealbox">${dealThreadHTML()}</div>`:''}
+  </div>`;
+}
+function dealThreadHTML(){
+  let h='<div class="count" style="margin:2px 0 8px">この内容は当事者（依頼元と相手工務店）だけが閲覧できます。管理者には表示されません。</div>';
+  h+= dealMsgs.length? dealMsgs.map(m=>`<div class="dealmsg"><b>${H.esc(m.byName||m.byEmail||'')}</b>：${H.esc(m.text)}<div class="dealtime">${H.fmtDate(m.at)}</div></div>`).join('') : '<div class="count">まだやり取りはありません。</div>';
+  h+=`<div class="row" style="margin-top:8px"><input type="text" id="dealInput" placeholder="例）日当◯円、支払いは月末締め翌月末" style="flex:2"><button class="btn sm" id="dealSend" style="flex:1">送信</button></div>`;
+  return h;
+}
+function bindReqCards(box){
+  box.querySelectorAll('.acc').forEach(b=>b.onclick=()=>DB.update('requests/'+b.dataset.rid,{status:'accepted'}).then(()=>H.toast('承認しました','ok')));
+  box.querySelectorAll('.dec').forEach(b=>b.onclick=()=>DB.update('requests/'+b.dataset.rid,{status:'declined'}).then(()=>H.toast('辞退しました','ok')));
+  box.querySelectorAll('.deal-toggle').forEach(b=>b.onclick=()=>toggleDeal(b.dataset.rid));
+  const ds=document.getElementById('dealSend');
+  if(ds) ds.onclick=sendDeal;
+  const di=document.getElementById('dealInput');
+  if(di) di.addEventListener('keydown',e=>{ if(e.key==='Enter') sendDeal(); });
+}
+function toggleDeal(rid){
+  if(openDealRid===rid){ openDealRid=null; if(dealUnsub){dealUnsub();dealUnsub=null;} dealMsgs=[]; renderRequests(); return; }
+  openDealRid=rid; dealMsgs=[];
+  if(dealUnsub) dealUnsub();
+  dealUnsub=DB.on('deals/'+rid, v=>{ dealMsgs=H.toArr(v).sort((a,b)=>(a.at||0)-(b.at||0)); renderRequests(); });
+  renderRequests();
+}
+function sendDeal(){
+  const inp=document.getElementById('dealInput'); if(!inp||!openDealRid) return;
+  const text=inp.value.trim(); if(!text) return;
+  const mine=myCompanyEntry();
+  DB.push('deals/'+openDealRid, {byEmail:myUser.email, byName:(mine&&mine.name)||myUser.email, text, at:Date.now()});
+}
 
 // ===== LINE共有 =====
 // 公式アカウント不要。スマホは共有シート（LINEを選択）、PC等はコピー＋LINE共有画面を開く。

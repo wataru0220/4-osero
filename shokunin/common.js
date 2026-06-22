@@ -61,6 +61,10 @@
     return m;
   };
 
+  // 職人が管理者に認証済みか（認証情報は管理者だけが書ける approvals パスに保存）
+  H.isApproved = (approvals, kid) =>
+    !!(approvals && approvals.craftsman && approvals.craftsman[kid] === true);
+
   // この利用者が対象の工務店を編集できるか（自社のオーナー or 管理者）
   H.isAdmin = (user) =>
     !!(user && user.email && (CFG.adminEmails || []).indexOf(user.email) >= 0);
@@ -124,7 +128,9 @@
         R3: { type: "craftsman", targetKey: "K2", targetName: "高橋 塗装", rating: 5, note: "外壁塗装の仕上がりがきれい。", byCompany: "山田工務店", at: now - 50000 },
         R4: { type: "company", targetKey: "C1", targetName: "山田工務店", rating: 5, note: "段取りがよく助かった。", byCompany: "鈴木住建", at: now - 80000 },
         R5: { type: "company", targetKey: "C2", targetName: "佐藤建設", rating: 4, note: "現場管理がしっかりしている。", byCompany: "山田工務店", at: now - 30000 }
-      }
+      },
+      // 管理者の認証状況（K1〜K3は認証済み、K4は認証待ちの例）
+      approvals: { craftsman: { K1: true, K2: true, K3: true } }
     };
   };
 
