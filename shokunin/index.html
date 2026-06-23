@@ -59,7 +59,8 @@
 
   /* タブ（下部ナビ） */
   .tabbar{position:fixed; left:0; right:0; bottom:0; z-index:20; display:flex; background:#fff; border-top:1px solid var(--line); box-shadow:0 -2px 10px rgba(0,0,0,.06)}
-  .tabbar button{flex:1; border:0; background:none; padding:9px 2px 7px; color:var(--sub); font-size:11px; font-weight:700; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px}
+  .tabbar button{flex:1; border:0; background:none; padding:9px 2px 7px; color:var(--sub); font-size:11px; font-weight:700; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px; position:relative}
+  .tabbadge{position:absolute; top:2px; right:50%; transform:translateX(20px); background:var(--warn); color:#fff; font-size:10px; font-weight:800; min-width:17px; height:17px; border-radius:9px; display:flex; align-items:center; justify-content:center; padding:0 4px; box-shadow:0 1px 3px rgba(0,0,0,.25)}
   .tabbar button .ic{font-size:20px; line-height:1}
   .tabbar button.on{color:var(--brand)}
   .page{display:none} .page.on{display:block}
@@ -114,6 +115,7 @@
   .waitbadge{display:inline-block; font-size:11px; font-weight:800; color:#8a5a00; background:#fff7e8; border:1px solid #ffe1a8; border-radius:6px; padding:1px 6px; vertical-align:middle}
   .reqsec{font-size:13px; color:var(--sub); font-weight:800; margin:14px 4px 8px}
   .reqcard{border:1px solid var(--line); border-radius:13px; padding:13px; margin-bottom:11px; background:#fff}
+  .newtag{display:inline-block; background:var(--warn); color:#fff; font-size:10px; font-weight:800; border-radius:5px; padding:1px 6px; vertical-align:middle}
   .meta2{font-size:13px; color:var(--ink); margin-top:4px}
   .dealbox{margin-top:10px; border-top:1px dashed var(--line); padding-top:10px}
   .dealmsg{background:#f7f9fb; border:1px solid var(--line); border-radius:8px; padding:7px 9px; margin-bottom:6px; font-size:14px; line-height:1.5}
@@ -354,7 +356,7 @@
   <button data-page="board"><span class="ic">📡</span>空き状況</button>
   <button data-page="co"><span class="ic">🏢</span>工務店</button>
   <button data-page="update"><span class="ic">👷</span>自社の大工</button>
-  <button data-page="req"><span class="ic">🤝</span>応援</button>
+  <button data-page="req"><span class="ic">🤝</span>応援<span class="tabbadge" id="reqBadge" style="display:none">0</span></button>
 </nav>
 
 <script src="data.js"></script>
@@ -966,7 +968,35 @@ function reqStatusLabel(s){
   if(s==='declined') return '<span class="waitbadge" style="color:var(--warn);background:#fdeceb;border-color:#f0c4c0">辞退</span>';
   return '<span class="waitbadge">申請中</span>';
 }
+// ===== 新着バッジ（応援要請・書き込み件数） =====
+function seenAt(rid){ return +(localStorage.getItem('shokunin_seen_'+rid)||0); }
+function markSeen(rid){ localStorage.setItem('shokunin_seen_'+rid, Date.now()); updateBadges(); }
+// このリクエストが「要対応/新着」か（受信の申請中 or 相手からの未読メッセージ）
+function reqIsNew(r){
+  const mine=myCompanyEntry(); if(!mine) return false;
+  const myUid=DB.auth.user&&DB.auth.user.uid;
+  const incoming = r.toCompanyKey===mine._key;
+  if(incoming && r.status==='pending') return true;
+  if(r.lastMsgAt && r.lastMsgByUid && r.lastMsgByUid!==myUid && r.lastMsgAt>seenAt(r._key)) return true;
+  return false;
+}
+function unreadCount(){
+  if(!myCompanyEntry()) return 0;
+  return H.toArr(reqByMe).filter(reqIsNew).length;
+}
+function setIconBadge(n){
+  try{
+    if(navigator.setAppBadge){ n>0 ? navigator.setAppBadge(n).catch(()=>{}) : (navigator.clearAppBadge&&navigator.clearAppBadge().catch(()=>{})); }
+  }catch(_){}
+}
+function updateBadges(){
+  const n=unreadCount();
+  const b=document.getElementById('reqBadge');
+  if(b){ if(n>0){ b.textContent=n>99?'99+':n; b.style.display='flex'; } else b.style.display='none'; }
+  setIconBadge(n);
+}
 function renderRequests(){
+  updateBadges();
   const box=document.getElementById('reqBox'); if(!box) return;
   const mine=myCompanyEntry();
   if(!mine){ box.innerHTML='<div class="empty">応援要請を使うには、「自社の大工」タブでログインして工務店を登録してください。</div>'; return; }
@@ -983,9 +1013,10 @@ function reqSectionHTML(title,arr,kind){
 }
 function reqCardHTML(r,kind){
   const opened=openDealRid===r._key;
-  return `<div class="reqcard">
+  const isNew=reqIsNew(r);
+  return `<div class="reqcard"${isNew?' style="border-color:var(--warn);box-shadow:0 0 0 1px var(--warn) inset"':''}>
     <div style="display:flex;justify-content:space-between;gap:8px">
-      <div><b>${H.esc(r.craftsmanName)}</b> <span class="count" style="display:inline">${kind==='recv'?'← '+H.esc(r.fromCompanyName):'→ '+H.esc(r.toCompanyName)}</span></div>
+      <div>${isNew?'<span class="newtag">NEW</span> ':''}<b>${H.esc(r.craftsmanName)}</b> <span class="count" style="display:inline">${kind==='recv'?'← '+H.esc(r.fromCompanyName):'→ '+H.esc(r.toCompanyName)}</span></div>
       <div>${reqStatusLabel(r.status)}</div>
     </div>
     <div class="meta2">📍 ${H.esc(r.site||'—')}　🗓 ${H.esc(r.dateText||'—')}</div>
@@ -1035,6 +1066,7 @@ function bindReqCards(box){
 function toggleDeal(rid){
   if(openDealRid===rid){ openDealRid=null; if(dealUnsub){dealUnsub();dealUnsub=null;} dealMsgs=[]; renderRequests(); return; }
   openDealRid=rid; dealMsgs=[];
+  markSeen(rid); // スレッドを開いたら既読（新着バッジから除外）
   if(dealUnsub) dealUnsub();
   dealUnsub=DB.on('deals/'+rid, v=>{ dealMsgs=H.toArr(v).sort((a,b)=>(a.at||0)-(b.at||0)); renderRequests(); });
   renderRequests();
@@ -1043,7 +1075,11 @@ function sendDeal(){
   const inp=document.getElementById('dealInput'); if(!inp||!openDealRid) return;
   const text=inp.value.trim(); if(!text) return;
   const mine=myCompanyEntry(); const uid=DB.auth.user&&DB.auth.user.uid;
-  DB.push('deals/'+openDealRid, {byEmail:myUser.email, byUid:uid, byName:(mine&&mine.name)||myUser.email, text, at:Date.now()});
+  const rid=openDealRid;
+  DB.push('deals/'+rid, {byEmail:myUser.email, byUid:uid, byName:(mine&&mine.name)||myUser.email, text, at:Date.now()});
+  // 相手の新着バッジ用に、親の要請へ最終メッセージ情報を記録
+  DB.update('requests/'+rid, {lastMsgAt:Date.now(), lastMsgByUid:uid});
+  localStorage.setItem('shokunin_seen_'+rid, Date.now()); // 自分は既読
 }
 
 // ===== LINE共有 =====
@@ -1091,6 +1127,7 @@ function bindShareButtons(scope){
 document.getElementById('inviteBtn').onclick=()=>shareToLine(inviteText());
 document.getElementById('shareBoardBtn').onclick=()=>shareToLine(boardShareText());
 document.getElementById('logoutHdr').onclick=()=>DB.auth.signOut().then(()=>H.toast('ログアウトしました','ok'));
+DB.auth.onChange(()=>updateBadges());
 
 // ===== 評価モーダル =====
 function bindReviewButtons(scope){
