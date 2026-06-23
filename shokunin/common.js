@@ -112,15 +112,15 @@
     const now = Date.now();
     return {
       companies: {
-        C1: { name: "山田工務店", tel: "03-1111-2222", area: "東京都／23区西部", contact: "山田 太郎", ownerEmail: "yamada@example.com", notes: "支払いが早く対応も丁寧。", createdAt: now },
-        C2: { name: "佐藤建設", tel: "045-333-4444", area: "神奈川県／横浜・川崎", contact: "佐藤 健", ownerEmail: "sato@example.com", notes: "現場管理がしっかりしている。", createdAt: now },
-        C3: { name: "鈴木住建", tel: "04-7555-6666", area: "千葉県／東葛エリア", contact: "鈴木 一郎", ownerEmail: "suzuki@example.com", notes: "", createdAt: now }
+        C1: { name: "山田工務店", tel: "022-111-2222", area: "宮城県／仙台市", contact: "山田 太郎", ownerEmail: "yamada@example.com", notes: "支払いが早く対応も丁寧。", createdAt: now },
+        C2: { name: "佐藤建設", tel: "024-333-4444", area: "福島県／郡山市", contact: "佐藤 健", ownerEmail: "sato@example.com", notes: "現場管理がしっかりしている。", createdAt: now },
+        C3: { name: "鈴木住建", tel: "019-555-6666", area: "岩手県／盛岡市", contact: "鈴木 一郎", ownerEmail: "suzuki@example.com", notes: "", createdAt: now }
       },
       craftsmen: {
-        K1: { name: "田中 一郎", companyKey: "C1", companyName: "山田工務店", age: 42, gender: "男", quals: ["建築大工技能士(1級)", "職長・安全衛生責任者"], good: ["和室内部造作", "建方、構造組立", "構造体墨付け"], ng: [], price: 24000, unit: "day", status: "free", availMemo: "来週いっぱい空きあり", createdAt: now, updatedAt: now },
-        K2: { name: "高橋 修", companyKey: "C2", companyName: "佐藤建設", age: 35, gender: "男", quals: ["建築大工技能士(2級)", "丸のこ等取扱作業従事者"], good: ["ボード張り", "フローリング施工"], ng: ["建方、構造組立"], price: 22000, unit: "day", status: "partial", availMemo: "午前のみ対応可", createdAt: now, updatedAt: now },
-        K3: { name: "伊藤 健", companyKey: "C1", companyName: "山田工務店", age: 29, gender: "男", quals: ["玉掛け", "足場の組立て等作業主任者"], good: ["建方、構造組立", "構造体墨付け"], ng: ["和室内部造作"], price: 23000, unit: "day", status: "busy", availMemo: "今月末まで埋まっています", createdAt: now, updatedAt: now },
-        K4: { name: "渡辺 大輔", companyKey: "C3", companyName: "鈴木住建", age: 51, gender: "男", quals: ["二級建築施工管理技士"], good: ["洋室内部造作", "階段造作", "高気密、高断熱施工"], ng: [], price: 21000, unit: "day", status: "free", availMemo: "", createdAt: now, updatedAt: now }
+        K1: { name: "田中 一郎", companyKey: "C1", companyName: "山田工務店", age: 42, gender: "男", quals: ["建築大工技能士(1級)", "職長・安全衛生責任者"], good: ["①和室内部造作", "④建方、構造組立", "⑤構造体墨付け"], ng: [], price: 24000, unit: "day", status: "free", availMemo: "来週いっぱい空きあり", createdAt: now, updatedAt: now },
+        K2: { name: "高橋 修", companyKey: "C2", companyName: "佐藤建設", age: 35, gender: "男", quals: ["建築大工技能士(2級)", "丸のこ等取扱作業従事者"], good: ["⑥ボード張り", "⑦フローリング施工"], ng: ["④建方、構造組立"], price: 22000, unit: "day", status: "partial", availMemo: "午前のみ対応可", createdAt: now, updatedAt: now },
+        K3: { name: "伊藤 健", companyKey: "C1", companyName: "山田工務店", age: 29, gender: "男", quals: ["玉掛け", "足場の組立て等作業主任者"], good: ["④建方、構造組立", "⑤構造体墨付け"], ng: ["①和室内部造作"], price: 23000, unit: "day", status: "busy", availMemo: "今月末まで埋まっています", createdAt: now, updatedAt: now },
+        K4: { name: "渡辺 大輔", companyKey: "C3", companyName: "鈴木住建", age: 51, gender: "男", quals: ["二級建築施工管理技士"], good: ["②洋室内部造作", "③階段造作", "⑧高気密、高断熱施工"], ng: [], price: 21000, unit: "day", status: "free", availMemo: "", createdAt: now, updatedAt: now }
       },
       reviews: {
         R1: { type: "craftsman", targetKey: "K1", targetName: "田中 一郎", rating: 5, note: "造作が丁寧。納まりの相談に乗ってくれる。", byCompany: "佐藤建設", at: now - 200000 },

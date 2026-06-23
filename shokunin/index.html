@@ -270,8 +270,20 @@
   <div class="sheet">
     <h3 id="reqTitle">応援要請</h3>
     <div class="count" id="reqSub"></div>
-    <div class="field"><label class="req">現場住所</label><input type="text" id="reqSite" placeholder="例）仙台市青葉区〇〇 1-2-3"></div>
-    <div class="field"><label class="req">希望日・期間</label><input type="text" id="reqDate" placeholder="例）6/25〜6/28（4日間）"></div>
+    <div class="field"><label class="req">工事場所（東北）</label>
+      <div class="row">
+        <select id="reqPref"><option value="">県を選択</option></select>
+        <select id="reqCity"><option value="">市を選択</option></select>
+      </div>
+      <input type="text" id="reqAddr" placeholder="番地・建物名など（任意）" style="margin-top:8px">
+    </div>
+    <div class="field"><label class="req">作業期間</label>
+      <div class="row">
+        <input type="date" id="reqStart">
+        <input type="date" id="reqEnd">
+      </div>
+      <div class="count" style="margin-top:4px">開始日〜終了日をカレンダーから選択（単日は開始日のみでOK）</div>
+    </div>
     <div class="field"><label>現場・作業内容</label><textarea id="reqWork" placeholder="例）木造2階の内装下地・ボード貼り"></textarea></div>
     <div class="field"><label>依頼元の連絡先</label><input type="text" id="reqContact" placeholder="例）090-1234-5678（担当：〇〇）"></div>
     <div class="field"><label>メッセージ（任意）</label><textarea id="reqMsg" placeholder="ご相談など"></textarea></div>
@@ -684,6 +696,18 @@ document.getElementById('ceSave').onclick=()=>{
 // ===== 応援要請 =====
 function goTab(page){ const b=document.querySelector('.tabbar button[data-page="'+page+'"]'); if(b) b.click(); }
 function rqVal(id){ return document.getElementById(id).value; }
+function fmtReqDate(s){ if(!s) return ''; const p=s.split('-'); return (+p[1])+'/'+(+p[2]); }
+// 工事場所（東北の県→市）セレクト
+(function(){
+  const p=document.getElementById('reqPref'); const regions=H.cfg.regions||{};
+  p.innerHTML='<option value="">県を選択</option>'+Object.keys(regions).map(k=>`<option>${H.esc(k)}</option>`).join('');
+})();
+function fillReqCity(){
+  const pref=document.getElementById('reqPref').value;
+  const cities=(H.cfg.regions||{})[pref]||[];
+  document.getElementById('reqCity').innerHTML='<option value="">市を選択</option>'+cities.map(c=>`<option>${H.esc(c)}</option>`).join('');
+}
+document.getElementById('reqPref').onchange=fillReqCity;
 
 // 自社のreqIndexを購読し、含まれる要請を個別に購読する（当事者だけが読める設計）
 function ensureReqSubscription(){
@@ -717,7 +741,8 @@ function openRequestForm(kid){
   reqTargetCraft=Object.assign({_key:kid},k);
   document.getElementById('reqTitle').textContent='応援要請：'+k.name;
   document.getElementById('reqSub').textContent='所属「'+(k.companyName||'')+'」へ依頼します';
-  ['reqSite','reqDate','reqWork','reqContact','reqMsg'].forEach(id=>document.getElementById(id).value='');
+  ['reqAddr','reqWork','reqContact','reqMsg','reqStart','reqEnd'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('reqPref').value=''; fillReqCity();
   document.getElementById('reqContact').value=mine.tel||'';
   document.getElementById('reqOv').classList.add('on');
 }
@@ -725,15 +750,20 @@ document.getElementById('reqCancel').onclick=()=>document.getElementById('reqOv'
 document.getElementById('reqOv').onclick=e=>{ if(e.target.id==='reqOv') e.currentTarget.classList.remove('on'); };
 document.getElementById('reqSend').onclick=()=>{
   const mine=myCompanyEntry(), k=reqTargetCraft; if(!mine||!k) return;
-  const site=rqVal('reqSite').trim(), date=rqVal('reqDate').trim();
-  if(!site){ H.toast('現場住所を入力してください','err'); return; }
-  if(!date){ H.toast('希望日・期間を入力してください','err'); return; }
+  const pref=rqVal('reqPref'), city=rqVal('reqCity'), addr=rqVal('reqAddr').trim();
+  const start=rqVal('reqStart'), end=rqVal('reqEnd');
+  if(!pref||!city){ H.toast('工事場所（県・市）を選んでください','err'); return; }
+  if(!start){ H.toast('作業期間（開始日）を選んでください','err'); return; }
+  if(end && end<start){ H.toast('終了日は開始日以降にしてください','err'); return; }
+  const site=pref+city+(addr?' '+addr:'');
+  const dateText=(end && end!==start) ? (fmtReqDate(start)+'〜'+fmtReqDate(end)) : fmtReqDate(start);
   const toCo=companies[k.companyKey]||{};
   const rec={
     fromCompanyKey:mine._key, fromCompanyName:mine.name||'', fromEmail:myUser.email,
     toCompanyKey:k.companyKey, toCompanyName:k.companyName||toCo.name||'', toOwnerEmail:toCo.ownerEmail||'',
     craftsmanKey:k._key, craftsmanName:k.name||'',
-    site, dateText:date, work:rqVal('reqWork').trim(), contact:rqVal('reqContact').trim(), message:rqVal('reqMsg').trim(),
+    site, sitePref:pref, siteCity:city, dateText, dateFrom:start, dateTo:end||start,
+    work:rqVal('reqWork').trim(), contact:rqVal('reqContact').trim(), message:rqVal('reqMsg').trim(),
     status:'pending', createdAt:Date.now()
   };
   DB.push('requests', rec)
