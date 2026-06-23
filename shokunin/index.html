@@ -110,6 +110,17 @@
   .dealbox{margin-top:10px; border-top:1px dashed var(--line); padding-top:10px}
   .dealmsg{background:#f7f9fb; border:1px solid var(--line); border-radius:8px; padding:7px 9px; margin-bottom:6px; font-size:14px; line-height:1.5}
   .dealtime{font-size:11px; color:var(--sub); margin-top:2px}
+  .cqx{cursor:pointer; color:var(--warn); font-weight:800; margin-left:2px}
+  .cal-legend{font-size:12px; color:var(--sub); margin:4px 0 8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+  .cal-legend .lg{display:inline-block; width:12px; height:12px; border-radius:3px}
+  .cal-month{margin-bottom:12px}
+  .cal-title{font-weight:800; font-size:13px; margin-bottom:4px}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:3px}
+  .cal-wd{text-align:center; font-size:11px; color:var(--sub); font-weight:700; padding:2px 0}
+  .cal-cell{min-height:30px; display:flex; align-items:center; justify-content:center; font-size:12px; border:1px solid var(--line); border-radius:6px; background:#fff}
+  .cal-cell.empty{border:0; background:transparent}
+  .cal-cell.past{opacity:.3}
+  .cal-cell.edit{cursor:pointer}
   .deallink{color:var(--brand-dark); font-weight:700; cursor:pointer; text-decoration:underline}
   .deallink.dealdel{color:var(--warn)}
   .count{font-size:12px; color:var(--sub); margin:0 2px 8px}
@@ -224,7 +235,13 @@
     </div>
     <div class="field"><label>得意作業</label><div class="checkgrid" id="ceGood"></div></div>
     <div class="field"><label>NG作業</label><div class="checkgrid" id="ceNg"></div></div>
-    <div class="field"><label>保有資格</label><div class="checkgrid" id="ceQual"></div></div>
+    <div class="field"><label>保有資格</label><div class="checkgrid" id="ceQual"></div>
+      <div class="row" style="margin-top:8px">
+        <input type="text" id="ceQualOther" placeholder="その他の資格（自由入力）">
+        <button class="btn ghost" id="ceQualAddBtn" style="flex:none">追加</button>
+      </div>
+      <div id="ceQualCustom" style="margin-top:6px"></div>
+    </div>
     <div class="row">
       <button class="btn ghost" id="ceCancel">キャンセル</button>
       <button class="btn" id="ceSave">保存する</button>
@@ -261,6 +278,19 @@
     <div class="row" style="margin-top:6px">
       <button class="btn ghost" id="coeCancel">キャンセル</button>
       <button class="btn" id="coeSave">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 空き予定カレンダー（3ヶ月・自社の大工用） -->
+<div class="ov" id="availOv">
+  <div class="sheet">
+    <h3 id="availTitle">空き予定（3ヶ月）</h3>
+    <div class="count" style="margin-bottom:8px">日付をタップすると「空き → 一部空き → 稼働中 → 未設定」と切り替わります。3ヶ月先まで登録できます。</div>
+    <div id="availCal"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn ghost" id="availCancel">閉じる</button>
+      <button class="btn" id="availSave">保存する</button>
     </div>
   </div>
 </div>
@@ -312,6 +342,7 @@ let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { status:'', text:'', work:'', qual:'' };
 let reviewTarget = null, rvValue = 0;
 let myUser = null;
+let openAvailView = null; // find カードで開いている読み取り専用カレンダー（renderより前に宣言が必要）
 // 応援要請
 let reqByMe = {}, reqUnsub = {}, reqIndexUnsub = null, reqCompanyKey = null, reqTargetCraft = null, editReqKey = null;
 let openDealRid = null, dealUnsub = null, dealMsgs = [];
@@ -396,6 +427,7 @@ function renderFind(){
   bindReviewButtons(list);
   bindShareButtons(list);
   list.querySelectorAll('.req-btn').forEach(b=>b.onclick=()=>openRequestForm(b.dataset.key));
+  list.querySelectorAll('.avail-toggle').forEach(b=>b.onclick=()=>{ openAvailView = (openAvailView===b.dataset.key)?null:b.dataset.key; renderFind(); });
 }
 function kCardHTML(k){
   const st=H.statusOf(k.status);
@@ -414,6 +446,8 @@ function kCardHTML(k){
     ${(k.good&&k.good.length)?`<div class="seclabel">得意作業</div>${H.chips(k.good)}`:''}
     ${(k.ng&&k.ng.length)?`<div class="seclabel">NG作業</div>${H.chips(k.ng,'ng')}`:''}
     ${(k.quals&&k.quals.length)?`<div class="seclabel">保有資格</div>${H.chips(k.quals,'q')}`:''}
+    <button class="btn ghost sm avail-toggle" data-key="${k._key}" style="width:100%;margin-top:8px">📅 3ヶ月の空き予定を${openAvailView===k._key?'閉じる':'見る'}</button>
+    ${openAvailView===k._key?`<div style="margin-top:8px">${calHTML(k.avail,false)}</div>`:''}
     <button class="btn sm req-btn" data-key="${k._key}" style="width:100%;background:var(--accent);color:#fff;margin-top:8px">🤝 この大工に応援要請</button>
     <div class="actions">
       <button class="btn ln sm ln-share" data-key="${k._key}">📲 LINEで共有</button>
@@ -550,6 +584,7 @@ function renderOwnArea(mine){
       <div class="field" style="margin:-2px 0 8px">
         <input type="text" class="updMemo" data-key="${k._key}" value="${H.esc(k.availMemo||'')}" placeholder="空き状況メモ（例：来週空きあり）">
       </div>
+      <button class="btn ghost sm ce-avail" data-key="${k._key}" style="width:100%;margin-bottom:8px">📅 空き予定（3ヶ月）を編集</button>
       <div class="upd-acts">
         <button class="btn ghost sm ce-edit" data-key="${k._key}">✏️ 情報を編集</button>
         <button class="btn ghost sm ce-del" data-key="${k._key}" style="color:var(--warn);border-color:#f0c4c0">🗑 削除</button>
@@ -565,6 +600,7 @@ function renderOwnArea(mine){
     inp.onchange=()=>DB.update('craftsmen/'+inp.dataset.key,{availMemo:inp.value.trim(),updatedAt:Date.now()}).then(()=>H.toast('メモを保存しました','ok'));
   });
   list.querySelectorAll('.ce-edit').forEach(b=>b.onclick=()=>openCraftForm(b.dataset.key));
+  list.querySelectorAll('.ce-avail').forEach(b=>b.onclick=()=>openAvailEditor(b.dataset.key));
   list.querySelectorAll('.ce-del').forEach(b=>b.onclick=()=>{
     const k=craftsmen[b.dataset.key]||{};
     if(!confirm('「'+(k.name||'')+'」を削除しますか？')) return;
@@ -654,6 +690,27 @@ function setChecked(id, vals){
   const set=new Set(vals||[]);
   document.querySelectorAll('#'+id+' input').forEach(c=>{ c.checked=set.has(c.value); c.parentElement.classList.toggle('on',c.checked); });
 }
+// その他の資格（自由入力・複数）マネージャ
+function makeCustomQuals(inputId, addBtnId, containerId){
+  let arr=[];
+  function render(){
+    const c=document.getElementById(containerId);
+    c.innerHTML=arr.map((q,i)=>`<span class="chip q">${H.esc(q)} <a data-i="${i}" class="cqx">×</a></span>`).join('');
+    c.querySelectorAll('.cqx').forEach(a=>a.onclick=()=>{ arr.splice(+a.dataset.i,1); render(); });
+  }
+  function add(){ const inp=document.getElementById(inputId); const v=inp.value.trim(); if(!v) return; if(arr.indexOf(v)<0) arr.push(v); inp.value=''; render(); }
+  document.getElementById(addBtnId).onclick=add;
+  document.getElementById(inputId).addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); add(); } });
+  return { set(a){ arr=(a||[]).slice(); render(); }, get(){ return arr.slice(); } };
+}
+const ceCustomQuals = makeCustomQuals('ceQualOther','ceQualAddBtn','ceQualCustom');
+// 既知の資格（チェックボックス）と、その他（自由入力）に振り分ける
+function splitQuals(quals){
+  const known=new Set(H.qualifications);
+  const checked=[], custom=[];
+  (quals||[]).forEach(q=> (known.has(q)?checked:custom).push(q));
+  return { checked, custom };
+}
 function openCraftForm(key){
   const mine=myCompanyEntry();
   if(!mine){ H.toast('先に自社の工務店を登録してください','err'); return; }
@@ -666,7 +723,8 @@ function openCraftForm(key){
   document.getElementById('ceGender').value=k.gender||'';
   document.getElementById('cePrice').value=k.price||'';
   document.getElementById('ceUnit').value=k.unit||'day';
-  setChecked('ceGood',k.good); setChecked('ceNg',k.ng); setChecked('ceQual',k.quals);
+  setChecked('ceGood',k.good); setChecked('ceNg',k.ng);
+  const sq=splitQuals(k.quals); setChecked('ceQual',sq.checked); ceCustomQuals.set(sq.custom);
   document.getElementById('craftOv').classList.add('on');
 }
 function closeCraftForm(){ editCraftKey=null; document.getElementById('craftOv').classList.remove('on'); }
@@ -683,13 +741,59 @@ document.getElementById('ceSave').onclick=()=>{
     gender:document.getElementById('ceGender').value,
     price:+document.getElementById('cePrice').value||null,
     unit:document.getElementById('ceUnit').value,
-    good:getChecked('ceGood'), ng:getChecked('ceNg'), quals:getChecked('ceQual'),
+    good:getChecked('ceGood'), ng:getChecked('ceNg'), quals:getChecked('ceQual').concat(ceCustomQuals.get()),
     updatedAt:Date.now()
   };
   const p=editCraftKey
     ? DB.update('craftsmen/'+editCraftKey,data)
     : DB.push('craftsmen', Object.assign({status:'free',availMemo:'',createdAt:Date.now()},data));
   p.then(()=>{ document.getElementById('craftOv').classList.remove('on'); H.toast(editCraftKey?'大工情報を更新しました':'大工を登録しました','ok'); });
+};
+
+// ===== 空き予定カレンダー（3ヶ月） =====
+let availDraft={}, availCraftKey=null;  // 自社の編集用
+function calToday(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function calMonths3(){ const n=new Date(); return [0,1,2].map(i=>new Date(n.getFullYear(), n.getMonth()+i, 1)); }
+function monthGridHTML(monthDate, availMap, editable){
+  const y=monthDate.getFullYear(), m=monthDate.getMonth();
+  const startWd=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(), todayS=calToday();
+  let cells='';
+  for(let i=0;i<startWd;i++) cells+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=days;d++){
+    const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const st=availMap[ds], past=ds<todayS, color=st?H.statusOf(st).color:'';
+    cells+=`<div class="cal-cell${past?' past':''}${(editable&&!past)?' edit':''}" ${(editable&&!past)?`data-date="${ds}"`:''} style="${color?`background:${color};color:#fff;border-color:${color}`:''}">${d}</div>`;
+  }
+  return `<div class="cal-month"><div class="cal-title">${y}年${m+1}月</div><div class="cal-grid">`
+    +['日','月','火','水','木','金','土'].map(w=>`<div class="cal-wd">${w}</div>`).join('')+cells+`</div></div>`;
+}
+function calHTML(availMap, editable){
+  return '<div class="cal-legend"><span class="lg" style="background:#1aa260"></span>空き <span class="lg" style="background:#e0a200"></span>一部空き <span class="lg" style="background:#c0392b"></span>稼働中</div>'
+    + calMonths3().map(md=>monthGridHTML(md, availMap||{}, editable)).join('');
+}
+function openAvailEditor(key){
+  const k=craftsmen[key]; if(!k) return;
+  availCraftKey=key; availDraft=Object.assign({}, k.avail||{});
+  document.getElementById('availTitle').textContent='空き予定（3ヶ月）：'+k.name;
+  renderAvailEditor();
+  document.getElementById('availOv').classList.add('on');
+}
+function renderAvailEditor(){
+  const box=document.getElementById('availCal');
+  box.innerHTML=calHTML(availDraft, true);
+  box.querySelectorAll('.cal-cell.edit').forEach(c=>c.onclick=()=>{
+    const ds=c.dataset.date, order=['','free','partial','busy'];
+    const nxt=order[(order.indexOf(availDraft[ds]||'')+1)%4];
+    if(nxt) availDraft[ds]=nxt; else delete availDraft[ds];
+    renderAvailEditor();
+  });
+}
+document.getElementById('availCancel').onclick=()=>document.getElementById('availOv').classList.remove('on');
+document.getElementById('availOv').onclick=e=>{ if(e.target.id==='availOv') e.currentTarget.classList.remove('on'); };
+document.getElementById('availSave').onclick=()=>{
+  if(!availCraftKey) return;
+  DB.set('craftsmen/'+availCraftKey+'/avail', availDraft)
+    .then(()=>{ document.getElementById('availOv').classList.remove('on'); H.toast('空き予定を保存しました','ok'); });
 };
 
 // ===== 応援要請 =====

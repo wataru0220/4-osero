@@ -80,6 +80,7 @@
   .pill.k{background:#fdf0e7; color:var(--accent)} .pill.c{background:#e7f3f6; color:var(--brand)}
   .okbadge{display:inline-block; font-size:11px; font-weight:800; color:#1a7a45; background:#eafaf0; border:1px solid #b6e6c8; border-radius:6px; padding:1px 6px}
   .waitbadge{display:inline-block; font-size:11px; font-weight:800; color:#8a5a00; background:#fff7e8; border:1px solid #ffe1a8; border-radius:6px; padding:1px 6px}
+  .cqx{cursor:pointer; color:var(--warn); font-weight:800; margin-left:2px}
 </style>
 </head>
 <body>
@@ -150,7 +151,13 @@
       </div>
       <div class="field"><label>得意作業</label><div class="checkgrid" id="kGood"></div></div>
       <div class="field"><label>NG作業</label><div class="checkgrid" id="kNg"></div></div>
-      <div class="field"><label>保有資格</label><div class="checkgrid" id="kQual"></div></div>
+      <div class="field"><label>保有資格</label><div class="checkgrid" id="kQual"></div>
+        <div class="row" style="margin-top:8px">
+          <input type="text" id="kQualOther" placeholder="その他の資格（自由入力）">
+          <button class="btn ghost" id="kQualAddBtn" style="flex:none">追加</button>
+        </div>
+        <div id="kQualCustom" style="margin-top:6px"></div>
+      </div>
       <div class="row">
         <button class="btn ghost" id="kCancel" style="display:none">キャンセル</button>
         <button class="btn" id="kSave">登録する</button>
@@ -201,6 +208,7 @@
 <script>
 let companies={}, craftsmen={}, reviews={}, approvals={}, requests={};
 let editCo=null, editKi=null;
+let kCustomQuals=null; // その他資格マネージャ（boot前に宣言が必要）
 let evK=0, evC=0;
 let myUser=null, booted=false, admins={}, adminsLoaded=false;
 
@@ -296,6 +304,7 @@ function boot(){
   buildChecks('kGood', H.workTypes);
   buildChecks('kNg', H.workTypes);
   buildChecks('kQual', H.qualifications);
+  kCustomQuals=makeCustomQuals('kQualOther','kQualAddBtn','kQualCustom');
 
   // タブ
   document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
@@ -337,6 +346,24 @@ function getChecked(id){ return [...document.querySelectorAll('#'+id+' input:che
 function setChecked(id, vals){
   const set=new Set(vals||[]);
   document.querySelectorAll('#'+id+' input').forEach(c=>{ c.checked=set.has(c.value); c.parentElement.classList.toggle('on',c.checked); });
+}
+// その他の資格（自由入力・複数）
+function makeCustomQuals(inputId, addBtnId, containerId){
+  let arr=[];
+  function render(){
+    const c=document.getElementById(containerId);
+    c.innerHTML=arr.map((q,i)=>`<span class="chip" style="background:#e7f3f6;color:var(--brand)">${H.esc(q)} <a data-i="${i}" class="cqx">×</a></span>`).join('');
+    c.querySelectorAll('.cqx').forEach(a=>a.onclick=()=>{ arr.splice(+a.dataset.i,1); render(); });
+  }
+  function add(){ const inp=document.getElementById(inputId); const v=inp.value.trim(); if(!v) return; if(arr.indexOf(v)<0) arr.push(v); inp.value=''; render(); }
+  document.getElementById(addBtnId).onclick=add;
+  document.getElementById(inputId).addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); add(); } });
+  return { set(a){ arr=(a||[]).slice(); render(); }, get(){ return arr.slice(); } };
+}
+function splitQuals(quals){
+  const known=new Set(H.qualifications); const checked=[], custom=[];
+  (quals||[]).forEach(q=> (known.has(q)?checked:custom).push(q));
+  return { checked, custom };
 }
 function bindStars(id, cb){
   const box=document.getElementById(id);
@@ -430,7 +457,7 @@ function saveCraftsman(){
     gender:document.getElementById('kGender').value,
     price:+document.getElementById('kPrice').value||null,
     unit:document.getElementById('kUnit').value,
-    good:getChecked('kGood'), ng:getChecked('kNg'), quals:getChecked('kQual'),
+    good:getChecked('kGood'), ng:getChecked('kNg'), quals:getChecked('kQual').concat(kCustomQuals?kCustomQuals.get():[]),
     updatedAt:Date.now()
   };
   if(editKi){
@@ -447,7 +474,7 @@ function resetKiForm(){
   document.getElementById('kCompany').value='';
   document.getElementById('kGender').value='';
   document.getElementById('kUnit').value='day';
-  setChecked('kGood',[]); setChecked('kNg',[]); setChecked('kQual',[]);
+  setChecked('kGood',[]); setChecked('kNg',[]); setChecked('kQual',[]); if(kCustomQuals) kCustomQuals.set([]);
   document.getElementById('kSave').textContent='登録する';
   document.getElementById('kCancel').style.display='none';
   document.getElementById('kiEditBar').style.display='none';
@@ -460,7 +487,8 @@ function editCraftsman(key){
   document.getElementById('kGender').value=k.gender||'';
   document.getElementById('kPrice').value=k.price||'';
   document.getElementById('kUnit').value=k.unit||'day';
-  setChecked('kGood',k.good); setChecked('kNg',k.ng); setChecked('kQual',k.quals);
+  setChecked('kGood',k.good); setChecked('kNg',k.ng);
+  const sq=splitQuals(k.quals); setChecked('kQual',sq.checked); if(kCustomQuals) kCustomQuals.set(sq.custom);
   document.getElementById('kSave').textContent='更新する';
   document.getElementById('kCancel').style.display='block';
   const bar=document.getElementById('kiEditBar'); bar.style.display='block'; bar.textContent='✏️ 「'+(k.name||'')+'」を編集中';
