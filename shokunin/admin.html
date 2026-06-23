@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0e7490">
 <title>管理画面｜大工シェア</title>
+<!-- ホーム画面に追加してアプリのように起動（PWA） -->
+<link rel="manifest" href="manifest-admin.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="大工シェア管理">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -90,7 +98,10 @@
       <h1>🛠 管理画面｜大工シェア</h1>
       <div class="sub">工務店・大工の登録、技術力／工務店の評価入力</div>
     </div>
-    <button class="hbtn" id="inviteBtn"><span class="ic">📲</span>利用者用URLを共有</button>
+    <div id="hbtns" style="display:flex; flex-direction:column; gap:6px; flex:none">
+      <button class="hbtn" id="installBtn"><span class="ic">⬇️</span>アプリにする</button>
+      <button class="hbtn" id="inviteBtn"><span class="ic">📲</span>利用者用URLを共有</button>
+    </div>
   </div>
 </header>
 
@@ -209,6 +220,19 @@
 let companies={}, craftsmen={}, reviews={}, approvals={}, requests={};
 let editCo=null, editKi=null;
 let kCustomQuals=null; // その他資格マネージャ（boot前に宣言が必要）
+
+// ===== PWA：ホーム画面に追加（ボタン1つでアプリ化） =====
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; });
+(function(){
+  const btn=document.getElementById('installBtn'); if(!btn) return;
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if(standalone){ btn.style.display='none'; return; }
+  btn.onclick=async()=>{
+    if(deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){ } deferredPrompt=null; return; }
+    alert('この管理画面をホーム画面に追加できます。\n\n【iPhone / Safari】下の「共有」→「ホーム画面に追加」\n【Android / Chrome】メニュー（⋮）→「アプリをインストール」または「ホーム画面に追加」\n\n追加したアイコンをタップすると、アプリのように全画面で起動します。');
+  };
+})();
 let evK=0, evC=0;
 let myUser=null, booted=false, admins={}, adminsLoaded=false;
 
@@ -307,7 +331,7 @@ function boot(){
     const lo=document.createElement('button'); lo.className='hbtn'; lo.id='adLogout';
     lo.innerHTML='<span class="ic">🚪</span>ログアウト';
     lo.onclick=()=>DB.auth.signOut().then(()=>H.toast('ログアウトしました','ok'));
-    document.querySelector('header .hrow').appendChild(lo);
+    (document.getElementById('hbtns')||document.querySelector('header .hrow')).appendChild(lo);
   }
 
   // チェックグリッド生成

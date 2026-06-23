@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#ea580c">
 <title>大工シェア｜工務店ネットワーク</title>
+<!-- ホーム画面に追加してアプリのように起動（PWA） -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="大工シェア">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -145,7 +153,10 @@
       <h1>🪚 大工シェア ネットワーク</h1>
       <div class="sub">工務店どうしで大工をシェア・空き状況をリアルタイム共有</div>
     </div>
-    <button class="hbtn" id="inviteBtn"><span class="ic">📲</span>LINEで招待</button>
+    <div style="display:flex; flex-direction:column; gap:6px; flex:none">
+      <button class="hbtn" id="installBtn"><span class="ic">⬇️</span>アプリにする</button>
+      <button class="hbtn" id="inviteBtn"><span class="ic">📲</span>LINEで招待</button>
+    </div>
   </div>
 </header>
 
@@ -358,6 +369,19 @@ let openDealRid = null, dealUnsub = null, dealMsgs = [];
     m.className = 'modebar live';
     m.innerHTML = '🟢 <b>共有モード</b>：登録した情報は参加工務店どうしでリアルタイムに共有されます。';
   }
+})();
+
+// ===== PWA：ホーム画面に追加（ボタン1つでアプリ化・全画面起動） =====
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; });
+(function(){
+  const btn=document.getElementById('installBtn'); if(!btn) return;
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if(standalone){ btn.style.display='none'; return; } // 既にアプリ起動中
+  btn.onclick=async()=>{
+    if(deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){ } deferredPrompt=null; return; }
+    alert('このアプリをホーム画面に追加できます。\n\n【iPhone / Safari】下の「共有」ボタン →「ホーム画面に追加」\n【Android / Chrome】メニュー（⋮）→「アプリをインストール」または「ホーム画面に追加」\n\n追加した「大工」アイコンをタップすると、アプリのように全画面で起動します。');
+  };
 })();
 
 // セレクト初期化
