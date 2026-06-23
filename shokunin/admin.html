@@ -7,8 +7,8 @@
 <title>管理画面｜大工シェア</title>
 <!-- ホーム画面に追加してアプリのように起動（PWA） -->
 <link rel="manifest" href="manifest-admin.json">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon-admin.png">
+<link rel="icon" href="icon-admin-192.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -155,13 +155,21 @@
         <div class="field"><label>性別</label>
           <select id="kGender"><option value="">—</option><option>男</option><option>女</option><option>その他</option></select></div>
       </div>
-      <div class="row">
-        <div class="field"><label>単価</label><input type="number" id="kPrice" min="0" placeholder="例）22000"></div>
-        <div class="field"><label>単位</label>
-          <select id="kUnit"><option value="day">日給（/日）</option><option value="hour">時給（/時）</option></select></div>
+      <div class="field"><label>単価（日給）</label><input type="number" id="kPrice" min="0" placeholder="例）22000（円/日）"></div>
+      <div class="field"><label>得意作業</label><div class="checkgrid" id="kGood"></div>
+        <div class="row" style="margin-top:8px">
+          <input type="text" id="kGoodOther" placeholder="その他の得意作業（自由入力）">
+          <button class="btn ghost" id="kGoodAddBtn" style="flex:none">追加</button>
+        </div>
+        <div id="kGoodCustom" style="margin-top:6px"></div>
       </div>
-      <div class="field"><label>得意作業</label><div class="checkgrid" id="kGood"></div></div>
-      <div class="field"><label>NG作業</label><div class="checkgrid" id="kNg"></div></div>
+      <div class="field"><label>NG作業</label><div class="checkgrid" id="kNg"></div>
+        <div class="row" style="margin-top:8px">
+          <input type="text" id="kNgOther" placeholder="その他のNG作業（自由入力）">
+          <button class="btn ghost" id="kNgAddBtn" style="flex:none">追加</button>
+        </div>
+        <div id="kNgCustom" style="margin-top:6px"></div>
+      </div>
       <div class="field"><label>保有資格</label><div class="checkgrid" id="kQual"></div>
         <div class="row" style="margin-top:8px">
           <input type="text" id="kQualOther" placeholder="その他の資格（自由入力）">
@@ -219,7 +227,7 @@
 <script>
 let companies={}, craftsmen={}, reviews={}, approvals={}, requests={};
 let editCo=null, editKi=null;
-let kCustomQuals=null; // その他資格マネージャ（boot前に宣言が必要）
+let kCustomQuals=null, kGoodCustom=null, kNgCustom=null; // その他（自由入力）マネージャ（boot前に宣言が必要）
 
 // ===== PWA：ホーム画面に追加（ボタン1つでアプリ化） =====
 let deferredPrompt=null;
@@ -326,19 +334,13 @@ function boot(){
   if(DB.mode==='local'){ m.className='modebar local'; m.innerHTML='⚠️ <b>お試しモード</b>：この端末内だけで動作中。共有するには config.js に Firebase を設定してください。'; DB._seedIfEmpty(H.seed()); }
   else{ m.className='modebar live'; m.innerHTML='🟢 <b>共有モード</b>：'+(myUser&&myUser.email?'管理者 '+H.esc(myUser.email)+' でログイン中。':'')+'Firebaseに保存され利用者アプリへ反映されます。'; }
 
-  // ログアウトボタン（ヘッダー）
-  if(!document.getElementById('adLogout')){
-    const lo=document.createElement('button'); lo.className='hbtn'; lo.id='adLogout';
-    lo.innerHTML='<span class="ic">🚪</span>ログアウト';
-    lo.onclick=()=>DB.auth.signOut().then(()=>H.toast('ログアウトしました','ok'));
-    (document.getElementById('hbtns')||document.querySelector('header .hrow')).appendChild(lo);
-  }
-
   // チェックグリッド生成
   buildChecks('kGood', H.workTypes);
   buildChecks('kNg', H.workTypes);
   buildChecks('kQual', H.qualifications);
   kCustomQuals=makeCustomQuals('kQualOther','kQualAddBtn','kQualCustom');
+  kGoodCustom=makeCustomQuals('kGoodOther','kGoodAddBtn','kGoodCustom');
+  kNgCustom=makeCustomQuals('kNgOther','kNgAddBtn','kNgCustom');
 
   // タブ
   document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
@@ -397,6 +399,11 @@ function makeCustomQuals(inputId, addBtnId, containerId){
 function splitQuals(quals){
   const known=new Set(H.qualifications); const checked=[], custom=[];
   (quals||[]).forEach(q=> (known.has(q)?checked:custom).push(q));
+  return { checked, custom };
+}
+function splitByMaster(values, master){
+  const known=new Set(master||[]); const checked=[], custom=[];
+  (values||[]).forEach(v=> (known.has(v)?checked:custom).push(v));
   return { checked, custom };
 }
 function bindStars(id, cb){
@@ -490,14 +497,16 @@ function saveCraftsman(){
     age:+document.getElementById('kAge').value||null,
     gender:document.getElementById('kGender').value,
     price:+document.getElementById('kPrice').value||null,
-    unit:document.getElementById('kUnit').value,
-    good:getChecked('kGood'), ng:getChecked('kNg'), quals:getChecked('kQual').concat(kCustomQuals?kCustomQuals.get():[]),
+    unit:'day',
+    good:getChecked('kGood').concat(kGoodCustom?kGoodCustom.get():[]),
+    ng:getChecked('kNg').concat(kNgCustom?kNgCustom.get():[]),
+    quals:getChecked('kQual').concat(kCustomQuals?kCustomQuals.get():[]),
     updatedAt:Date.now()
   };
   if(editKi){
     DB.update('craftsmen/'+editKi._key,data).then(()=>{H.toast('大工を更新しました','ok'); resetKiForm();});
   }else{
-    DB.push('craftsmen', Object.assign({status:'free',availMemo:'',createdAt:Date.now()},data))
+    DB.push('craftsmen', Object.assign({availMemo:'',avail:{},createdAt:Date.now()},data))
       .then(key=>DB.set('approvals/craftsman/'+key, true)) // 管理者登録は自動で認証済み
       .then(()=>{H.toast('大工を登録しました（認証済み）','ok'); resetKiForm();});
   }
@@ -507,8 +516,8 @@ function resetKiForm(){
   ['kName','kAge','kPrice'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('kCompany').value='';
   document.getElementById('kGender').value='';
-  document.getElementById('kUnit').value='day';
-  setChecked('kGood',[]); setChecked('kNg',[]); setChecked('kQual',[]); if(kCustomQuals) kCustomQuals.set([]);
+  setChecked('kGood',[]); setChecked('kNg',[]); setChecked('kQual',[]);
+  if(kCustomQuals) kCustomQuals.set([]); if(kGoodCustom) kGoodCustom.set([]); if(kNgCustom) kNgCustom.set([]);
   document.getElementById('kSave').textContent='登録する';
   document.getElementById('kCancel').style.display='none';
   document.getElementById('kiEditBar').style.display='none';
@@ -520,8 +529,8 @@ function editCraftsman(key){
   document.getElementById('kAge').value=k.age||'';
   document.getElementById('kGender').value=k.gender||'';
   document.getElementById('kPrice').value=k.price||'';
-  document.getElementById('kUnit').value=k.unit||'day';
-  setChecked('kGood',k.good); setChecked('kNg',k.ng);
+  const sg=splitByMaster(k.good,H.workTypes); setChecked('kGood',sg.checked); if(kGoodCustom) kGoodCustom.set(sg.custom);
+  const sn=splitByMaster(k.ng,H.workTypes); setChecked('kNg',sn.checked); if(kNgCustom) kNgCustom.set(sn.custom);
   const sq=splitQuals(k.quals); setChecked('kQual',sq.checked); if(kCustomQuals) kCustomQuals.set(sq.custom);
   document.getElementById('kSave').textContent='更新する';
   document.getElementById('kCancel').style.display='block';
@@ -540,14 +549,17 @@ function renderKList(){
   // 認証待ちを上に表示
   arr.sort((a,b)=>(H.isApproved(approvals,a._key)?1:0)-(H.isApproved(approvals,b._key)?1:0));
   list.innerHTML=arr.map(k=>{
-    const st=H.statusOf(k.status);
     const r=H.ratingFor(reviews,'craftsman',k._key);
     const ok=H.isApproved(approvals,k._key);
+    const free=H.upcomingFreeDates(k.avail);
+    const availPill = free.length
+      ? `<span class="pill" style="background:#1aa260;color:#fff">空きあり ${H.mdFromYmd(free[0])}〜</span>`
+      : `<span class="pill" style="background:#9aa7b5;color:#fff">空き予定なし</span>`;
     return `<div class="item">
       <div class="top">
         <div><div class="nm">${H.esc(k.name)} <span class="meta">/ ${H.esc(k.companyName||'未所属')}</span> ${ok?'<span class="okbadge">認証済✓</span>':'<span class="waitbadge">認証待ち</span>'}</div>
-        <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')}　${H.fmtPrice(k.price,k.unit)}　技術力 ${H.stars(r.avg)}（${r.count}件）</div></div>
-        <span class="pill" style="background:${st.color};color:#fff">${st.label}</span>
+        <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')}　${H.fmtPrice(k.price)}　技術力 ${H.stars(r.avg)}（${r.count}件）</div></div>
+        ${availPill}
       </div>
       <div>${H.chips(k.good,'o')}${H.chips(k.ng,'ng')}</div>
       ${(k.quals&&k.quals.length)?`<div>${H.chips(k.quals)}</div>`:''}

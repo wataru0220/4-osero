@@ -166,12 +166,12 @@
 
   <!-- ============ 大工をさがす ============ -->
   <section class="page on" id="page-find">
-    <div class="statusbtns" id="statusFilter"></div>
     <div class="filters">
       <input type="text" id="qText" placeholder="🔍 名前・工務店で検索">
       <select id="qWork"><option value="">得意作業（すべて）</option></select>
       <select id="qQual"><option value="">資格（すべて）</option></select>
     </div>
+    <label style="display:flex;align-items:center;gap:6px;font-weight:700;color:var(--ink);margin:0 2px 10px"><input type="checkbox" id="qFreeOnly" style="width:auto;accent-color:var(--brand)">空き予定がある大工のみ表示</label>
     <div class="count" id="findCount"></div>
     <div id="kList"></div>
   </section>
@@ -240,13 +240,21 @@
       <div class="field"><label>性別</label>
         <select id="ceGender"><option value="">—</option><option>男</option><option>女</option><option>その他</option></select></div>
     </div>
-    <div class="row">
-      <div class="field"><label>単価</label><input type="number" id="cePrice" min="0" placeholder="例）22000"></div>
-      <div class="field"><label>単位</label>
-        <select id="ceUnit"><option value="day">日給（/日）</option><option value="hour">時給（/時）</option></select></div>
+    <div class="field"><label>単価（日給）</label><input type="number" id="cePrice" min="0" placeholder="例）22000（円/日）"></div>
+    <div class="field"><label>得意作業</label><div class="checkgrid" id="ceGood"></div>
+      <div class="row" style="margin-top:8px">
+        <input type="text" id="ceGoodOther" placeholder="その他の得意作業（自由入力）">
+        <button class="btn ghost" id="ceGoodAddBtn" style="flex:none">追加</button>
+      </div>
+      <div id="ceGoodCustom" style="margin-top:6px"></div>
     </div>
-    <div class="field"><label>得意作業</label><div class="checkgrid" id="ceGood"></div></div>
-    <div class="field"><label>NG作業</label><div class="checkgrid" id="ceNg"></div></div>
+    <div class="field"><label>NG作業</label><div class="checkgrid" id="ceNg"></div>
+      <div class="row" style="margin-top:8px">
+        <input type="text" id="ceNgOther" placeholder="その他のNG作業（自由入力）">
+        <button class="btn ghost" id="ceNgAddBtn" style="flex:none">追加</button>
+      </div>
+      <div id="ceNgCustom" style="margin-top:6px"></div>
+    </div>
     <div class="field"><label>保有資格</label><div class="checkgrid" id="ceQual"></div>
       <div class="row" style="margin-top:8px">
         <input type="text" id="ceQualOther" placeholder="その他の資格（自由入力）">
@@ -278,12 +286,14 @@
     <div id="coFirstCraft">
       <div class="firstcraft-head">最初の自社大工（1名以上の登録が必須です）</div>
       <div class="field"><label class="req">大工の氏名</label><input type="text" id="coCkName" placeholder="例）田中 一郎"></div>
-      <div class="row">
-        <div class="field"><label>単価</label><input type="number" id="coCkPrice" min="0" placeholder="例）22000"></div>
-        <div class="field"><label>単位</label>
-          <select id="coCkUnit"><option value="day">日給（/日）</option><option value="hour">時給（/時）</option></select></div>
+      <div class="field"><label>単価（日給）</label><input type="number" id="coCkPrice" min="0" placeholder="例）22000（円/日）"></div>
+      <div class="field"><label>得意作業</label><div class="checkgrid" id="coCkGood"></div>
+        <div class="row" style="margin-top:8px">
+          <input type="text" id="coCkGoodOther" placeholder="その他の得意作業（自由入力）">
+          <button class="btn ghost" id="coCkGoodAddBtn" style="flex:none">追加</button>
+        </div>
+        <div id="coCkGoodCustom" style="margin-top:6px"></div>
       </div>
-      <div class="field"><label>得意作業</label><div class="checkgrid" id="coCkGood"></div></div>
       <div class="count">※ 年齢・性別・NG作業・資格などの詳細は、登録後に「✏️ 情報を編集」から追加できます。</div>
     </div>
 
@@ -351,7 +361,7 @@
 <script src="common.js"></script>
 <script>
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
-let filter = { status:'', text:'', work:'', qual:'' };
+let filter = { freeOnly:false, text:'', work:'', qual:'' };
 let reviewTarget = null, rvValue = 0;
 let myUser = null;
 let openAvailView = null; // find カードで開いている読み取り専用カレンダー（renderより前に宣言が必要）
@@ -390,22 +400,7 @@ window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferred
   const w = document.getElementById('qWork'), q = document.getElementById('qQual');
   H.workTypes.forEach(t => w.insertAdjacentHTML('beforeend', `<option>${H.esc(t)}</option>`));
   H.qualifications.forEach(t => q.insertAdjacentHTML('beforeend', `<option>${H.esc(t)}</option>`));
-  // ステータスフィルタ
-  const sf = document.getElementById('statusFilter');
-  const all = document.createElement('button'); all.textContent='すべて'; all.className='on';
-  all.style.background='#475569'; all.onclick=()=>setStatusFilter('', all);
-  sf.appendChild(all);
-  H.statuses.forEach(s=>{
-    const b=document.createElement('button'); b.textContent=s.label; b.dataset.k=s.key;
-    b.onclick=()=>setStatusFilter(s.key,b,s.color); sf.appendChild(b);
-  });
 })();
-function setStatusFilter(key,btn,color){
-  filter.status=key;
-  document.querySelectorAll('#statusFilter button').forEach(b=>{b.classList.remove('on'); b.style.background='#fff'; b.style.color='var(--sub)';});
-  btn.classList.add('on'); btn.style.background=color||'#475569'; btn.style.color='#fff';
-  renderFind();
-}
 
 // タブ切替
 document.querySelectorAll('.tabbar button').forEach(b=>{
@@ -421,6 +416,7 @@ document.querySelectorAll('.tabbar button').forEach(b=>{
 document.getElementById('qText').oninput = e=>{ filter.text=e.target.value.trim(); renderFind(); };
 document.getElementById('qWork').onchange = e=>{ filter.work=e.target.value; renderFind(); };
 document.getElementById('qQual').onchange = e=>{ filter.qual=e.target.value; renderFind(); };
+document.getElementById('qFreeOnly').onchange = e=>{ filter.freeOnly=e.target.checked; renderFind(); };
 
 // ===== 認証状態（ログイン中の工務店） =====
 DB.auth.onChange(u=>{ myUser=u; renderMyArea(); });
@@ -433,7 +429,7 @@ DB.on('approvals', v=>{ approvals=v||{}; renderFind(); renderBoard(); renderComp
 
 // ===== 大工をさがす =====
 function matchFilter(k){
-  if(filter.status && k.status!==filter.status) return false;
+  if(filter.freeOnly && !H.upcomingFreeDates(k.avail).length) return false;
   if(filter.work && !(k.good||[]).includes(filter.work)) return false;
   if(filter.qual && !(k.quals||[]).includes(filter.qual)) return false;
   if(filter.text){
@@ -445,7 +441,7 @@ function matchFilter(k){
 function renderFind(){
   const list=document.getElementById('kList');
   const arr=H.toArr(craftsmen).filter(k=>H.isApproved(approvals,k._key)).filter(matchFilter)
-    .sort((a,b)=>({free:0,partial:1,busy:2}[a.status]??3)-({free:0,partial:1,busy:2}[b.status]??3));
+    .sort((a,b)=>(H.upcomingFreeDates(b.avail).length?1:0)-(H.upcomingFreeDates(a.avail).length?1:0));
   document.getElementById('findCount').textContent=`${arr.length} 名の大工`;
   if(!arr.length){ list.innerHTML='<div class="empty">該当する大工がいません。</div>'; return; }
   list.innerHTML=arr.map(kCardHTML).join('');
@@ -455,18 +451,22 @@ function renderFind(){
   list.querySelectorAll('.avail-toggle').forEach(b=>b.onclick=()=>{ openAvailView = (openAvailView===b.dataset.key)?null:b.dataset.key; renderFind(); });
 }
 function kCardHTML(k){
-  const st=H.statusOf(k.status);
   const r=H.ratingFor(reviews,'craftsman',k._key);
+  const free=H.upcomingFreeDates(k.avail);
+  const badge = free.length
+    ? `<span class="badge" style="background:#1aa260"><span class="dot"></span>空きあり ${H.mdFromYmd(free[0])}〜</span>`
+    : `<span class="badge" style="background:#9aa7b5"><span class="dot"></span>空き予定なし</span>`;
   return `<div class="kcard">
     <div class="head">
       <div>
         <div class="nm">${H.esc(k.name)}</div>
         <div class="co">🏢 ${H.esc(k.companyName||'—')}</div>
       </div>
-      <span class="badge" style="background:${st.color}"><span class="dot"></span>${st.label}</span>
+      ${badge}
     </div>
     <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')} ｜ 技術力: ${H.stars(r.avg)}${r.count?`（${r.count}件）`:''}</div>
-    <div style="margin-top:6px"><span class="price">${H.fmtPrice(k.price,k.unit)}</span></div>
+    <div style="margin-top:6px"><span class="price">${H.fmtPrice(k.price)}</span></div>
+    ${free.length?`<div class="availmemo">📅 直近の空き：${free.slice(0,6).map(H.mdFromYmd).join('、')}${free.length>6?' …':''}</div>`:''}
     ${k.availMemo?`<div class="availmemo">🗓 ${H.esc(k.availMemo)}</div>`:''}
     ${(k.good&&k.good.length)?`<div class="seclabel">得意作業</div>${H.chips(k.good)}`:''}
     ${(k.ng&&k.ng.length)?`<div class="seclabel">NG作業</div>${H.chips(k.ng,'ng')}`:''}
@@ -484,21 +484,21 @@ function kCardHTML(k){
 // ===== 空き状況ボード =====
 function renderBoard(){
   const wrap=document.getElementById('boardWrap');
-  const approvedArr=H.toArr(craftsmen).filter(k=>H.isApproved(approvals,k._key));
-  const groups=H.statuses.map(s=>({s,items:approvedArr.filter(k=>k.status===s.key)}));
-  wrap.innerHTML=groups.map(g=>`
-    <div class="card" style="padding:11px 13px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <span class="badge" style="background:${g.s.color}"><span class="dot"></span>${g.s.label}</span>
-        <b style="font-size:13px">${g.items.length} 名</b>
-      </div>
-      ${g.items.length? g.items.map(k=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)">
-          <div><b>${H.esc(k.name)}</b> <span style="color:var(--sub);font-size:12px">/ ${H.esc(k.companyName||'')}</span>
-          <div style="font-size:12px;color:var(--sub)">${H.chips((k.good||[]).slice(0,3))}</div></div>
-          <div style="text-align:right;white-space:nowrap"><span class="price" style="font-size:14px">${H.fmtPrice(k.price,k.unit)}</span>
-          ${k.availMemo?`<div style="font-size:11px;color:#8a5a00">${H.esc(k.availMemo)}</div>`:''}</div>
-        </div>`).join('') : '<div style="color:var(--sub);font-size:13px;padding:4px 0">—</div>'}
-    </div>`).join('');
+  const items=H.toArr(craftsmen)
+    .filter(k=>H.isApproved(approvals,k._key))
+    .map(k=>({k, free:H.upcomingFreeDates(k.avail)}))
+    .filter(x=>x.free.length)
+    .sort((a,b)=>a.free[0]<b.free[0]?-1:1);
+  if(!items.length){ wrap.innerHTML='<div class="empty">現在、空き予定が登録されている大工はいません。</div>'; return; }
+  wrap.innerHTML='<div class="card" style="padding:11px 13px">'
+    +`<div style="margin-bottom:8px"><span class="badge" style="background:#1aa260"><span class="dot"></span>空き予定あり</span> <b style="font-size:13px">${items.length} 名</b></div>`
+    +items.map(x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--line)">
+        <div><b>${H.esc(x.k.name)}</b> <span style="color:var(--sub);font-size:12px">/ ${H.esc(x.k.companyName||'')}</span>
+        <div style="font-size:12px;color:var(--sub)">${H.chips((x.k.good||[]).slice(0,3))}</div>
+        <div style="font-size:12px;color:#1a7a45;margin-top:2px">📅 ${x.free.slice(0,6).map(H.mdFromYmd).join('、')}${x.free.length>6?' …':''}</div></div>
+        <div style="text-align:right;white-space:nowrap"><span class="price" style="font-size:14px">${H.fmtPrice(x.k.price)}</span></div>
+      </div>`).join('')
+    +'</div>';
 }
 
 // ===== 工務店一覧 =====
@@ -610,28 +610,26 @@ function renderOwnArea(mine){
   if(!arr.length){
     html+='<div class="empty">自社の大工がまだ登録されていません。上の「＋ 大工を登録」から追加してください。</div>';
   }else{
-    html+='<div class="card">'+arr.map(k=>`
+    html+='<div class="card">'+arr.map(k=>{
+      const free=H.upcomingFreeDates(k.avail);
+      return `
       <div class="upd-row">
         <div class="nm">${H.esc(k.name)} ${H.isApproved(approvals,k._key)?'<span class="okbadge">認証済✓</span>':'<span class="waitbadge">認証待ち</span>'}</div>
-        <select data-key="${k._key}" class="updSt">
-          ${H.statuses.map(s=>`<option value="${s.key}" ${k.status===s.key?'selected':''}>${s.label}</option>`).join('')}
-        </select>
+        ${free.length?`<span class="okbadge">空き ${free.length}日</span>`:'<span class="waitbadge">空き予定なし</span>'}
       </div>
-      <div class="field" style="margin:-2px 0 8px">
-        <input type="text" class="updMemo" data-key="${k._key}" value="${H.esc(k.availMemo||'')}" placeholder="空き状況メモ（例：来週空きあり）">
+      <div class="count" style="margin:-2px 0 6px">${free.length?'直近：'+free.slice(0,6).map(H.mdFromYmd).join('、'):'「空き予定」から空き日を登録してください'}</div>
+      <button class="btn ghost sm ce-avail" data-key="${k._key}" style="width:100%;margin-bottom:6px">📅 空き予定（3ヶ月）を編集</button>
+      <div class="field" style="margin:0 0 8px">
+        <input type="text" class="updMemo" data-key="${k._key}" value="${H.esc(k.availMemo||'')}" placeholder="補足メモ（任意）">
       </div>
-      <button class="btn ghost sm ce-avail" data-key="${k._key}" style="width:100%;margin-bottom:8px">📅 空き予定（3ヶ月）を編集</button>
       <div class="upd-acts">
         <button class="btn ghost sm ce-edit" data-key="${k._key}">✏️ 情報を編集</button>
         <button class="btn ghost sm ce-del" data-key="${k._key}" style="color:var(--warn);border-color:#f0c4c0">🗑 削除</button>
-      </div>`).join('')+'</div>';
+      </div>`;}).join('')+'</div>';
   }
   list.innerHTML=html;
   document.getElementById('editCoBtn').onclick=()=>openCompanyForm(mine._key);
   document.getElementById('addCraftBtn').onclick=()=>openCraftForm(null);
-  list.querySelectorAll('.updSt').forEach(sel=>sel.onchange=()=>{
-    DB.update('craftsmen/'+sel.dataset.key,{status:sel.value,updatedAt:Date.now()}).then(()=>H.toast('空き状況を更新しました','ok'));
-  });
   list.querySelectorAll('.updMemo').forEach(inp=>{
     inp.onchange=()=>DB.update('craftsmen/'+inp.dataset.key,{availMemo:inp.value.trim(),updatedAt:Date.now()}).then(()=>H.toast('メモを保存しました','ok'));
   });
@@ -664,8 +662,7 @@ function openCompanyForm(key){
   if(isNew){
     document.getElementById('coCkName').value='';
     document.getElementById('coCkPrice').value='';
-    document.getElementById('coCkUnit').value='day';
-    setChecked('coCkGood',[]);
+    setChecked('coCkGood',[]); coCkGoodCustom.set([]);
   }
   document.getElementById('coOv').classList.add('on');
 }
@@ -692,14 +689,14 @@ document.getElementById('coeSave').onclick=()=>{
   const firstCraft={
     name:ckName,
     price:+document.getElementById('coCkPrice').value||null,
-    unit:document.getElementById('coCkUnit').value,
-    good:getChecked('coCkGood')
+    unit:'day',
+    good:getChecked('coCkGood').concat(coCkGoodCustom.get())
   };
   // 会社を作成 → 続けて最初の大工を作成（どちらもオーナー＝自分のメール）
   DB.push('companies', Object.assign({ownerEmail:myUser.email, createdAt:Date.now()}, data))
     .then(newKey=>DB.push('craftsmen', Object.assign({
       companyKey:newKey, companyName:name, age:null, gender:'', ng:[], quals:[],
-      status:'free', availMemo:'', createdAt:Date.now(), updatedAt:Date.now()
+      availMemo:'', avail:{}, createdAt:Date.now(), updatedAt:Date.now()
     }, firstCraft)))
     .then(()=>{ closeCompanyForm(); H.toast('工務店と最初の大工を登録しました','ok'); });
 };
@@ -740,13 +737,16 @@ function makeCustomQuals(inputId, addBtnId, containerId){
   return { set(a){ arr=(a||[]).slice(); render(); }, get(){ return arr.slice(); } };
 }
 const ceCustomQuals = makeCustomQuals('ceQualOther','ceQualAddBtn','ceQualCustom');
-// 既知の資格（チェックボックス）と、その他（自由入力）に振り分ける
-function splitQuals(quals){
-  const known=new Set(H.qualifications);
-  const checked=[], custom=[];
-  (quals||[]).forEach(q=> (known.has(q)?checked:custom).push(q));
+const ceGoodCustom = makeCustomQuals('ceGoodOther','ceGoodAddBtn','ceGoodCustom');
+const ceNgCustom = makeCustomQuals('ceNgOther','ceNgAddBtn','ceNgCustom');
+const coCkGoodCustom = makeCustomQuals('coCkGoodOther','coCkGoodAddBtn','coCkGoodCustom');
+// マスタ（チェックボックス）と、その他（自由入力）に振り分ける
+function splitByMaster(values, master){
+  const known=new Set(master||[]); const checked=[], custom=[];
+  (values||[]).forEach(v=> (known.has(v)?checked:custom).push(v));
   return { checked, custom };
 }
+function splitQuals(quals){ return splitByMaster(quals, H.qualifications); }
 function openCraftForm(key){
   const mine=myCompanyEntry();
   if(!mine){ H.toast('先に自社の工務店を登録してください','err'); return; }
@@ -758,8 +758,8 @@ function openCraftForm(key){
   document.getElementById('ceAge').value=k.age||'';
   document.getElementById('ceGender').value=k.gender||'';
   document.getElementById('cePrice').value=k.price||'';
-  document.getElementById('ceUnit').value=k.unit||'day';
-  setChecked('ceGood',k.good); setChecked('ceNg',k.ng);
+  const sg=splitByMaster(k.good,H.workTypes); setChecked('ceGood',sg.checked); ceGoodCustom.set(sg.custom);
+  const sn=splitByMaster(k.ng,H.workTypes); setChecked('ceNg',sn.checked); ceNgCustom.set(sn.custom);
   const sq=splitQuals(k.quals); setChecked('ceQual',sq.checked); ceCustomQuals.set(sq.custom);
   document.getElementById('craftOv').classList.add('on');
 }
@@ -776,13 +776,15 @@ document.getElementById('ceSave').onclick=()=>{
     age:+document.getElementById('ceAge').value||null,
     gender:document.getElementById('ceGender').value,
     price:+document.getElementById('cePrice').value||null,
-    unit:document.getElementById('ceUnit').value,
-    good:getChecked('ceGood'), ng:getChecked('ceNg'), quals:getChecked('ceQual').concat(ceCustomQuals.get()),
+    unit:'day',
+    good:getChecked('ceGood').concat(ceGoodCustom.get()),
+    ng:getChecked('ceNg').concat(ceNgCustom.get()),
+    quals:getChecked('ceQual').concat(ceCustomQuals.get()),
     updatedAt:Date.now()
   };
   const p=editCraftKey
     ? DB.update('craftsmen/'+editCraftKey,data)
-    : DB.push('craftsmen', Object.assign({status:'free',availMemo:'',createdAt:Date.now()},data));
+    : DB.push('craftsmen', Object.assign({availMemo:'',avail:{},createdAt:Date.now()},data));
   p.then(()=>{ document.getElementById('craftOv').classList.remove('on'); H.toast(editCraftKey?'大工情報を更新しました':'大工を登録しました','ok'); });
 };
 
@@ -804,7 +806,7 @@ function monthGridHTML(monthDate, availMap, editable){
     +['日','月','火','水','木','金','土'].map(w=>`<div class="cal-wd">${w}</div>`).join('')+cells+`</div></div>`;
 }
 function calHTML(availMap, editable){
-  return '<div class="cal-legend"><span class="lg" style="background:#1aa260"></span>空き <span class="lg" style="background:#e0a200"></span>一部空き <span class="lg" style="background:#c0392b"></span>稼働中</div>'
+  return '<div class="cal-legend"><span class="lg" style="background:#1aa260"></span>空き（タップで切替・一日単位）</div>'
     + calMonths3().map(md=>monthGridHTML(md, availMap||{}, editable)).join('');
 }
 function openAvailEditor(key){
@@ -818,7 +820,7 @@ function renderAvailEditor(){
   const box=document.getElementById('availCal');
   box.innerHTML=calHTML(availDraft, true);
   box.querySelectorAll('.cal-cell.edit').forEach(c=>c.onclick=()=>{
-    const ds=c.dataset.date, order=['','free','partial','busy'];
+    const ds=c.dataset.date, order=['','free'];
     const nxt=order[(order.indexOf(availDraft[ds]||'')+1)%4];
     if(nxt) availDraft[ds]=nxt; else delete availDraft[ds];
     renderAvailEditor();
@@ -1056,10 +1058,10 @@ async function shareToLine(text){
 }
 function craftsmanShareText(k){
   if(!k) return '';
-  const st=H.statusOf(k.status);
+  const free=H.upcomingFreeDates(k.avail);
   const L=['【大工シェア】'+k.name+'（'+(k.companyName||'')+'）'];
-  L.push('状況：'+st.label);
-  L.push('単価：'+H.fmtPrice(k.price,k.unit));
+  L.push('空き予定：'+(free.length?free.slice(0,8).map(H.mdFromYmd).join('、'):'なし'));
+  L.push('単価：'+H.fmtPrice(k.price));
   if(k.age||k.gender) L.push('属性：'+(k.age?k.age+'歳':'')+(k.gender?' '+k.gender:''));
   if(k.good&&k.good.length) L.push('得意：'+k.good.join('・'));
   if(k.ng&&k.ng.length) L.push('NG：'+k.ng.join('・'));
@@ -1069,13 +1071,14 @@ function craftsmanShareText(k){
   return L.join('\n');
 }
 function boardShareText(){
-  const arr=H.toArr(craftsmen);
-  const free=arr.filter(k=>k.status==='free'), partial=arr.filter(k=>k.status==='partial');
-  if(!free.length&&!partial.length) return '【大工シェア】現在すぐ空いている大工はいません。\n👉 '+appUrl();
-  const fmt=k=>'・'+k.name+'（'+(k.companyName||'')+'）'+H.fmtPrice(k.price,k.unit)+((k.good&&k.good.length)?'／'+k.good.slice(0,3).join('・'):'');
-  const L=['【今すぐ手伝える大工】'];
-  if(free.length){ L.push('✅ 空き'); free.forEach(k=>L.push(fmt(k))); }
-  if(partial.length){ L.push('⚠️ 一部空き'); partial.forEach(k=>L.push(fmt(k))); }
+  const items=H.toArr(craftsmen)
+    .filter(k=>H.isApproved(approvals,k._key))
+    .map(k=>({k, free:H.upcomingFreeDates(k.avail)}))
+    .filter(x=>x.free.length)
+    .sort((a,b)=>a.free[0]<b.free[0]?-1:1);
+  if(!items.length) return '【大工シェア】現在、空き予定が登録されている大工はいません。\n👉 '+appUrl();
+  const L=['【空き予定がある大工】'];
+  items.forEach(x=>L.push('・'+x.k.name+'（'+(x.k.companyName||'')+'）'+H.fmtPrice(x.k.price)+'／空き: '+x.free.slice(0,5).map(H.mdFromYmd).join('、')));
   L.push('👉 アプリで詳細：'+appUrl());
   return L.join('\n');
 }
