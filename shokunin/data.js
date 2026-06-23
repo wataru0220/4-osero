@@ -48,6 +48,8 @@
       _emit: function () { var u = this.user; this._cbs.forEach(function (c) { c(u); }); },
       signIn: function (email, pass) { return fauth.signInWithEmailAndPassword(email, pass); },
       signUp: function (email, pass) { return fauth.createUserWithEmailAndPassword(email, pass); },
+      // パスワード再設定メールを送信（救済措置）
+      resetPassword: function (email) { return fauth.sendPasswordResetEmail(email); },
       // ログアウト後は匿名に戻し、閲覧・評価を継続できるようにする
       signOut: function () { return fauth.signOut().then(function () { return fauth.signInAnonymously().catch(function(){}); }); }
     };
@@ -175,6 +177,7 @@
     },
     signIn: function (email) { return this._login(email); },
     signUp: function (email) { return this._login(email); },
+    resetPassword: function () { return Promise.reject(new Error("お試しモードではパスワード再設定メールは送信できません（本番のみ）")); },
     signOut: function () { this.user = null; localStorage.removeItem(DEMO_KEY); this._emit(); return Promise.resolve(); }
   };
 

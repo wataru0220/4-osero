@@ -524,9 +524,11 @@ function renderMyArea(){
         <button class="btn" id="loginBtn">ログイン</button>
       </div>
       <div id="lgErr" class="lgerr" style="display:none"></div>
+      <div style="margin-top:8px"><a id="lgReset" class="deallink">🔑 パスワードを忘れた方はこちら</a></div>
       <div class="count" style="margin-top:8px">初めての方は「新規登録」。管理者からメール指定がある場合は、そのメールで登録してください。</div>`;
     document.getElementById('loginBtn').onclick=()=>doAuth('in');
     document.getElementById('signupBtn').onclick=()=>doAuth('up');
+    document.getElementById('lgReset').onclick=resetPwd;
     list.innerHTML='';
     return;
   }
@@ -559,6 +561,14 @@ function doAuth(mode){
   const p = mode==='up' ? DB.auth.signUp(email,pass) : DB.auth.signIn(email,pass);
   p.then(()=>H.toast(mode==='up'?'登録してログインしました':'ログインしました','ok'))
    .catch(e=>lgError(H.authErrMsg(e)));
+}
+function resetPwd(){
+  const email=(document.getElementById('lgEmail').value||'').trim();
+  if(!email){ lgError('メールアドレスを入力してから「パスワードを忘れた方」を押してください'); return; }
+  const el=document.getElementById('lgErr'); if(el) el.style.display='none';
+  DB.auth.resetPassword(email)
+    .then(()=>H.toast('パスワード再設定メールを送信しました。メール内のリンクから再設定してください','ok'))
+    .catch(e=>lgError(H.authErrMsg(e)));
 }
 
 function renderOwnArea(mine){

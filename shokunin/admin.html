@@ -242,9 +242,11 @@ function renderGate(mode){
         <button class="btn ghost" id="adSignup">新規登録</button>
         <button class="btn" id="adLogin">ログイン</button>
       </div>
-      <div id="gateErr" class="gateerr" style="display:none"></div>`;
+      <div id="gateErr" class="gateerr" style="display:none"></div>
+      <div style="margin-top:10px"><a id="adReset" style="cursor:pointer;text-decoration:underline;color:var(--brand);font-weight:700">🔑 パスワードを忘れた方はこちら</a></div>`;
     document.getElementById('adLogin').onclick=()=>adAuth('in');
     document.getElementById('adSignup').onclick=()=>adAuth('up');
+    document.getElementById('adReset').onclick=adReset;
     document.getElementById('adPass').addEventListener('keydown',e=>{ if(e.key==='Enter') adAuth('in'); });
     return;
   }
@@ -282,6 +284,14 @@ function adAuth(mode){
   const el=document.getElementById('gateErr'); if(el) el.style.display='none';
   const p = mode==='up' ? DB.auth.signUp(email,pass) : DB.auth.signIn(email,pass);
   p.catch(e=>gateError(H.authErrMsg(e)));
+}
+function adReset(){
+  const email=(document.getElementById('adEmail').value||'').trim();
+  if(!email){ gateError('メールアドレスを入力してから「パスワードを忘れた方」を押してください'); return; }
+  const el=document.getElementById('gateErr'); if(el) el.style.display='none';
+  DB.auth.resetPassword(email)
+    .then(()=>H.toast('パスワード再設定メールを送信しました。メール内のリンクから再設定してください','ok'))
+    .catch(e=>gateError(H.authErrMsg(e)));
 }
 DB.on('admins', v=>{ admins=v||{}; adminsLoaded=true; route(); });
 DB.auth.onChange(u=>{ myUser=u; route(); });
