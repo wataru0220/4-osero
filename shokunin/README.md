@@ -63,8 +63,8 @@
 - **工務店アカウント**：`index.html`でメール/パスワードでログイン。各工務店の `ownerEmail` ＝ 自分のメールの場合だけ、**自社の大工を登録・編集・削除**できます（ルールで強制）。
 - **大工の認証（承認制）**：利用者が登録した大工は**認証されるまで検索・空き状況に出ません**。管理者が `admin.html` で「✓認証する」と公開されます（認証情報は管理者だけが書ける `approvals` パス）。管理者が登録した大工は自動で認証済み。
 - **管理者**：`admin.html` で登録したアカウント。大工の認証、全件編集ができます。
-- **評価**：ログイン不要（**匿名でも投稿可**）。平均は `reviews` から自動計算。
-- **応援要請**：他社の大工を借りる依頼。要請の概要は「依頼元・相手工務店・管理者」が閲覧可。**労働条件・支払い条件のやり取り（`deals`）は当事者2社だけ**が閲覧でき、**管理者は見られません**（運営は取引・紹介料に関与しない設計）。
+- **評価**：**★のみ**（トラブル防止のためコメントなし）。ログイン不要（匿名でも投稿可）。**1対象につき1件**で、投稿した本人（同じ端末/アカウント）と管理者がいつでも変更・削除できます。平均は `reviews` から自動計算。
+- **応援要請**：他社の大工を借りる依頼。概要は「依頼元・相手工務店・管理者」が閲覧可。**入力した本人（依頼元）と管理者が編集・削除**できます。**労働条件・支払い条件のやり取り（`deals`）は当事者2社だけ**が閲覧・編集でき、**管理者は見られません**（書いた本人が自分の発言を編集・削除可。運営は取引・紹介料に関与しない設計）。
 
 ### 【必須】Firebase コンソールでの設定
 **(1) 認証を有効化**：Authentication → Sign-in method（ログイン方法）で
@@ -97,7 +97,7 @@
       },
       "reviews": {
         ".read": "auth != null",
-        "$rid": { ".write": "auth != null" }
+        "$rid": { ".write": "auth != null && ( (!data.exists() && newData.child('byUid').val() === auth.uid) || (data.exists() && (data.child('byUid').val() === auth.uid || root.child('shokunin/admins').child(auth.uid).val() === true)) )" }
       },
       "approvals": {
         ".read": "auth != null",
@@ -119,7 +119,9 @@
       "deals": {
         "$rid": {
           ".read": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email )",
-          ".write": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email )"
+          "$mid": {
+            ".write": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email ) && ( (!data.exists() && newData.child('byUid').val() === auth.uid) || (data.exists() && data.child('byUid').val() === auth.uid) )"
+          }
         }
       }
     }

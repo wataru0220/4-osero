@@ -167,8 +167,8 @@
       <div class="field"><label class="req">対象の大工</label><select id="evKTarget"></select></div>
       <label>技術力（1〜5）</label>
       <div class="ratepick" id="evKStars"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div>
-      <div class="field"><label>評価した工務店名</label><input type="text" id="evKBy" placeholder="例）佐藤建設"></div>
-      <div class="field"><label>特記事項（大工カルテに追記されます）</label><textarea id="evKNote" placeholder="例）造作が丁寧。墨出しが正確。"></textarea></div>
+      <div class="field"><label>評価した工務店名（任意）</label><input type="text" id="evKBy" placeholder="例）佐藤建設"></div>
+      <div class="count" style="margin-bottom:8px">※ ★のみの評価です（トラブル防止のためコメントはありません）。</div>
       <button class="btn full" id="evKSave">この技術力評価を登録</button>
     </div>
     <div class="card">
@@ -176,8 +176,8 @@
       <div class="field"><label class="req">対象の工務店</label><select id="evCTarget"></select></div>
       <label>評価（1〜5）</label>
       <div class="ratepick" id="evCStars"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div>
-      <div class="field"><label>評価した工務店名</label><input type="text" id="evCBy" placeholder="例）鈴木住建"></div>
-      <div class="field"><label>特記事項</label><textarea id="evCNote" placeholder="例）支払いが早い。段取りが良い。"></textarea></div>
+      <div class="field"><label>評価した工務店名（任意）</label><input type="text" id="evCBy" placeholder="例）鈴木住建"></div>
+      <div class="count" style="margin-bottom:8px">※ ★のみの評価です（トラブル防止のためコメントはありません）。</div>
       <button class="btn full" id="evCSave">この工務店評価を登録</button>
     </div>
   </section>
@@ -489,7 +489,6 @@ function renderKList(){
       </div>
       <div>${H.chips(k.good,'o')}${H.chips(k.ng,'ng')}</div>
       ${(k.quals&&k.quals.length)?`<div>${H.chips(k.quals)}</div>`:''}
-      ${r.notes.length?`<div class="note">📝 ${H.esc(r.notes[0].note)}${r.notes[0].by?'（'+H.esc(r.notes[0].by)+'）':''}</div>`:''}
       <div class="acts">
         ${ok
           ? `<button class="btn ghost sm" onclick="unapproveCraftsman('${k._key}')">認証を取消</button>`
@@ -510,13 +509,13 @@ function saveKEval(){
   if(!key){ H.toast('大工を選んでください','err'); return; }
   if(!evK){ H.toast('技術力（星）を選んでください','err'); return; }
   const by=document.getElementById('evKBy').value.trim();
-  const note=document.getElementById('evKNote').value.trim();
   const k=craftsmen[key]||{};
-  DB.push('reviews',{type:'craftsman',targetKey:key,targetName:k.name||'',rating:evK,note,byCompany:by,at:Date.now()})
+  const uid=DB.auth.user&&DB.auth.user.uid;
+  DB.push('reviews',{type:'craftsman',targetKey:key,targetName:k.name||'',rating:evK,byCompany:by,byUid:uid,at:Date.now()})
   .then(()=>{
     H.toast('技術力評価を登録しました','ok');
     evK=0; setStars('evKStars',0);
-    document.getElementById('evKBy').value=''; document.getElementById('evKNote').value='';
+    document.getElementById('evKBy').value='';
     document.getElementById('evKTarget').value='';
   });
 }
@@ -525,13 +524,13 @@ function saveCEval(){
   if(!key){ H.toast('工務店を選んでください','err'); return; }
   if(!evC){ H.toast('評価（星）を選んでください','err'); return; }
   const by=document.getElementById('evCBy').value.trim();
-  const note=document.getElementById('evCNote').value.trim();
   const c=companies[key]||{};
-  DB.push('reviews',{type:'company',targetKey:key,targetName:c.name||'',rating:evC,note,byCompany:by,at:Date.now()})
+  const uid=DB.auth.user&&DB.auth.user.uid;
+  DB.push('reviews',{type:'company',targetKey:key,targetName:c.name||'',rating:evC,byCompany:by,byUid:uid,at:Date.now()})
   .then(()=>{
     H.toast('工務店評価を登録しました','ok');
     evC=0; setStars('evCStars',0);
-    document.getElementById('evCBy').value=''; document.getElementById('evCNote').value='';
+    document.getElementById('evCBy').value='';
     document.getElementById('evCTarget').value='';
   });
 }
@@ -546,9 +545,11 @@ function renderHist(){
       <span><span class="pill ${r.type==='craftsman'?'k':'c'}">${r.type==='craftsman'?'大工':'工務店'}</span> <b style="color:var(--ink)">${H.esc(r.targetName)}</b></span>
       <span>${H.fmtDate(r.at)}</span>
     </div>
-    <div style="margin-top:4px"><span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
-      ${r.byCompany?`<span class="meta" style="font-size:12px;color:var(--sub)"> by ${H.esc(r.byCompany)}</span>`:''}</div>
-    ${r.note?`<div class="note">${H.esc(r.note)}</div>`:''}
+    <div style="margin-top:4px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <span><span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
+        ${r.byCompany?`<span class="meta" style="font-size:12px;color:var(--sub)"> by ${H.esc(r.byCompany)}</span>`:''}</span>
+      <button class="btn danger sm" onclick="delReview('${r._key}')">削除</button>
+    </div>
   </div>`).join('');
 }
 
@@ -585,6 +586,7 @@ function renderReqList(){
     </div>
     ${r.work?`<div class="meta">🛠 ${H.esc(r.work)}</div>`:''}
     <div class="meta">${H.fmtDate(r.createdAt)}</div>
+    <div class="acts"><button class="btn danger sm" onclick="delRequest('${r._key}','${r.fromCompanyKey}','${r.toCompanyKey}')">削除</button></div>
   </div>`).join('');
 }
 
@@ -597,10 +599,27 @@ function unapproveCraftsman(key){
   DB.remove('approvals/craftsman/'+key).then(()=>H.toast('認証を取り消しました','ok'));
 }
 
+// 評価の削除（管理者）
+function delReview(key){
+  if(!confirm('この評価を削除しますか？')) return;
+  DB.remove('reviews/'+key).then(()=>H.toast('評価を削除しました','ok'));
+}
+// 応援要請の削除（管理者）。索引も削除。条件のやり取り(deals)は管理者は閲覧・編集できない
+// 設計のため触れない（要請削除で参照先が消え、当事者以外からは読めない状態になる）。
+function delRequest(rid, fromCk, toCk){
+  if(!confirm('この応援要請を削除しますか？')) return;
+  Promise.all([
+    DB.remove('requests/'+rid),
+    DB.remove('reqIndex/'+fromCk+'/'+rid),
+    DB.remove('reqIndex/'+toCk+'/'+rid)
+  ]).then(()=>H.toast('削除しました','ok'));
+}
+
 // グローバル公開（onclick用）
 window.editCompany=editCompany; window.delCompany=delCompany;
 window.editCraftsman=editCraftsman; window.delCraftsman=delCraftsman;
 window.approveCraftsman=approveCraftsman; window.unapproveCraftsman=unapproveCraftsman;
+window.delReview=delReview; window.delRequest=delRequest;
 </script>
 </body>
 </html>

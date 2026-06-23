@@ -110,6 +110,8 @@
   .dealbox{margin-top:10px; border-top:1px dashed var(--line); padding-top:10px}
   .dealmsg{background:#f7f9fb; border:1px solid var(--line); border-radius:8px; padding:7px 9px; margin-bottom:6px; font-size:14px; line-height:1.5}
   .dealtime{font-size:11px; color:var(--sub); margin-top:2px}
+  .deallink{color:var(--brand-dark); font-weight:700; cursor:pointer; text-decoration:underline}
+  .deallink.dealdel{color:var(--warn)}
   .count{font-size:12px; color:var(--sub); margin:0 2px 8px}
   .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%) translateY(20px); background:#16324f; color:#fff; padding:11px 18px; border-radius:30px; font-weight:700; opacity:0; pointer-events:none; transition:.25s; z-index:60; max-width:90%}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
@@ -183,26 +185,24 @@
   </section>
 </div>
 
-<!-- 評価モーダル -->
+<!-- 評価モーダル（★のみ・1社1件・本人はいつでも変更/削除可） -->
 <div class="ov" id="reviewOv">
   <div class="sheet">
     <h3 id="rvTitle">評価する</h3>
     <div class="count" id="rvSub"></div>
+    <div class="count" style="margin-bottom:6px">★のみの評価です（トラブル防止のためコメントはありません）。1対象につき1件、いつでも変更・削除できます。</div>
     <div class="ratepick" id="rvStars">
       <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
     </div>
     <div class="field">
-      <label>あなたの工務店名</label>
+      <label>あなたの工務店名（任意）</label>
       <input type="text" id="rvBy" placeholder="例）山田工務店">
-    </div>
-    <div class="field">
-      <label>特記事項・コメント（任意）</label>
-      <textarea id="rvNote" placeholder="例）仕事が丁寧、納期を守ってくれた など"></textarea>
     </div>
     <div class="row">
       <button class="btn ghost" id="rvCancel">キャンセル</button>
-      <button class="btn" id="rvSubmit">この内容で評価を送る</button>
+      <button class="btn" id="rvSubmit">評価を送る</button>
     </div>
+    <button class="btn ghost full" id="rvDelete" style="display:none;margin-top:8px;color:var(--warn);border-color:#f0c4c0">この評価を削除</button>
   </div>
 </div>
 
@@ -313,7 +313,7 @@ let filter = { status:'', text:'', work:'', qual:'' };
 let reviewTarget = null, rvValue = 0;
 let myUser = null;
 // 応援要請
-let reqByMe = {}, reqUnsub = {}, reqIndexUnsub = null, reqCompanyKey = null, reqTargetCraft = null;
+let reqByMe = {}, reqUnsub = {}, reqIndexUnsub = null, reqCompanyKey = null, reqTargetCraft = null, editReqKey = null;
 let openDealRid = null, dealUnsub = null, dealMsgs = [];
 
 // モード表示
@@ -414,7 +414,6 @@ function kCardHTML(k){
     ${(k.good&&k.good.length)?`<div class="seclabel">得意作業</div>${H.chips(k.good)}`:''}
     ${(k.ng&&k.ng.length)?`<div class="seclabel">NG作業</div>${H.chips(k.ng,'ng')}`:''}
     ${(k.quals&&k.quals.length)?`<div class="seclabel">保有資格</div>${H.chips(k.quals,'q')}`:''}
-    ${r.notes.length?`<div class="note">📝 ${H.esc(r.notes[0].note)}${r.notes[0].by?`<span style="color:var(--sub)"> — ${H.esc(r.notes[0].by)}</span>`:''}</div>`:''}
     <button class="btn sm req-btn" data-key="${k._key}" style="width:100%;background:var(--accent);color:#fff;margin-top:8px">🤝 この大工に応援要請</button>
     <div class="actions">
       <button class="btn ln sm ln-share" data-key="${k._key}">📲 LINEで共有</button>
@@ -460,7 +459,6 @@ function renderCompanies(){
       <div class="info">📍 ${H.esc(c.area||'—')}　👤 ${H.esc(c.contact||'—')}　📞 ${H.esc(c.tel||'—')}</div>
       <div class="info">所属大工 ${cnt} 名　評価件数 ${r.count} 件</div>
       ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
-      ${r.notes.length?`<div class="note">🗒 ${H.esc(r.notes[0].note)}${r.notes[0].by?`<span style="color:var(--sub)"> — ${H.esc(r.notes[0].by)}</span>`:''}</div>`:''}
       <div class="actions" style="display:flex;margin-top:10px">
         <button class="btn ghost sm rv" data-type="company" data-key="${c._key}" data-name="${H.esc(c.name)}">⭐ この工務店を評価</button>
       </div>
@@ -752,13 +750,42 @@ function openRequestForm(kid){
   if(!mine){ H.toast('先に自社の工務店を登録してください','err'); goTab('update'); return; }
   const k=craftsmen[kid]; if(!k) return;
   if(k.companyKey===mine._key){ H.toast('自社の大工です','err'); return; }
+  editReqKey=null;
   reqTargetCraft=Object.assign({_key:kid},k);
   document.getElementById('reqTitle').textContent='応援要請：'+k.name;
   document.getElementById('reqSub').textContent='所属「'+(k.companyName||'')+'」へ依頼します';
   ['reqWork','reqContact','reqMsg','reqStart','reqEnd'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('reqPref').value=''; fillReqCity();
   document.getElementById('reqContact').value=mine.tel||'';
+  document.getElementById('reqSend').textContent='この内容で要請する';
   document.getElementById('reqOv').classList.add('on');
+}
+function openRequestEdit(rid){
+  const r=reqByMe[rid]; if(!r) return;
+  editReqKey=rid;
+  reqTargetCraft={_key:r.craftsmanKey, name:r.craftsmanName, companyKey:r.toCompanyKey, companyName:r.toCompanyName};
+  document.getElementById('reqTitle').textContent='応援要請の編集';
+  document.getElementById('reqSub').textContent=r.craftsmanName+'（'+(r.toCompanyName||'')+'）への要請';
+  document.getElementById('reqPref').value=r.sitePref||''; fillReqCity();
+  document.getElementById('reqCity').value=r.siteCity||''; fillReqWard();
+  document.getElementById('reqWard').value=r.siteWard||'';
+  document.getElementById('reqStart').value=r.dateFrom||'';
+  document.getElementById('reqEnd').value=(r.dateTo&&r.dateTo!==r.dateFrom)?r.dateTo:'';
+  document.getElementById('reqWork').value=r.work||'';
+  document.getElementById('reqContact').value=r.contact||'';
+  document.getElementById('reqMsg').value=r.message||'';
+  document.getElementById('reqSend').textContent='この内容で更新';
+  document.getElementById('reqOv').classList.add('on');
+}
+function deleteRequest(rid){
+  const r=reqByMe[rid]; if(!r) return;
+  if(!confirm('この応援要請を削除しますか？（条件のやり取りも削除されます）')) return;
+  Promise.all([
+    DB.remove('requests/'+rid),
+    DB.remove('reqIndex/'+r.fromCompanyKey+'/'+rid),
+    DB.remove('reqIndex/'+r.toCompanyKey+'/'+rid),
+    DB.remove('deals/'+rid)
+  ]).then(()=>H.toast('削除しました','ok'));
 }
 document.getElementById('reqCancel').onclick=()=>document.getElementById('reqOv').classList.remove('on');
 document.getElementById('reqOv').onclick=e=>{ if(e.target.id==='reqOv') e.currentTarget.classList.remove('on'); };
@@ -773,15 +800,20 @@ document.getElementById('reqSend').onclick=()=>{
   if(end && end<start){ H.toast('終了日は開始日以降にしてください','err'); return; }
   const site=pref+city+(ward||'');
   const dateText=(end && end!==start) ? (fmtReqDate(start)+'〜'+fmtReqDate(end)) : fmtReqDate(start);
+  const fields={ site, sitePref:pref, siteCity:city, siteWard:ward||'', dateText, dateFrom:start, dateTo:end||start,
+    work:rqVal('reqWork').trim(), contact:rqVal('reqContact').trim(), message:rqVal('reqMsg').trim() };
+  if(editReqKey){
+    DB.update('requests/'+editReqKey, fields)
+      .then(()=>{ document.getElementById('reqOv').classList.remove('on'); H.toast('応援要請を更新しました','ok'); });
+    return;
+  }
   const toCo=companies[k.companyKey]||{};
-  const rec={
+  const rec=Object.assign({
     fromCompanyKey:mine._key, fromCompanyName:mine.name||'', fromEmail:myUser.email,
     toCompanyKey:k.companyKey, toCompanyName:k.companyName||toCo.name||'', toOwnerEmail:toCo.ownerEmail||'',
     craftsmanKey:k._key, craftsmanName:k.name||'',
-    site, sitePref:pref, siteCity:city, siteWard:ward||'', dateText, dateFrom:start, dateTo:end||start,
-    work:rqVal('reqWork').trim(), contact:rqVal('reqContact').trim(), message:rqVal('reqMsg').trim(),
     status:'pending', createdAt:Date.now()
-  };
+  }, fields);
   DB.push('requests', rec)
     .then(rid=>Promise.all([DB.set('reqIndex/'+mine._key+'/'+rid,true), DB.set('reqIndex/'+k.companyKey+'/'+rid,true)]))
     .then(()=>{ document.getElementById('reqOv').classList.remove('on'); H.toast('応援要請を送信しました','ok'); goTab('req'); });
@@ -822,24 +854,41 @@ function reqCardHTML(r,kind){
         <button class="btn sm acc" data-rid="${r._key}">承認する</button>
         <button class="btn ghost sm dec" data-rid="${r._key}" style="color:var(--warn);border-color:#f0c4c0">辞退</button>
       </div>`:''}
+    ${kind==='sent'?`<div class="row" style="margin-top:8px">
+        <button class="btn ghost sm req-edit" data-rid="${r._key}">✏️ 編集</button>
+        <button class="btn ghost sm req-del" data-rid="${r._key}" style="color:var(--warn);border-color:#f0c4c0">🗑 削除</button>
+      </div>`:''}
     <button class="btn ghost sm deal-toggle" data-rid="${r._key}" style="width:100%;margin-top:8px">${opened?'▲ 条件のやり取りを閉じる':'💴 労働条件・支払い条件のやり取り'}</button>
     ${opened?`<div class="dealbox">${dealThreadHTML()}</div>`:''}
   </div>`;
 }
 function dealThreadHTML(){
+  const uid=DB.auth.user&&DB.auth.user.uid;
   let h='<div class="count" style="margin:2px 0 8px">この内容は当事者（依頼元と相手工務店）だけが閲覧できます。管理者には表示されません。</div>';
-  h+= dealMsgs.length? dealMsgs.map(m=>`<div class="dealmsg"><b>${H.esc(m.byName||m.byEmail||'')}</b>：${H.esc(m.text)}<div class="dealtime">${H.fmtDate(m.at)}</div></div>`).join('') : '<div class="count">まだやり取りはありません。</div>';
+  h+= dealMsgs.length? dealMsgs.map(m=>`<div class="dealmsg"><b>${H.esc(m.byName||m.byEmail||'')}</b>：${H.esc(m.text)}<div class="dealtime">${H.fmtDate(m.at)}${(m.byUid&&m.byUid===uid)?` ・<a class="deallink dealedit" data-mid="${m._key}">編集</a> ・<a class="deallink dealdel" data-mid="${m._key}">削除</a>`:''}</div></div>`).join('') : '<div class="count">まだやり取りはありません。</div>';
   h+=`<div class="row" style="margin-top:8px"><input type="text" id="dealInput" placeholder="例）詳しい住所・日当◯円・支払い条件 など" style="flex:2"><button class="btn sm" id="dealSend" style="flex:1">送信</button></div>`;
   return h;
 }
 function bindReqCards(box){
   box.querySelectorAll('.acc').forEach(b=>b.onclick=()=>DB.update('requests/'+b.dataset.rid,{status:'accepted'}).then(()=>H.toast('承認しました','ok')));
   box.querySelectorAll('.dec').forEach(b=>b.onclick=()=>DB.update('requests/'+b.dataset.rid,{status:'declined'}).then(()=>H.toast('辞退しました','ok')));
+  box.querySelectorAll('.req-edit').forEach(b=>b.onclick=()=>openRequestEdit(b.dataset.rid));
+  box.querySelectorAll('.req-del').forEach(b=>b.onclick=()=>deleteRequest(b.dataset.rid));
   box.querySelectorAll('.deal-toggle').forEach(b=>b.onclick=()=>toggleDeal(b.dataset.rid));
   const ds=document.getElementById('dealSend');
   if(ds) ds.onclick=sendDeal;
   const di=document.getElementById('dealInput');
   if(di) di.addEventListener('keydown',e=>{ if(e.key==='Enter') sendDeal(); });
+  box.querySelectorAll('.dealdel').forEach(b=>b.onclick=()=>{
+    if(!openDealRid||!confirm('このメッセージを削除しますか？')) return;
+    DB.remove('deals/'+openDealRid+'/'+b.dataset.mid).then(()=>H.toast('削除しました','ok'));
+  });
+  box.querySelectorAll('.dealedit').forEach(b=>b.onclick=()=>{
+    const m=dealMsgs.find(x=>x._key===b.dataset.mid); if(!m||!openDealRid) return;
+    const t=prompt('メッセージを編集', m.text); if(t===null) return;
+    const txt=t.trim(); if(!txt) return;
+    DB.update('deals/'+openDealRid+'/'+b.dataset.mid,{text:txt, at:Date.now()}).then(()=>H.toast('更新しました','ok'));
+  });
 }
 function toggleDeal(rid){
   if(openDealRid===rid){ openDealRid=null; if(dealUnsub){dealUnsub();dealUnsub=null;} dealMsgs=[]; renderRequests(); return; }
@@ -851,8 +900,8 @@ function toggleDeal(rid){
 function sendDeal(){
   const inp=document.getElementById('dealInput'); if(!inp||!openDealRid) return;
   const text=inp.value.trim(); if(!text) return;
-  const mine=myCompanyEntry();
-  DB.push('deals/'+openDealRid, {byEmail:myUser.email, byName:(mine&&mine.name)||myUser.email, text, at:Date.now()});
+  const mine=myCompanyEntry(); const uid=DB.auth.user&&DB.auth.user.uid;
+  DB.push('deals/'+openDealRid, {byEmail:myUser.email, byUid:uid, byName:(mine&&mine.name)||myUser.email, text, at:Date.now()});
 }
 
 // ===== LINE共有 =====
@@ -903,14 +952,20 @@ document.getElementById('shareBoardBtn').onclick=()=>shareToLine(boardShareText(
 function bindReviewButtons(scope){
   scope.querySelectorAll('.rv').forEach(b=>b.onclick=()=>openReview(b.dataset.type,b.dataset.key,b.dataset.name));
 }
+let myReviewKey=null;
 function openReview(type,key,name){
-  reviewTarget={type,key,name}; rvValue=0;
+  reviewTarget={type,key,name};
+  const uid=DB.auth.user&&DB.auth.user.uid;
+  const existing=uid? H.toArr(reviews).find(r=>r.type===type && r.targetKey===key && r.byUid===uid) : null;
+  myReviewKey = existing? existing._key : null;
+  rvValue = existing? (existing.rating||0) : 0;
   document.getElementById('rvTitle').textContent=(type==='craftsman'?'大工を評価':'工務店を評価');
   document.getElementById('rvSub').textContent='対象：'+name;
   const mine=myCompanyEntry();
-  document.getElementById('rvBy').value=(mine&&mine.name)||localStorage.getItem('shokunin_mycompany_name')||'';
-  document.getElementById('rvNote').value='';
-  paintStars(0);
+  document.getElementById('rvBy').value=(existing&&existing.byCompany)||(mine&&mine.name)||localStorage.getItem('shokunin_mycompany_name')||'';
+  paintStars(rvValue);
+  document.getElementById('rvSubmit').textContent=myReviewKey?'評価を更新':'評価を送る';
+  document.getElementById('rvDelete').style.display=myReviewKey?'block':'none';
   document.getElementById('reviewOv').classList.add('on');
 }
 function paintStars(v){ document.querySelectorAll('#rvStars span').forEach(s=>s.classList.toggle('on', +s.dataset.v<=v)); }
@@ -920,14 +975,24 @@ document.getElementById('reviewOv').onclick=e=>{ if(e.target.id==='reviewOv') e.
 document.getElementById('rvSubmit').onclick=async()=>{
   if(!rvValue){ H.toast('星（1〜5）を選んでください','err'); return; }
   const by=document.getElementById('rvBy').value.trim();
-  if(!by){ H.toast('あなたの工務店名を入力してください','err'); return; }
-  localStorage.setItem('shokunin_mycompany_name', by);
-  const note=document.getElementById('rvNote').value.trim();
+  if(by) localStorage.setItem('shokunin_mycompany_name', by);
+  const uid=DB.auth.user&&DB.auth.user.uid;
   const {type,key,name}=reviewTarget;
-  // 評価は reviews に保存（平均は表示時に算出。匿名でも投稿可）
-  await DB.push('reviews',{type,targetKey:key,targetName:name,rating:rvValue,note,byCompany:by,at:Date.now()});
+  if(myReviewKey){
+    await DB.update('reviews/'+myReviewKey,{rating:rvValue, byCompany:by});
+  }else{
+    // ★のみ。1対象1件。byUid で本人を識別（匿名uidは端末ごとに永続）
+    await DB.push('reviews',{type,targetKey:key,targetName:name,rating:rvValue,byCompany:by,byUid:uid,at:Date.now()});
+  }
   document.getElementById('reviewOv').classList.remove('on');
-  H.toast('評価を送信しました。ありがとうございます！','ok');
+  H.toast(myReviewKey?'評価を更新しました':'評価を送信しました。ありがとうございます！','ok');
+};
+document.getElementById('rvDelete').onclick=async()=>{
+  if(!myReviewKey) return;
+  if(!confirm('この評価を削除しますか？')) return;
+  await DB.remove('reviews/'+myReviewKey);
+  document.getElementById('reviewOv').classList.remove('on');
+  H.toast('評価を削除しました','ok');
 };
 </script>
 </body>
