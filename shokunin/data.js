@@ -41,6 +41,8 @@
     // ・工務店は signIn/signUp でメールログインし、自社の大工だけ編集できる（ルールで強制）。
     // ・Firebaseコンソールで「メール/パスワード」と「匿名」の両方を有効化しておくこと。
     var fauth = firebase.auth ? firebase.auth() : null;
+    // パスワード再設定メール・再設定画面などを日本語で表示する
+    if (fauth) { try { fauth.languageCode = "ja"; } catch (_) {} }
     DB.auth = {
       user: null,
       _cbs: [],

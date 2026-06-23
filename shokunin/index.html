@@ -156,6 +156,7 @@
     <div style="display:flex; flex-direction:column; gap:6px; flex:none">
       <button class="hbtn" id="installBtn"><span class="ic">⬇️</span>アプリにする</button>
       <button class="hbtn" id="inviteBtn"><span class="ic">📲</span>LINEで招待</button>
+      <button class="hbtn" id="logoutHdr" style="display:none"><span class="ic">🚪</span>ログアウト</button>
     </div>
   </div>
 </header>
@@ -537,6 +538,7 @@ function renderMyArea(){
   const list=document.getElementById('updateList');
   if(!box||!list) return;
   ensureReqSubscription();
+  const lh=document.getElementById('logoutHdr'); if(lh) lh.style.display = loggedIn()?'flex':'none';
   if(!loggedIn()){
     box.innerHTML = `
       <b>🔑 工務店ログイン</b>
@@ -1085,6 +1087,7 @@ function bindShareButtons(scope){
 }
 document.getElementById('inviteBtn').onclick=()=>shareToLine(inviteText());
 document.getElementById('shareBoardBtn').onclick=()=>shareToLine(boardShareText());
+document.getElementById('logoutHdr').onclick=()=>DB.auth.signOut().then(()=>H.toast('ログアウトしました','ok'));
 
 // ===== 評価モーダル =====
 function bindReviewButtons(scope){
