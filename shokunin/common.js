@@ -132,9 +132,9 @@
     const plus = (n) => { const d = new Date(_d); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
     return {
       companies: {
-        C1: { name: "山田工務店", tel: "022-111-2222", area: "宮城県／仙台市", contact: "山田 太郎", ownerEmail: "yamada@example.com", notes: "支払いが早く対応も丁寧。", createdAt: now },
-        C2: { name: "佐藤建設", tel: "024-333-4444", area: "福島県／郡山市", contact: "佐藤 健", ownerEmail: "sato@example.com", notes: "現場管理がしっかりしている。", createdAt: now },
-        C3: { name: "鈴木住建", tel: "019-555-6666", area: "岩手県／盛岡市", contact: "鈴木 一郎", ownerEmail: "suzuki@example.com", notes: "", createdAt: now }
+        C1: { name: "山田工務店", nameKana: "やまだこうむてん", tel: "022-111-2222", area: "宮城県／仙台市", contact: "山田 太郎", ownerEmail: "yamada@example.com", notes: "支払いが早く対応も丁寧。", createdAt: now },
+        C2: { name: "佐藤建設", nameKana: "さとうけんせつ", tel: "024-333-4444", area: "福島県／郡山市", contact: "佐藤 健", ownerEmail: "sato@example.com", notes: "現場管理がしっかりしている。", createdAt: now },
+        C3: { name: "鈴木住建", nameKana: "すずきじゅうけん", tel: "019-555-6666", area: "岩手県／盛岡市", contact: "鈴木 一郎", ownerEmail: "suzuki@example.com", notes: "", createdAt: now }
       },
       craftsmen: {
         K1: { name: "田中 一郎", companyKey: "C1", companyName: "山田工務店", age: 42, gender: "男", quals: ["建築大工技能士(1級)", "職長・安全衛生責任者"], good: ["①和室内部造作", "④建方、構造組立", "⑤構造体墨付け"], ng: [], price: 24000, unit: "day", avail: { [plus(2)]: "free", [plus(3)]: "free", [plus(9)]: "free" }, availMemo: "来週いっぱい空きあり", createdAt: now, updatedAt: now },

@@ -129,6 +129,10 @@
   .bubble .who{font-size:11px; font-weight:700; margin-bottom:2px; opacity:.85}
   .bubble .bt{font-size:10px; opacity:.75; margin-top:3px; text-align:right}
   .bubble.mine .deallink{color:#fff}
+  .chatlabel{font-size:12px; font-weight:800; color:var(--brand-dark); margin:10px 2px 4px}
+  .chatform{display:flex; gap:8px; background:#fff; border:2px solid var(--brand); border-radius:12px; padding:7px}
+  .chatform input{flex:2; border:0; padding:9px; font-size:15px; outline:none; background:transparent}
+  .chatform button{flex:none; padding:10px 18px}
   .cqx{cursor:pointer; color:var(--warn); font-weight:800; margin-left:2px}
   .cal-legend{font-size:12px; color:var(--sub); margin:4px 0 8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap}
   .cal-legend .lg{display:inline-block; width:12px; height:12px; border-radius:3px}
@@ -166,7 +170,6 @@
     </div>
     <div style="display:flex; flex-direction:column; gap:6px; flex:none">
       <button class="hbtn" id="installBtn"><span class="ic">⬇️</span>アプリにする</button>
-      <button class="hbtn" id="inviteBtn"><span class="ic">📲</span>LINEで招待</button>
       <button class="hbtn" id="logoutHdr" style="display:none"><span class="ic">🚪</span>ログアウト</button>
     </div>
   </div>
@@ -190,19 +193,10 @@
     <div id="kList"></div>
   </section>
 
-  <!-- ============ 空き状況ボード ============ -->
-  <section class="page" id="page-board">
-    <div class="card" style="padding:11px 14px">
-      <b>📡 空き状況ボード</b>
-      <div class="count" style="margin:4px 0 8px">各社が更新すると、ここにリアルタイムで反映されます。</div>
-      <button class="btn ln full" id="shareBoardBtn">📲 今すぐ空いている大工をLINEで共有</button>
-    </div>
-    <div id="boardWrap"></div>
-  </section>
-
   <!-- ============ 工務店一覧 ============ -->
   <section class="page" id="page-co">
-    <div class="count">登録工務店の情報と評価（数値）。</div>
+    <input type="text" id="coSearch" placeholder="🔍 工務店名で検索" style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:10px">
+    <div class="count">登録工務店の情報と評価（あいうえお順）。</div>
     <div id="coList"></div>
   </section>
 
@@ -298,6 +292,7 @@
     <h3 id="coeTitle">工務店を登録</h3>
     <div class="count" id="coeSub"></div>
     <div class="field"><label class="req">工務店名</label><input type="text" id="coeName" placeholder="例）山田工務店"></div>
+    <div class="field"><label>ふりがな（あいうえお順の表示に使用）</label><input type="text" id="coeNameKana" placeholder="例）やまだこうむてん"></div>
     <div class="row">
       <div class="field"><label>担当者名</label><input type="text" id="coeContact" placeholder="例）山田 太郎"></div>
       <div class="field"><label>電話番号</label><input type="text" id="coeTel" placeholder="例）03-1234-5678"></div>
@@ -384,7 +379,6 @@
 <!-- 下部タブ -->
 <nav class="tabbar">
   <button class="on" data-page="find"><span class="ic">🔍</span>大工をさがす</button>
-  <button data-page="board"><span class="ic">📡</span>空き状況</button>
   <button data-page="co"><span class="ic">🏢</span>工務店</button>
   <button data-page="update"><span class="ic">👷</span>自社の大工</button>
   <button data-page="req"><span class="ic">🤝</span>応援<span class="tabbadge" id="reqBadge" style="display:none">0</span></button>
@@ -493,15 +487,16 @@ document.getElementById('qWork').onchange = e=>{ filter.work=e.target.value; ren
 document.getElementById('qQual').onchange = e=>{ filter.qual=e.target.value; renderFind(); };
 document.getElementById('qFreeOnly').onchange = e=>{ filter.freeOnly=e.target.checked; renderFind(); };
 document.getElementById('qFavOnly').onchange = e=>{ filter.favOnly=e.target.checked; renderFind(); };
+document.getElementById('coSearch').oninput = ()=>renderCompanies();
 
 // ===== 認証状態（ログイン中の工務店） =====
 DB.auth.onChange(u=>{ myUser=u; renderMyArea(); renderFind(); renderCompanies(); });
 
 // ===== データ購読（リアルタイム） =====
-DB.on('companies', v=>{ companies=v||{}; renderCompanies(); renderFind(); renderBoard(); renderMyArea(); });
-DB.on('craftsmen', v=>{ craftsmen=v||{}; renderFind(); renderBoard(); renderCompanies(); renderMyArea(); });
+DB.on('companies', v=>{ companies=v||{}; renderCompanies(); renderFind(); renderMyArea(); });
+DB.on('craftsmen', v=>{ craftsmen=v||{}; renderFind(); renderCompanies(); renderMyArea(); });
 DB.on('reviews', v=>{ reviews=v||{}; renderFind(); renderCompanies(); });
-DB.on('approvals', v=>{ approvals=v||{}; renderFind(); renderBoard(); renderCompanies(); renderMyArea(); });
+DB.on('approvals', v=>{ approvals=v||{}; renderFind(); renderCompanies(); renderMyArea(); });
 
 // ===== 大工をさがす =====
 function matchFilter(k){
@@ -596,12 +591,15 @@ function renderBoard(){
 function renderCompanies(){
   const list=document.getElementById('coList');
   const rateOf=c=>H.ratingFor(reviews,'company',c._key, c.ownerEmail);
-  const arr=H.toArr(companies).sort((a,b)=>{
-    const fa=favCo.has(a._key)?1:0, fb=favCo.has(b._key)?1:0;
-    if(fb!==fa) return fb-fa;                     // お気に入りを上に
-    return (rateOf(b).avg||0)-(rateOf(a).avg||0); // 次に評価順
-  });
-  if(!arr.length){ list.innerHTML='<div class="empty">工務店がまだ登録されていません。</div>'; return; }
+  const q=((document.getElementById('coSearch')||{}).value||'').trim().toLowerCase();
+  const arr=H.toArr(companies)
+    .filter(c=>!q || (c.name||'').toLowerCase().includes(q) || (c.area||'').toLowerCase().includes(q))
+    .sort((a,b)=>{
+      const fa=favCo.has(a._key)?1:0, fb=favCo.has(b._key)?1:0;
+      if(fb!==fa) return fb-fa;                     // お気に入りを上に
+      return (a.nameKana||a.name||'').localeCompare((b.nameKana||b.name||''),'ja'); // あいうえお順（ふりがな優先）
+    });
+  if(!arr.length){ list.innerHTML='<div class="empty">該当する工務店がありません。</div>'; return; }
   const myKey=(myCompanyEntry()||{})._key;
   list.innerHTML=arr.map(c=>{
     const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===c._key && H.isApproved(approvals,k._key)).length;
@@ -750,6 +748,7 @@ function openCompanyForm(key){
   document.getElementById('coeTitle').textContent=key?'会社情報を編集':'工務店を登録';
   document.getElementById('coeSub').textContent='オーナー：'+myUser.email;
   document.getElementById('coeName').value=c.name||'';
+  document.getElementById('coeNameKana').value=c.nameKana||'';
   document.getElementById('coeContact').value=c.contact||'';
   document.getElementById('coeTel').value=c.tel||'';
   document.getElementById('coeArea').value=c.area||'';
@@ -772,7 +771,8 @@ document.getElementById('coeSave').onclick=()=>{
   const name=document.getElementById('coeName').value.trim();
   if(!name){ H.toast('工務店名を入力してください','err'); return; }
   const data={
-    name, contact:document.getElementById('coeContact').value.trim(),
+    name, nameKana:document.getElementById('coeNameKana').value.trim(),
+    contact:document.getElementById('coeContact').value.trim(),
     tel:document.getElementById('coeTel').value.trim(),
     area:document.getElementById('coeArea').value.trim(),
     notes:document.getElementById('coeNotes').value.trim()
@@ -1017,7 +1017,7 @@ function renderContact(){
       }).join('')
     : '<div class="count">まだやり取りはありません。管理者へ連絡できます。</div>';
   h+='</div>';
-  h+=`<div class="row" style="margin-top:8px"><input type="text" id="ctInput" placeholder="管理者へのメッセージ" style="flex:2"><button class="btn sm" id="ctSend" style="flex:1">送信</button></div></div>`;
+  h+=`<div class="chatlabel">✏️ 管理者へのメッセージを入力して送信</div><div class="chatform"><input type="text" id="ctInput" placeholder="管理者へのメッセージ"><button class="btn" id="ctSend">送信</button></div></div>`;
   box.innerHTML=h;
   document.getElementById('ctSend').onclick=sendContact;
   document.getElementById('ctInput').addEventListener('keydown',e=>{ if(e.key==='Enter') sendContact(); });
@@ -1192,7 +1192,7 @@ function dealThreadHTML(){
     return `<div class="bubble ${mine?'mine':'them'}"><div class="who">${H.esc(m.byName||m.byEmail||'')}</div><div>${H.esc(m.text)}</div><div class="bt">${H.fmtDate(m.at)}${mine?` ・<a class="deallink dealedit" data-mid="${m._key}">編集</a> ・<a class="deallink dealdel" data-mid="${m._key}">削除</a>`:''}</div></div>`;
   }).join('') : '<div class="count">まだやり取りはありません。</div>';
   h+='</div>';
-  h+=`<div class="row" style="margin-top:8px"><input type="text" id="dealInput" placeholder="例）詳しい住所・日当◯円・支払い条件 など" style="flex:2"><button class="btn sm" id="dealSend" style="flex:1">送信</button></div>`;
+  h+=`<div class="chatlabel">✏️ メッセージを入力して送信</div><div class="chatform"><input type="text" id="dealInput" placeholder="例）詳しい住所・日当◯円・支払い条件 など"><button class="btn" id="dealSend">送信</button></div>`;
   return h;
 }
 function bindReqCards(box){
@@ -1277,8 +1277,6 @@ function inviteText(){
 function bindShareButtons(scope){
   scope.querySelectorAll('.ln-share').forEach(b=>b.onclick=()=>shareToLine(craftsmanShareText(craftsmen[b.dataset.key])));
 }
-document.getElementById('inviteBtn').onclick=()=>shareToLine(inviteText());
-document.getElementById('shareBoardBtn').onclick=()=>shareToLine(boardShareText());
 document.getElementById('logoutHdr').onclick=()=>DB.auth.signOut().then(()=>H.toast('ログアウトしました','ok'));
 DB.auth.onChange(()=>updateBadges());
 

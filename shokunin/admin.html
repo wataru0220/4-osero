@@ -161,7 +161,8 @@
         <button class="btn" id="coSave">登録する</button>
       </div>
     </div>
-    <h2 class="sec">登録済みの工務店</h2>
+    <h2 class="sec">登録済みの工務店（あいうえお順）</h2>
+    <input type="text" id="coSearch" placeholder="🔍 工務店名で検索" style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:10px">
     <div id="coList"></div>
   </section>
 
@@ -204,7 +205,8 @@
         <button class="btn" id="kSave">登録する</button>
       </div>
     </div>
-    <h2 class="sec">登録済みの大工</h2>
+    <h2 class="sec">登録済みの大工（会社ごと）</h2>
+    <input type="text" id="kSearch" placeholder="🔍 大工名・工務店名で検索" style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:10px">
     <div id="kList"></div>
   </section>
 
@@ -419,6 +421,8 @@ function boot(){
   // 購読
   DB.on('companies', v=>{ companies=v||{}; renderCoList(); fillCompanySelects(); renderKList(); fillContactCompanies(); });
   document.getElementById('ctCompany').onchange=function(){ openContact(this.value); };
+  document.getElementById('coSearch').oninput=()=>renderCoList();
+  document.getElementById('kSearch').oninput=()=>renderKList();
   DB.on('craftsmen', v=>{ craftsmen=v||{}; renderKList(); fillCraftsmanSelect(); renderCoList(); });
   DB.on('reviews', v=>{ reviews=v||{}; renderHist(); renderCoList(); renderKList(); });
   DB.on('approvals', v=>{ approvals=v||{}; renderKList(); });
@@ -522,8 +526,11 @@ function delCompany(key){
 }
 function renderCoList(){
   const list=document.getElementById('coList');
-  const arr=H.toArr(companies).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  if(!arr.length){ list.innerHTML='<div class="empty">まだ登録がありません。</div>'; return; }
+  const q=((document.getElementById('coSearch')||{}).value||'').trim().toLowerCase();
+  const arr=H.toArr(companies)
+    .filter(c=>!q || (c.name||'').toLowerCase().includes(q) || (c.area||'').toLowerCase().includes(q))
+    .sort((a,b)=>(a.nameKana||a.name||'').localeCompare((b.nameKana||b.name||''),'ja'));
+  if(!arr.length){ list.innerHTML='<div class="empty">該当する工務店がありません。</div>'; return; }
   list.innerHTML=arr.map(c=>{
     const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===c._key).length;
     const r=H.ratingFor(reviews,'company',c._key, c.ownerEmail);
@@ -598,35 +605,48 @@ function delCraftsman(key){
   if(!confirm('「'+(k.name||'')+'」を削除しますか？')) return;
   DB.remove('craftsmen/'+key).then(()=>H.toast('削除しました','ok'));
 }
+function kItemHTML(k){
+  const r=H.ratingFor(reviews,'craftsman',k._key, (companies[k.companyKey]||{}).ownerEmail);
+  const ok=H.isApproved(approvals,k._key);
+  const free=H.upcomingFreeDates(k.avail);
+  const availPill = free.length
+    ? `<span class="pill" style="background:#1aa260;color:#fff">空きあり ${H.mdFromYmd(free[0])}〜</span>`
+    : `<span class="pill" style="background:#9aa7b5;color:#fff">空き予定なし</span>`;
+  return `<div class="item">
+    <div class="top">
+      <div><div class="nm">${H.esc(k.name)} ${ok?'<span class="okbadge">認証済✓</span>':'<span class="waitbadge">認証待ち</span>'}</div>
+      <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')}　${H.fmtPrice(k.price)}　技術力 ${H.stars(r.avg)}（${r.count}件）</div></div>
+      ${availPill}
+    </div>
+    <div>${H.chips(k.good,'o')}${H.chips(k.ng,'ng')}</div>
+    ${(k.quals&&k.quals.length)?`<div>${H.chips(k.quals)}</div>`:''}
+    <div class="acts">
+      ${ok
+        ? `<button class="btn ghost sm" onclick="unapproveCraftsman('${k._key}')">認証を取消</button>`
+        : `<button class="btn sm" onclick="approveCraftsman('${k._key}')">✓ 認証する</button>`}
+      <button class="btn ghost sm" onclick="editCraftsman('${k._key}')">編集</button>
+      <button class="btn danger sm" onclick="delCraftsman('${k._key}')">削除</button>
+    </div></div>`;
+}
 function renderKList(){
   const list=document.getElementById('kList');
-  const arr=H.toArr(craftsmen).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  if(!arr.length){ list.innerHTML='<div class="empty">まだ登録がありません。</div>'; return; }
-  // 認証待ちを上に表示
-  arr.sort((a,b)=>(H.isApproved(approvals,a._key)?1:0)-(H.isApproved(approvals,b._key)?1:0));
-  list.innerHTML=arr.map(k=>{
-    const r=H.ratingFor(reviews,'craftsman',k._key, (companies[k.companyKey]||{}).ownerEmail);
-    const ok=H.isApproved(approvals,k._key);
-    const free=H.upcomingFreeDates(k.avail);
-    const availPill = free.length
-      ? `<span class="pill" style="background:#1aa260;color:#fff">空きあり ${H.mdFromYmd(free[0])}〜</span>`
-      : `<span class="pill" style="background:#9aa7b5;color:#fff">空き予定なし</span>`;
-    return `<div class="item">
-      <div class="top">
-        <div><div class="nm">${H.esc(k.name)} <span class="meta">/ ${H.esc(k.companyName||'未所属')}</span> ${ok?'<span class="okbadge">認証済✓</span>':'<span class="waitbadge">認証待ち</span>'}</div>
-        <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')}　${H.fmtPrice(k.price)}　技術力 ${H.stars(r.avg)}（${r.count}件）</div></div>
-        ${availPill}
-      </div>
-      <div>${H.chips(k.good,'o')}${H.chips(k.ng,'ng')}</div>
-      ${(k.quals&&k.quals.length)?`<div>${H.chips(k.quals)}</div>`:''}
-      <div class="acts">
-        ${ok
-          ? `<button class="btn ghost sm" onclick="unapproveCraftsman('${k._key}')">認証を取消</button>`
-          : `<button class="btn sm" onclick="approveCraftsman('${k._key}')">✓ 認証する</button>`}
-        <button class="btn ghost sm" onclick="editCraftsman('${k._key}')">編集</button>
-        <button class="btn danger sm" onclick="delCraftsman('${k._key}')">削除</button>
-      </div></div>`;
-  }).join('');
+  const q=((document.getElementById('kSearch')||{}).value||'').trim().toLowerCase();
+  const all=H.toArr(craftsmen).filter(k=>!q || (k.name||'').toLowerCase().includes(q) || (k.companyName||'').toLowerCase().includes(q));
+  if(!all.length){ list.innerHTML='<div class="empty">該当する大工がいません。</div>'; return; }
+  const byAppr=(a,b)=>(H.isApproved(approvals,a._key)?1:0)-(H.isApproved(approvals,b._key)?1:0); // 認証待ちを上に
+  const cos=H.toArr(companies).sort((a,b)=>(a.nameKana||a.name||'').localeCompare((b.nameKana||b.name||''),'ja'));
+  let html=''; const used={};
+  cos.forEach(c=>{
+    const members=all.filter(k=>k.companyKey===c._key);
+    if(!members.length) return;
+    members.forEach(k=>used[k._key]=1);
+    const waiting=members.filter(k=>!H.isApproved(approvals,k._key)).length;
+    html+=`<h2 class="sec" style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">🏢 ${H.esc(c.name)}（${members.length}名${waiting?'・認証待ち'+waiting:''}）</h2>`;
+    html+=members.sort(byAppr).map(kItemHTML).join('');
+  });
+  const orphans=all.filter(k=>!used[k._key]);
+  if(orphans.length){ html+='<h2 class="sec" style="margin-top:14px">🏢 未所属</h2>'+orphans.sort(byAppr).map(kItemHTML).join(''); }
+  list.innerHTML=html;
 }
 
 // ===== 評価入力 =====
