@@ -208,6 +208,15 @@
     </div>
     <div id="reqBox"></div>
   </section>
+
+  <!-- ============ 管理者との連絡チャット（ログイン制・当事者のみ） ============ -->
+  <section class="page" id="page-contact">
+    <div class="card" style="padding:11px 14px">
+      <b>📨 管理者との連絡</b>
+      <div class="count" style="margin:4px 0 0">運営（管理者）と自社だけのチャットです。内容は他社には表示されません。</div>
+    </div>
+    <div id="contactBox"></div>
+  </section>
 </div>
 
 <!-- 評価モーダル（★のみ・1社1件・本人はいつでも変更/削除可） -->
@@ -357,6 +366,7 @@
   <button data-page="co"><span class="ic">🏢</span>工務店</button>
   <button data-page="update"><span class="ic">👷</span>自社の大工</button>
   <button data-page="req"><span class="ic">🤝</span>応援<span class="tabbadge" id="reqBadge" style="display:none">0</span></button>
+  <button data-page="contact"><span class="ic">📨</span>連絡<span class="tabbadge" id="contactBadge" style="display:none">0</span></button>
 </nav>
 
 <script src="data.js"></script>
@@ -369,6 +379,7 @@ let myUser = null;
 let openAvailView = null; // find カードで開いている読み取り専用カレンダー（renderより前に宣言が必要）
 // 応援要請
 let reqByMe = {}, reqUnsub = {}, reqIndexUnsub = null, reqCompanyKey = null, reqTargetCraft = null, editReqKey = null;
+let contactMsgs = [], contactUnsub = null, contactCompanyKey = null; // 管理者との連絡チャット
 let openDealRid = null, dealUnsub = null, dealMsgs = [];
 
 // モード表示
@@ -411,6 +422,7 @@ document.querySelectorAll('.tabbar button').forEach(b=>{
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
     b.classList.add('on');
     document.getElementById('page-'+b.dataset.page).classList.add('on');
+    if(b.dataset.page==='contact'){ markContactSeen(); renderContact(); }
   };
 });
 
@@ -540,6 +552,7 @@ function renderMyArea(){
   const list=document.getElementById('updateList');
   if(!box||!list) return;
   ensureReqSubscription();
+  ensureContactSubscription();
   const lh=document.getElementById('logoutHdr'); if(lh) lh.style.display = loggedIn()?'flex':'none';
   if(!loggedIn()){
     box.innerHTML = `
@@ -888,6 +901,50 @@ function ensureReqSubscription(){
   });
 }
 
+// ===== 管理者との連絡チャット（companyChats/{自社}） =====
+function ensureContactSubscription(){
+  const ck=(myCompanyEntry()||{})._key||null;
+  if(ck===contactCompanyKey) return;
+  contactCompanyKey=ck;
+  if(contactUnsub){ contactUnsub(); contactUnsub=null; }
+  contactMsgs=[];
+  if(!ck){ renderContact(); return; }
+  contactUnsub=DB.on('companyChats/'+ck, v=>{ contactMsgs=H.toArr(v).sort((a,b)=>(a.at||0)-(b.at||0)); renderContact(); updateBadges(); });
+}
+function contactUnread(){
+  const ck=contactCompanyKey; if(!ck) return 0;
+  const seen=+(localStorage.getItem('shokunin_seen_contact_'+ck)||0);
+  return contactMsgs.filter(m=>m.byAdmin && (m.at||0)>seen).length;
+}
+function markContactSeen(){
+  if(contactCompanyKey) localStorage.setItem('shokunin_seen_contact_'+contactCompanyKey, Date.now());
+  updateBadges();
+}
+function renderContact(){
+  const box=document.getElementById('contactBox'); if(!box) return;
+  const mine=myCompanyEntry();
+  if(!mine){ box.innerHTML='<div class="empty">管理者との連絡には、「自社の大工」タブでログインしてください。</div>'; return; }
+  const uid=DB.auth.user&&DB.auth.user.uid;
+  let h='<div class="card">';
+  h+= contactMsgs.length
+    ? contactMsgs.map(m=>`<div class="dealmsg" style="${m.byAdmin?'background:#e7f3f6;border-color:#b6dfe8':''}"><b>${m.byAdmin?'🛠 管理者':H.esc(m.byName||'自社')}</b>：${H.esc(m.text)}<div class="dealtime">${H.fmtDate(m.at)}${(!m.byAdmin&&m.byUid===uid)?` ・<a class="deallink ctEdit" data-mid="${m._key}">編集</a> ・<a class="deallink ctDel" data-mid="${m._key}">削除</a>`:''}</div></div>`).join('')
+    : '<div class="count">まだやり取りはありません。管理者へ連絡できます。</div>';
+  h+=`<div class="row" style="margin-top:8px"><input type="text" id="ctInput" placeholder="管理者へのメッセージ" style="flex:2"><button class="btn sm" id="ctSend" style="flex:1">送信</button></div></div>`;
+  box.innerHTML=h;
+  document.getElementById('ctSend').onclick=sendContact;
+  document.getElementById('ctInput').addEventListener('keydown',e=>{ if(e.key==='Enter') sendContact(); });
+  box.querySelectorAll('.ctDel').forEach(b=>b.onclick=()=>{ if(!confirm('このメッセージを削除しますか？'))return; DB.remove('companyChats/'+contactCompanyKey+'/'+b.dataset.mid).then(()=>H.toast('削除しました','ok')); });
+  box.querySelectorAll('.ctEdit').forEach(b=>b.onclick=()=>{ const m=contactMsgs.find(x=>x._key===b.dataset.mid); if(!m)return; const t=prompt('メッセージを編集',m.text); if(t===null)return; const v=t.trim(); if(!v)return; DB.update('companyChats/'+contactCompanyKey+'/'+b.dataset.mid,{text:v,at:Date.now()}).then(()=>H.toast('更新しました','ok')); });
+}
+function sendContact(){
+  const inp=document.getElementById('ctInput'); if(!inp) return;
+  const text=inp.value.trim(); if(!text) return;
+  const mine=myCompanyEntry(); if(!mine) return;
+  const uid=DB.auth.user&&DB.auth.user.uid;
+  DB.push('companyChats/'+mine._key, {byUid:uid, byName:mine.name||'', byAdmin:false, text, at:Date.now()});
+  markContactSeen();
+}
+
 function openRequestForm(kid){
   if(!loggedIn()){ H.toast('応援要請にはログインが必要です','err'); goTab('update'); return; }
   const mine=myCompanyEntry();
@@ -993,7 +1050,10 @@ function updateBadges(){
   const n=unreadCount();
   const b=document.getElementById('reqBadge');
   if(b){ if(n>0){ b.textContent=n>99?'99+':n; b.style.display='flex'; } else b.style.display='none'; }
-  setIconBadge(n);
+  const c=contactUnread();
+  const cb=document.getElementById('contactBadge');
+  if(cb){ if(c>0){ cb.textContent=c>99?'99+':c; cb.style.display='flex'; } else cb.style.display='none'; }
+  setIconBadge(n+c);
 }
 function renderRequests(){
   updateBadges();

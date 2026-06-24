@@ -118,6 +118,7 @@
     <button data-page="eval">⭐ 評価入力</button>
     <button data-page="hist">📜 評価履歴</button>
     <button data-page="req">🤝 応援要請</button>
+    <button data-page="contact">📨 工務店連絡</button>
   </div>
 
   <!-- ========== 工務店 ========== -->
@@ -220,6 +221,15 @@
     <div class="modebar" style="background:#eef3fb;color:#1759c4;border:1px solid #c7dbff">管理者は要請の概要のみ閲覧できます。労働条件・支払い条件のやり取りは当事者だけが見られ、管理者・運営は取引には関与しません。</div>
     <div id="reqList"></div>
   </section>
+
+  <!-- ========== 工務店連絡チャット ========== -->
+  <section class="page" id="page-contact">
+    <div class="card">
+      <h2 class="sec">📨 工務店との連絡</h2>
+      <div class="field"><label class="req">工務店を選択</label><select id="ctCompany"><option value="">— 選択 —</option></select></div>
+    </div>
+    <div id="ctBox"></div>
+  </section>
 </div>
 
 <script src="data.js"></script>
@@ -227,6 +237,7 @@
 <script>
 let companies={}, craftsmen={}, reviews={}, approvals={}, requests={};
 let editCo=null, editKi=null;
+let ctCompanyKey=null, ctMsgs=[], ctUnsub=null; // 工務店連絡チャット
 let kCustomQuals=null, kGoodCustom=null, kNgCustom=null; // その他（自由入力）マネージャ（boot前に宣言が必要）
 
 // ===== PWA：ホーム画面に追加（ボタン1つでアプリ化） =====
@@ -373,7 +384,8 @@ function boot(){
   document.getElementById('evCSave').onclick=saveCEval;
 
   // 購読
-  DB.on('companies', v=>{ companies=v||{}; renderCoList(); fillCompanySelects(); renderKList(); });
+  DB.on('companies', v=>{ companies=v||{}; renderCoList(); fillCompanySelects(); renderKList(); fillContactCompanies(); });
+  document.getElementById('ctCompany').onchange=function(){ openContact(this.value); };
   DB.on('craftsmen', v=>{ craftsmen=v||{}; renderKList(); fillCraftsmanSelect(); renderCoList(); });
   DB.on('reviews', v=>{ reviews=v||{}; renderHist(); renderCoList(); renderKList(); });
   DB.on('approvals', v=>{ approvals=v||{}; renderKList(); });
@@ -673,6 +685,40 @@ function renderReqList(){
     <div class="meta">${H.fmtDate(r.createdAt)}</div>
     <div class="acts"><button class="btn danger sm" onclick="delRequest('${r._key}','${r.fromCompanyKey}','${r.toCompanyKey}')">削除</button></div>
   </div>`).join('');
+}
+
+// ===== 工務店連絡チャット（管理者⇔工務店） =====
+function fillContactCompanies(){
+  const sel=document.getElementById('ctCompany'); if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— 選択 —</option>'+H.toArr(companies).map(c=>`<option value="${c._key}">${H.esc(c.name)}</option>`).join('');
+  sel.value=cur;
+}
+function openContact(ck){
+  ctCompanyKey=ck||null;
+  if(ctUnsub){ ctUnsub(); ctUnsub=null; } ctMsgs=[];
+  if(!ck){ document.getElementById('ctBox').innerHTML=''; return; }
+  ctUnsub=DB.on('companyChats/'+ck, v=>{ ctMsgs=H.toArr(v).sort((a,b)=>(a.at||0)-(b.at||0)); renderContactAdmin(); });
+}
+function renderContactAdmin(){
+  const box=document.getElementById('ctBox'); if(!box||!ctCompanyKey) return;
+  const uid=DB.auth.user&&DB.auth.user.uid;
+  let h='<div class="card">';
+  h+= ctMsgs.length
+    ? ctMsgs.map(m=>`<div class="note" style="${m.byAdmin?'background:#e7f3f6;border-color:#b6dfe8':''};margin-top:6px"><b>${m.byAdmin?'🛠 管理者':H.esc(m.byName||'工務店')}</b>：${H.esc(m.text)}<div class="meta" style="margin-top:2px">${H.fmtDate(m.at)}${(m.byAdmin&&m.byUid===uid)?` ・<a class="ctlink ctEdit" data-mid="${m._key}" style="cursor:pointer;text-decoration:underline">編集</a> ・<a class="ctlink ctDel" data-mid="${m._key}" style="cursor:pointer;text-decoration:underline;color:var(--warn)">削除</a>`:''}</div></div>`).join('')
+    : '<div class="empty">まだやり取りはありません。下から連絡できます。</div>';
+  h+=`<div class="row" style="margin-top:8px"><input type="text" id="ctInput" placeholder="工務店へのメッセージ" style="flex:2"><button class="btn sm" id="ctSend" style="flex:1">送信</button></div></div>`;
+  box.innerHTML=h;
+  document.getElementById('ctSend').onclick=sendContactAdmin;
+  document.getElementById('ctInput').addEventListener('keydown',e=>{ if(e.key==='Enter') sendContactAdmin(); });
+  box.querySelectorAll('.ctDel').forEach(b=>b.onclick=()=>{ if(!confirm('このメッセージを削除しますか？'))return; DB.remove('companyChats/'+ctCompanyKey+'/'+b.dataset.mid).then(()=>H.toast('削除しました','ok')); });
+  box.querySelectorAll('.ctEdit').forEach(b=>b.onclick=()=>{ const m=ctMsgs.find(x=>x._key===b.dataset.mid); if(!m)return; const t=prompt('メッセージを編集',m.text); if(t===null)return; const v=t.trim(); if(!v)return; DB.update('companyChats/'+ctCompanyKey+'/'+b.dataset.mid,{text:v,at:Date.now()}).then(()=>H.toast('更新しました','ok')); });
+}
+function sendContactAdmin(){
+  const inp=document.getElementById('ctInput'); if(!inp||!ctCompanyKey) return;
+  const text=inp.value.trim(); if(!text) return;
+  const uid=DB.auth.user&&DB.auth.user.uid;
+  DB.push('companyChats/'+ctCompanyKey, {byUid:uid, byName:'管理者', byAdmin:true, text, at:Date.now()});
 }
 
 // 大工の認証（管理者のみ・approvalsパスに書き込み）
