@@ -119,6 +119,9 @@
   .favbtn{flex:none; border:1.5px solid var(--line); background:#fff; border-radius:9px; padding:6px 10px; font-size:15px; cursor:pointer; line-height:1}
   .favbtn.on{color:#f5a623; border-color:#f5d28a; background:#fff9ec}
   .meta2{font-size:13px; color:var(--ink); margin-top:4px}
+  .confirmband{margin-top:6px; font-size:13px; font-weight:700; color:#1a7a45; background:#eafaf0; border:1px solid #b6e6c8; border-radius:8px; padding:6px 9px}
+  .chgbox{margin-top:8px; font-size:13px; background:#fff4e5; border:1px solid #ffd591; border-radius:8px; padding:8px 10px; color:#8a5a00}
+  .chglink{color:#8a5a00; font-weight:700}
   .dealbox{margin-top:10px; border-top:1px dashed var(--line); padding-top:10px}
   .dealmsg{background:#f7f9fb; border:1px solid var(--line); border-radius:8px; padding:7px 9px; margin-bottom:6px; font-size:14px; line-height:1.5}
   .dealtime{font-size:11px; color:var(--sub); margin-top:2px}
@@ -376,6 +379,27 @@
   </div>
 </div>
 
+<!-- 延長・予定変更の依頼モーダル（承認済みの応援要請に対して） -->
+<div class="ov" id="chgOv">
+  <div class="sheet">
+    <h3>📅 延長・予定変更の依頼</h3>
+    <div class="count" id="chgSub" style="margin-bottom:10px"></div>
+    <div class="field"><label class="req">新しい作業期間</label>
+      <div class="row">
+        <input type="date" id="chgStart">
+        <input type="date" id="chgEnd">
+      </div>
+      <div class="count" style="margin-top:4px">開始日〜終了日を選択（単日は開始日のみでOK）。延長・短縮・日程ずらしのいずれにも使えます。</div>
+    </div>
+    <div class="field"><label>メモ（任意）</label><textarea id="chgNote" placeholder="例）1日延長してほしい／開始を翌日に変更希望 など"></textarea></div>
+    <div class="count">※ 送信すると相手の工務店に「変更依頼」が届きます。相手が承認すると活用日が更新されます。</div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost" id="chgCancel">キャンセル</button>
+      <button class="btn" id="chgSend">変更を依頼する</button>
+    </div>
+  </div>
+</div>
+
 <!-- 下部タブ -->
 <nav class="tabbar">
   <button class="on" data-page="find"><span class="ic">🔍</span>大工をさがす</button>
@@ -406,6 +430,7 @@ function toggleFav(kind,id){
 let reqByMe = {}, reqUnsub = {}, reqIndexUnsub = null, reqCompanyKey = null, reqTargetCraft = null, editReqKey = null;
 let contactMsgs = [], contactUnsub = null, contactCompanyKey = null; // 管理者との連絡チャット
 let openDealRid = null, dealUnsub = null, dealMsgs = [];
+let chgRid = null; // 延長・予定変更を依頼中の要請
 
 // モード表示
 (function(){
@@ -1108,6 +1133,49 @@ document.getElementById('reqSend').onclick=()=>{
     .then(()=>{ document.getElementById('reqOv').classList.remove('on'); H.toast('応援要請を送信しました','ok'); goTab('req'); });
 };
 
+// ===== 延長・予定変更の依頼（承認済みの応援要請に対して） =====
+function openChangeForm(rid){
+  const r=reqByMe[rid]; if(!r) return;
+  chgRid=rid;
+  document.getElementById('chgSub').textContent=r.craftsmanName+'（現在の活用日：'+(r.dateText||'—')+'）';
+  document.getElementById('chgStart').value=r.dateFrom||'';
+  document.getElementById('chgEnd').value=(r.dateTo&&r.dateTo!==r.dateFrom)?r.dateTo:'';
+  document.getElementById('chgNote').value='';
+  document.getElementById('chgOv').classList.add('on');
+}
+document.getElementById('chgCancel').onclick=()=>document.getElementById('chgOv').classList.remove('on');
+document.getElementById('chgOv').onclick=e=>{ if(e.target.id==='chgOv') e.currentTarget.classList.remove('on'); };
+document.getElementById('chgSend').onclick=()=>{
+  if(!chgRid) return;
+  const start=rqVal('chgStart'), end=rqVal('chgEnd');
+  if(!start){ H.toast('新しい開始日を選んでください','err'); return; }
+  if(end && end<start){ H.toast('終了日は開始日以降にしてください','err'); return; }
+  const dateText=(end && end!==start)?(fmtReqDate(start)+'〜'+fmtReqDate(end)):fmtReqDate(start);
+  const mine=myCompanyEntry(); const uid=DB.auth.user&&DB.auth.user.uid;
+  const changeReq={ byUid:uid, byName:(mine&&mine.name)||myUser.email, byKey:mine?mine._key:'', dateFrom:start, dateTo:end||start, dateText, note:rqVal('chgNote').trim(), at:Date.now() };
+  DB.update('requests/'+chgRid, { changeReq, lastMsgAt:Date.now(), lastMsgByUid:uid })
+    .then(()=>{ const rid=chgRid; document.getElementById('chgOv').classList.remove('on'); H.toast('変更を依頼しました。相手の承認をお待ちください','ok'); markSeen(rid); chgRid=null; });
+};
+function applyChange(rid){
+  const r=reqByMe[rid], cr=r&&r.changeReq; if(!cr) return;
+  if(!confirm('活用日を「'+(cr.dateText||'')+'」に変更しますか？')) return;
+  const uid=DB.auth.user&&DB.auth.user.uid;
+  DB.update('requests/'+rid, { dateFrom:cr.dateFrom, dateTo:cr.dateTo, dateText:cr.dateText, changeReq:null, lastMsgAt:Date.now(), lastMsgByUid:uid })
+    .then(()=>{ H.toast('活用日を変更しました','ok'); markSeen(rid); });
+}
+function declineChange(rid){
+  const r=reqByMe[rid]; if(!r||!r.changeReq) return;
+  if(!confirm('この変更依頼を辞退しますか？（活用日はそのままです）')) return;
+  const uid=DB.auth.user&&DB.auth.user.uid;
+  DB.update('requests/'+rid, { changeReq:null, lastMsgAt:Date.now(), lastMsgByUid:uid })
+    .then(()=>{ H.toast('変更を辞退しました','ok'); markSeen(rid); });
+}
+function cancelChange(rid){
+  const r=reqByMe[rid]; if(!r||!r.changeReq) return;
+  if(!confirm('変更依頼を取り消しますか？')) return;
+  DB.update('requests/'+rid, { changeReq:null }).then(()=>{ H.toast('変更依頼を取り消しました','ok'); });
+}
+
 function reqStatusLabel(s){
   if(s==='accepted') return '<span class="okbadge">承認</span>';
   if(s==='declined') return '<span class="waitbadge" style="color:var(--warn);background:#fdeceb;border-color:#f0c4c0">辞退</span>';
@@ -1122,6 +1190,7 @@ function reqIsNew(r){
   const myUid=DB.auth.user&&DB.auth.user.uid;
   const incoming = r.toCompanyKey===mine._key;
   if(incoming && r.status==='pending') return true;
+  if(r.changeReq && r.changeReq.byUid && r.changeReq.byUid!==myUid) return true; // 相手からの変更依頼が保留中
   if(r.lastMsgAt && r.lastMsgByUid && r.lastMsgByUid!==myUid && r.lastMsgAt>seenAt(r._key)) return true;
   return false;
 }
@@ -1162,15 +1231,29 @@ function reqSectionHTML(title,arr,kind){
 function reqCardHTML(r,kind){
   const opened=openDealRid===r._key;
   const isNew=reqIsNew(r);
+  const myUid=DB.auth.user&&DB.auth.user.uid;
+  const cr=r.changeReq; // 延長・予定変更の依頼（保留中のみ存在）
+  const iAmProposer=cr&&cr.byUid&&cr.byUid===myUid;
   return `<div class="reqcard"${isNew?' style="border-color:var(--warn);box-shadow:0 0 0 1px var(--warn) inset"':''}>
     <div style="display:flex;justify-content:space-between;gap:8px">
       <div>${isNew?'<span class="newtag">NEW</span> ':''}<b>${H.esc(r.craftsmanName)}</b> <span class="count" style="display:inline">${kind==='recv'?'← '+H.esc(r.fromCompanyName):'→ '+H.esc(r.toCompanyName)}</span></div>
       <div>${reqStatusLabel(r.status)}</div>
     </div>
     <div class="meta2">📍 ${H.esc(r.site||'—')}　🗓 ${H.esc(r.dateText||'—')}</div>
+    ${r.status==='accepted'?`<div class="confirmband">✅ 活用日 確定：<b>${H.esc(r.dateText||'—')}</b></div>`:''}
     ${r.work?`<div class="meta2">🛠 ${H.esc(r.work)}</div>`:''}
     ${r.contact?`<div class="meta2">📞 ${H.esc(r.contact)}</div>`:''}
     ${r.message?`<div class="note">💬 ${H.esc(r.message)}</div>`:''}
+    ${cr?`<div class="chgbox">
+        <div><b>📅 変更依頼</b>：<b>${H.esc(cr.dateText||'—')}</b> <span class="count" style="display:inline">（${H.esc(cr.byName||'')}より）</span></div>
+        ${cr.note?`<div class="meta2">💬 ${H.esc(cr.note)}</div>`:''}
+        ${iAmProposer
+          ? `<div class="meta2" style="margin-top:6px">相手の承認待ちです。<a class="chglink chg-cancel" data-rid="${r._key}" style="text-decoration:underline;cursor:pointer">依頼を取り消す</a></div>`
+          : `<div class="row" style="margin-top:6px">
+              <button class="btn sm chg-acc" data-rid="${r._key}">この日程に変更を承認</button>
+              <button class="btn ghost sm chg-dec" data-rid="${r._key}" style="color:var(--warn);border-color:#f0c4c0">変更を辞退</button>
+            </div>`}
+      </div>`:''}
     ${(kind==='recv'&&r.status==='pending')?`<div class="row" style="margin-top:8px">
         <button class="btn sm acc" data-rid="${r._key}">承認する</button>
         <button class="btn ghost sm dec" data-rid="${r._key}" style="color:var(--warn);border-color:#f0c4c0">辞退</button>
@@ -1179,6 +1262,7 @@ function reqCardHTML(r,kind){
         <button class="btn ghost sm req-edit" data-rid="${r._key}">✏️ 編集</button>
         <button class="btn ghost sm req-del" data-rid="${r._key}" style="color:var(--warn);border-color:#f0c4c0">🗑 削除</button>
       </div>`:''}
+    ${(r.status==='accepted'&&!cr)?`<button class="btn ghost sm chg-req" data-rid="${r._key}" style="width:100%;margin-top:8px">📅 延長・予定変更を依頼</button>`:''}
     <button class="btn ghost sm deal-toggle" data-rid="${r._key}" style="width:100%;margin-top:8px">${opened?'▲ 条件のやり取りを閉じる':'💴 労働条件・支払い条件のやり取り'}</button>
     ${opened?`<div class="dealbox">${dealThreadHTML()}</div>`:''}
   </div>`;
@@ -1200,6 +1284,10 @@ function bindReqCards(box){
   box.querySelectorAll('.dec').forEach(b=>b.onclick=()=>DB.update('requests/'+b.dataset.rid,{status:'declined'}).then(()=>H.toast('辞退しました','ok')));
   box.querySelectorAll('.req-edit').forEach(b=>b.onclick=()=>openRequestEdit(b.dataset.rid));
   box.querySelectorAll('.req-del').forEach(b=>b.onclick=()=>deleteRequest(b.dataset.rid));
+  box.querySelectorAll('.chg-req').forEach(b=>b.onclick=()=>openChangeForm(b.dataset.rid));
+  box.querySelectorAll('.chg-acc').forEach(b=>b.onclick=()=>applyChange(b.dataset.rid));
+  box.querySelectorAll('.chg-dec').forEach(b=>b.onclick=()=>declineChange(b.dataset.rid));
+  box.querySelectorAll('.chg-cancel').forEach(b=>b.onclick=()=>cancelChange(b.dataset.rid));
   box.querySelectorAll('.deal-toggle').forEach(b=>b.onclick=()=>toggleDeal(b.dataset.rid));
   const ds=document.getElementById('dealSend');
   if(ds) ds.onclick=sendDeal;
