@@ -134,6 +134,7 @@
 
 <div id="app" class="wrap" style="display:none">
   <div id="modebar"></div>
+  <div id="approvalNotice"></div>
   <div class="tabs">
     <button class="on" data-page="co">🏢 工務店</button>
     <button data-page="ki" style="position:relative">🪚 大工<span class="tabbadge" id="kBadge" style="display:none">0</span></button>
@@ -431,6 +432,17 @@ function updateAdminBadge(){
   const b=document.getElementById('kBadge');
   if(b){ if(pending>0){ b.textContent=pending>99?'99+':pending; b.style.display='flex'; } else b.style.display='none'; }
   setIconBadge(pending);
+  // アプリを開いたときに「アイコンの数字＝承認待ち」がすぐ分かる常設バナー
+  const nt=document.getElementById('approvalNotice');
+  if(nt){
+    if(pending>0){
+      nt.innerHTML='<div class="modebar" style="background:#fff7e8;color:#8a5a00;border:1px solid #ffe1a8;display:flex;justify-content:space-between;align-items:center;gap:10px">'
+        +'<div>🔔 <b>承認待ちの大工が '+pending+'件</b> あります（アプリアイコンの数字はこの件数です）。内容を確認して認証してください。</div>'
+        +'<button class="btn sm" id="approvalGoBtn" style="flex:none">確認する</button></div>';
+      const g=document.getElementById('approvalGoBtn');
+      if(g) g.onclick=()=>{ const t=document.querySelector('.tabs [data-page="ki"]'); if(t) t.click(); window.scrollTo({top:0,behavior:'smooth'}); };
+    } else { nt.innerHTML=''; }
+  }
 }
 function renderKList(){
   updateAdminBadge();
