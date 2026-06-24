@@ -149,6 +149,23 @@
 4. 実際に手伝ってもらった後、`index.html` または `admin.html` から大工・工務店を評価（匿名可）
 5. 評価は数値（★平均）として全員に共有され、次回のマッチングに活用
 
+## プッシュ通知（段階導入）
+
+### フェーズ1：クライアント通知（実装済み・無料・設定不要）
+- `index.html` のヘッダー「🔔お知らせ」または受信箱の「通知をオンにする」で許可すると、**アプリを開いている間（バックグラウンドのタブを含む）** に、応援要請・日程変更・条件のやり取りの新着・活用後の必須評価・管理者連絡を **OS通知** でお知らせします。
+- サービスワーカー `sw.js` が通知の表示とクリック時のアプリ前面化を担当します。
+- 過去分の一斉通知を避けるため、許可した時点の未対応はシード（既読扱い）し、以後の新着のみ通知します（端末内 `localStorage: shokunin_notified`）。
+
+### フェーズ2：完全プッシュ（アプリを閉じている間も届く｜要：Blaze＋作業）
+本物のプッシュには「送信するサーバー（Cloud Functions）」が必要で、Firebase の **Blaze プラン（従量課金・カード登録要。無料枠内で収まることが多い）** が前提です。手順：
+1. **Cloud Messaging を有効化＋VAPIDキー生成**：Firebaseコンソール → プロジェクトの設定 → Cloud Messaging → 「ウェブ構成」で鍵ペアを生成。公開鍵を `config.js` の `fcmVapidKey` に貼り付け。
+2. **`sw.js` のFCM背景受信ブロックを有効化**（ファイル下部のコメントを外し、`firebase.initializeApp({...})` に `config.js` の `firebase` と同じ値を設定）。
+3. **トークン登録**：各端末で通知許可時に `firebase.messaging().getToken({vapidKey})` を取得し、`shokunin/fcmTokens/{companyKey}/{token}: true` に保存（フェーズ2のクライアント追記。VAPIDキー設定後に有効化）。
+4. **Cloud Functions を導入**：Blazeへアップグレード → `firebase init functions` → `requests`/`deals`/`companyChats` への新規書き込みをトリガに、相手工務店の `fcmTokens` 宛に `admin.messaging().sendEachForMulticast(...)` で送信する関数を作成 → `firebase deploy --only functions`。
+5. ルールに `fcmTokens/{companyKey}`（当事者＝オーナーメール＋管理者のみ書込）を追加。
+
+> フェーズ1だけでも「開いている間の通知」は機能します。フェーズ2は閉じている間の到達のための拡張です。コード雛形が必要なときは依頼してください。
+
 ## LINE共有のしくみ
 公式アカウントやBotは不要です。共有ボタンを押すと、スマホでは**共有シート**が開くので「LINE（グループ）」を選んで送るだけ。共有APIに対応していないPC等では、内容を**クリップボードにコピー**したうえでLINEの共有画面を開きます。送られる文面にはアプリのURLが含まれ、受け取った人がタップしてそのまま開けます。
 

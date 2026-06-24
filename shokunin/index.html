@@ -1250,6 +1250,46 @@ function updateBadges(){
   if(ib){ if(total>0){ ib.textContent=total>99?'99+':total; ib.style.display='flex'; } else ib.style.display='none'; }
   const ov=document.getElementById('inboxOv');
   if(ov&&ov.classList.contains('on')) renderInbox();
+  runNotifications();
+}
+// ===== 通知（段階導入：クライアント通知。アプリを開いている間、新着をOS通知） =====
+let swReg=null;
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').then(r=>{ swReg=r; }).catch(()=>{}); }
+function notifGranted(){ return ('Notification' in window) && Notification.permission==='granted'; }
+function loadNotified(){ try{ return JSON.parse(localStorage.getItem('shokunin_notified')||'{}'); }catch(_){ return {}; } }
+function saveNotified(o){ try{ localStorage.setItem('shokunin_notified', JSON.stringify(o)); }catch(_){} }
+function fireNotif(title, body, tag){
+  try{
+    const opt={ body, tag, icon:'icon-192.png', badge:'icon-192.png', data:{url:'./index.html'}, renotify:true };
+    if(swReg && swReg.showNotification){ swReg.showNotification(title, opt); }
+    else if('Notification' in window){ new Notification(title, opt); }
+  }catch(_){}
+}
+function runNotifications(){
+  if(!notifGranted() || !myCompanyEntry()) return;
+  const items=inboxItems();
+  let seen=loadNotified();
+  const firstTime=Object.keys(seen).length===0; // 初回は一斉通知せずシードのみ
+  let changed=false;
+  items.forEach(it=>{
+    if(!it.key || seen[it.key]) return;
+    if(!firstTime) fireNotif('大工シェア：'+it.t, it.d, it.key);
+    seen[it.key]=Date.now(); changed=true;
+  });
+  if(changed){
+    const ks=Object.keys(seen);
+    if(ks.length>1000){ ks.sort((a,b)=>seen[a]-seen[b]).slice(0,ks.length-800).forEach(k=>delete seen[k]); }
+    saveNotified(seen);
+  }
+}
+async function enableNotifications(){
+  if(!('Notification' in window)){ H.toast('この端末/ブラウザは通知に対応していません','err'); return; }
+  let perm=Notification.permission;
+  if(perm!=='granted'){ try{ perm=await Notification.requestPermission(); }catch(_){ perm=Notification.permission; } }
+  if(perm!=='granted'){ H.toast('通知が許可されませんでした。端末/ブラウザの設定から許可できます','err'); renderInbox(); return; }
+  // 既存の未対応はシード（過去分を一斉通知しない）
+  const seen=loadNotified(); inboxItems().forEach(it=>{ if(it.key) seen[it.key]=Date.now(); }); saveNotified(seen);
+  H.toast('通知をオンにしました','ok'); renderInbox();
 }
 // ===== お知らせ・受信箱（未対応の内容を一覧表示） =====
 function inboxItems(){
@@ -1258,27 +1298,37 @@ function inboxItems(){
   const items=[];
   H.toArr(reqByMe).forEach(r=>{
     if(r.toCompanyKey===mine._key && r.status==='pending')
-      items.push({ic:'🤝',t:'応援要請が届いています',d:`${r.fromCompanyName||''} → 大工 ${r.craftsmanName||''}（${r.dateText||'日程未定'}）`,go:'req',at:r.createdAt||0});
+      items.push({key:'req:'+r._key,ic:'🤝',t:'応援要請が届いています',d:`${r.fromCompanyName||''} → 大工 ${r.craftsmanName||''}（${r.dateText||'日程未定'}）`,go:'req',at:r.createdAt||0});
     const crToMe = r.changeReq && r.changeReq.byUid && r.changeReq.byUid!==myUid;
     if(crToMe)
-      items.push({ic:'📅',t:'日程変更の依頼',d:`大工 ${r.craftsmanName||''}：新しい日程 ${r.changeReq.dateText||''}（${r.changeReq.byName||''}より）`,go:'req',at:r.changeReq.at||0});
+      items.push({key:'chg:'+r._key+':'+(r.changeReq.at||0),ic:'📅',t:'日程変更の依頼',d:`大工 ${r.craftsmanName||''}：新しい日程 ${r.changeReq.dateText||''}（${r.changeReq.byName||''}より）`,go:'req',at:r.changeReq.at||0});
     if(r.lastMsgAt && r.lastMsgByUid && r.lastMsgByUid!==myUid && r.lastMsgAt>seenAt(r._key) && !crToMe){
       const other = r.toCompanyKey===mine._key ? r.fromCompanyName : r.toCompanyName;
-      items.push({ic:'💴',t:'条件のやり取りに新着',d:`${other||''}・大工 ${r.craftsmanName||''}`,go:'req',at:r.lastMsgAt});
+      items.push({key:'msg:'+r._key+':'+r.lastMsgAt,ic:'💴',t:'条件のやり取りに新着',d:`${other||''}・大工 ${r.craftsmanName||''}`,go:'req',at:r.lastMsgAt});
     }
     if(needsMyReview(r))
-      items.push({ic:'⭐',t:'活用後の評価が必須です',d:`大工 ${r.craftsmanName||''}（${r.dateText||''}）`,go:'req',at:(r.dateTo?Date.parse(r.dateTo):0)});
+      items.push({key:'rev:'+r._key,ic:'⭐',t:'活用後の評価が必須です',d:`大工 ${r.craftsmanName||''}（${r.dateText||''}）`,go:'req',at:(r.dateTo?Date.parse(r.dateTo):0)});
   });
-  if(contactUnread()>0)
-    items.push({ic:'📨',t:'管理者から新着メッセージ',d:'「連絡」タブで確認してください',go:'contact',at:Date.now()});
+  const cu=contactUnread();
+  if(cu>0)
+    items.push({key:'contact:'+cu,ic:'📨',t:'管理者から新着メッセージ',d:'「連絡」タブで確認してください',go:'contact',at:Date.now()});
   return items.sort((a,b)=>(b.at||0)-(a.at||0));
 }
+function notifHeadHTML(){
+  if(!('Notification' in window)) return '';
+  if(Notification.permission==='granted') return '<div class="count" style="margin-bottom:10px;color:var(--ok)">🔔 通知オン：新着があるとこの端末に通知します（アプリを開いている間）。</div>';
+  if(Notification.permission==='denied') return '<div class="count" style="margin-bottom:10px;color:var(--warn)">🔕 通知がブロックされています。端末/ブラウザの設定でこのサイトの通知を許可してください。</div>';
+  return '<div style="margin-bottom:12px"><button class="btn" id="notifOnBtn" style="width:100%">🔔 通知をオンにする</button><div class="count" style="margin-top:6px">許可すると、応援要請や新着メッセージをこの端末に通知します。</div></div>';
+}
+function bindNotifBtn(){ const b=document.getElementById('notifOnBtn'); if(b) b.onclick=enableNotifications; }
 function renderInbox(){
   const list=document.getElementById('inboxList'); if(!list) return;
-  if(!myCompanyEntry()){ list.innerHTML='<div class="empty" style="padding:18px">ログインすると、応援要請・日程変更・評価・連絡などのお知らせが表示されます。</div>'; return; }
+  const head=notifHeadHTML();
+  if(!myCompanyEntry()){ list.innerHTML=head+'<div class="empty" style="padding:18px">ログインすると、応援要請・日程変更・評価・連絡などのお知らせが表示されます。</div>'; bindNotifBtn(); return; }
   const items=inboxItems();
-  if(!items.length){ list.innerHTML='<div class="empty" style="padding:18px">未対応のお知らせはありません。</div>'; return; }
-  list.innerHTML=items.map(it=>`<div class="inboxitem" data-go="${it.go}"><div class="ii-ic">${it.ic}</div><div><div class="ii-t">${H.esc(it.t)}</div><div class="ii-d">${H.esc(it.d)}</div></div></div>`).join('');
+  if(!items.length){ list.innerHTML=head+'<div class="empty" style="padding:18px">未対応のお知らせはありません。</div>'; bindNotifBtn(); return; }
+  list.innerHTML=head+items.map(it=>`<div class="inboxitem" data-go="${it.go}"><div class="ii-ic">${it.ic}</div><div><div class="ii-t">${H.esc(it.t)}</div><div class="ii-d">${H.esc(it.d)}</div></div></div>`).join('');
+  bindNotifBtn();
   list.querySelectorAll('.inboxitem').forEach(el=>el.onclick=()=>{ document.getElementById('inboxOv').classList.remove('on'); goTab(el.dataset.go); });
 }
 function openInbox(){ renderInbox(); document.getElementById('inboxOv').classList.add('on'); }
