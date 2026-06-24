@@ -325,8 +325,19 @@ function adReset(){
     .then(()=>H.toast('パスワード再設定メールを送信しました。メール内のリンクから再設定してください','ok'))
     .catch(e=>gateError(H.authErrMsg(e)));
 }
+// ライブ更新（取得できる場合）
 DB.on('admins', v=>{ admins=v||{}; adminsLoaded=true; route(); });
-DB.auth.onChange(u=>{ myUser=u; route(); });
+// ログイン状態が変わるたびに、管理者情報を一度だけ確実に取得（確認中で固まらないように）
+function loadAdmins(){
+  if(loadAdmins._busy) return; loadAdmins._busy=true;
+  DB.get('admins').then(
+    v=>{ admins=v||{}; adminsLoaded=true; loadAdmins._busy=false; route(); },
+    ()=>{ adminsLoaded=true; loadAdmins._busy=false; route(); }
+  );
+  // 取得が遅くても確認中で止め続けない
+  setTimeout(()=>{ if(!adminsLoaded){ adminsLoaded=true; loadAdmins._busy=false; route(); } }, 4500);
+}
+DB.auth.onChange(u=>{ myUser=u; loadAdmins._busy=false; loadAdmins(); route(); });
 
 function boot(){
   // モード表示
