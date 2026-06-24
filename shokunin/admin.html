@@ -89,6 +89,17 @@
   .okbadge{display:inline-block; font-size:11px; font-weight:800; color:#1a7a45; background:#eafaf0; border:1px solid #b6e6c8; border-radius:6px; padding:1px 6px}
   .waitbadge{display:inline-block; font-size:11px; font-weight:800; color:#8a5a00; background:#fff7e8; border:1px solid #ffe1a8; border-radius:6px; padding:1px 6px}
   .cqx{cursor:pointer; color:var(--warn); font-weight:800; margin-left:2px}
+  .ov{position:fixed; inset:0; background:rgba(15,23,32,.5); z-index:40; display:none; align-items:flex-end; justify-content:center}
+  .ov.on{display:flex}
+  .sheet{background:#fff; width:100%; max-width:680px; border-radius:18px 18px 0 0; padding:18px; max-height:88vh; overflow:auto}
+  .sheet h3{margin:0 0 12px; font-size:17px}
+  .chatwrap{display:flex; flex-direction:column; gap:7px; margin:8px 0}
+  .bubble{max-width:82%; padding:8px 11px; border-radius:14px; font-size:14px; line-height:1.55; word-break:break-word}
+  .bubble.them{align-self:flex-start; background:#eef1f4; color:var(--ink); border-bottom-left-radius:4px}
+  .bubble.mine{align-self:flex-end; background:var(--brand); color:#fff; border-bottom-right-radius:4px}
+  .bubble .who{font-size:11px; font-weight:700; margin-bottom:2px; opacity:.85}
+  .bubble .bt{font-size:10px; opacity:.75; margin-top:3px; text-align:right}
+  .bubble.mine .ctlink{color:#fff}
 </style>
 </head>
 <body>
@@ -104,6 +115,16 @@
     </div>
   </div>
 </header>
+
+<!-- アプリにする手順モーダル -->
+<div class="ov" id="installOv">
+  <div class="sheet">
+    <h3>📱 アプリとして使う</h3>
+    <div class="count" style="margin-bottom:10px">ホーム画面に追加すると、アイコンから1タップで全画面起動できます。</div>
+    <div id="installSteps"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="installClose">とじる</button></div>
+  </div>
+</div>
 
 <!-- 管理者ログイン（内容は route()/renderGate() が動的に描画） -->
 <div id="gate" class="wrap" style="display:none">
@@ -249,9 +270,21 @@ window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferred
   if(standalone){ btn.style.display='none'; return; }
   btn.onclick=async()=>{
     if(deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){ } deferredPrompt=null; return; }
-    alert('この管理画面をホーム画面に追加できます。\n\n【iPhone / Safari】下の「共有」→「ホーム画面に追加」\n【Android / Chrome】メニュー（⋮）→「アプリをインストール」または「ホーム画面に追加」\n\n追加したアイコンをタップすると、アプリのように全画面で起動します。');
+    showInstallSteps();
   };
 })();
+function showInstallSteps(){
+  const ua=navigator.userAgent||''; const isIOS=/iphone|ipad|ipod/i.test(ua); const isAndroid=/android/i.test(ua);
+  const step=(n,t)=>`<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px"><div style="flex:none;width:26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center">${n}</div><div style="padding-top:2px">${t}</div></div>`;
+  let body;
+  if(isIOS){ body='<div style="font-weight:800;margin-bottom:8px">iPhone / iPad（Safari）</div>'+step(1,'画面下の <b>共有ボタン</b>（□に↑）をタップ')+step(2,'<b>「ホーム画面に追加」</b> をタップ')+step(3,'右上の <b>「追加」</b> をタップ'); }
+  else if(isAndroid){ body='<div style="font-weight:800;margin-bottom:8px">Android（Chrome）</div>'+step(1,'右上の <b>メニュー（⋮）</b> をタップ')+step(2,'<b>「アプリをインストール」</b>／<b>「ホーム画面に追加」</b> をタップ')+step(3,'<b>「追加／インストール」</b> をタップ'); }
+  else{ body='<div style="font-weight:800;margin-bottom:8px">パソコン（Chrome / Edge）</div>'+step(1,'アドレスバー右の <b>インストールアイコン</b> をクリック')+step(2,'<b>「インストール」</b> をクリック'); }
+  document.getElementById('installSteps').innerHTML=body;
+  document.getElementById('installOv').classList.add('on');
+}
+document.getElementById('installClose').onclick=()=>document.getElementById('installOv').classList.remove('on');
+document.getElementById('installOv').onclick=e=>{ if(e.target.id==='installOv') e.currentTarget.classList.remove('on'); };
 let evK=0, evC=0;
 let myUser=null, booted=false, admins={}, adminsLoaded=false;
 
@@ -493,7 +526,7 @@ function renderCoList(){
   if(!arr.length){ list.innerHTML='<div class="empty">まだ登録がありません。</div>'; return; }
   list.innerHTML=arr.map(c=>{
     const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===c._key).length;
-    const r=H.ratingFor(reviews,'company',c._key);
+    const r=H.ratingFor(reviews,'company',c._key, c.ownerEmail);
     return `<div class="item">
       <div class="top">
         <div><div class="nm">${H.esc(c.name)}</div>
@@ -572,7 +605,7 @@ function renderKList(){
   // 認証待ちを上に表示
   arr.sort((a,b)=>(H.isApproved(approvals,a._key)?1:0)-(H.isApproved(approvals,b._key)?1:0));
   list.innerHTML=arr.map(k=>{
-    const r=H.ratingFor(reviews,'craftsman',k._key);
+    const r=H.ratingFor(reviews,'craftsman',k._key, (companies[k.companyKey]||{}).ownerEmail);
     const ok=H.isApproved(approvals,k._key);
     const free=H.upcomingFreeDates(k.avail);
     const availPill = free.length
@@ -608,7 +641,7 @@ function saveKEval(){
   const by=document.getElementById('evKBy').value.trim();
   const k=craftsmen[key]||{};
   const uid=DB.auth.user&&DB.auth.user.uid;
-  DB.push('reviews',{type:'craftsman',targetKey:key,targetName:k.name||'',rating:evK,byCompany:by,byUid:uid,at:Date.now()})
+  DB.push('reviews',{type:'craftsman',targetKey:key,targetName:k.name||'',rating:evK,byCompany:by,byUid:uid,byEmail:(DB.auth.user&&DB.auth.user.email)||null,at:Date.now()})
   .then(()=>{
     H.toast('技術力評価を登録しました','ok');
     evK=0; setStars('evKStars',0);
@@ -623,7 +656,7 @@ function saveCEval(){
   const by=document.getElementById('evCBy').value.trim();
   const c=companies[key]||{};
   const uid=DB.auth.user&&DB.auth.user.uid;
-  DB.push('reviews',{type:'company',targetKey:key,targetName:c.name||'',rating:evC,byCompany:by,byUid:uid,at:Date.now()})
+  DB.push('reviews',{type:'company',targetKey:key,targetName:c.name||'',rating:evC,byCompany:by,byUid:uid,byEmail:(DB.auth.user&&DB.auth.user.email)||null,at:Date.now()})
   .then(()=>{
     H.toast('工務店評価を登録しました','ok');
     evC=0; setStars('evCStars',0);
@@ -703,10 +736,14 @@ function openContact(ck){
 function renderContactAdmin(){
   const box=document.getElementById('ctBox'); if(!box||!ctCompanyKey) return;
   const uid=DB.auth.user&&DB.auth.user.uid;
-  let h='<div class="card">';
+  let h='<div class="card"><div class="chatwrap">';
   h+= ctMsgs.length
-    ? ctMsgs.map(m=>`<div class="note" style="${m.byAdmin?'background:#e7f3f6;border-color:#b6dfe8':''};margin-top:6px"><b>${m.byAdmin?'🛠 管理者':H.esc(m.byName||'工務店')}</b>：${H.esc(m.text)}<div class="meta" style="margin-top:2px">${H.fmtDate(m.at)}${(m.byAdmin&&m.byUid===uid)?` ・<a class="ctlink ctEdit" data-mid="${m._key}" style="cursor:pointer;text-decoration:underline">編集</a> ・<a class="ctlink ctDel" data-mid="${m._key}" style="cursor:pointer;text-decoration:underline;color:var(--warn)">削除</a>`:''}</div></div>`).join('')
+    ? ctMsgs.map(m=>{
+        const mine=m.byAdmin&&m.byUid===uid;
+        return `<div class="bubble ${mine?'mine':'them'}"><div class="who">${m.byAdmin?'🛠 管理者':H.esc(m.byName||'工務店')}</div><div>${H.esc(m.text)}</div><div class="bt">${H.fmtDate(m.at)}${mine?` ・<a class="ctlink ctEdit" data-mid="${m._key}" style="cursor:pointer;text-decoration:underline">編集</a> ・<a class="ctlink ctDel" data-mid="${m._key}" style="cursor:pointer;text-decoration:underline">削除</a>`:''}</div></div>`;
+      }).join('')
     : '<div class="empty">まだやり取りはありません。下から連絡できます。</div>';
+  h+='</div>';
   h+=`<div class="row" style="margin-top:8px"><input type="text" id="ctInput" placeholder="工務店へのメッセージ" style="flex:2"><button class="btn sm" id="ctSend" style="flex:1">送信</button></div></div>`;
   box.innerHTML=h;
   document.getElementById('ctSend').onclick=sendContactAdmin;

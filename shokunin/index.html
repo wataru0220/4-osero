@@ -120,6 +120,13 @@
   .dealbox{margin-top:10px; border-top:1px dashed var(--line); padding-top:10px}
   .dealmsg{background:#f7f9fb; border:1px solid var(--line); border-radius:8px; padding:7px 9px; margin-bottom:6px; font-size:14px; line-height:1.5}
   .dealtime{font-size:11px; color:var(--sub); margin-top:2px}
+  .chatwrap{display:flex; flex-direction:column; gap:7px; margin:8px 0}
+  .bubble{max-width:82%; padding:8px 11px; border-radius:14px; font-size:14px; line-height:1.55; word-break:break-word}
+  .bubble.them{align-self:flex-start; background:#eef1f4; color:var(--ink); border-bottom-left-radius:4px}
+  .bubble.mine{align-self:flex-end; background:var(--brand); color:#fff; border-bottom-right-radius:4px}
+  .bubble .who{font-size:11px; font-weight:700; margin-bottom:2px; opacity:.85}
+  .bubble .bt{font-size:10px; opacity:.75; margin-top:3px; text-align:right}
+  .bubble.mine .deallink{color:#fff}
   .cqx{cursor:pointer; color:var(--warn); font-weight:800; margin-left:2px}
   .cal-legend{font-size:12px; color:var(--sub); margin:4px 0 8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap}
   .cal-legend .lg{display:inline-block; width:12px; height:12px; border-radius:3px}
@@ -328,6 +335,16 @@
   </div>
 </div>
 
+<!-- アプリにする（ホーム画面に追加）手順モーダル -->
+<div class="ov" id="installOv">
+  <div class="sheet">
+    <h3>📱 アプリとして使う</h3>
+    <div class="count" style="margin-bottom:10px">ホーム画面に追加すると、アイコンから1タップで全画面起動できます。</div>
+    <div id="installSteps"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="installClose">とじる</button></div>
+  </div>
+</div>
+
 <!-- 応援要請モーダル（送信） -->
 <div class="ov" id="reqOv">
   <div class="sheet">
@@ -403,10 +420,40 @@ window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferred
   const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   if(standalone){ btn.style.display='none'; return; } // 既にアプリ起動中
   btn.onclick=async()=>{
+    // Android/PC Chrome等：その場でインストール（ワンタップ）
     if(deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){ } deferredPrompt=null; return; }
-    alert('このアプリをホーム画面に追加できます。\n\n【iPhone / Safari】下の「共有」ボタン →「ホーム画面に追加」\n【Android / Chrome】メニュー（⋮）→「アプリをインストール」または「ホーム画面に追加」\n\n追加した「大工」アイコンをタップすると、アプリのように全画面で起動します。');
+    showInstallSteps();
   };
 })();
+function showInstallSteps(){
+  const ua=navigator.userAgent||'';
+  const isIOS=/iphone|ipad|ipod/i.test(ua);
+  const isAndroid=/android/i.test(ua);
+  const step=(n,t)=>`<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px"><div style="flex:none;width:26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center">${n}</div><div style="padding-top:2px">${t}</div></div>`;
+  let body;
+  if(isIOS){
+    body='<div style="font-weight:800;margin-bottom:8px">iPhone / iPad（Safari）</div>'
+      +step(1,'画面下の <b>共有ボタン</b>（□に↑）をタップ')
+      +step(2,'メニューを下にスクロールし <b>「ホーム画面に追加」</b> をタップ')
+      +step(3,'右上の <b>「追加」</b> をタップ')
+      +'<div class="count" style="margin-top:6px">ホーム画面に「大工」アイコンが追加されます。次回からはアイコンを1タップで起動できます。</div>';
+  }else if(isAndroid){
+    body='<div style="font-weight:800;margin-bottom:8px">Android（Chrome）</div>'
+      +step(1,'右上の <b>メニュー（⋮）</b> をタップ')
+      +step(2,'<b>「アプリをインストール」</b> または <b>「ホーム画面に追加」</b> をタップ')
+      +step(3,'<b>「追加／インストール」</b> をタップ')
+      +'<div class="count" style="margin-top:6px">ホーム画面に「大工」アイコンが追加されます。次回からはアイコンを1タップで起動できます。</div>';
+  }else{
+    body='<div style="font-weight:800;margin-bottom:8px">パソコン（Chrome / Edge）</div>'
+      +step(1,'アドレスバー右の <b>インストールアイコン（⊕や画面のマーク）</b> をクリック')
+      +step(2,'<b>「インストール」</b> をクリック')
+      +'<div class="count" style="margin-top:6px">スマホの場合は、この画面をスマホのブラウザ（iPhoneはSafari／AndroidはChrome）で開いて「アプリにする」を押してください。</div>';
+  }
+  document.getElementById('installSteps').innerHTML=body;
+  document.getElementById('installOv').classList.add('on');
+}
+document.getElementById('installClose').onclick=()=>document.getElementById('installOv').classList.remove('on');
+document.getElementById('installOv').onclick=e=>{ if(e.target.id==='installOv') e.currentTarget.classList.remove('on'); };
 
 // セレクト初期化
 (function(){
@@ -433,7 +480,7 @@ document.getElementById('qQual').onchange = e=>{ filter.qual=e.target.value; ren
 document.getElementById('qFreeOnly').onchange = e=>{ filter.freeOnly=e.target.checked; renderFind(); };
 
 // ===== 認証状態（ログイン中の工務店） =====
-DB.auth.onChange(u=>{ myUser=u; renderMyArea(); });
+DB.auth.onChange(u=>{ myUser=u; renderMyArea(); renderFind(); renderCompanies(); });
 
 // ===== データ購読（リアルタイム） =====
 DB.on('companies', v=>{ companies=v||{}; renderCompanies(); renderFind(); renderBoard(); renderMyArea(); });
@@ -465,7 +512,9 @@ function renderFind(){
   list.querySelectorAll('.avail-toggle').forEach(b=>b.onclick=()=>{ openAvailView = (openAvailView===b.dataset.key)?null:b.dataset.key; renderFind(); });
 }
 function kCardHTML(k){
-  const r=H.ratingFor(reviews,'craftsman',k._key);
+  const ownerEmail=(companies[k.companyKey]||{}).ownerEmail;
+  const r=H.ratingFor(reviews,'craftsman',k._key, ownerEmail);
+  const isOwn=(myCompanyEntry()||{})._key===k.companyKey;
   const free=H.upcomingFreeDates(k.avail);
   const badge = free.length
     ? `<span class="badge" style="background:#1aa260"><span class="dot"></span>空きあり ${H.mdFromYmd(free[0])}〜</span>`
@@ -490,7 +539,7 @@ function kCardHTML(k){
     <button class="btn sm req-btn" data-key="${k._key}" style="width:100%;background:var(--accent);color:#fff;margin-top:8px">🤝 この大工に応援要請</button>
     <div class="actions">
       <button class="btn ln sm ln-share" data-key="${k._key}">📲 LINEで共有</button>
-      <button class="btn ghost sm rv" data-type="craftsman" data-key="${k._key}" data-name="${H.esc(k.name)}">⭐ 評価</button>
+      ${isOwn?'':`<button class="btn ghost sm rv" data-type="craftsman" data-key="${k._key}" data-name="${H.esc(k.name)}">⭐ 評価</button>`}
     </div>
   </div>`;
 }
@@ -518,9 +567,10 @@ function renderBoard(){
 // ===== 工務店一覧 =====
 function renderCompanies(){
   const list=document.getElementById('coList');
-  const rateOf=c=>H.ratingFor(reviews,'company',c._key);
+  const rateOf=c=>H.ratingFor(reviews,'company',c._key, c.ownerEmail);
   const arr=H.toArr(companies).sort((a,b)=>(rateOf(b).avg||0)-(rateOf(a).avg||0));
   if(!arr.length){ list.innerHTML='<div class="empty">工務店がまだ登録されていません。</div>'; return; }
+  const myKey=(myCompanyEntry()||{})._key;
   list.innerHTML=arr.map(c=>{
     const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===c._key && H.isApproved(approvals,k._key)).length;
     const r=rateOf(c);
@@ -532,9 +582,9 @@ function renderCompanies(){
       <div class="info">📍 ${H.esc(c.area||'—')}　👤 ${H.esc(c.contact||'—')}　📞 ${H.esc(c.tel||'—')}</div>
       <div class="info">所属大工 ${cnt} 名　評価件数 ${r.count} 件</div>
       ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
-      <div class="actions" style="display:flex;margin-top:10px">
+      ${c._key===myKey?'':`<div class="actions" style="display:flex;margin-top:10px">
         <button class="btn ghost sm rv" data-type="company" data-key="${c._key}" data-name="${H.esc(c.name)}">⭐ この工務店を評価</button>
-      </div>
+      </div>`}
     </div>`;
   }).join('');
   bindReviewButtons(list);
@@ -925,10 +975,14 @@ function renderContact(){
   const mine=myCompanyEntry();
   if(!mine){ box.innerHTML='<div class="empty">管理者との連絡には、「自社の大工」タブでログインしてください。</div>'; return; }
   const uid=DB.auth.user&&DB.auth.user.uid;
-  let h='<div class="card">';
+  let h='<div class="card"><div class="chatwrap">';
   h+= contactMsgs.length
-    ? contactMsgs.map(m=>`<div class="dealmsg" style="${m.byAdmin?'background:#e7f3f6;border-color:#b6dfe8':''}"><b>${m.byAdmin?'🛠 管理者':H.esc(m.byName||'自社')}</b>：${H.esc(m.text)}<div class="dealtime">${H.fmtDate(m.at)}${(!m.byAdmin&&m.byUid===uid)?` ・<a class="deallink ctEdit" data-mid="${m._key}">編集</a> ・<a class="deallink ctDel" data-mid="${m._key}">削除</a>`:''}</div></div>`).join('')
+    ? contactMsgs.map(m=>{
+        const mine=!m.byAdmin&&m.byUid===uid;
+        return `<div class="bubble ${mine?'mine':'them'}"><div class="who">${m.byAdmin?'🛠 管理者':H.esc(m.byName||'自社')}</div><div>${H.esc(m.text)}</div><div class="bt">${H.fmtDate(m.at)}${mine?` ・<a class="deallink ctEdit" data-mid="${m._key}">編集</a> ・<a class="deallink ctDel" data-mid="${m._key}">削除</a>`:''}</div></div>`;
+      }).join('')
     : '<div class="count">まだやり取りはありません。管理者へ連絡できます。</div>';
+  h+='</div>';
   h+=`<div class="row" style="margin-top:8px"><input type="text" id="ctInput" placeholder="管理者へのメッセージ" style="flex:2"><button class="btn sm" id="ctSend" style="flex:1">送信</button></div></div>`;
   box.innerHTML=h;
   document.getElementById('ctSend').onclick=sendContact;
@@ -1098,7 +1152,12 @@ function reqCardHTML(r,kind){
 function dealThreadHTML(){
   const uid=DB.auth.user&&DB.auth.user.uid;
   let h='<div class="count" style="margin:2px 0 8px">この内容は当事者（依頼元と相手工務店）だけが閲覧できます。管理者には表示されません。</div>';
-  h+= dealMsgs.length? dealMsgs.map(m=>`<div class="dealmsg"><b>${H.esc(m.byName||m.byEmail||'')}</b>：${H.esc(m.text)}<div class="dealtime">${H.fmtDate(m.at)}${(m.byUid&&m.byUid===uid)?` ・<a class="deallink dealedit" data-mid="${m._key}">編集</a> ・<a class="deallink dealdel" data-mid="${m._key}">削除</a>`:''}</div></div>`).join('') : '<div class="count">まだやり取りはありません。</div>';
+  h+='<div class="chatwrap">';
+  h+= dealMsgs.length? dealMsgs.map(m=>{
+    const mine=m.byUid&&m.byUid===uid;
+    return `<div class="bubble ${mine?'mine':'them'}"><div class="who">${H.esc(m.byName||m.byEmail||'')}</div><div>${H.esc(m.text)}</div><div class="bt">${H.fmtDate(m.at)}${mine?` ・<a class="deallink dealedit" data-mid="${m._key}">編集</a> ・<a class="deallink dealdel" data-mid="${m._key}">削除</a>`:''}</div></div>`;
+  }).join('') : '<div class="count">まだやり取りはありません。</div>';
+  h+='</div>';
   h+=`<div class="row" style="margin-top:8px"><input type="text" id="dealInput" placeholder="例）詳しい住所・日当◯円・支払い条件 など" style="flex:2"><button class="btn sm" id="dealSend" style="flex:1">送信</button></div>`;
   return h;
 }
@@ -1194,7 +1253,13 @@ function bindReviewButtons(scope){
   scope.querySelectorAll('.rv').forEach(b=>b.onclick=()=>openReview(b.dataset.type,b.dataset.key,b.dataset.name));
 }
 let myReviewKey=null;
+function reviewOwnerEmail(type,key){
+  return type==='company' ? (companies[key]||{}).ownerEmail : (companies[(craftsmen[key]||{}).companyKey]||{}).ownerEmail;
+}
 function openReview(type,key,name){
+  // 自己評価の禁止（自社・自分の大工は評価不可）
+  const myEmail=DB.auth.user&&DB.auth.user.email;
+  if(myEmail && reviewOwnerEmail(type,key)===myEmail){ H.toast('自社・自分の大工は評価できません','err'); return; }
   reviewTarget={type,key,name};
   const uid=DB.auth.user&&DB.auth.user.uid;
   const existing=uid? H.toArr(reviews).find(r=>r.type===type && r.targetKey===key && r.byUid===uid) : null;
@@ -1219,11 +1284,12 @@ document.getElementById('rvSubmit').onclick=async()=>{
   if(by) localStorage.setItem('shokunin_mycompany_name', by);
   const uid=DB.auth.user&&DB.auth.user.uid;
   const {type,key,name}=reviewTarget;
+  const byEmail=(DB.auth.user&&DB.auth.user.email)||null;
   if(myReviewKey){
     await DB.update('reviews/'+myReviewKey,{rating:rvValue, byCompany:by});
   }else{
-    // ★のみ。1対象1件。byUid で本人を識別（匿名uidは端末ごとに永続）
-    await DB.push('reviews',{type,targetKey:key,targetName:name,rating:rvValue,byCompany:by,byUid:uid,at:Date.now()});
+    // ★のみ。1対象1件。byUid/byEmail で本人を識別（byEmailは自己評価の除外に使用）
+    await DB.push('reviews',{type,targetKey:key,targetName:name,rating:rvValue,byCompany:by,byUid:uid,byEmail:byEmail,at:Date.now()});
   }
   document.getElementById('reviewOv').classList.remove('on');
   H.toast(myReviewKey?'評価を更新しました':'評価を送信しました。ありがとうございます！','ok');

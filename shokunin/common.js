@@ -33,9 +33,13 @@
 
   // 評価は reviews コレクションから都度算出する（集計値はレコードに持たない）。
   // type: "craftsman" | "company", targetKey: 対象のキー
-  // → { avg: 平均(0〜5)|null, count: 件数, notes: [{rating, note, by, at}...] 新しい順 }
-  H.ratingFor = (reviewsObj, type, targetKey) => {
-    const arr = H.toArr(reviewsObj).filter((r) => r.type === type && r.targetKey === targetKey);
+  // excludeEmail: 自己評価を除外するメール（対象のオーナーメール）。他人の評価のみ反映。
+  // → { avg: 平均(0〜5)|null, count: 件数, notes: [...] 新しい順 }
+  H.ratingFor = (reviewsObj, type, targetKey, excludeEmail) => {
+    const arr = H.toArr(reviewsObj).filter((r) =>
+      r.type === type && r.targetKey === targetKey &&
+      !(excludeEmail && r.byEmail && r.byEmail === excludeEmail)
+    );
     const count = arr.length;
     const sum = arr.reduce((a, r) => a + (Number(r.rating) || 0), 0);
     const notes = arr
