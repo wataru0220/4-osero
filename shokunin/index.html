@@ -263,6 +263,7 @@
   <div class="sheet">
     <h3 id="ceTitle">大工を登録</h3>
     <div class="count" id="ceSub"></div>
+    <div class="count" id="ceDraftNote" style="display:none;color:var(--ok)">📝 入力中の内容を自動保存しています（保存前でも消えません）。<a id="ceDraftDiscard" style="text-decoration:underline;cursor:pointer">下書きを破棄</a></div>
     <div class="field"><label class="req">氏名</label><input type="text" id="ceName" placeholder="例）田中 一郎"></div>
     <div class="row">
       <div class="field"><label>年齢</label><input type="number" id="ceAge" min="0" max="99" placeholder="例）42"></div>
@@ -771,6 +772,7 @@ function renderOwnArea(mine){
   list.innerHTML=html;
   document.getElementById('editCoBtn').onclick=()=>openCompanyForm(mine._key);
   document.getElementById('addCraftBtn').onclick=()=>openCraftForm(null);
+  updateDraftHint();
   list.querySelectorAll('.updMemo').forEach(inp=>{
     inp.onchange=()=>DB.update('craftsmen/'+inp.dataset.key,{availMemo:inp.value.trim(),updatedAt:Date.now()}).then(()=>H.toast('メモを保存しました','ok'));
   });
@@ -904,9 +906,54 @@ function openCraftForm(key){
   const sg=splitByMaster(k.good,H.workTypes); setChecked('ceGood',sg.checked); ceGoodCustom.set(sg.custom);
   const sn=splitByMaster(k.ng,H.workTypes); setChecked('ceNg',sn.checked); ceNgCustom.set(sn.custom);
   const sq=splitQuals(k.quals); setChecked('ceQual',sq.checked); ceCustomQuals.set(sq.custom);
+  // 新規登録のときだけ、前回の下書き（保存前の入力）を復元
+  const note=document.getElementById('ceDraftNote');
+  if(!key){ const d=loadCraftDraft(); if(d){ applyCraftDraft(d); } note.style.display='block'; }
+  else { note.style.display='none'; }
   document.getElementById('craftOv').classList.add('on');
 }
 function closeCraftForm(){ editCraftKey=null; document.getElementById('craftOv').classList.remove('on'); }
+// ===== 大工入力の下書き自動保存（新規登録のみ・保存前でも消えない） =====
+function loadCraftDraft(){ try{ const d=JSON.parse(localStorage.getItem('shokunin_craft_draft')||'null'); return (d&&hasCraftDraftContent(d))?d:null; }catch(_){ return null; } }
+function hasCraftDraftContent(d){ return !!(d && ((d.name||'').trim()||d.age||d.gender||d.price||(d.good&&d.good.length)||(d.ng&&d.ng.length)||(d.quals&&d.quals.length)||(d.goodCustom&&d.goodCustom.length)||(d.ngCustom&&d.ngCustom.length)||(d.qualCustom&&d.qualCustom.length))); }
+function collectCraftForm(){
+  const v=id=>document.getElementById(id).value;
+  return { name:v('ceName'), age:v('ceAge'), gender:v('ceGender'), price:v('cePrice'),
+    good:getChecked('ceGood'), ng:getChecked('ceNg'), quals:getChecked('ceQual'),
+    goodCustom:ceGoodCustom.get(), ngCustom:ceNgCustom.get(), qualCustom:ceCustomQuals.get() };
+}
+function applyCraftDraft(d){
+  document.getElementById('ceName').value=d.name||'';
+  document.getElementById('ceAge').value=d.age||'';
+  document.getElementById('ceGender').value=d.gender||'';
+  document.getElementById('cePrice').value=d.price||'';
+  setChecked('ceGood',d.good||[]); setChecked('ceNg',d.ng||[]); setChecked('ceQual',d.quals||[]);
+  ceGoodCustom.set(d.goodCustom||[]); ceNgCustom.set(d.ngCustom||[]); ceCustomQuals.set(d.qualCustom||[]);
+}
+function saveCraftDraft(){
+  if(editCraftKey) return; // 編集中（既存）の内容は下書きにしない
+  if(!document.getElementById('craftOv').classList.contains('on')) return;
+  const d=collectCraftForm();
+  if(hasCraftDraftContent(d)) localStorage.setItem('shokunin_craft_draft', JSON.stringify(d));
+  else localStorage.removeItem('shokunin_craft_draft');
+  updateDraftHint();
+}
+function clearCraftDraft(){ localStorage.removeItem('shokunin_craft_draft'); updateDraftHint(); }
+function updateDraftHint(){
+  const btn=document.getElementById('addCraftBtn');
+  if(btn) btn.textContent = loadCraftDraft() ? '＋ 大工を登録（下書きあり）' : '＋ 大工を登録';
+}
+// 入力のたびに自動保存（テキスト/数値/選択/チェック/その他チップ追加削除を網羅）
+['input','change','click'].forEach(ev=>document.getElementById('craftOv').addEventListener(ev,()=>{ setTimeout(saveCraftDraft,0); }));
+document.getElementById('ceDraftDiscard').onclick=()=>{
+  if(!confirm('入力中の下書きを破棄しますか？')) return;
+  clearCraftDraft();
+  // フォームを空に戻す
+  ['ceName','ceAge','ceGender','cePrice'].forEach(id=>document.getElementById(id).value='');
+  setChecked('ceGood',[]); setChecked('ceNg',[]); setChecked('ceQual',[]);
+  ceGoodCustom.set([]); ceNgCustom.set([]); ceCustomQuals.set([]);
+  H.toast('下書きを破棄しました','ok');
+};
 document.getElementById('ceCancel').onclick=closeCraftForm;
 document.getElementById('craftOv').onclick=e=>{ if(e.target.id==='craftOv') closeCraftForm(); };
 document.getElementById('ceSave').onclick=()=>{
@@ -925,10 +972,11 @@ document.getElementById('ceSave').onclick=()=>{
     quals:getChecked('ceQual').concat(ceCustomQuals.get()),
     updatedAt:Date.now()
   };
+  const wasNew=!editCraftKey;
   const p=editCraftKey
     ? DB.update('craftsmen/'+editCraftKey,data)
     : DB.push('craftsmen', Object.assign({availMemo:'',avail:{},createdAt:Date.now()},data));
-  p.then(()=>{ document.getElementById('craftOv').classList.remove('on'); H.toast(editCraftKey?'大工情報を更新しました':'大工を登録しました','ok'); });
+  p.then(()=>{ if(wasNew) clearCraftDraft(); document.getElementById('craftOv').classList.remove('on'); H.toast(editCraftKey?'大工情報を更新しました':'大工を登録しました','ok'); });
 };
 
 // ===== 空き予定カレンダー（3ヶ月） =====
