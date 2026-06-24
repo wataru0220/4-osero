@@ -122,6 +122,8 @@
   .confirmband{margin-top:6px; font-size:13px; font-weight:700; color:#1a7a45; background:#eafaf0; border:1px solid #b6e6c8; border-radius:8px; padding:6px 9px}
   .chgbox{margin-top:8px; font-size:13px; background:#fff4e5; border:1px solid #ffd591; border-radius:8px; padding:8px 10px; color:#8a5a00}
   .chglink{color:#8a5a00; font-weight:700}
+  .reviewneed{margin-top:8px; font-size:13px; background:#fff7e8; border:1px solid #ffe1a8; border-radius:8px; padding:8px 10px; color:#8a5a00}
+  .reviewbanner{font-size:13px; font-weight:700; background:#fff4e5; border:1px solid #ffd591; border-radius:10px; padding:10px 12px; margin-bottom:12px; color:#8a5a00; line-height:1.6}
   .dealbox{margin-top:10px; border-top:1px dashed var(--line); padding-top:10px}
   .dealmsg{background:#f7f9fb; border:1px solid var(--line); border-radius:8px; padding:7px 9px; margin-bottom:6px; font-size:14px; line-height:1.5}
   .dealtime{font-size:11px; color:var(--sub); margin-top:2px}
@@ -1062,6 +1064,7 @@ function openRequestForm(kid){
   if(!loggedIn()){ H.toast('応援要請にはログインが必要です','err'); goTab('update'); return; }
   const mine=myCompanyEntry();
   if(!mine){ H.toast('先に自社の工務店を登録してください','err'); goTab('update'); return; }
+  if(reviewNeededCount()>0){ H.toast('活用後の評価が未入力です。先に「応援」タブで評価してください','err'); goTab('req'); return; }
   const k=craftsmen[kid]; if(!k) return;
   if(k.companyKey===mine._key){ H.toast('自社の大工です','err'); return; }
   editReqKey=null;
@@ -1196,7 +1199,21 @@ function reqIsNew(r){
 }
 function unreadCount(){
   if(!myCompanyEntry()) return 0;
-  return H.toArr(reqByMe).filter(reqIsNew).length;
+  return H.toArr(reqByMe).filter(reqIsNew).length + reviewNeededCount();
+}
+// 活用後の評価が必須な要請か（依頼元＝自社・承認済み・活用期間終了・未評価）
+function needsMyReview(r){
+  const mine=myCompanyEntry(); if(!mine) return false;
+  if(r.fromCompanyKey!==mine._key) return false;
+  if(r.status!=='accepted') return false;
+  if(r.reviewedByFrom) return false;
+  if(r.changeReq) return false; // 日程変更の協議中は評価を求めない
+  const end=r.dateTo||r.dateFrom; if(!end) return false;
+  return end < H.todayStr(); // 終了日が過ぎている＝活用後
+}
+function reviewNeededCount(){
+  if(!myCompanyEntry()) return 0;
+  return H.toArr(reqByMe).filter(needsMyReview).length;
 }
 function setIconBadge(n){
   try{
@@ -1220,7 +1237,9 @@ function renderRequests(){
   const all=H.toArr(reqByMe).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   const recv=all.filter(r=>r.toCompanyKey===mine._key);
   const sent=all.filter(r=>r.fromCompanyKey===mine._key);
-  box.innerHTML=reqSectionHTML('受信した要請（自社の大工へ）',recv,'recv')+reqSectionHTML('送信した要請（他社の大工へ）',sent,'sent');
+  const need=reviewNeededCount();
+  const banner = need>0 ? `<div class="reviewbanner">⭐ 活用後の評価が <b>${need}件</b> 未入力です。下の「評価する（必須）」から評価してください。<br><span class="count" style="color:inherit">※ 未評価のあいだは新しい応援要請を送れません。</span></div>` : '';
+  box.innerHTML=banner+reqSectionHTML('受信した要請（自社の大工へ）',recv,'recv')+reqSectionHTML('送信した要請（他社の大工へ）',sent,'sent');
   bindReqCards(box);
 }
 function reqSectionHTML(title,arr,kind){
@@ -1234,13 +1253,17 @@ function reqCardHTML(r,kind){
   const myUid=DB.auth.user&&DB.auth.user.uid;
   const cr=r.changeReq; // 延長・予定変更の依頼（保留中のみ存在）
   const iAmProposer=cr&&cr.byUid&&cr.byUid===myUid;
-  return `<div class="reqcard"${isNew?' style="border-color:var(--warn);box-shadow:0 0 0 1px var(--warn) inset"':''}>
+  const needReview=needsMyReview(r); // 活用後の評価が必須
+  return `<div class="reqcard"${(isNew||needReview)?' style="border-color:var(--warn);box-shadow:0 0 0 1px var(--warn) inset"':''}>
     <div style="display:flex;justify-content:space-between;gap:8px">
       <div>${isNew?'<span class="newtag">NEW</span> ':''}<b>${H.esc(r.craftsmanName)}</b> <span class="count" style="display:inline">${kind==='recv'?'← '+H.esc(r.fromCompanyName):'→ '+H.esc(r.toCompanyName)}</span></div>
       <div>${reqStatusLabel(r.status)}</div>
     </div>
     <div class="meta2">📍 ${H.esc(r.site||'—')}　🗓 ${H.esc(r.dateText||'—')}</div>
     ${r.status==='accepted'?`<div class="confirmband">✅ 活用日 確定：<b>${H.esc(r.dateText||'—')}</b></div>`:''}
+    ${needReview?`<div class="reviewneed">⭐ 活用が終了しました。<b>評価の入力が必須</b>です。
+        <div class="row" style="margin-top:6px"><button class="btn sm rv-need" data-rid="${r._key}" data-ckey="${r.craftsmanKey||''}" data-cname="${H.esc(r.craftsmanName||'')}">⭐ 評価する（必須）</button></div>
+      </div>`:''}
     ${r.work?`<div class="meta2">🛠 ${H.esc(r.work)}</div>`:''}
     ${r.contact?`<div class="meta2">📞 ${H.esc(r.contact)}</div>`:''}
     ${r.message?`<div class="note">💬 ${H.esc(r.message)}</div>`:''}
@@ -1288,6 +1311,7 @@ function bindReqCards(box){
   box.querySelectorAll('.chg-acc').forEach(b=>b.onclick=()=>applyChange(b.dataset.rid));
   box.querySelectorAll('.chg-dec').forEach(b=>b.onclick=()=>declineChange(b.dataset.rid));
   box.querySelectorAll('.chg-cancel').forEach(b=>b.onclick=()=>cancelChange(b.dataset.rid));
+  box.querySelectorAll('.rv-need').forEach(b=>b.onclick=()=>openReview('craftsman',b.dataset.ckey,b.dataset.cname,b.dataset.rid));
   box.querySelectorAll('.deal-toggle').forEach(b=>b.onclick=()=>toggleDeal(b.dataset.rid));
   const ds=document.getElementById('dealSend');
   if(ds) ds.onclick=sendDeal;
@@ -1376,11 +1400,11 @@ let myReviewKey=null;
 function reviewOwnerEmail(type,key){
   return type==='company' ? (companies[key]||{}).ownerEmail : (companies[(craftsmen[key]||{}).companyKey]||{}).ownerEmail;
 }
-function openReview(type,key,name){
+function openReview(type,key,name,reqId){
   // 自己評価の禁止（自社・自分の大工は評価不可）
   const myEmail=DB.auth.user&&DB.auth.user.email;
   if(myEmail && reviewOwnerEmail(type,key)===myEmail){ H.toast('自社・自分の大工は評価できません','err'); return; }
-  reviewTarget={type,key,name};
+  reviewTarget={type,key,name,reqId:reqId||null};
   const uid=DB.auth.user&&DB.auth.user.uid;
   const existing=uid? H.toArr(reviews).find(r=>r.type===type && r.targetKey===key && r.byUid===uid) : null;
   myReviewKey = existing? existing._key : null;
@@ -1403,7 +1427,7 @@ document.getElementById('rvSubmit').onclick=async()=>{
   const by=document.getElementById('rvBy').value.trim();
   if(by) localStorage.setItem('shokunin_mycompany_name', by);
   const uid=DB.auth.user&&DB.auth.user.uid;
-  const {type,key,name}=reviewTarget;
+  const {type,key,name,reqId}=reviewTarget;
   const byEmail=(DB.auth.user&&DB.auth.user.email)||null;
   if(myReviewKey){
     await DB.update('reviews/'+myReviewKey,{rating:rvValue, byCompany:by});
@@ -1411,6 +1435,8 @@ document.getElementById('rvSubmit').onclick=async()=>{
     // ★のみ。1対象1件。byUid/byEmail で本人を識別（byEmailは自己評価の除外に使用）
     await DB.push('reviews',{type,targetKey:key,targetName:name,rating:rvValue,byCompany:by,byUid:uid,byEmail:byEmail,at:Date.now()});
   }
+  // 活用後の必須評価から開いた場合は、その要請を評価済みにする
+  if(reqId){ try{ await DB.update('requests/'+reqId,{reviewedByFrom:true}); }catch(_){ } }
   document.getElementById('reviewOv').classList.remove('on');
   H.toast(myReviewKey?'評価を更新しました':'評価を送信しました。ありがとうございます！','ok');
 };
