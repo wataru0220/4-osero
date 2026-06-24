@@ -39,6 +39,12 @@
   .hbtn{flex:none; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.45); color:#fff; border-radius:11px; padding:7px 11px; font-weight:800; font-size:11px; display:flex; flex-direction:column; align-items:center; gap:1px; cursor:pointer}
   .hbtn .ic{font-size:18px; line-height:1}
   .hbtn:active{transform:translateY(1px)}
+  .hbadge{position:absolute; top:-5px; right:-5px; background:var(--warn); color:#fff; font-size:10px; font-weight:800; min-width:18px; height:18px; border-radius:9px; display:flex; align-items:center; justify-content:center; padding:0 4px; box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .inboxitem{display:flex; gap:10px; align-items:flex-start; border:1px solid var(--line); border-radius:11px; padding:10px 12px; margin-bottom:9px; cursor:pointer; background:#fff}
+  .inboxitem:active{background:#f7f9fb}
+  .inboxitem .ii-ic{font-size:20px; flex:none; line-height:1.3}
+  .inboxitem .ii-t{font-weight:800; font-size:14px; color:var(--ink)}
+  .inboxitem .ii-d{font-size:12px; color:var(--sub); margin-top:2px}
   .wrap{max-width:620px; margin:0 auto; padding:14px}
   .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; box-shadow:0 1px 2px rgba(16,24,40,.04)}
   label{display:block; font-size:12px; font-weight:700; color:var(--sub); margin:0 0 5px}
@@ -174,6 +180,7 @@
       <div class="sub">工務店どうしで大工をシェア・空き状況をリアルタイム共有</div>
     </div>
     <div style="display:flex; flex-direction:column; gap:6px; flex:none">
+      <button class="hbtn" id="inboxBtn" style="position:relative"><span class="ic">🔔</span>お知らせ<span class="hbadge" id="inboxBadge" style="display:none">0</span></button>
       <button class="hbtn" id="installBtn"><span class="ic">⬇️</span>アプリにする</button>
       <button class="hbtn" id="logoutHdr" style="display:none"><span class="ic">🚪</span>ログアウト</button>
     </div>
@@ -399,6 +406,16 @@
       <button class="btn ghost" id="chgCancel">キャンセル</button>
       <button class="btn" id="chgSend">変更を依頼する</button>
     </div>
+  </div>
+</div>
+
+<!-- お知らせ・受信箱 -->
+<div class="ov" id="inboxOv">
+  <div class="sheet">
+    <h3>🔔 お知らせ・受信箱</h3>
+    <div class="count" style="margin-bottom:10px">未対応の項目をまとめて表示します。タップすると該当画面へ移動します。</div>
+    <div id="inboxList"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="inboxClose">とじる</button></div>
   </div>
 </div>
 
@@ -1228,7 +1245,46 @@ function updateBadges(){
   const cb=document.getElementById('contactBadge');
   if(cb){ if(c>0){ cb.textContent=c>99?'99+':c; cb.style.display='flex'; } else cb.style.display='none'; }
   setIconBadge(n+c);
+  // ヘッダーの「お知らせ」ベル
+  const ib=document.getElementById('inboxBadge'); const total=n+c;
+  if(ib){ if(total>0){ ib.textContent=total>99?'99+':total; ib.style.display='flex'; } else ib.style.display='none'; }
+  const ov=document.getElementById('inboxOv');
+  if(ov&&ov.classList.contains('on')) renderInbox();
 }
+// ===== お知らせ・受信箱（未対応の内容を一覧表示） =====
+function inboxItems(){
+  const mine=myCompanyEntry(); if(!mine) return [];
+  const myUid=DB.auth.user&&DB.auth.user.uid;
+  const items=[];
+  H.toArr(reqByMe).forEach(r=>{
+    if(r.toCompanyKey===mine._key && r.status==='pending')
+      items.push({ic:'🤝',t:'応援要請が届いています',d:`${r.fromCompanyName||''} → 大工 ${r.craftsmanName||''}（${r.dateText||'日程未定'}）`,go:'req',at:r.createdAt||0});
+    const crToMe = r.changeReq && r.changeReq.byUid && r.changeReq.byUid!==myUid;
+    if(crToMe)
+      items.push({ic:'📅',t:'日程変更の依頼',d:`大工 ${r.craftsmanName||''}：新しい日程 ${r.changeReq.dateText||''}（${r.changeReq.byName||''}より）`,go:'req',at:r.changeReq.at||0});
+    if(r.lastMsgAt && r.lastMsgByUid && r.lastMsgByUid!==myUid && r.lastMsgAt>seenAt(r._key) && !crToMe){
+      const other = r.toCompanyKey===mine._key ? r.fromCompanyName : r.toCompanyName;
+      items.push({ic:'💴',t:'条件のやり取りに新着',d:`${other||''}・大工 ${r.craftsmanName||''}`,go:'req',at:r.lastMsgAt});
+    }
+    if(needsMyReview(r))
+      items.push({ic:'⭐',t:'活用後の評価が必須です',d:`大工 ${r.craftsmanName||''}（${r.dateText||''}）`,go:'req',at:(r.dateTo?Date.parse(r.dateTo):0)});
+  });
+  if(contactUnread()>0)
+    items.push({ic:'📨',t:'管理者から新着メッセージ',d:'「連絡」タブで確認してください',go:'contact',at:Date.now()});
+  return items.sort((a,b)=>(b.at||0)-(a.at||0));
+}
+function renderInbox(){
+  const list=document.getElementById('inboxList'); if(!list) return;
+  if(!myCompanyEntry()){ list.innerHTML='<div class="empty" style="padding:18px">ログインすると、応援要請・日程変更・評価・連絡などのお知らせが表示されます。</div>'; return; }
+  const items=inboxItems();
+  if(!items.length){ list.innerHTML='<div class="empty" style="padding:18px">未対応のお知らせはありません。</div>'; return; }
+  list.innerHTML=items.map(it=>`<div class="inboxitem" data-go="${it.go}"><div class="ii-ic">${it.ic}</div><div><div class="ii-t">${H.esc(it.t)}</div><div class="ii-d">${H.esc(it.d)}</div></div></div>`).join('');
+  list.querySelectorAll('.inboxitem').forEach(el=>el.onclick=()=>{ document.getElementById('inboxOv').classList.remove('on'); goTab(el.dataset.go); });
+}
+function openInbox(){ renderInbox(); document.getElementById('inboxOv').classList.add('on'); }
+document.getElementById('inboxBtn').onclick=openInbox;
+document.getElementById('inboxClose').onclick=()=>document.getElementById('inboxOv').classList.remove('on');
+document.getElementById('inboxOv').onclick=e=>{ if(e.target.id==='inboxOv') e.currentTarget.classList.remove('on'); };
 function renderRequests(){
   updateBadges();
   const box=document.getElementById('reqBox'); if(!box) return;
