@@ -107,7 +107,7 @@
   <div class="hrow">
     <div>
       <h1>🛠 管理画面｜大工シェア</h1>
-      <div class="sub">工務店・大工の登録、技術力／工務店の評価入力</div>
+      <div class="sub">大工の認証・評価、応援要請の確認、工務店との連絡</div>
     </div>
     <div id="hbtns" style="display:flex; flex-direction:column; gap:6px; flex:none">
       <button class="hbtn" id="installBtn"><span class="ic">⬇️</span>アプリにする</button>
@@ -144,23 +144,7 @@
 
   <!-- ========== 工務店 ========== -->
   <section class="page on" id="page-co">
-    <div class="card">
-      <div id="coEditBar" class="editbar" style="display:none"></div>
-      <h2 class="sec">工務店の登録 / 編集</h2>
-      <div class="field"><label class="req">工務店名</label><input type="text" id="coName" placeholder="例）山田工務店"></div>
-      <div class="row">
-        <div class="field"><label>担当者名</label><input type="text" id="coContact" placeholder="例）山田 太郎"></div>
-        <div class="field"><label>電話番号</label><input type="text" id="coTel" placeholder="例）03-1234-5678"></div>
-      </div>
-      <div class="field"><label>対応エリア</label><input type="text" id="coArea" placeholder="例）東京都／23区西部"></div>
-      <div class="field"><label>ログイン用メール（この工務店のオーナー）</label><input type="email" id="coOwnerEmail" placeholder="例）yamada@example.com">
-        <div class="count" style="margin-top:4px">このメールでログインした工務店だけが、自社の大工を編集できます。</div></div>
-      <div class="field"><label>特記事項・メモ</label><textarea id="coNotes" placeholder="支払い条件、得意分野など"></textarea></div>
-      <div class="row">
-        <button class="btn ghost" id="coCancel" style="display:none">キャンセル</button>
-        <button class="btn" id="coSave">登録する</button>
-      </div>
-    </div>
+    <div class="modebar" style="background:#eef3fb;color:#1759c4;border:1px solid #c7dbff">工務店の<b>登録・編集は利用者アプリ</b>で各工務店が行います。ここでは一覧の確認と、必要な場合の削除のみ行えます。</div>
     <h2 class="sec">登録済みの工務店（あいうえお順）</h2>
     <input type="text" id="coSearch" placeholder="🔍 工務店名で検索" style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:10px">
     <div id="coList"></div>
@@ -168,43 +152,7 @@
 
   <!-- ========== 大工 ========== -->
   <section class="page" id="page-ki">
-    <div class="card">
-      <div id="kiEditBar" class="editbar" style="display:none"></div>
-      <h2 class="sec">大工の登録 / 編集</h2>
-      <div class="field"><label class="req">氏名</label><input type="text" id="kName" placeholder="例）田中 一郎"></div>
-      <div class="field"><label class="req">所属工務店</label><select id="kCompany"></select></div>
-      <div class="row">
-        <div class="field"><label>年齢</label><input type="number" id="kAge" min="0" max="99" placeholder="例）42"></div>
-        <div class="field"><label>性別</label>
-          <select id="kGender"><option value="">—</option><option>男</option><option>女</option><option>その他</option></select></div>
-      </div>
-      <div class="field"><label>単価（日給）</label><input type="number" id="kPrice" min="0" placeholder="例）22000（円/日）"></div>
-      <div class="field"><label>得意作業</label><div class="checkgrid" id="kGood"></div>
-        <div class="row" style="margin-top:8px">
-          <input type="text" id="kGoodOther" placeholder="その他の得意作業（自由入力）">
-          <button class="btn ghost" id="kGoodAddBtn" style="flex:none">追加</button>
-        </div>
-        <div id="kGoodCustom" style="margin-top:6px"></div>
-      </div>
-      <div class="field"><label>NG作業</label><div class="checkgrid" id="kNg"></div>
-        <div class="row" style="margin-top:8px">
-          <input type="text" id="kNgOther" placeholder="その他のNG作業（自由入力）">
-          <button class="btn ghost" id="kNgAddBtn" style="flex:none">追加</button>
-        </div>
-        <div id="kNgCustom" style="margin-top:6px"></div>
-      </div>
-      <div class="field"><label>保有資格</label><div class="checkgrid" id="kQual"></div>
-        <div class="row" style="margin-top:8px">
-          <input type="text" id="kQualOther" placeholder="その他の資格（自由入力）">
-          <button class="btn ghost" id="kQualAddBtn" style="flex:none">追加</button>
-        </div>
-        <div id="kQualCustom" style="margin-top:6px"></div>
-      </div>
-      <div class="row">
-        <button class="btn ghost" id="kCancel" style="display:none">キャンセル</button>
-        <button class="btn" id="kSave">登録する</button>
-      </div>
-    </div>
+    <div class="modebar" style="background:#eef3fb;color:#1759c4;border:1px solid #c7dbff">大工の<b>登録・編集は利用者アプリ</b>で各工務店が行います。ここでは<b>認証（公開可否）</b>の管理と、必要な場合の削除を行えます。</div>
     <h2 class="sec">登録済みの大工（会社ごと）</h2>
     <input type="text" id="kSearch" placeholder="🔍 大工名・工務店名で検索" style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:10px">
     <div id="kList"></div>
@@ -259,9 +207,7 @@
 <script src="common.js"></script>
 <script>
 let companies={}, craftsmen={}, reviews={}, approvals={}, requests={};
-let editCo=null, editKi=null;
 let ctCompanyKey=null, ctMsgs=[], ctUnsub=null; // 工務店連絡チャット
-let kCustomQuals=null, kGoodCustom=null, kNgCustom=null; // その他（自由入力）マネージャ（boot前に宣言が必要）
 
 // ===== PWA：ホーム画面に追加（ボタン1つでアプリ化） =====
 let deferredPrompt=null;
@@ -391,14 +337,6 @@ function boot(){
   if(DB.mode==='local'){ m.className='modebar local'; m.innerHTML='⚠️ <b>お試しモード</b>：この端末内だけで動作中。共有するには config.js に Firebase を設定してください。'; DB._seedIfEmpty(H.seed()); }
   else{ m.className='modebar live'; m.innerHTML='🟢 <b>共有モード</b>：'+(myUser&&myUser.email?'管理者 '+H.esc(myUser.email)+' でログイン中。':'')+'Firebaseに保存され利用者アプリへ反映されます。'; }
 
-  // チェックグリッド生成
-  buildChecks('kGood', H.workTypes);
-  buildChecks('kNg', H.workTypes);
-  buildChecks('kQual', H.qualifications);
-  kCustomQuals=makeCustomQuals('kQualOther','kQualAddBtn','kQualCustom');
-  kGoodCustom=makeCustomQuals('kGoodOther','kGoodAddBtn','kGoodCustom');
-  kNgCustom=makeCustomQuals('kNgOther','kNgAddBtn','kNgCustom');
-
   // タブ
   document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
     document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
@@ -411,10 +349,6 @@ function boot(){
   bindStars('evCStars', v=>evC=v);
 
   // ボタン
-  document.getElementById('coSave').onclick=saveCompany;
-  document.getElementById('coCancel').onclick=()=>resetCoForm();
-  document.getElementById('kSave').onclick=saveCraftsman;
-  document.getElementById('kCancel').onclick=()=>resetKiForm();
   document.getElementById('evKSave').onclick=saveKEval;
   document.getElementById('evCSave').onclick=saveCEval;
 
@@ -429,43 +363,6 @@ function boot(){
   DB.on('requests', v=>{ requests=v||{}; renderReqList(); });
 }
 
-function buildChecks(id, arr){
-  const box=document.getElementById(id);
-  box.innerHTML=arr.map(x=>`<label><input type="checkbox" value="${H.esc(x)}">${H.esc(x)}</label>`).join('');
-  box.querySelectorAll('label').forEach(l=>{
-    const cb=l.querySelector('input');
-    const sync=()=>l.classList.toggle('on',cb.checked);
-    cb.addEventListener('change',sync); sync();
-  });
-}
-function getChecked(id){ return [...document.querySelectorAll('#'+id+' input:checked')].map(c=>c.value); }
-function setChecked(id, vals){
-  const set=new Set(vals||[]);
-  document.querySelectorAll('#'+id+' input').forEach(c=>{ c.checked=set.has(c.value); c.parentElement.classList.toggle('on',c.checked); });
-}
-// その他の資格（自由入力・複数）
-function makeCustomQuals(inputId, addBtnId, containerId){
-  let arr=[];
-  function render(){
-    const c=document.getElementById(containerId);
-    c.innerHTML=arr.map((q,i)=>`<span class="chip" style="background:#e7f3f6;color:var(--brand)">${H.esc(q)} <a data-i="${i}" class="cqx">×</a></span>`).join('');
-    c.querySelectorAll('.cqx').forEach(a=>a.onclick=()=>{ arr.splice(+a.dataset.i,1); render(); });
-  }
-  function add(){ const inp=document.getElementById(inputId); const v=inp.value.trim(); if(!v) return; if(arr.indexOf(v)<0) arr.push(v); inp.value=''; render(); }
-  document.getElementById(addBtnId).onclick=add;
-  document.getElementById(inputId).addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); add(); } });
-  return { set(a){ arr=(a||[]).slice(); render(); }, get(){ return arr.slice(); } };
-}
-function splitQuals(quals){
-  const known=new Set(H.qualifications); const checked=[], custom=[];
-  (quals||[]).forEach(q=> (known.has(q)?checked:custom).push(q));
-  return { checked, custom };
-}
-function splitByMaster(values, master){
-  const known=new Set(master||[]); const checked=[], custom=[];
-  (values||[]).forEach(v=> (known.has(v)?checked:custom).push(v));
-  return { checked, custom };
-}
 function bindStars(id, cb){
   const box=document.getElementById(id);
   box.querySelectorAll('span').forEach(s=>s.onclick=()=>{
@@ -476,47 +373,10 @@ function bindStars(id, cb){
 function setStars(id,v){ document.querySelectorAll('#'+id+' span').forEach(s=>s.classList.toggle('on',+s.dataset.v<=v)); }
 
 // ===== 工務店 =====
+// 登録・編集は利用者アプリで行う。管理者は一覧確認・削除のみ。
 function fillCompanySelects(){
   const opts='<option value="">— 選択 —</option>'+H.toArr(companies).map(c=>`<option value="${c._key}">${H.esc(c.name)}</option>`).join('');
-  document.getElementById('kCompany').innerHTML=opts;
-  document.getElementById('evCTarget').innerHTML=opts;
-  if(editKi&&editKi.companyKey) document.getElementById('kCompany').value=editKi.companyKey;
-}
-function saveCompany(){
-  const name=document.getElementById('coName').value.trim();
-  if(!name){ H.toast('工務店名を入力してください','err'); return; }
-  const data={
-    name, contact:document.getElementById('coContact').value.trim(),
-    tel:document.getElementById('coTel').value.trim(),
-    area:document.getElementById('coArea').value.trim(),
-    ownerEmail:document.getElementById('coOwnerEmail').value.trim(),
-    notes:document.getElementById('coNotes').value.trim()
-  };
-  if(editCo){
-    DB.update('companies/'+editCo,data).then(()=>{H.toast('工務店を更新しました','ok'); resetCoForm();});
-  }else{
-    DB.push('companies', Object.assign({createdAt:Date.now()},data)).then(()=>{H.toast('工務店を登録しました','ok'); resetCoForm();});
-  }
-}
-function resetCoForm(){
-  editCo=null;
-  ['coName','coContact','coTel','coArea','coOwnerEmail','coNotes'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('coSave').textContent='登録する';
-  document.getElementById('coCancel').style.display='none';
-  document.getElementById('coEditBar').style.display='none';
-}
-function editCompany(key){
-  const c=companies[key]; if(!c) return; editCo=key;
-  document.getElementById('coName').value=c.name||'';
-  document.getElementById('coContact').value=c.contact||'';
-  document.getElementById('coTel').value=c.tel||'';
-  document.getElementById('coArea').value=c.area||'';
-  document.getElementById('coOwnerEmail').value=c.ownerEmail||'';
-  document.getElementById('coNotes').value=c.notes||'';
-  document.getElementById('coSave').textContent='更新する';
-  document.getElementById('coCancel').style.display='block';
-  const bar=document.getElementById('coEditBar'); bar.style.display='block'; bar.textContent='✏️ 「'+(c.name||'')+'」を編集中';
-  window.scrollTo({top:0,behavior:'smooth'});
+  document.getElementById('evCTarget').innerHTML=opts; // 評価入力の対象工務店
 }
 function delCompany(key){
   const c=companies[key]||{};
@@ -543,63 +403,13 @@ function renderCoList(){
       </div>
       ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
       <div class="acts">
-        <button class="btn ghost sm" onclick="editCompany('${c._key}')">編集</button>
         <button class="btn danger sm" onclick="delCompany('${c._key}')">削除</button>
       </div></div>`;
   }).join('');
 }
 
 // ===== 大工 =====
-function saveCraftsman(){
-  const name=document.getElementById('kName').value.trim();
-  const companyKey=document.getElementById('kCompany').value;
-  if(!name){ H.toast('氏名を入力してください','err'); return; }
-  if(!companyKey){ H.toast('所属工務店を選んでください','err'); return; }
-  const data={
-    name, companyKey, companyName:(companies[companyKey]||{}).name||'',
-    age:+document.getElementById('kAge').value||null,
-    gender:document.getElementById('kGender').value,
-    price:+document.getElementById('kPrice').value||null,
-    unit:'day',
-    good:getChecked('kGood').concat(kGoodCustom?kGoodCustom.get():[]),
-    ng:getChecked('kNg').concat(kNgCustom?kNgCustom.get():[]),
-    quals:getChecked('kQual').concat(kCustomQuals?kCustomQuals.get():[]),
-    updatedAt:Date.now()
-  };
-  if(editKi){
-    DB.update('craftsmen/'+editKi._key,data).then(()=>{H.toast('大工を更新しました','ok'); resetKiForm();});
-  }else{
-    DB.push('craftsmen', Object.assign({availMemo:'',avail:{},createdAt:Date.now()},data))
-      .then(key=>DB.set('approvals/craftsman/'+key, true)) // 管理者登録は自動で認証済み
-      .then(()=>{H.toast('大工を登録しました（認証済み）','ok'); resetKiForm();});
-  }
-}
-function resetKiForm(){
-  editKi=null;
-  ['kName','kAge','kPrice'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('kCompany').value='';
-  document.getElementById('kGender').value='';
-  setChecked('kGood',[]); setChecked('kNg',[]); setChecked('kQual',[]);
-  if(kCustomQuals) kCustomQuals.set([]); if(kGoodCustom) kGoodCustom.set([]); if(kNgCustom) kNgCustom.set([]);
-  document.getElementById('kSave').textContent='登録する';
-  document.getElementById('kCancel').style.display='none';
-  document.getElementById('kiEditBar').style.display='none';
-}
-function editCraftsman(key){
-  const k=craftsmen[key]; if(!k) return; editKi=Object.assign({_key:key},k);
-  document.getElementById('kName').value=k.name||'';
-  document.getElementById('kCompany').value=k.companyKey||'';
-  document.getElementById('kAge').value=k.age||'';
-  document.getElementById('kGender').value=k.gender||'';
-  document.getElementById('kPrice').value=k.price||'';
-  const sg=splitByMaster(k.good,H.workTypes); setChecked('kGood',sg.checked); if(kGoodCustom) kGoodCustom.set(sg.custom);
-  const sn=splitByMaster(k.ng,H.workTypes); setChecked('kNg',sn.checked); if(kNgCustom) kNgCustom.set(sn.custom);
-  const sq=splitQuals(k.quals); setChecked('kQual',sq.checked); if(kCustomQuals) kCustomQuals.set(sq.custom);
-  document.getElementById('kSave').textContent='更新する';
-  document.getElementById('kCancel').style.display='block';
-  const bar=document.getElementById('kiEditBar'); bar.style.display='block'; bar.textContent='✏️ 「'+(k.name||'')+'」を編集中';
-  window.scrollTo({top:0,behavior:'smooth'});
-}
+// 登録・編集は利用者アプリで行う。管理者は認証（公開可否）の管理と削除のみ。
 function delCraftsman(key){
   const k=craftsmen[key]||{};
   if(!confirm('「'+(k.name||'')+'」を削除しますか？')) return;
@@ -624,7 +434,6 @@ function kItemHTML(k){
       ${ok
         ? `<button class="btn ghost sm" onclick="unapproveCraftsman('${k._key}')">認証を取消</button>`
         : `<button class="btn sm" onclick="approveCraftsman('${k._key}')">✓ 認証する</button>`}
-      <button class="btn ghost sm" onclick="editCraftsman('${k._key}')">編集</button>
       <button class="btn danger sm" onclick="delCraftsman('${k._key}')">削除</button>
     </div></div>`;
 }
@@ -804,8 +613,7 @@ function delRequest(rid, fromCk, toCk){
 }
 
 // グローバル公開（onclick用）
-window.editCompany=editCompany; window.delCompany=delCompany;
-window.editCraftsman=editCraftsman; window.delCraftsman=delCraftsman;
+window.delCompany=delCompany; window.delCraftsman=delCraftsman;
 window.approveCraftsman=approveCraftsman; window.unapproveCraftsman=unapproveCraftsman;
 window.delReview=delReview; window.delRequest=delRequest;
 </script>
