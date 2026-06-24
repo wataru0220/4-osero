@@ -116,6 +116,8 @@
   .reqsec{font-size:13px; color:var(--sub); font-weight:800; margin:14px 4px 8px}
   .reqcard{border:1px solid var(--line); border-radius:13px; padding:13px; margin-bottom:11px; background:#fff}
   .newtag{display:inline-block; background:var(--warn); color:#fff; font-size:10px; font-weight:800; border-radius:5px; padding:1px 6px; vertical-align:middle}
+  .favbtn{flex:none; border:1.5px solid var(--line); background:#fff; border-radius:9px; padding:6px 10px; font-size:15px; cursor:pointer; line-height:1}
+  .favbtn.on{color:#f5a623; border-color:#f5d28a; background:#fff9ec}
   .meta2{font-size:13px; color:var(--ink); margin-top:4px}
   .dealbox{margin-top:10px; border-top:1px dashed var(--line); padding-top:10px}
   .dealmsg{background:#f7f9fb; border:1px solid var(--line); border-radius:8px; padding:7px 9px; margin-bottom:6px; font-size:14px; line-height:1.5}
@@ -180,7 +182,10 @@
       <select id="qWork"><option value="">得意作業（すべて）</option></select>
       <select id="qQual"><option value="">資格（すべて）</option></select>
     </div>
-    <label style="display:flex;align-items:center;gap:6px;font-weight:700;color:var(--ink);margin:0 2px 10px"><input type="checkbox" id="qFreeOnly" style="width:auto;accent-color:var(--brand)">空き予定がある大工のみ表示</label>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin:0 2px 10px">
+      <label style="display:flex;align-items:center;gap:6px;font-weight:700;color:var(--ink)"><input type="checkbox" id="qFreeOnly" style="width:auto;accent-color:var(--brand)">空き予定のみ</label>
+      <label style="display:flex;align-items:center;gap:6px;font-weight:700;color:var(--ink)"><input type="checkbox" id="qFavOnly" style="width:auto;accent-color:#f5a623">★お気に入りのみ</label>
+    </div>
     <div class="count" id="findCount"></div>
     <div id="kList"></div>
   </section>
@@ -390,10 +395,19 @@
 <script src="common.js"></script>
 <script>
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
-let filter = { freeOnly:false, text:'', work:'', qual:'' };
+let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
 let reviewTarget = null, rvValue = 0;
 let myUser = null;
 let openAvailView = null; // find カードで開いている読み取り専用カレンダー（renderより前に宣言が必要）
+// お気に入り（この端末に保存・ログイン不要）
+function favGet(k){ try{ return new Set(JSON.parse(localStorage.getItem(k)||'[]')); }catch(_){ return new Set(); } }
+let favCraft = favGet('shokunin_fav_craft'), favCo = favGet('shokunin_fav_co');
+function toggleFav(kind,id){
+  const set = kind==='craft'?favCraft:favCo;
+  set.has(id) ? set.delete(id) : set.add(id);
+  localStorage.setItem(kind==='craft'?'shokunin_fav_craft':'shokunin_fav_co', JSON.stringify([...set]));
+  renderFind(); renderCompanies();
+}
 // 応援要請
 let reqByMe = {}, reqUnsub = {}, reqIndexUnsub = null, reqCompanyKey = null, reqTargetCraft = null, editReqKey = null;
 let contactMsgs = [], contactUnsub = null, contactCompanyKey = null; // 管理者との連絡チャット
@@ -478,6 +492,7 @@ document.getElementById('qText').oninput = e=>{ filter.text=e.target.value.trim(
 document.getElementById('qWork').onchange = e=>{ filter.work=e.target.value; renderFind(); };
 document.getElementById('qQual').onchange = e=>{ filter.qual=e.target.value; renderFind(); };
 document.getElementById('qFreeOnly').onchange = e=>{ filter.freeOnly=e.target.checked; renderFind(); };
+document.getElementById('qFavOnly').onchange = e=>{ filter.favOnly=e.target.checked; renderFind(); };
 
 // ===== 認証状態（ログイン中の工務店） =====
 DB.auth.onChange(u=>{ myUser=u; renderMyArea(); renderFind(); renderCompanies(); });
@@ -491,6 +506,7 @@ DB.on('approvals', v=>{ approvals=v||{}; renderFind(); renderBoard(); renderComp
 // ===== 大工をさがす =====
 function matchFilter(k){
   if(filter.freeOnly && !H.upcomingFreeDates(k.avail).length) return false;
+  if(filter.favOnly && !favCraft.has(k._key)) return false;
   if(filter.work && !(k.good||[]).includes(filter.work)) return false;
   if(filter.qual && !(k.quals||[]).includes(filter.qual)) return false;
   if(filter.text){
@@ -502,7 +518,14 @@ function matchFilter(k){
 function renderFind(){
   const list=document.getElementById('kList');
   const arr=H.toArr(craftsmen).filter(k=>H.isApproved(approvals,k._key)).filter(matchFilter)
-    .sort((a,b)=>(H.upcomingFreeDates(b.avail).length?1:0)-(H.upcomingFreeDates(a.avail).length?1:0));
+    .sort((a,b)=>{
+      const ea=H.upcomingFreeDates(a.avail), eb=H.upcomingFreeDates(b.avail);
+      const ha=ea.length?1:0, hb=eb.length?1:0;
+      if(hb!==ha) return hb-ha;                         // ①空きがある大工を上に
+      if(ha&&hb && ea[0]!==eb[0]) return ea[0]<eb[0]?-1:1; // 早い空き日順
+      const fa=favCraft.has(a._key)?1:0, fb=favCraft.has(b._key)?1:0;
+      return fb-fa;                                     // 同条件ならお気に入りを上に
+    });
   document.getElementById('findCount').textContent=`${arr.length} 名の大工`;
   if(!arr.length){ list.innerHTML='<div class="empty">該当する大工がいません。</div>'; return; }
   list.innerHTML=arr.map(kCardHTML).join('');
@@ -510,6 +533,7 @@ function renderFind(){
   bindShareButtons(list);
   list.querySelectorAll('.req-btn').forEach(b=>b.onclick=()=>openRequestForm(b.dataset.key));
   list.querySelectorAll('.avail-toggle').forEach(b=>b.onclick=()=>{ openAvailView = (openAvailView===b.dataset.key)?null:b.dataset.key; renderFind(); });
+  list.querySelectorAll('.kfav').forEach(b=>b.onclick=()=>toggleFav('craft',b.dataset.key));
 }
 function kCardHTML(k){
   const ownerEmail=(companies[k.companyKey]||{}).ownerEmail;
@@ -519,13 +543,17 @@ function kCardHTML(k){
   const badge = free.length
     ? `<span class="badge" style="background:#1aa260"><span class="dot"></span>空きあり ${H.mdFromYmd(free[0])}〜</span>`
     : `<span class="badge" style="background:#9aa7b5"><span class="dot"></span>空き予定なし</span>`;
+  const fav=favCraft.has(k._key);
   return `<div class="kcard">
     <div class="head">
       <div>
         <div class="nm">${H.esc(k.name)}</div>
         <div class="co">🏢 ${H.esc(k.companyName||'—')}</div>
       </div>
-      ${badge}
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        ${badge}
+        <button class="favbtn kfav${fav?' on':''}" data-key="${k._key}" title="お気に入り">${fav?'★':'☆'}</button>
+      </div>
     </div>
     <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')} ｜ 技術力: ${H.stars(r.avg)}${r.count?`（${r.count}件）`:''}</div>
     <div style="margin-top:6px"><span class="price">${H.fmtPrice(k.price)}</span></div>
@@ -568,16 +596,21 @@ function renderBoard(){
 function renderCompanies(){
   const list=document.getElementById('coList');
   const rateOf=c=>H.ratingFor(reviews,'company',c._key, c.ownerEmail);
-  const arr=H.toArr(companies).sort((a,b)=>(rateOf(b).avg||0)-(rateOf(a).avg||0));
+  const arr=H.toArr(companies).sort((a,b)=>{
+    const fa=favCo.has(a._key)?1:0, fb=favCo.has(b._key)?1:0;
+    if(fb!==fa) return fb-fa;                     // お気に入りを上に
+    return (rateOf(b).avg||0)-(rateOf(a).avg||0); // 次に評価順
+  });
   if(!arr.length){ list.innerHTML='<div class="empty">工務店がまだ登録されていません。</div>'; return; }
   const myKey=(myCompanyEntry()||{})._key;
   list.innerHTML=arr.map(c=>{
     const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===c._key && H.isApproved(approvals,k._key)).length;
     const r=rateOf(c);
+    const fav=favCo.has(c._key);
     return `<div class="ccard">
-      <div style="display:flex;justify-content:space-between;gap:8px">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
         <div class="nm">${H.esc(c.name)}</div>
-        <div>${H.stars(r.avg)}</div>
+        <div style="display:flex;align-items:center;gap:8px">${H.stars(r.avg)}<button class="favbtn cofav${fav?' on':''}" data-key="${c._key}" title="お気に入り">${fav?'★':'☆'}</button></div>
       </div>
       <div class="info">📍 ${H.esc(c.area||'—')}　👤 ${H.esc(c.contact||'—')}　📞 ${H.esc(c.tel||'—')}</div>
       <div class="info">所属大工 ${cnt} 名　評価件数 ${r.count} 件</div>
@@ -588,6 +621,7 @@ function renderCompanies(){
     </div>`;
   }).join('');
   bindReviewButtons(list);
+  list.querySelectorAll('.cofav').forEach(b=>b.onclick=()=>toggleFav('co',b.dataset.key));
 }
 
 // ===== 自社の大工（ログイン制） =====
