@@ -536,7 +536,19 @@ document.getElementById('qFavOnly').onchange = e=>{ filter.favOnly=e.target.chec
 document.getElementById('coSearch').oninput = ()=>renderCompanies();
 
 // ===== 認証状態（ログイン中の工務店） =====
-DB.auth.onChange(u=>{ myUser=u; renderMyArea(); renderFind(); renderCompanies(); });
+let _loginRefreshed=null;
+DB.auth.onChange(u=>{
+  myUser=u; renderMyArea(); renderFind(); renderCompanies();
+  // ログイン直後はリアルタイム購読の再評価を待たず、その場で最新データを取得して即反映（体感を速く）
+  if(u && u.email && _loginRefreshed!==u.uid){ _loginRefreshed=u.uid; refreshCoreData(); }
+});
+// ログイン直後などに、主要データを一括取得して即座に反映する
+function refreshCoreData(){
+  Promise.all([DB.get('companies'),DB.get('craftsmen'),DB.get('reviews'),DB.get('approvals')])
+    .then(([co,cr,rv,ap])=>{ companies=co||{}; craftsmen=cr||{}; reviews=rv||{}; approvals=ap||{};
+      renderFind(); renderCompanies(); renderMyArea(); })
+    .catch(()=>{});
+}
 
 // ===== データ購読（リアルタイム） =====
 DB.on('companies', v=>{ companies=v||{}; renderCompanies(); renderFind(); renderMyArea(); });
@@ -725,9 +737,14 @@ function doAuth(mode){
   if(!email){ lgError('メールアドレスを入力してください'); return; }
   if(DB.mode==='firebase' && pass.length<6){ lgError('パスワードは6文字以上にしてください'); return; }
   const el=document.getElementById('lgErr'); if(el) el.style.display='none';
+  const btnIn=document.getElementById('loginBtn'), btnUp=document.getElementById('signupBtn');
+  const active=(mode==='up')?btnUp:btnIn; const prev=active?active.textContent:'';
+  if(btnIn) btnIn.disabled=true; if(btnUp) btnUp.disabled=true;
+  if(active) active.textContent='⏳ 処理中…';
+  const restore=()=>{ if(btnIn) btnIn.disabled=false; if(btnUp) btnUp.disabled=false; if(active) active.textContent=prev; };
   const p = mode==='up' ? DB.auth.signUp(email,pass) : DB.auth.signIn(email,pass);
-  p.then(()=>H.toast(mode==='up'?'登録してログインしました':'ログインしました','ok'))
-   .catch(e=>lgError(H.authErrMsg(e)));
+  p.then(()=>H.toast(mode==='up'?'登録してログインしました':'ログインしました','ok')) // 成功時は画面が切り替わるので復帰不要
+   .catch(e=>{ restore(); lgError(H.authErrMsg(e)); });
 }
 function resetPwd(){
   const email=(document.getElementById('lgEmail').value||'').trim();
