@@ -1103,12 +1103,12 @@ function renderContact(){
   if(!mine){ box.innerHTML='<div class="empty">管理者との連絡には、「自社の大工」タブでログインしてください。</div>'; return; }
   const uid=DB.auth.user&&DB.auth.user.uid;
   let h='<div class="card"><div class="chatwrap">';
-  h+= contactMsgs.length
-    ? contactMsgs.map(m=>{
-        const mine=!m.byAdmin&&m.byUid===uid;
-        return `<div class="bubble ${mine?'mine':'them'}"><div class="who">${m.byAdmin?'🛠 管理者':H.esc(m.byName||'自社')}</div><div>${H.esc(m.text)}</div><div class="bt">${H.fmtDate(m.at)}${mine?` ・<a class="deallink ctEdit" data-mid="${m._key}">編集</a> ・<a class="deallink ctDel" data-mid="${m._key}">削除</a>`:''}</div></div>`;
-      }).join('')
-    : '<div class="count">まだやり取りはありません。管理者へ連絡できます。</div>';
+  h+= chatBubblesHTML(contactMsgs, {
+    mineFn:m=>!m.byAdmin&&m.byUid===uid,
+    nameFn:m=>m.byAdmin?'🛠 管理者':(m.byName||'自社'),
+    actionsFn:(m,mine)=>mine?` ・<a class="deallink ctEdit" data-mid="${m._key}">編集</a> ・<a class="deallink ctDel" data-mid="${m._key}">削除</a>`:'',
+    empty:'まだやり取りはありません。管理者へ連絡できます。'
+  });
   h+='</div>';
   h+=`<div class="chatlabel">✏️ 管理者へのメッセージを入力して送信</div><div class="chatform"><input type="text" id="ctInput" placeholder="管理者へのメッセージ"><button class="btn" id="ctSend">送信</button></div></div>`;
   box.innerHTML=h;
@@ -1464,14 +1464,29 @@ function reqCardHTML(r,kind){
     ${opened?`<div class="dealbox">${dealThreadHTML()}</div>`:''}
   </div>`;
 }
+// LINE風の吹き出しチャットHTML（自分=右・相手=左。自分の名前は出さず、相手名は送信者が変わった時だけ表示）
+function chatBubblesHTML(msgs, opts){
+  if(!msgs.length) return '<div class="count">'+(opts.empty||'まだやり取りはありません。')+'</div>';
+  let prevKey=null;
+  return msgs.map(m=>{
+    const mine=opts.mineFn(m);
+    const name=opts.nameFn(m)||'';
+    const key=mine?'me':('them:'+name);
+    const showName=!mine && key!==prevKey; // 相手の名前は発言者が変わった時だけ（連続はまとめる）
+    prevKey=key;
+    const acts=opts.actionsFn?opts.actionsFn(m,mine):'';
+    return `<div class="bubble ${mine?'mine':'them'}">${showName?`<div class="who">${H.esc(name)}</div>`:''}<div class="bx">${H.esc(m.text)}</div><div class="bt">${H.fmtDate(m.at)}${acts}</div></div>`;
+  }).join('');
+}
 function dealThreadHTML(){
   const uid=DB.auth.user&&DB.auth.user.uid;
   let h='<div class="count" style="margin:2px 0 8px">この内容は当事者（依頼元と相手工務店）だけが閲覧できます。管理者には表示されません。</div>';
   h+='<div class="chatwrap">';
-  h+= dealMsgs.length? dealMsgs.map(m=>{
-    const mine=m.byUid&&m.byUid===uid;
-    return `<div class="bubble ${mine?'mine':'them'}"><div class="who">${H.esc(m.byName||m.byEmail||'')}</div><div>${H.esc(m.text)}</div><div class="bt">${H.fmtDate(m.at)}${mine?` ・<a class="deallink dealedit" data-mid="${m._key}">編集</a> ・<a class="deallink dealdel" data-mid="${m._key}">削除</a>`:''}</div></div>`;
-  }).join('') : '<div class="count">まだやり取りはありません。</div>';
+  h+= chatBubblesHTML(dealMsgs, {
+    mineFn:m=>m.byUid&&m.byUid===uid,
+    nameFn:m=>m.byName||m.byEmail||'相手',
+    actionsFn:(m,mine)=>mine?` ・<a class="deallink dealedit" data-mid="${m._key}">編集</a> ・<a class="deallink dealdel" data-mid="${m._key}">削除</a>`:''
+  });
   h+='</div>';
   h+=`<div class="chatlabel">✏️ メッセージを入力して送信</div><div class="chatform"><input type="text" id="dealInput" placeholder="例）詳しい住所・日当◯円・支払い条件 など"><button class="btn" id="dealSend">送信</button></div>`;
   return h;
