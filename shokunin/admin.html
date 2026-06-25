@@ -149,6 +149,7 @@
     <div class="modebar" style="background:#eef3fb;color:#1759c4;border:1px solid #c7dbff">工務店の<b>登録・編集は利用者アプリ</b>で各工務店が行います。ここでは一覧の確認と、必要な場合の削除のみ行えます。</div>
     <h2 class="sec">登録済みの工務店（あいうえお順）</h2>
     <input type="text" id="coSearch" placeholder="🔍 工務店名で検索" style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:10px">
+    <div id="sampleClean"></div>
     <div id="coList"></div>
   </section>
 
@@ -372,7 +373,33 @@ function delCompany(key){
   if(!confirm('「'+(c.name||'')+'」を削除しますか？'+(cnt?'\n※所属大工 '+cnt+' 名の所属表示が空欄になります。':''))) return;
   DB.remove('companies/'+key).then(()=>H.toast('削除しました','ok'));
 }
+// サンプルデータ（example.com のオーナー）を見つける
+function sampleCompanies(){ return H.toArr(companies).filter(c=>String(c.ownerEmail||'').toLowerCase().endsWith('@example.com')); }
+function renderSampleClean(){
+  const box=document.getElementById('sampleClean'); if(!box) return;
+  const s=sampleCompanies();
+  if(!s.length){ box.innerHTML=''; return; }
+  box.innerHTML='<div class="modebar" style="background:#fff7e8;color:#8a5a00;border:1px solid #ffe1a8;display:flex;justify-content:space-between;align-items:center;gap:10px">'
+    +'<div>⚠️ サンプルの工務店が <b>'+s.length+'件</b> 残っています（例：'+H.esc(s.map(c=>c.name).slice(0,3).join('・'))+'）。実データではありません。</div>'
+    +'<button class="btn sm" id="sampleCleanBtn" style="flex:none">🧹 まとめて削除</button></div>';
+  const b=document.getElementById('sampleCleanBtn'); if(b) b.onclick=cleanupSampleData;
+}
+async function cleanupSampleData(){
+  const cos=sampleCompanies();
+  if(!cos.length){ H.toast('サンプルデータは見つかりませんでした','ok'); return; }
+  const coKeys=new Set(cos.map(c=>c._key));
+  const crafts=H.toArr(craftsmen).filter(k=>coKeys.has(k.companyKey));
+  const craftKeys=new Set(crafts.map(k=>k._key));
+  if(!confirm('サンプルの工務店 '+cos.length+'件＋大工 '+crafts.length+'名と、関連する評価を削除します。よろしいですか？（元に戻せません）')) return;
+  const ops=[];
+  crafts.forEach(k=>{ ops.push(DB.remove('craftsmen/'+k._key)); ops.push(DB.remove('approvals/craftsman/'+k._key)); });
+  cos.forEach(c=>ops.push(DB.remove('companies/'+c._key)));
+  H.toArr(reviews).forEach(r=>{ if(coKeys.has(r.targetKey)||craftKeys.has(r.targetKey)) ops.push(DB.remove('reviews/'+r._key)); });
+  try{ await Promise.all(ops); H.toast('サンプルデータを削除しました','ok'); }
+  catch(e){ H.toast('一部削除できませんでした：'+((e&&e.message)||e),'err'); }
+}
 function renderCoList(){
+  renderSampleClean();
   const list=document.getElementById('coList');
   const q=((document.getElementById('coSearch')||{}).value||'').trim().toLowerCase();
   const arr=H.toArr(companies)
