@@ -127,6 +127,13 @@
   .meta2{font-size:13px; color:var(--ink); margin-top:4px}
   .confirmband{margin-top:6px; font-size:13px; font-weight:700; color:#1a7a45; background:#eafaf0; border:1px solid #b6e6c8; border-radius:8px; padding:6px 9px}
   .cancelband{margin-top:6px; font-size:13px; font-weight:700; color:#5d6b7c; background:#eef1f4; border:1px solid #d6dde4; border-radius:8px; padding:6px 9px}
+  .helpitem{border:1px solid var(--line); border-radius:10px; padding:0; margin-bottom:8px; background:#fff; overflow:hidden}
+  .helpitem summary{cursor:pointer; font-weight:800; font-size:14px; padding:11px 12px; list-style:none; color:var(--ink)}
+  .helpitem summary::-webkit-details-marker{display:none}
+  .helpitem summary::before{content:"＋ "; color:var(--brand); font-weight:800}
+  .helpitem[open] summary::before{content:"− "}
+  .helpitem[open] summary{border-bottom:1px solid var(--line)}
+  .helpa{padding:10px 12px; font-size:13px; line-height:1.7; color:var(--ink)}
   .cocraftbox{margin-top:8px; border-top:1px dashed var(--line); padding-top:8px}
   .cocraft{border:1px solid var(--line); border-radius:10px; padding:9px 11px; margin-bottom:8px; background:#fafbfc}
   .histthread{border:1px solid var(--line); border-radius:11px; padding:10px 12px; margin-bottom:10px; background:#fafbfc}
@@ -185,8 +192,9 @@
       <h1>🪚 大工シェア ネットワーク</h1>
       <div class="sub">工務店どうしで大工をシェア・空き状況をリアルタイム共有</div>
     </div>
-    <div style="display:flex; flex-direction:column; gap:6px; flex:none">
+    <div style="display:flex; flex-wrap:wrap; gap:6px; flex:none; justify-content:flex-end; max-width:176px">
       <button class="hbtn" id="refreshBtn"><span class="ic">🔄</span>更新</button>
+      <button class="hbtn" id="helpBtn"><span class="ic">❓</span>ヘルプ</button>
       <button class="hbtn" id="inboxBtn" style="position:relative"><span class="ic">🔔</span>お知らせ<span class="hbadge" id="inboxBadge" style="display:none">0</span></button>
       <button class="hbtn" id="installBtn"><span class="ic">⬇️</span>アプリにする</button>
       <button class="hbtn" id="logoutHdr" style="display:none"><span class="ic">🚪</span>ログアウト</button>
@@ -428,6 +436,16 @@
     <div class="count" style="margin-bottom:10px">未対応の項目をまとめて表示します。タップすると該当画面へ移動します。</div>
     <div id="inboxList"></div>
     <div class="row" style="margin-top:10px"><button class="btn" id="inboxClose">とじる</button></div>
+  </div>
+</div>
+
+<!-- ヘルプ（使い方・ルールの検索） -->
+<div class="ov" id="helpOv">
+  <div class="sheet">
+    <h3>❓ ヘルプ（使い方・ルール）</h3>
+    <input type="text" id="helpSearch" placeholder="🔍 キーワードで検索（例：応援要請、評価、空き、通知）" style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;margin:4px 0 10px">
+    <div id="helpList"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="helpClose">とじる</button></div>
   </div>
 </div>
 
@@ -1454,6 +1472,40 @@ function openInbox(){ renderInbox(); document.getElementById('inboxOv').classLis
 document.getElementById('inboxBtn').onclick=openInbox;
 document.getElementById('inboxClose').onclick=()=>document.getElementById('inboxOv').classList.remove('on');
 document.getElementById('inboxOv').onclick=e=>{ if(e.target.id==='inboxOv') e.currentTarget.classList.remove('on'); };
+
+// ===== ヘルプ（使い方・ルールの検索） =====
+const HELP_TOPICS=[
+  { t:'ログイン・新規登録', k:'ログイン 新規登録 メール パスワード アカウント', a:'「自社の大工」タブでメールアドレスとパスワードでログインします（初めての方は「新規登録」）。大工をさがす・工務店の閲覧はログイン不要ですが、登録・応援要請・評価にはログインが必要です。' },
+  { t:'工務店を登録する', k:'工務店 会社 登録 自社', a:'「自社の大工」タブでログイン後、「＋工務店を登録」から自社を登録します。登録時に最初の大工を1名以上登録します（ふりがなを入れるとあいうえお順で正しく並びます）。' },
+  { t:'大工を登録・編集する', k:'大工 職人 登録 編集 追加 下書き', a:'「自社の大工」タブ→「＋大工を登録」。氏名・単価（日給）・得意作業・NG作業・資格などを入力します。入力中の内容は自動保存され、途中で閉じても消えません（「下書きあり」と表示）。' },
+  { t:'空き予定を登録する', k:'空き 空き予定 カレンダー 稼働 日程', a:'「自社の大工」タブで各大工の「📅空き予定（3ヶ月）」を開き、空いている日をタップして登録します。登録した空き日は他社の検索に反映されます。' },
+  { t:'大工をさがす', k:'さがす 検索 大工 絞り込み 得意 資格 お気に入り', a:'「大工をさがす」タブで、名前・工務店・得意作業・資格で検索できます。「空き予定のみ」「★お気に入りのみ」で絞り込みも可能です。技術力の★は利用者全員の平均です。' },
+  { t:'工務店から大工をさがす', k:'工務店 会社 所属 大工 応援要請', a:'「工務店」タブで会社を選び「👷所属大工を見る・応援要請」を開くと、その会社の大工が表示され、そのまま応援要請できます。' },
+  { t:'応援要請を送る', k:'応援要請 依頼 借りる お願い 送る', a:'大工カードの「🤝この大工に応援要請」から、工事場所（県・市・区）、作業期間、連絡先などを入力して送信します。番地など詳しい住所は送信後の「条件のやり取り」で当事者間で伝えます。' },
+  { t:'応援要請を承認・辞退する', k:'承認 辞退 受信 受ける 返事', a:'自社の大工への要請は「応援」タブの「受信した要請」に届きます。「承認する」または「辞退」を選べます。新着は🔔お知らせとタブのバッジで分かります。' },
+  { t:'条件のやり取り（チャット）', k:'チャット やり取り 条件 日当 支払い 住所 メッセージ', a:'承認後、当事者だけが見られるチャットで、住所・日当・支払い条件などを相談できます（管理者には表示されません）。自分は右、相手は左に表示されます。' },
+  { t:'延長・予定変更を依頼する', k:'延長 予定変更 日程変更 リスケ 変更', a:'承認済みの要請で「📅延長・予定変更を依頼」から新しい作業期間を提案できます。相手が承認すると活用日が更新されます。' },
+  { t:'取引を解除する', k:'解除 キャンセル 取消 中止 取引', a:'予定変更で条件が合わなくなった等の場合、承認済みの要請を「🚫取引を解除する」で解除できます。当事者どちらからでも可能です。' },
+  { t:'評価のルール', k:'評価 ★ 星 レビュー 5段階 平均 ルール 自己評価', a:'評価は「取引・活用した相手」だけが入力できます（取引のない工務店・活用していない大工は評価不可）。応援画面の承認済み要請から、大工・相手工務店を5段階で評価します。自己評価はできません。平均は利用者全員の値で、大工をさがす／工務店画面に表示されます。' },
+  { t:'過去のやり取り履歴', k:'履歴 過去 3か月 やり取り 記録', a:'「応援」タブの「💬当事者どうしのやり取り履歴（過去3か月）を見る」で、相手ごとに過去3か月分のやり取りをまとめて確認できます。' },
+  { t:'お知らせ・通知', k:'お知らせ 通知 ベル 受信箱 新着 プッシュ', a:'ヘッダーの🔔お知らせで、未対応（応援要請・日程変更・新着メッセージ・必須評価・管理者連絡）をまとめて確認できます。「通知をオンにする」と、アプリを開いている間に新着をこの端末へ通知します。' },
+  { t:'お気に入り', k:'お気に入り ★ ブックマーク 保存', a:'大工・工務店の★を押すとお気に入りに登録できます（この端末内に保存）。検索で「★お気に入りのみ」に絞り込めます。' },
+  { t:'最新の情報に更新', k:'更新 リロード 反映 最新', a:'反映が遅いと感じたら、ヘッダーの🔄更新で最新データを取り直せます。' },
+  { t:'アプリにする（ホーム画面に追加）', k:'アプリ インストール ホーム画面 PWA', a:'ヘッダーの「⬇️アプリにする」から、スマホのホーム画面に追加するとアイコンから全画面で起動できます。' },
+  { t:'プライバシー・基本ルール', k:'プライバシー ルール 住所 個人情報 匿名', a:'アプリ上の住所表示は県・市・区まで。詳しい住所は当事者間のやり取りで伝えます。評価はトラブル防止のため★のみ（コメントなし）です。自社・自分の大工は評価できません。' }
+];
+function renderHelp(){
+  const list=document.getElementById('helpList'); if(!list) return;
+  const q=((document.getElementById('helpSearch')||{}).value||'').trim().toLowerCase();
+  const items=HELP_TOPICS.filter(it=>!q || (it.t+' '+it.k+' '+it.a).toLowerCase().includes(q));
+  if(!items.length){ list.innerHTML='<div class="empty" style="padding:18px">該当する項目がありません。別のキーワードでお試しください。</div>'; return; }
+  list.innerHTML=items.map(it=>`<details class="helpitem"><summary>${H.esc(it.t)}</summary><div class="helpa">${H.esc(it.a)}</div></details>`).join('');
+}
+function openHelp(){ document.getElementById('helpSearch').value=''; renderHelp(); document.getElementById('helpOv').classList.add('on'); }
+document.getElementById('helpBtn').onclick=openHelp;
+document.getElementById('helpClose').onclick=()=>document.getElementById('helpOv').classList.remove('on');
+document.getElementById('helpOv').onclick=e=>{ if(e.target.id==='helpOv') e.currentTarget.classList.remove('on'); };
+document.getElementById('helpSearch').oninput=renderHelp;
 function renderRequests(){
   updateBadges();
   const box=document.getElementById('reqBox'); if(!box) return;
