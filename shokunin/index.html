@@ -183,6 +183,7 @@
       <div class="sub">工務店どうしで大工をシェア・空き状況をリアルタイム共有</div>
     </div>
     <div style="display:flex; flex-direction:column; gap:6px; flex:none">
+      <button class="hbtn" id="refreshBtn"><span class="ic">🔄</span>更新</button>
       <button class="hbtn" id="inboxBtn" style="position:relative"><span class="ic">🔔</span>お知らせ<span class="hbadge" id="inboxBadge" style="display:none">0</span></button>
       <button class="hbtn" id="installBtn"><span class="ic">⬇️</span>アプリにする</button>
       <button class="hbtn" id="logoutHdr" style="display:none"><span class="ic">🚪</span>ログアウト</button>
@@ -550,11 +551,20 @@ DB.auth.onChange(u=>{
 });
 // ログイン直後などに、主要データを一括取得して即座に反映する
 function refreshCoreData(){
-  Promise.all([DB.get('companies'),DB.get('craftsmen'),DB.get('reviews'),DB.get('approvals')])
+  return Promise.all([DB.get('companies'),DB.get('craftsmen'),DB.get('reviews'),DB.get('approvals')])
     .then(([co,cr,rv,ap])=>{ companies=co||{}; craftsmen=cr||{}; reviews=rv||{}; approvals=ap||{};
       renderFind(); renderCompanies(); renderMyArea(); })
     .catch(()=>{});
 }
+// 手動更新（ヘッダーの🔄ボタン）：最新データを取り直して全画面を再描画
+function manualRefresh(){
+  const btn=document.getElementById('refreshBtn'); const ic=btn&&btn.querySelector('.ic');
+  if(btn) btn.disabled=true; if(ic) ic.textContent='⏳';
+  Promise.resolve(refreshCoreData())
+    .then(()=>{ try{ renderRequests(); }catch(_){ } try{ renderContact(); }catch(_){ } })
+    .finally(()=>{ if(ic) ic.textContent='🔄'; if(btn) btn.disabled=false; H.toast('最新の情報に更新しました','ok'); });
+}
+document.getElementById('refreshBtn').onclick=manualRefresh;
 
 // ===== データ購読（リアルタイム） =====
 DB.on('companies', v=>{ companies=v||{}; renderCompanies(); renderFind(); renderMyArea(); });

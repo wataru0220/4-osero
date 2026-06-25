@@ -111,6 +111,7 @@
       <div class="sub">大工の認証・評価、応援要請の確認、工務店との連絡</div>
     </div>
     <div id="hbtns" style="display:flex; flex-direction:column; gap:6px; flex:none">
+      <button class="hbtn" id="refreshBtn"><span class="ic">🔄</span>更新</button>
       <button class="hbtn" id="installBtn"><span class="ic">⬇️</span>アプリにする</button>
       <button class="hbtn" id="inviteBtn"><span class="ic">📲</span>利用者用URLを共有</button>
     </div>
@@ -344,6 +345,7 @@ function boot(){
 
   // ボタン
   document.getElementById('evKSave').onclick=saveKEval;
+  document.getElementById('refreshBtn').onclick=adminRefresh;
 
   // 購読
   DB.on('companies', v=>{ companies=v||{}; renderCoList(); renderKList(); fillContactCompanies(); });
@@ -451,6 +453,16 @@ function kItemHTML(k){
         : `<button class="btn sm" onclick="approveCraftsman('${k._key}')">✓ 認証する</button>`}
       <button class="btn danger sm" onclick="delCraftsman('${k._key}')">削除</button>
     </div></div>`;
+}
+// 手動更新（ヘッダーの🔄ボタン）：最新データを取り直して全画面を再描画
+function adminRefresh(){
+  const btn=document.getElementById('refreshBtn'); const ic=btn&&btn.querySelector('.ic');
+  if(btn) btn.disabled=true; if(ic) ic.textContent='⏳';
+  Promise.all([DB.get('companies'),DB.get('craftsmen'),DB.get('reviews'),DB.get('approvals'),DB.get('requests')])
+    .then(([co,cr,rv,ap,rq])=>{ companies=co||{}; craftsmen=cr||{}; reviews=rv||{}; approvals=ap||{}; requests=rq||{};
+      renderCoList(); renderKList(); renderHist(); renderReqList(); fillCraftsmanSelect(); fillContactCompanies(); })
+    .catch(()=>{})
+    .finally(()=>{ if(ic) ic.textContent='🔄'; if(btn) btn.disabled=false; H.toast('最新の情報に更新しました','ok'); });
 }
 // 承認待ち（未認証の大工）の件数をタブ＋アプリアイコンに表示
 function setIconBadge(n){ try{ if(navigator.setAppBadge){ n>0?navigator.setAppBadge(n).catch(()=>{}):(navigator.clearAppBadge&&navigator.clearAppBadge().catch(()=>{})); } }catch(_){} }
