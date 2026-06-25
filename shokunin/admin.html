@@ -139,7 +139,6 @@
   <div class="tabs">
     <button class="on" data-page="co">🏢 工務店</button>
     <button data-page="ki" style="position:relative">🪚 大工<span class="tabbadge" id="kBadge" style="display:none">0</span></button>
-    <button data-page="eval">⭐ 評価入力</button>
     <button data-page="hist">📜 評価履歴</button>
     <button data-page="req">🤝 応援要請</button>
     <button data-page="contact">📨 工務店連絡</button>
@@ -160,20 +159,6 @@
     <h2 class="sec">登録済みの大工（会社ごと）</h2>
     <input type="text" id="kSearch" placeholder="🔍 大工名・工務店名で検索" style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:10px">
     <div id="kList"></div>
-  </section>
-
-  <!-- ========== 評価入力 ========== -->
-  <section class="page" id="page-eval">
-    <div class="card">
-      <h2 class="sec">⭐ 大工の技術力を評価</h2>
-      <div class="field"><label class="req">対象の大工</label><select id="evKTarget"></select></div>
-      <label>技術力（1〜5）</label>
-      <div class="ratepick" id="evKStars"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div>
-      <div class="field"><label>評価した工務店名（任意）</label><input type="text" id="evKBy" placeholder="例）佐藤建設"></div>
-      <div class="count" style="margin-bottom:8px">※ ★のみの評価です（トラブル防止のためコメントはありません）。</div>
-      <button class="btn full" id="evKSave">この技術力評価を登録</button>
-    </div>
-    <div class="modebar" style="background:#eef3fb;color:#1759c4;border:1px solid #c7dbff">工務店の評価は管理者では行いません（工務店どうしの相互評価のみ）。</div>
   </section>
 
   <!-- ========== 評価履歴 ========== -->
@@ -229,7 +214,6 @@ function showInstallSteps(){
 }
 document.getElementById('installClose').onclick=()=>document.getElementById('installOv').classList.remove('on');
 document.getElementById('installOv').onclick=e=>{ if(e.target.id==='installOv') e.currentTarget.classList.remove('on'); };
-let evK=0;
 let myUser=null, booted=false, admins={}, adminsLoaded=false;
 
 // ---- 管理者ログイン（最初に登録した人が管理者になる方式） ----
@@ -340,11 +324,7 @@ function boot(){
     b.classList.add('on'); document.getElementById('page-'+b.dataset.page).classList.add('on');
   });
 
-  // 星ピッカー（大工の技術力評価のみ）
-  bindStars('evKStars', v=>evK=v);
-
   // ボタン
-  document.getElementById('evKSave').onclick=saveKEval;
   document.getElementById('refreshBtn').onclick=adminRefresh;
 
   // 購読
@@ -352,20 +332,11 @@ function boot(){
   document.getElementById('ctCompany').onchange=function(){ openContact(this.value); };
   document.getElementById('coSearch').oninput=()=>renderCoList();
   document.getElementById('kSearch').oninput=()=>renderKList();
-  DB.on('craftsmen', v=>{ craftsmen=v||{}; renderKList(); fillCraftsmanSelect(); renderCoList(); });
+  DB.on('craftsmen', v=>{ craftsmen=v||{}; renderKList(); renderCoList(); });
   DB.on('reviews', v=>{ reviews=v||{}; renderHist(); renderCoList(); renderKList(); });
   DB.on('approvals', v=>{ approvals=v||{}; renderKList(); });
   DB.on('requests', v=>{ requests=v||{}; renderReqList(); });
 }
-
-function bindStars(id, cb){
-  const box=document.getElementById(id);
-  box.querySelectorAll('span').forEach(s=>s.onclick=()=>{
-    const v=+s.dataset.v; cb(v);
-    box.querySelectorAll('span').forEach(x=>x.classList.toggle('on',+x.dataset.v<=v));
-  });
-}
-function setStars(id,v){ document.querySelectorAll('#'+id+' span').forEach(s=>s.classList.toggle('on',+s.dataset.v<=v)); }
 
 // ===== 工務店 =====
 // 登録・編集は利用者アプリで行う。管理者は一覧確認・削除のみ。
@@ -460,7 +431,7 @@ function adminRefresh(){
   if(btn) btn.disabled=true; if(ic) ic.textContent='⏳';
   Promise.all([DB.get('companies'),DB.get('craftsmen'),DB.get('reviews'),DB.get('approvals'),DB.get('requests')])
     .then(([co,cr,rv,ap,rq])=>{ companies=co||{}; craftsmen=cr||{}; reviews=rv||{}; approvals=ap||{}; requests=rq||{};
-      renderCoList(); renderKList(); renderHist(); renderReqList(); fillCraftsmanSelect(); fillContactCompanies(); })
+      renderCoList(); renderKList(); renderHist(); renderReqList(); fillContactCompanies(); })
     .catch(()=>{})
     .finally(()=>{ if(ic) ic.textContent='🔄'; if(btn) btn.disabled=false; H.toast('最新の情報に更新しました','ok'); });
 }
@@ -503,27 +474,6 @@ function renderKList(){
   const orphans=all.filter(k=>!used[k._key]);
   if(orphans.length){ html+='<h2 class="sec" style="margin-top:14px">🏢 未所属</h2>'+orphans.sort(byAppr).map(kItemHTML).join(''); }
   list.innerHTML=html;
-}
-
-// ===== 評価入力 =====
-function fillCraftsmanSelect(){
-  document.getElementById('evKTarget').innerHTML='<option value="">— 選択 —</option>'+
-    H.toArr(craftsmen).map(k=>`<option value="${k._key}">${H.esc(k.name)}（${H.esc(k.companyName||'')}）</option>`).join('');
-}
-function saveKEval(){
-  const key=document.getElementById('evKTarget').value;
-  if(!key){ H.toast('大工を選んでください','err'); return; }
-  if(!evK){ H.toast('技術力（星）を選んでください','err'); return; }
-  const by=document.getElementById('evKBy').value.trim();
-  const k=craftsmen[key]||{};
-  const uid=DB.auth.user&&DB.auth.user.uid;
-  DB.push('reviews',{type:'craftsman',targetKey:key,targetName:k.name||'',rating:evK,byCompany:by,byUid:uid,byEmail:(DB.auth.user&&DB.auth.user.email)||null,at:Date.now()})
-  .then(()=>{
-    H.toast('技術力評価を登録しました','ok');
-    evK=0; setStars('evKStars',0);
-    document.getElementById('evKBy').value='';
-    document.getElementById('evKTarget').value='';
-  });
 }
 
 // ===== 評価履歴 =====
