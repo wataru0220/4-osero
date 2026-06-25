@@ -127,6 +127,8 @@
   .meta2{font-size:13px; color:var(--ink); margin-top:4px}
   .confirmband{margin-top:6px; font-size:13px; font-weight:700; color:#1a7a45; background:#eafaf0; border:1px solid #b6e6c8; border-radius:8px; padding:6px 9px}
   .cancelband{margin-top:6px; font-size:13px; font-weight:700; color:#5d6b7c; background:#eef1f4; border:1px solid #d6dde4; border-radius:8px; padding:6px 9px}
+  .histthread{border:1px solid var(--line); border-radius:11px; padding:10px 12px; margin-bottom:10px; background:#fafbfc}
+  .histhead{font-weight:800; font-size:13px; margin-bottom:6px; color:var(--ink)}
   .chgbox{margin-top:8px; font-size:13px; background:#fff4e5; border:1px solid #ffd591; border-radius:8px; padding:8px 10px; color:#8a5a00}
   .chglink{color:#8a5a00; font-weight:700}
   .reviewneed{margin-top:8px; font-size:13px; background:#fff7e8; border:1px solid #ffe1a8; border-radius:8px; padding:8px 10px; color:#8a5a00}
@@ -224,6 +226,10 @@
     <div class="card" style="padding:11px 14px">
       <b>🤝 応援要請</b>
       <div class="count" style="margin:4px 0 0">他社の大工を借りたいときは「大工をさがす」から要請できます。労働条件・支払い条件のやり取りは当事者だけが見られます（管理者は取引に関与しません）。</div>
+    </div>
+    <div class="card" id="histCard" style="padding:11px 14px; display:none">
+      <button class="btn ghost sm" id="histToggle" style="width:100%">💬 当事者どうしのやり取り履歴（過去3か月）を見る</button>
+      <div id="reqHistoryBox" style="margin-top:10px"></div>
     </div>
     <div id="reqBox"></div>
   </section>
@@ -1419,6 +1425,7 @@ function renderRequests(){
   updateBadges();
   const box=document.getElementById('reqBox'); if(!box) return;
   const mine=myCompanyEntry();
+  const hc=document.getElementById('histCard'); if(hc) hc.style.display = mine?'block':'none';
   if(!mine){ box.innerHTML='<div class="empty">応援要請を使うには、「自社の大工」タブでログインして工務店を登録してください。</div>'; return; }
   const all=H.toArr(reqByMe).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   const recv=all.filter(r=>r.toCompanyKey===mine._key);
@@ -1427,7 +1434,44 @@ function renderRequests(){
   const banner = need>0 ? `<div class="reviewbanner">⭐ 活用後の評価が <b>${need}件</b> 未入力です。下の「評価する（必須）」から評価してください。<br><span class="count" style="color:inherit">※ 未評価のあいだは新しい応援要請を送れません。</span></div>` : '';
   box.innerHTML=banner+reqSectionHTML('受信した要請（自社の大工へ）',recv,'recv')+reqSectionHTML('送信した要請（他社の大工へ）',sent,'sent');
   bindReqCards(box);
+  if(histOpen) renderHistory(); // 開いている履歴は最新の相手名などに追従
 }
+// ===== 当事者どうしのやり取り履歴（過去3か月・読み取り専用） =====
+let histOpen=false, histLoading=false, histThreads=[];
+function toggleHistory(){
+  histOpen=!histOpen;
+  const btn=document.getElementById('histToggle');
+  if(btn) btn.textContent = histOpen ? '▲ やり取り履歴を閉じる' : '💬 当事者どうしのやり取り履歴（過去3か月）を見る';
+  if(histOpen) loadHistory(); else renderHistory();
+}
+function loadHistory(){
+  const mine=myCompanyEntry(); if(!mine){ histThreads=[]; histOpen=false; renderHistory(); return; }
+  histLoading=true; renderHistory();
+  const cutoff=Date.now()-90*24*3600*1000; // 過去3か月（90日）
+  const rids=Object.keys(reqByMe);
+  Promise.all(rids.map(rid=>DB.get('deals/'+rid).then(v=>({rid,msgs:H.toArr(v)})).catch(()=>({rid,msgs:[]}))))
+    .then(results=>{
+      histThreads=results.map(({rid,msgs})=>{
+        const r=reqByMe[rid]||{};
+        const recent=msgs.filter(m=>(m.at||0)>=cutoff).sort((a,b)=>(a.at||0)-(b.at||0));
+        const partner = r.fromCompanyKey===mine._key ? (r.toCompanyName||'相手') : (r.fromCompanyName||'相手');
+        return { rid, partner, craft:r.craftsmanName||'', msgs:recent, last: recent.length?(recent[recent.length-1].at||0):0 };
+      }).filter(t=>t.msgs.length>0).sort((a,b)=>b.last-a.last);
+      histLoading=false; renderHistory();
+    });
+}
+function renderHistory(){
+  const box=document.getElementById('reqHistoryBox'); if(!box) return;
+  if(!histOpen){ box.innerHTML=''; return; }
+  if(histLoading){ box.innerHTML='<div class="count">読み込み中…</div>'; return; }
+  if(!histThreads.length){ box.innerHTML='<div class="empty" style="padding:12px">過去3か月のやり取りはありません。</div>'; return; }
+  const uid=DB.auth.user&&DB.auth.user.uid;
+  box.innerHTML=histThreads.map(t=>{
+    const bubbles=chatBubblesHTML(t.msgs,{ mineFn:m=>m.byUid&&m.byUid===uid, nameFn:m=>m.byName||m.byEmail||'相手', actionsFn:()=>'' });
+    return `<div class="histthread"><div class="histhead">💼 ${H.esc(t.partner)}　/　大工 ${H.esc(t.craft)}</div><div class="chatwrap">${bubbles}</div></div>`;
+  }).join('');
+}
+(function(){ const b=document.getElementById('histToggle'); if(b) b.onclick=toggleHistory; })();
 function reqSectionHTML(title,arr,kind){
   let h='<h2 class="reqsec">'+title+'（'+arr.length+'）</h2>';
   if(!arr.length){ h+='<div class="empty" style="padding:12px">まだありません。</div>'; return h; }
