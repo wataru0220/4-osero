@@ -571,7 +571,6 @@ function renderFind(){
   if(!arr.length){ list.innerHTML='<div class="empty">該当する大工がいません。</div>'; return; }
   list.innerHTML=arr.map(kCardHTML).join('');
   bindReviewButtons(list);
-  bindShareButtons(list);
   list.querySelectorAll('.req-btn').forEach(b=>b.onclick=()=>openRequestForm(b.dataset.key));
   list.querySelectorAll('.avail-toggle').forEach(b=>b.onclick=()=>{ openAvailView = (openAvailView===b.dataset.key)?null:b.dataset.key; renderFind(); });
   list.querySelectorAll('.kfav').forEach(b=>b.onclick=()=>toggleFav('craft',b.dataset.key));
@@ -606,10 +605,9 @@ function kCardHTML(k){
     <button class="btn ghost sm avail-toggle" data-key="${k._key}" style="width:100%;margin-top:8px">📅 3ヶ月の空き予定を${openAvailView===k._key?'閉じる':'見る'}</button>
     ${openAvailView===k._key?`<div style="margin-top:8px">${calHTML(k.avail,false)}</div>`:''}
     <button class="btn sm req-btn" data-key="${k._key}" style="width:100%;background:var(--accent);color:#fff;margin-top:8px">🤝 この大工に応援要請</button>
-    <div class="actions">
-      <button class="btn ln sm ln-share" data-key="${k._key}">📲 LINEで共有</button>
-      ${isOwn?'':`<button class="btn ghost sm rv" data-type="craftsman" data-key="${k._key}" data-name="${H.esc(k.name)}">⭐ 評価</button>`}
-    </div>
+    ${isOwn?'':`<div class="actions">
+      <button class="btn ghost sm rv" data-type="craftsman" data-key="${k._key}" data-name="${H.esc(k.name)}" style="width:100%">⭐ 評価</button>
+    </div>`}
   </div>`;
 }
 
@@ -1537,48 +1535,6 @@ function sendDeal(){
   localStorage.setItem('shokunin_seen_'+rid, Date.now()); // 自分は既読
 }
 
-// ===== LINE共有 =====
-// 公式アカウント不要。スマホは共有シート（LINEを選択）、PC等はコピー＋LINE共有画面を開く。
-function appUrl(){ return location.origin + location.pathname; }
-async function shareToLine(text){
-  if(navigator.share){
-    try{ await navigator.share({text}); return; }catch(e){ if(e&&e.name==='AbortError') return; }
-  }
-  try{ await navigator.clipboard.writeText(text); H.toast('内容をコピーしました。LINEに貼り付けて送ってください','ok'); }catch(_){}
-  window.open('https://line.me/R/msg/text/?'+encodeURIComponent(text),'_blank');
-}
-function craftsmanShareText(k){
-  if(!k) return '';
-  const free=H.upcomingFreeDates(k.avail);
-  const L=['【大工シェア】'+k.name+'（'+(k.companyName||'')+'）'];
-  L.push('空き予定：'+(free.length?free.slice(0,8).map(H.mdFromYmd).join('、'):'なし'));
-  L.push('単価：'+H.fmtPrice(k.price));
-  if(k.age||k.gender) L.push('属性：'+(k.age?k.age+'歳':'')+(k.gender?' '+k.gender:''));
-  if(k.good&&k.good.length) L.push('得意：'+k.good.join('・'));
-  if(k.ng&&k.ng.length) L.push('NG：'+k.ng.join('・'));
-  if(k.quals&&k.quals.length) L.push('資格：'+k.quals.join('・'));
-  if(k.availMemo) L.push('🗓 '+k.availMemo);
-  L.push('👉 詳細・他の大工はこちら：'+appUrl());
-  return L.join('\n');
-}
-function boardShareText(){
-  const items=H.toArr(craftsmen)
-    .filter(k=>H.isApproved(approvals,k._key))
-    .map(k=>({k, free:H.upcomingFreeDates(k.avail)}))
-    .filter(x=>x.free.length)
-    .sort((a,b)=>a.free[0]<b.free[0]?-1:1);
-  if(!items.length) return '【大工シェア】現在、空き予定が登録されている大工はいません。\n👉 '+appUrl();
-  const L=['【空き予定がある大工】'];
-  items.forEach(x=>L.push('・'+x.k.name+'（'+(x.k.companyName||'')+'）'+H.fmtPrice(x.k.price)+'／空き: '+x.free.slice(0,5).map(H.mdFromYmd).join('、')));
-  L.push('👉 アプリで詳細：'+appUrl());
-  return L.join('\n');
-}
-function inviteText(){
-  return '【大工シェア ネットワーク】\n工務店どうしで大工をシェアし、空き状況をリアルタイムに共有できるアプリです。\n下記から参加できます👇\n'+appUrl();
-}
-function bindShareButtons(scope){
-  scope.querySelectorAll('.ln-share').forEach(b=>b.onclick=()=>shareToLine(craftsmanShareText(craftsmen[b.dataset.key])));
-}
 document.getElementById('logoutHdr').onclick=()=>DB.auth.signOut().then(()=>H.toast('ログアウトしました','ok'));
 DB.auth.onChange(()=>updateBadges());
 
