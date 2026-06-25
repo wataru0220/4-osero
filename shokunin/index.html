@@ -126,6 +126,7 @@
   .favbtn.on{color:#f5a623; border-color:#f5d28a; background:#fff9ec}
   .meta2{font-size:13px; color:var(--ink); margin-top:4px}
   .confirmband{margin-top:6px; font-size:13px; font-weight:700; color:#1a7a45; background:#eafaf0; border:1px solid #b6e6c8; border-radius:8px; padding:6px 9px}
+  .cancelband{margin-top:6px; font-size:13px; font-weight:700; color:#5d6b7c; background:#eef1f4; border:1px solid #d6dde4; border-radius:8px; padding:6px 9px}
   .chgbox{margin-top:8px; font-size:13px; background:#fff4e5; border:1px solid #ffd591; border-radius:8px; padding:8px 10px; color:#8a5a00}
   .chglink{color:#8a5a00; font-weight:700}
   .reviewneed{margin-top:8px; font-size:13px; background:#fff7e8; border:1px solid #ffe1a8; border-radius:8px; padding:8px 10px; color:#8a5a00}
@@ -1243,10 +1244,22 @@ function cancelChange(rid){
   if(!confirm('変更依頼を取り消しますか？')) return;
   DB.update('requests/'+rid, { changeReq:null }).then(()=>{ H.toast('変更依頼を取り消しました','ok'); });
 }
+// 取引自体を解除（予定変更で条件が合わなくなった等。当事者どちらからでも可）
+function cancelDeal(rid){
+  const r=reqByMe[rid]; if(!r) return;
+  if(!confirm('この取引（応援要請）を解除しますか？\n※活用の予定・条件はすべて無効になります。元に戻せません。')) return;
+  const reason=(prompt('解除の理由（任意・相手にも表示されます）','')||'').trim();
+  const mine=myCompanyEntry(); const uid=DB.auth.user&&DB.auth.user.uid;
+  DB.update('requests/'+rid, { status:'cancelled', changeReq:null,
+    cancelledByUid:uid, cancelledByName:(mine&&mine.name)||myUser.email, cancelledReason:reason, cancelledAt:Date.now(),
+    lastMsgAt:Date.now(), lastMsgByUid:uid })
+    .then(()=>{ H.toast('取引を解除しました','ok'); markSeen(rid); });
+}
 
 function reqStatusLabel(s){
   if(s==='accepted') return '<span class="okbadge">承認</span>';
   if(s==='declined') return '<span class="waitbadge" style="color:var(--warn);background:#fdeceb;border-color:#f0c4c0">辞退</span>';
+  if(s==='cancelled') return '<span class="waitbadge" style="color:#fff;background:#9aa7b5;border-color:#9aa7b5">解除</span>';
   return '<span class="waitbadge">申請中</span>';
 }
 // ===== 新着バッジ（応援要請・書き込み件数） =====
@@ -1259,6 +1272,7 @@ function reqIsNew(r){
   const incoming = r.toCompanyKey===mine._key;
   if(incoming && r.status==='pending') return true;
   if(r.changeReq && r.changeReq.byUid && r.changeReq.byUid!==myUid) return true; // 相手からの変更依頼が保留中
+  if(r.status==='cancelled' && r.cancelledByUid && r.cancelledByUid!==myUid && (r.cancelledAt||0)>seenAt(r._key)) return true; // 相手が取引を解除
   if(r.lastMsgAt && r.lastMsgByUid && r.lastMsgByUid!==myUid && r.lastMsgAt>seenAt(r._key)) return true;
   return false;
 }
@@ -1350,7 +1364,10 @@ function inboxItems(){
     const crToMe = r.changeReq && r.changeReq.byUid && r.changeReq.byUid!==myUid;
     if(crToMe)
       items.push({key:'chg:'+r._key+':'+(r.changeReq.at||0),ic:'📅',t:'日程変更の依頼',d:`大工 ${r.craftsmanName||''}：新しい日程 ${r.changeReq.dateText||''}（${r.changeReq.byName||''}より）`,go:'req',at:r.changeReq.at||0});
-    if(r.lastMsgAt && r.lastMsgByUid && r.lastMsgByUid!==myUid && r.lastMsgAt>seenAt(r._key) && !crToMe){
+    const cancelledByOther = r.status==='cancelled' && r.cancelledByUid && r.cancelledByUid!==myUid;
+    if(cancelledByOther)
+      items.push({key:'cancel:'+r._key+':'+(r.cancelledAt||0),ic:'🚫',t:'取引が解除されました',d:`大工 ${r.craftsmanName||''}${r.cancelledReason?'（理由：'+r.cancelledReason+'）':''}`,go:'req',at:r.cancelledAt||0});
+    if(r.lastMsgAt && r.lastMsgByUid && r.lastMsgByUid!==myUid && r.lastMsgAt>seenAt(r._key) && !crToMe && !cancelledByOther){
       const other = r.toCompanyKey===mine._key ? r.fromCompanyName : r.toCompanyName;
       items.push({key:'msg:'+r._key+':'+r.lastMsgAt,ic:'💴',t:'条件のやり取りに新着',d:`${other||''}・大工 ${r.craftsmanName||''}`,go:'req',at:r.lastMsgAt});
     }
@@ -1415,6 +1432,7 @@ function reqCardHTML(r,kind){
     </div>
     <div class="meta2">📍 ${H.esc(r.site||'—')}　🗓 ${H.esc(r.dateText||'—')}</div>
     ${r.status==='accepted'?`<div class="confirmband">✅ 活用日 確定：<b>${H.esc(r.dateText||'—')}</b></div>`:''}
+    ${r.status==='cancelled'?`<div class="cancelband">🚫 この取引は解除されました${r.cancelledByName?`（${H.esc(r.cancelledByName)}）`:''}${r.cancelledReason?`<div class="meta2" style="color:inherit;margin-top:2px">理由：${H.esc(r.cancelledReason)}</div>`:''}</div>`:''}
     ${needReview?`<div class="reviewneed">⭐ 活用が終了しました。<b>評価の入力が必須</b>です。
         <div class="row" style="margin-top:6px"><button class="btn sm rv-need" data-rid="${r._key}" data-ckey="${r.craftsmanKey||''}" data-cname="${H.esc(r.craftsmanName||'')}">⭐ 評価する（必須）</button></div>
       </div>`:''}
@@ -1429,7 +1447,8 @@ function reqCardHTML(r,kind){
           : `<div class="row" style="margin-top:6px">
               <button class="btn sm chg-acc" data-rid="${r._key}">この日程に変更を承認</button>
               <button class="btn ghost sm chg-dec" data-rid="${r._key}" style="color:var(--warn);border-color:#f0c4c0">変更を辞退</button>
-            </div>`}
+            </div>
+            <div class="meta2" style="margin-top:6px">条件が合わない場合は <a class="chglink deal-cancel" data-rid="${r._key}" style="text-decoration:underline;cursor:pointer">取引を解除</a> できます。</div>`}
       </div>`:''}
     ${(kind==='recv'&&r.status==='pending')?`<div class="row" style="margin-top:8px">
         <button class="btn sm acc" data-rid="${r._key}">承認する</button>
@@ -1440,6 +1459,7 @@ function reqCardHTML(r,kind){
         <button class="btn ghost sm req-del" data-rid="${r._key}" style="color:var(--warn);border-color:#f0c4c0">🗑 削除</button>
       </div>`:''}
     ${(r.status==='accepted'&&!cr)?`<button class="btn ghost sm chg-req" data-rid="${r._key}" style="width:100%;margin-top:8px">📅 延長・予定変更を依頼</button>`:''}
+    ${(r.status==='accepted'&&!cr)?`<button class="btn ghost sm deal-cancel" data-rid="${r._key}" style="width:100%;margin-top:8px;color:var(--warn);border-color:#f0c4c0">🚫 取引を解除する</button>`:''}
     <button class="btn ghost sm deal-toggle" data-rid="${r._key}" style="width:100%;margin-top:8px">${opened?'▲ 条件のやり取りを閉じる':'💴 労働条件・支払い条件のやり取り'}</button>
     ${opened?`<div class="dealbox">${dealThreadHTML()}</div>`:''}
   </div>`;
@@ -1464,6 +1484,7 @@ function bindReqCards(box){
   box.querySelectorAll('.chg-req').forEach(b=>b.onclick=()=>openChangeForm(b.dataset.rid));
   box.querySelectorAll('.chg-acc').forEach(b=>b.onclick=()=>applyChange(b.dataset.rid));
   box.querySelectorAll('.chg-dec').forEach(b=>b.onclick=()=>declineChange(b.dataset.rid));
+  box.querySelectorAll('.deal-cancel').forEach(b=>b.onclick=()=>cancelDeal(b.dataset.rid));
   box.querySelectorAll('.chg-cancel').forEach(b=>b.onclick=()=>cancelChange(b.dataset.rid));
   box.querySelectorAll('.rv-need').forEach(b=>b.onclick=()=>openReview('craftsman',b.dataset.ckey,b.dataset.cname,b.dataset.rid));
   box.querySelectorAll('.deal-toggle').forEach(b=>b.onclick=()=>toggleDeal(b.dataset.rid));
