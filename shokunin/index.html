@@ -1611,8 +1611,10 @@ function openReview(type,key,name,reqId){
   // 自己評価の禁止（自社・自分の大工は評価不可）
   const myEmail=DB.auth.user&&DB.auth.user.email;
   if(myEmail && reviewOwnerEmail(type,key)===myEmail){ H.toast('自社・自分の大工は評価できません','err'); return; }
-  reviewTarget={type,key,name,reqId:reqId||null};
   const uid=DB.auth.user&&DB.auth.user.uid;
+  // 評価の保存には本人確認（認証）が必要。未ログインのときはログインへ誘導（いつでも評価できるように）
+  if(!uid){ H.toast('評価するには「自社の大工」タブでログインしてください','err'); goTab('update'); return; }
+  reviewTarget={type,key,name,reqId:reqId||null};
   const existing=uid? H.toArr(reviews).find(r=>r.type===type && r.targetKey===key && r.byUid===uid) : null;
   myReviewKey = existing? existing._key : null;
   rvValue = existing? (existing.rating||0) : 0;
