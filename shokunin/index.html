@@ -127,6 +127,8 @@
   .meta2{font-size:13px; color:var(--ink); margin-top:4px}
   .confirmband{margin-top:6px; font-size:13px; font-weight:700; color:#1a7a45; background:#eafaf0; border:1px solid #b6e6c8; border-radius:8px; padding:6px 9px}
   .cancelband{margin-top:6px; font-size:13px; font-weight:700; color:#5d6b7c; background:#eef1f4; border:1px solid #d6dde4; border-radius:8px; padding:6px 9px}
+  .cocraftbox{margin-top:8px; border-top:1px dashed var(--line); padding-top:8px}
+  .cocraft{border:1px solid var(--line); border-radius:10px; padding:9px 11px; margin-bottom:8px; background:#fafbfc}
   .histthread{border:1px solid var(--line); border-radius:11px; padding:10px 12px; margin-bottom:10px; background:#fafbfc}
   .histhead{font-weight:800; font-size:13px; margin-bottom:6px; color:var(--ink)}
   .chgbox{margin-top:8px; font-size:13px; background:#fff4e5; border:1px solid #ffd591; border-radius:8px; padding:8px 10px; color:#8a5a00}
@@ -446,6 +448,7 @@ let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
 let reviewTarget = null, rvValue = 0;
 let myUser = null;
 let openAvailView = null; // find カードで開いている読み取り専用カレンダー（renderより前に宣言が必要）
+let openCoView = null; // 工務店一覧で「所属大工」を展開中の工務店キー
 // お気に入り（この端末に保存・ログイン不要）
 function favGet(k){ try{ return new Set(JSON.parse(localStorage.getItem(k)||'[]')); }catch(_){ return new Set(); } }
 let favCraft = favGet('shokunin_fav_craft'), favCo = favGet('shokunin_fav_co');
@@ -672,9 +675,11 @@ function renderCompanies(){
   if(!arr.length){ list.innerHTML='<div class="empty">該当する工務店がありません。</div>'; return; }
   const myKey=(myCompanyEntry()||{})._key;
   list.innerHTML=arr.map(c=>{
-    const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===c._key && H.isApproved(approvals,k._key)).length;
+    const crafts=H.toArr(craftsmen).filter(k=>k.companyKey===c._key && H.isApproved(approvals,k._key));
+    const cnt=crafts.length;
     const r=rateOf(c);
     const fav=favCo.has(c._key);
+    const open=openCoView===c._key;
     return `<div class="ccard">
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
         <div class="nm">${H.esc(c.name)}</div>
@@ -683,9 +688,33 @@ function renderCompanies(){
       <div class="info">📍 ${H.esc(c.area||'—')}　👤 ${H.esc(c.contact||'—')}　📞 ${H.esc(c.tel||'—')}</div>
       <div class="info">所属大工 ${cnt} 名　評価件数 ${r.count} 件（利用者全員の平均）</div>
       ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
+      ${cnt?`<button class="btn ghost sm co-craft" data-key="${c._key}" style="width:100%;margin-top:8px">${open?'▲ 所属大工を閉じる':'👷 所属大工を見る・応援要請（'+cnt+'名）'}</button>`
+           :'<div class="count" style="margin-top:8px">認証済みの大工がまだいません。</div>'}
+      ${open?`<div class="cocraftbox">${crafts.map(k=>coCraftRowHTML(k, c._key===myKey)).join('')}</div>`:''}
     </div>`;
   }).join('');
   list.querySelectorAll('.cofav').forEach(b=>b.onclick=()=>toggleFav('co',b.dataset.key));
+  list.querySelectorAll('.co-craft').forEach(b=>b.onclick=()=>{ openCoView=(openCoView===b.dataset.key)?null:b.dataset.key; renderCompanies(); });
+  list.querySelectorAll('.req-btn').forEach(b=>b.onclick=()=>openRequestForm(b.dataset.key));
+}
+// 工務店カードの中に表示する所属大工の行（そのまま応援要請できる）
+function coCraftRowHTML(k, isOwnCompany){
+  const free=H.upcomingFreeDates(k.avail);
+  const rk=H.ratingFor(reviews,'craftsman',k._key,(companies[k.companyKey]||{}).ownerEmail);
+  const badge=free.length
+    ? `<span class="badge" style="background:#1aa260"><span class="dot"></span>空き ${H.mdFromYmd(free[0])}〜</span>`
+    : `<span class="badge" style="background:#9aa7b5"><span class="dot"></span>空き予定なし</span>`;
+  return `<div class="cocraft">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+      <div class="nm">${H.esc(k.name)}</div>${badge}
+    </div>
+    <div class="meta2">${H.fmtPrice(k.price)} ｜ 技術力 ${H.stars(rk.avg)}${rk.count?`（${rk.count}件）`:''}</div>
+    ${free.length?`<div class="meta2" style="color:#1a7a45">📅 ${free.slice(0,6).map(H.mdFromYmd).join('、')}${free.length>6?' …':''}</div>`:''}
+    ${(k.good&&k.good.length)?`<div style="margin-top:4px">${H.chips(k.good)}</div>`:''}
+    ${isOwnCompany
+      ? '<div class="count" style="margin-top:6px">自社の大工です（応援要請の対象外）</div>'
+      : `<button class="btn sm req-btn" data-key="${k._key}" style="width:100%;background:var(--accent);color:#fff;margin-top:6px">🤝 この大工に応援要請</button>`}
+  </div>`;
 }
 
 // ===== 自社の大工（ログイン制） =====
