@@ -1606,20 +1606,74 @@ document.getElementById('helpBtn').onclick=openHelp;
 document.getElementById('helpClose').onclick=()=>document.getElementById('helpOv').classList.remove('on');
 document.getElementById('helpOv').onclick=e=>{ if(e.target.id==='helpOv') e.currentTarget.classList.remove('on'); };
 document.getElementById('helpSearch').oninput=renderHelp;
+// 取引が「終了済み」か（解除・辞退・完了＝承認済みで工期終了）
+function reqIsFinished(r){
+  if(r.status==='cancelled' || r.status==='declined') return true;
+  if(r.status==='accepted'){ const end=r.dateTo||r.dateFrom; if(end && end<H.todayStr()) return true; }
+  return false;
+}
+// 過去フォルダ行きか（終了済み。ただし評価が必須のうちは現役に残す）
+function isPastReq(r){ return reqIsFinished(r) && !needsMyReview(r); }
+function reqFinishedAt(r){
+  if(r.status==='cancelled') return r.cancelledAt||r.createdAt||0;
+  if(r.status==='declined') return r.declinedAt||r.decidedAt||r.createdAt||0;
+  const end=r.dateTo||r.dateFrom; return end?Date.parse(end+'T23:59:59'):(r.createdAt||0);
+}
+// 現役の並び順：①評価が必須 ②申請中 ③承認済み（工期が近い順）
+function activeRank(r){ if(needsMyReview(r)) return 0; if(r.status==='pending') return 1; return 2; }
+function activeSort(a,b){
+  const ra=activeRank(a), rb=activeRank(b); if(ra!==rb) return ra-rb;
+  const da=a.dateFrom||'9999-99-99', db=b.dateFrom||'9999-99-99';
+  if(ra===1) return (b.createdAt||0)-(a.createdAt||0); // 申請中は新しい順
+  if(da!==db) return da<db?-1:1;                       // 承認済みは工期が近い順
+  return (b.createdAt||0)-(a.createdAt||0);
+}
+// 6か月（180日）より古い終了済み取引を自動削除（当事者なので削除可）
+const _cleanupTried={};
+function cleanupOldRequests(){
+  const cut=Date.now()-180*24*3600*1000;
+  H.toArr(reqByMe).forEach(r=>{
+    if(_cleanupTried[r._key]) return;
+    if(!reqIsFinished(r) || reqFinishedAt(r)>cut) return;
+    _cleanupTried[r._key]=1;
+    Promise.all([
+      DB.remove('requests/'+r._key),
+      DB.remove('reqIndex/'+r.fromCompanyKey+'/'+r._key),
+      DB.remove('reqIndex/'+r.toCompanyKey+'/'+r._key),
+      DB.remove('deals/'+r._key)
+    ]).catch(()=>{});
+  });
+}
+let pastReqOpen=false;
 function renderRequests(){
   updateBadges();
   const box=document.getElementById('reqBox'); if(!box) return;
   const mine=myCompanyEntry();
   const hc=document.getElementById('histCard'); if(hc) hc.style.display = mine?'block':'none';
   if(!mine){ box.innerHTML='<div class="empty">応援要請を使うには、「自社の大工」タブでログインして工務店を登録してください。</div>'; return; }
-  const all=H.toArr(reqByMe).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  const recv=all.filter(r=>r.toCompanyKey===mine._key);
-  const sent=all.filter(r=>r.fromCompanyKey===mine._key);
+  cleanupOldRequests();
+  const all=H.toArr(reqByMe);
+  const active=all.filter(r=>!isPastReq(r));
+  const past=all.filter(r=>isPastReq(r)).sort((a,b)=>reqFinishedAt(b)-reqFinishedAt(a));
+  const recv=active.filter(r=>r.toCompanyKey===mine._key).sort(activeSort);
+  const sent=active.filter(r=>r.fromCompanyKey===mine._key).sort(activeSort);
   const need=reviewNeededCount();
   const banner = need>0 ? `<div class="reviewbanner">⭐ 活用後の評価が <b>${need}件</b> 未入力です。下の「評価する（必須）」から評価してください。<br><span class="count" style="color:inherit">※ 未評価のあいだは新しい応援要請を送れません。</span></div>` : '';
-  box.innerHTML=banner+reqSectionHTML('受信した要請（自社の大工へ）',recv,'recv')+reqSectionHTML('送信した要請（他社の大工へ）',sent,'sent');
+  box.innerHTML=banner
+    +reqSectionHTML('受信した要請（自社の大工へ）',recv,'recv')
+    +reqSectionHTML('送信した要請（他社の大工へ）',sent,'sent')
+    +pastFolderHTML(past, mine);
   bindReqCards(box);
+  const pt=document.getElementById('pastToggle');
+  if(pt) pt.onclick=()=>{ pastReqOpen=!pastReqOpen; renderRequests(); };
   if(histOpen) renderHistory(); // 開いている履歴は最新の相手名などに追従
+}
+function pastFolderHTML(past, mine){
+  if(!past.length) return '';
+  let h='<h2 class="reqsec" style="margin-top:16px"><a id="pastToggle" style="cursor:pointer;text-decoration:underline">📁 過去の取引（完了・解除）'+past.length+'件 '+(pastReqOpen?'▲ 閉じる':'▼ 開く')+'</a></h2>'
+    +'<div class="count" style="margin:-4px 2px 8px">完了・辞退・解除した取引です。6か月後に自動で削除されます。</div>';
+  if(pastReqOpen) h+=past.map(r=>reqCardHTML(r, r.fromCompanyKey===mine._key?'sent':'recv')).join('');
+  return h;
 }
 // ===== 当事者どうしのやり取り履歴（過去3か月・読み取り専用） =====
 let histOpen=false, histLoading=false, histThreads=[];
@@ -1710,8 +1764,8 @@ function reqCardHTML(r,kind){
         <button class="btn ghost sm req-edit" data-rid="${r._key}">✏️ 編集</button>
         <button class="btn ghost sm req-del" data-rid="${r._key}" style="color:var(--warn);border-color:#f0c4c0">🗑 削除</button>
       </div>`:''}
-    ${(r.status==='accepted'&&!cr)?`<button class="btn ghost sm chg-req" data-rid="${r._key}" style="width:100%;margin-top:8px">📅 延長・予定変更を依頼</button>`:''}
-    ${(r.status==='accepted'&&!cr)?`<button class="btn ghost sm deal-cancel" data-rid="${r._key}" style="width:100%;margin-top:8px;color:var(--warn);border-color:#f0c4c0">🚫 取引を解除する</button>`:''}
+    ${(r.status==='accepted'&&!cr&&!reqIsFinished(r))?`<button class="btn ghost sm chg-req" data-rid="${r._key}" style="width:100%;margin-top:8px">📅 延長・予定変更を依頼</button>`:''}
+    ${(r.status==='accepted'&&!cr&&!reqIsFinished(r))?`<button class="btn ghost sm deal-cancel" data-rid="${r._key}" style="width:100%;margin-top:8px;color:var(--warn);border-color:#f0c4c0">🚫 取引を解除する</button>`:''}
     <button class="btn ghost sm deal-toggle" data-rid="${r._key}" style="width:100%;margin-top:8px">${opened?'▲ 条件のやり取りを閉じる':'💴 労働条件・支払い条件のやり取り'}</button>
     ${opened?`<div class="dealbox">${dealThreadHTML()}</div>`:''}
   </div>`;
