@@ -154,9 +154,15 @@
   .bubble .bt{font-size:10px; opacity:.75; margin-top:3px; text-align:right}
   .bubble.mine .deallink{color:#fff}
   .chatlabel{font-size:12px; font-weight:800; color:var(--brand-dark); margin:10px 2px 4px}
-  .chatform{display:flex; gap:8px; background:#fff; border:2px solid var(--brand); border-radius:12px; padding:7px}
-  .chatform input{flex:2; border:0; padding:9px; font-size:15px; outline:none; background:transparent}
+  .chatform{display:flex; gap:8px; background:#fff; border:2px solid var(--brand); border-radius:12px; padding:7px; align-items:flex-end}
+  .chatform input,.chatform textarea{flex:2; border:0; padding:9px; font-size:15px; outline:none; background:transparent; font-family:inherit; resize:vertical; min-height:20px; max-height:140px; line-height:1.5}
   .chatform button{flex:none; padding:10px 18px}
+  .bubble .bx{white-space:pre-wrap; word-break:break-word}
+  .reqdates{display:flex; flex-wrap:wrap; gap:7px; max-height:180px; overflow:auto}
+  .daychip{border:1.5px solid var(--line); background:#fff; color:var(--ink); border-radius:18px; padding:7px 12px; font-size:13px; font-weight:700; cursor:pointer}
+  .daychip.on{background:var(--accent); color:#fff; border-color:var(--accent)}
+  .cal-req{font-size:9px; line-height:1.1; margin-top:1px; background:#fff; color:var(--accent); border-radius:4px; padding:0 2px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .cal-cell.has-req{box-shadow:0 0 0 2px var(--accent) inset}
   .cqx{cursor:pointer; color:var(--warn); font-weight:800; margin-left:2px}
   .cal-legend{font-size:12px; color:var(--sub); margin:4px 0 8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap}
   .cal-legend .lg{display:inline-block; width:12px; height:12px; border-radius:3px}
@@ -390,12 +396,9 @@
       <select id="reqWard" style="margin-top:8px; display:none"><option value="">区を選択</option></select>
       <div class="count" style="margin-top:4px">※ アプリ上は県・市・区までの表示です。番地・建物名など詳しい住所は、送信後の「条件のやり取り」で当事者間でお伝えください。</div>
     </div>
-    <div class="field"><label class="req">作業期間</label>
-      <div class="row">
-        <input type="date" id="reqStart">
-        <input type="date" id="reqEnd">
-      </div>
-      <div class="count" style="margin-top:4px">開始日〜終了日をカレンダーから選択（単日は開始日のみでOK）</div>
+    <div class="field"><label class="req">応援してほしい日（空き日から選択）</label>
+      <div id="reqDates" class="reqdates"></div>
+      <div class="count" style="margin-top:4px">この大工が「空き」に設定した日だけ選べます（複数選択可）。空き以外の日は要請できません。</div>
     </div>
     <div class="field"><label>現場・作業内容</label><textarea id="reqWork" placeholder="例）木造2階の内装下地・ボード貼り"></textarea></div>
     <div class="field"><label>依頼元の連絡先</label><input type="text" id="reqContact" placeholder="例）090-1234-5678（担当：〇〇）"></div>
@@ -1057,7 +1060,7 @@ document.getElementById('ceSave').onclick=()=>{
 let availDraft={}, availCraftKey=null;  // 自社の編集用
 function calToday(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function calMonths3(){ const n=new Date(); return [0,1,2].map(i=>new Date(n.getFullYear(), n.getMonth()+i, 1)); }
-function monthGridHTML(monthDate, availMap, editable){
+function monthGridHTML(monthDate, availMap, editable, reqMap){
   const y=monthDate.getFullYear(), m=monthDate.getMonth();
   const startWd=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(), todayS=calToday();
   let cells='';
@@ -1065,14 +1068,29 @@ function monthGridHTML(monthDate, availMap, editable){
   for(let d=1;d<=days;d++){
     const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const st=availMap[ds], past=ds<todayS, color=st?H.statusOf(st).color:'';
-    cells+=`<div class="cal-cell${past?' past':''}${(editable&&!past)?' edit':''}" ${(editable&&!past)?`data-date="${ds}"`:''} style="${color?`background:${color};color:#fff;border-color:${color}`:''}">${d}</div>`;
+    const reqs=reqMap&&reqMap[ds];
+    const reqTag=reqs&&reqs.length?`<div class="cal-req" title="${H.esc(reqs.join('、'))}">🤝${H.esc(reqs[0])}${reqs.length>1?'他':''}</div>`:'';
+    cells+=`<div class="cal-cell${past?' past':''}${(editable&&!past)?' edit':''}${reqs&&reqs.length?' has-req':''}" ${(editable&&!past)?`data-date="${ds}"`:''} style="${color?`background:${color};color:#fff;border-color:${color}`:''}">${d}${reqTag}</div>`;
   }
   return `<div class="cal-month"><div class="cal-title">${y}年${m+1}月</div><div class="cal-grid">`
     +['日','月','火','水','木','金','土'].map(w=>`<div class="cal-wd">${w}</div>`).join('')+cells+`</div></div>`;
 }
-function calHTML(availMap, editable){
-  return '<div class="cal-legend"><span class="lg" style="background:#1aa260"></span>空き（タップで切替・一日単位）</div>'
-    + calMonths3().map(md=>monthGridHTML(md, availMap||{}, editable)).join('');
+function calHTML(availMap, editable, reqMap){
+  return '<div class="cal-legend"><span class="lg" style="background:#1aa260"></span>空き（タップで切替・一日単位）'
+    + (reqMap&&Object.keys(reqMap).length?'　<span style="color:var(--accent);font-weight:800">🤝＝応援要請が入っている日（要請元の工務店名）</span>':'')+'</div>'
+    + calMonths3().map(md=>monthGridHTML(md, availMap||{}, editable, reqMap)).join('');
+}
+// 自社の大工へ来ている応援要請を日付→工務店名 のマップにする（owner視点・申請中/承認のみ）
+function rangeDays(from,to){ if(!from) return []; const out=[]; const d=new Date(from); const end=new Date(to||from); let n=0; while(d<=end && n<400){ out.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')); d.setDate(d.getDate()+1); n++; } return out; }
+function reqMapForCraft(kid){
+  const map={};
+  H.toArr(reqByMe).forEach(r=>{
+    if(r.craftsmanKey!==kid) return;
+    if(r.status!=='pending' && r.status!=='accepted') return;
+    const days=(r.dates&&r.dates.length)?r.dates:rangeDays(r.dateFrom,r.dateTo);
+    days.forEach(d=>{ (map[d]=map[d]||[]).push(r.fromCompanyName||'?'); });
+  });
+  return map;
 }
 function openAvailEditor(key){
   const k=craftsmen[key]; if(!k) return;
@@ -1083,7 +1101,7 @@ function openAvailEditor(key){
 }
 function renderAvailEditor(){
   const box=document.getElementById('availCal');
-  box.innerHTML=calHTML(availDraft, true);
+  box.innerHTML=calHTML(availDraft, true, reqMapForCraft(availCraftKey));
   box.querySelectorAll('.cal-cell.edit').forEach(c=>c.onclick=()=>{
     const ds=c.dataset.date, order=['','free'];
     const nxt=order[(order.indexOf(availDraft[ds]||'')+1)%4];
@@ -1183,10 +1201,10 @@ function renderContact(){
     empty:'まだやり取りはありません。管理者へ連絡できます。'
   });
   h+='</div>';
-  h+=`<div class="chatlabel">✏️ 管理者へのメッセージを入力して送信</div><div class="chatform"><input type="text" id="ctInput" placeholder="管理者へのメッセージ"><button class="btn" id="ctSend">送信</button></div></div>`;
+  h+=`<div class="chatlabel">✏️ 管理者へのメッセージを入力して送信（改行できます）</div><div class="chatform"><textarea id="ctInput" rows="2" placeholder="管理者へのメッセージ（改行できます）"></textarea><button class="btn" id="ctSend">送信</button></div></div>`;
   box.innerHTML=h;
   document.getElementById('ctSend').onclick=sendContact;
-  document.getElementById('ctInput').addEventListener('keydown',e=>{ if(e.key==='Enter') sendContact(); });
+  document.getElementById('ctInput').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); sendContact(); } });
   box.querySelectorAll('.ctDel').forEach(b=>b.onclick=()=>{ if(!confirm('このメッセージを削除しますか？'))return; DB.remove('companyChats/'+contactCompanyKey+'/'+b.dataset.mid).then(()=>H.toast('削除しました','ok')); });
   box.querySelectorAll('.ctEdit').forEach(b=>b.onclick=()=>{ const m=contactMsgs.find(x=>x._key===b.dataset.mid); if(!m)return; const t=prompt('メッセージを編集',m.text); if(t===null)return; const v=t.trim(); if(!v)return; DB.update('companyChats/'+contactCompanyKey+'/'+b.dataset.mid,{text:v,at:Date.now()}).then(()=>H.toast('更新しました','ok')); });
 }
@@ -1210,15 +1228,30 @@ function openRequestForm(kid){
   if(reviewNeededCount()>0){ H.toast('活用後の評価が未入力です。先に「応援」タブで評価してください','err'); goTab('req'); return; }
   const k=craftsmen[kid]; if(!k) return;
   if(k.companyKey===mine._key){ H.toast('自社の大工です','err'); return; }
+  const free=H.upcomingFreeDates(k.avail||{});
+  if(!free.length){ H.toast('この大工は現在「空き」の日がありません。応援要請できません','err'); return; }
   editReqKey=null;
   reqTargetCraft=Object.assign({_key:kid},k);
   document.getElementById('reqTitle').textContent='応援要請：'+k.name;
   document.getElementById('reqSub').textContent='所属「'+(k.companyName||'')+'」へ依頼します';
-  ['reqWork','reqContact','reqMsg','reqStart','reqEnd'].forEach(id=>document.getElementById(id).value='');
+  ['reqWork','reqContact','reqMsg'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('reqPref').value=''; fillReqCity();
   document.getElementById('reqContact').value=mine.tel||'';
+  renderReqDates(k, []);
   document.getElementById('reqSend').textContent='この内容で要請する';
   document.getElementById('reqOv').classList.add('on');
+}
+let reqSelDates=new Set();
+function renderReqDates(craft, preselected){
+  reqSelDates=new Set(preselected||[]);
+  const box=document.getElementById('reqDates'); if(!box) return;
+  let free=H.upcomingFreeDates((craft&&craft.avail)||{});
+  (preselected||[]).forEach(d=>{ if(free.indexOf(d)<0) free.push(d); }); // 編集時：既存の選択日も残す
+  free=[...new Set(free)].sort();
+  if(!free.length){ box.innerHTML='<div class="count" style="color:var(--warn)">この大工は現在「空き」の日がありません。要請できません。</div>'; return; }
+  const wd=['日','月','火','水','木','金','土'];
+  box.innerHTML=free.map(d=>`<button type="button" class="daychip${reqSelDates.has(d)?' on':''}" data-d="${d}">${H.mdFromYmd(d)}（${wd[new Date(d).getDay()]}）</button>`).join('');
+  box.querySelectorAll('.daychip').forEach(b=>b.onclick=()=>{ const d=b.dataset.d; if(reqSelDates.has(d)){ reqSelDates.delete(d); b.classList.remove('on'); } else { reqSelDates.add(d); b.classList.add('on'); } });
 }
 function openRequestEdit(rid){
   const r=reqByMe[rid]; if(!r) return;
@@ -1229,8 +1262,8 @@ function openRequestEdit(rid){
   document.getElementById('reqPref').value=r.sitePref||''; fillReqCity();
   document.getElementById('reqCity').value=r.siteCity||''; fillReqWard();
   document.getElementById('reqWard').value=r.siteWard||'';
-  document.getElementById('reqStart').value=r.dateFrom||'';
-  document.getElementById('reqEnd').value=(r.dateTo&&r.dateTo!==r.dateFrom)?r.dateTo:'';
+  const preDates=(r.dates&&r.dates.length)?r.dates:rangeDays(r.dateFrom,r.dateTo);
+  renderReqDates(craftsmen[r.craftsmanKey]||{avail:{}}, preDates);
   document.getElementById('reqWork').value=r.work||'';
   document.getElementById('reqContact').value=r.contact||'';
   document.getElementById('reqMsg').value=r.message||'';
@@ -1252,15 +1285,14 @@ document.getElementById('reqOv').onclick=e=>{ if(e.target.id==='reqOv') e.curren
 document.getElementById('reqSend').onclick=()=>{
   const mine=myCompanyEntry(), k=reqTargetCraft; if(!mine||!k) return;
   const pref=rqVal('reqPref'), city=rqVal('reqCity'), ward=rqVal('reqWard');
-  const start=rqVal('reqStart'), end=rqVal('reqEnd');
   if(!pref||!city){ H.toast('工事場所（県・市）を選んでください','err'); return; }
   const cityWards=(H.cfg.wards||{})[city]||[];
   if(cityWards.length && !ward){ H.toast('区を選んでください','err'); return; }
-  if(!start){ H.toast('作業期間（開始日）を選んでください','err'); return; }
-  if(end && end<start){ H.toast('終了日は開始日以降にしてください','err'); return; }
+  const dates=[...reqSelDates].sort();
+  if(!dates.length){ H.toast('応援してほしい日（空き日）を1つ以上選んでください','err'); return; }
   const site=pref+city+(ward||'');
-  const dateText=(end && end!==start) ? (fmtReqDate(start)+'〜'+fmtReqDate(end)) : fmtReqDate(start);
-  const fields={ site, sitePref:pref, siteCity:city, siteWard:ward||'', dateText, dateFrom:start, dateTo:end||start,
+  const dateText=dates.map(fmtReqDate).join('、');
+  const fields={ site, sitePref:pref, siteCity:city, siteWard:ward||'', dateText, dates, dateFrom:dates[0], dateTo:dates[dates.length-1],
     work:rqVal('reqWork').trim(), contact:rqVal('reqContact').trim(), message:rqVal('reqMsg').trim() };
   if(editReqKey){
     DB.update('requests/'+editReqKey, fields)
@@ -1687,7 +1719,7 @@ function dealThreadHTML(){
     actionsFn:(m,mine)=>mine?` ・<a class="deallink dealedit" data-mid="${m._key}">編集</a> ・<a class="deallink dealdel" data-mid="${m._key}">削除</a>`:''
   });
   h+='</div>';
-  h+=`<div class="chatlabel">✏️ メッセージを入力して送信</div><div class="chatform"><input type="text" id="dealInput" placeholder="例）詳しい住所・日当◯円・支払い条件 など"><button class="btn" id="dealSend">送信</button></div>`;
+  h+=`<div class="chatlabel">✏️ メッセージを入力して送信（改行できます）</div><div class="chatform"><textarea id="dealInput" rows="2" placeholder="例）詳しい住所・日当◯円・支払い条件 など（改行できます）"></textarea><button class="btn" id="dealSend">送信</button></div>`;
   return h;
 }
 function bindReqCards(box){
@@ -1706,7 +1738,7 @@ function bindReqCards(box){
   const ds=document.getElementById('dealSend');
   if(ds) ds.onclick=sendDeal;
   const di=document.getElementById('dealInput');
-  if(di) di.addEventListener('keydown',e=>{ if(e.key==='Enter') sendDeal(); });
+  if(di) di.addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); sendDeal(); } });
   box.querySelectorAll('.dealdel').forEach(b=>b.onclick=()=>{
     if(!openDealRid||!confirm('このメッセージを削除しますか？')) return;
     DB.remove('deals/'+openDealRid+'/'+b.dataset.mid).then(()=>H.toast('削除しました','ok'));

@@ -99,6 +99,7 @@
   .bubble.them{align-self:flex-start; background:#eef1f4; color:var(--ink); border-bottom-left-radius:4px}
   .bubble.mine{align-self:flex-end; background:var(--brand); color:#fff; border-bottom-right-radius:4px}
   .bubble .who{font-size:11px; font-weight:700; margin-bottom:2px; opacity:.85}
+  .bubble .bx{white-space:pre-wrap; word-break:break-word}
   .bubble .bt{font-size:10px; opacity:.75; margin-top:3px; text-align:right}
   .bubble.mine .ctlink{color:#fff}
 </style>
@@ -581,14 +582,14 @@ function renderContactAdmin(){
   h+= ctMsgs.length
     ? ctMsgs.map(m=>{
         const mine=m.byAdmin&&m.byUid===uid;
-        return `<div class="bubble ${mine?'mine':'them'}"><div class="who">${m.byAdmin?'🛠 管理者':H.esc(m.byName||'工務店')}</div><div>${H.esc(m.text)}</div><div class="bt">${H.fmtDate(m.at)}${mine?` ・<a class="ctlink ctEdit" data-mid="${m._key}" style="cursor:pointer;text-decoration:underline">編集</a> ・<a class="ctlink ctDel" data-mid="${m._key}" style="cursor:pointer;text-decoration:underline">削除</a>`:''}</div></div>`;
+        return `<div class="bubble ${mine?'mine':'them'}"><div class="who">${m.byAdmin?'🛠 管理者':H.esc(m.byName||'工務店')}</div><div class="bx">${H.esc(m.text)}</div><div class="bt">${H.fmtDate(m.at)}${mine?` ・<a class="ctlink ctEdit" data-mid="${m._key}" style="cursor:pointer;text-decoration:underline">編集</a> ・<a class="ctlink ctDel" data-mid="${m._key}" style="cursor:pointer;text-decoration:underline">削除</a>`:''}</div></div>`;
       }).join('')
     : '<div class="empty">まだやり取りはありません。下から連絡できます。</div>';
   h+='</div>';
-  h+=`<div class="row" style="margin-top:8px"><input type="text" id="ctInput" placeholder="工務店へのメッセージ" style="flex:2"><button class="btn sm" id="ctSend" style="flex:1">送信</button></div></div>`;
+  h+=`<div class="row" style="margin-top:8px;align-items:flex-end"><textarea id="ctInput" rows="2" placeholder="工務店へのメッセージ（改行できます）" style="flex:2;resize:vertical;min-height:42px;max-height:140px;font-family:inherit;line-height:1.5"></textarea><button class="btn sm" id="ctSend" style="flex:1">送信</button></div></div>`;
   box.innerHTML=h;
   document.getElementById('ctSend').onclick=sendContactAdmin;
-  document.getElementById('ctInput').addEventListener('keydown',e=>{ if(e.key==='Enter') sendContactAdmin(); });
+  document.getElementById('ctInput').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); sendContactAdmin(); } });
   box.querySelectorAll('.ctDel').forEach(b=>b.onclick=()=>{ if(!confirm('このメッセージを削除しますか？'))return; DB.remove('companyChats/'+ctCompanyKey+'/'+b.dataset.mid).then(()=>H.toast('削除しました','ok')); });
   box.querySelectorAll('.ctEdit').forEach(b=>b.onclick=()=>{ const m=ctMsgs.find(x=>x._key===b.dataset.mid); if(!m)return; const t=prompt('メッセージを編集',m.text); if(t===null)return; const v=t.trim(); if(!v)return; DB.update('companyChats/'+ctCompanyKey+'/'+b.dataset.mid,{text:v,at:Date.now()}).then(()=>H.toast('更新しました','ok')); });
 }
