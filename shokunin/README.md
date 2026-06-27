@@ -141,6 +141,23 @@
 
 > 段階的に始めたい場合は、まず `"shokunin": { ".read": true, ".write": true }` で動作確認してから上記の厳格ルールへ移行すると安全です。
 
+**(3) 写真・PDFの送信を使う場合：Storage を有効化**
+連絡・条件のやり取りで📎写真/PDFを送るには Firebase Storage が必要です。
+1. コンソール左メニュー **Storage → 始める**（ロケーションは asia-northeast1 等を選択）。
+2. **Storage → Rules** に以下を公開（ログイン中のユーザーのみ読み書き可）：
+```
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /shokunin/chat/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.resource.size < 10 * 1024 * 1024;
+    }
+  }
+}
+```
+> 送信できる1ファイルの上限はアプリ側でも10MBに制限しています。Storage未設定のままだと「お試しモード」以外では送信に失敗します（その場合は上記を設定してください）。
+
 ## 運用の流れ（例）
 1. 運営が `admin.html` で**管理者アカウントを登録**（上記3ステップ）。続けて参加工務店を登録し、**「ログイン用メール」に各工務店のメールを設定**
 2. 各工務店は `index.html`「自社の大工」タブで、その**メール/パスワードでログイン（初回は新規登録）**し、自社の大工を登録・空き状況を更新

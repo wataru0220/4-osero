@@ -16,6 +16,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="config.js"></script>
 <style>
   :root{
@@ -158,6 +159,10 @@
   .chatform input,.chatform textarea{flex:2; border:0; padding:9px; font-size:15px; outline:none; background:transparent; font-family:inherit; resize:vertical; min-height:20px; max-height:140px; line-height:1.5}
   .chatform button{flex:none; padding:10px 18px}
   .bubble .bx{white-space:pre-wrap; word-break:break-word}
+  .chatimg{max-width:200px; max-height:200px; border-radius:8px; display:block; margin-bottom:3px}
+  .chatfile{display:inline-block; background:rgba(255,255,255,.25); border:1px solid currentColor; border-radius:8px; padding:6px 10px; font-weight:700; text-decoration:none; color:inherit; margin-bottom:3px}
+  .bubble.them .chatfile{background:#fff}
+  .attachbtn{flex:none; cursor:pointer; font-size:20px; padding:6px 4px; align-self:center; color:var(--brand)}
   .reqdates{display:flex; flex-wrap:wrap; gap:7px; max-height:180px; overflow:auto}
   .daychip{border:1.5px solid var(--line); background:#fff; color:var(--ink); border-radius:18px; padding:7px 12px; font-size:13px; font-weight:700; cursor:pointer}
   .daychip.on{background:var(--accent); color:#fff; border-color:var(--accent)}
@@ -1201,10 +1206,11 @@ function renderContact(){
     empty:'まだやり取りはありません。管理者へ連絡できます。'
   });
   h+='</div>';
-  h+=`<div class="chatlabel">✏️ 管理者へのメッセージを入力して送信（改行できます）</div><div class="chatform"><textarea id="ctInput" rows="2" placeholder="管理者へのメッセージ（改行できます）"></textarea><button class="btn" id="ctSend">送信</button></div></div>`;
+  h+=`<div class="chatlabel">✏️ 管理者へのメッセージを入力して送信（改行・📎写真/PDF添付）</div><div class="chatform"><label class="attachbtn" title="写真・PDFを添付">📎<input type="file" id="ctFile" accept="image/*,application/pdf" style="display:none"></label><textarea id="ctInput" rows="2" placeholder="管理者へのメッセージ（改行できます）"></textarea><button class="btn" id="ctSend">送信</button></div></div>`;
   box.innerHTML=h;
   document.getElementById('ctSend').onclick=sendContact;
   document.getElementById('ctInput').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); sendContact(); } });
+  document.getElementById('ctFile').onchange=function(){ if(this.files&&this.files[0]) sendContactFile(this.files[0]); this.value=''; };
   box.querySelectorAll('.ctDel').forEach(b=>b.onclick=()=>{ if(!confirm('このメッセージを削除しますか？'))return; DB.remove('companyChats/'+contactCompanyKey+'/'+b.dataset.mid).then(()=>H.toast('削除しました','ok')); });
   box.querySelectorAll('.ctEdit').forEach(b=>b.onclick=()=>{ const m=contactMsgs.find(x=>x._key===b.dataset.mid); if(!m)return; const t=prompt('メッセージを編集',m.text); if(t===null)return; const v=t.trim(); if(!v)return; DB.update('companyChats/'+contactCompanyKey+'/'+b.dataset.mid,{text:v,at:Date.now()}).then(()=>H.toast('更新しました','ok')); });
 }
@@ -1219,6 +1225,21 @@ function sendContact(){
   DB.push('companyChats/'+mine._key, {byUid:uid, byName:mine.name||'', byAdmin:false, text, at:Date.now()})
     .then(()=>{ H.toast('管理者へ送信しました','ok'); markContactSeen(); })
     .catch(()=>{ inp.value=text; }); // 失敗時は入力を戻す（共通層がエラー内容をトースト表示）
+}
+// 写真・PDFの送信（共通）。folderはStorage/DBのパス区切り、afterは送信後処理
+function uploadAndSend(file, folder, msgPath, baseMsg, after){
+  if(!file) return;
+  if(file.size>10*1024*1024){ H.toast('ファイルは10MBまでにしてください','err'); return; }
+  H.toast('アップロード中…');
+  DB.uploadChatFile(folder, file)
+    .then(f=>DB.push(msgPath, Object.assign({text:'', fileUrl:f.url, fileName:f.name, fileType:f.type, at:Date.now()}, baseMsg)))
+    .then(()=>{ H.toast('ファイルを送信しました','ok'); if(after) after(); })
+    .catch(e=>H.toast('送信できませんでした：'+((e&&e.message)||e),'err'));
+}
+function sendContactFile(file){
+  const mine=myCompanyEntry(); if(!mine){ H.toast('ログインが必要です','err'); return; }
+  const uid=DB.auth.user&&DB.auth.user.uid;
+  uploadAndSend(file, 'company_'+mine._key, 'companyChats/'+mine._key, {byUid:uid, byName:mine.name||'', byAdmin:false}, markContactSeen);
 }
 
 function openRequestForm(kid){
@@ -1696,6 +1717,13 @@ function reqCardHTML(r,kind){
   </div>`;
 }
 // LINE風の吹き出しチャットHTML（自分=右・相手=左。自分の名前は出さず、相手名は送信者が変わった時だけ表示）
+// 添付（写真・PDF等）のHTML。fileUrl はStorageのダウンロードURLまたはデータURL（こちらで生成した値）。
+function attachHTML(m){
+  if(!m||!m.fileUrl) return '';
+  const isImg=(m.fileType||'').indexOf('image')===0 || /\.(png|jpe?g|gif|webp)$/i.test(m.fileName||'');
+  if(isImg) return `<a href="${m.fileUrl}" target="_blank" rel="noopener"><img class="chatimg" src="${m.fileUrl}" alt="${H.esc(m.fileName||'画像')}"></a>`;
+  return `<a class="chatfile" href="${m.fileUrl}" target="_blank" rel="noopener" download="${H.esc(m.fileName||'file')}">📄 ${H.esc(m.fileName||'ファイル')}</a>`;
+}
 function chatBubblesHTML(msgs, opts){
   if(!msgs.length) return '<div class="count">'+(opts.empty||'まだやり取りはありません。')+'</div>';
   let prevKey=null;
@@ -1706,7 +1734,7 @@ function chatBubblesHTML(msgs, opts){
     const showName=!mine && key!==prevKey; // 相手の名前は発言者が変わった時だけ（連続はまとめる）
     prevKey=key;
     const acts=opts.actionsFn?opts.actionsFn(m,mine):'';
-    return `<div class="bubble ${mine?'mine':'them'}">${showName?`<div class="who">${H.esc(name)}</div>`:''}<div class="bx">${H.esc(m.text)}</div><div class="bt">${H.fmtDate(m.at)}${acts}</div></div>`;
+    return `<div class="bubble ${mine?'mine':'them'}">${showName?`<div class="who">${H.esc(name)}</div>`:''}${attachHTML(m)}${m.text?`<div class="bx">${H.esc(m.text)}</div>`:''}<div class="bt">${H.fmtDate(m.at)}${acts}</div></div>`;
   }).join('');
 }
 function dealThreadHTML(){
@@ -1719,7 +1747,7 @@ function dealThreadHTML(){
     actionsFn:(m,mine)=>mine?` ・<a class="deallink dealedit" data-mid="${m._key}">編集</a> ・<a class="deallink dealdel" data-mid="${m._key}">削除</a>`:''
   });
   h+='</div>';
-  h+=`<div class="chatlabel">✏️ メッセージを入力して送信（改行できます）</div><div class="chatform"><textarea id="dealInput" rows="2" placeholder="例）詳しい住所・日当◯円・支払い条件 など（改行できます）"></textarea><button class="btn" id="dealSend">送信</button></div>`;
+  h+=`<div class="chatlabel">✏️ メッセージを入力して送信（改行・📎写真/PDF添付）</div><div class="chatform"><label class="attachbtn" title="写真・PDFを添付">📎<input type="file" id="dealFile" accept="image/*,application/pdf" style="display:none"></label><textarea id="dealInput" rows="2" placeholder="例）詳しい住所・日当◯円・支払い条件 など（改行できます）"></textarea><button class="btn" id="dealSend">送信</button></div>`;
   return h;
 }
 function bindReqCards(box){
@@ -1739,6 +1767,8 @@ function bindReqCards(box){
   if(ds) ds.onclick=sendDeal;
   const di=document.getElementById('dealInput');
   if(di) di.addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); sendDeal(); } });
+  const df=document.getElementById('dealFile');
+  if(df) df.onchange=function(){ if(this.files&&this.files[0]) sendDealFile(this.files[0]); this.value=''; };
   box.querySelectorAll('.dealdel').forEach(b=>b.onclick=()=>{
     if(!openDealRid||!confirm('このメッセージを削除しますか？')) return;
     DB.remove('deals/'+openDealRid+'/'+b.dataset.mid).then(()=>H.toast('削除しました','ok'));
@@ -1767,6 +1797,14 @@ function sendDeal(){
   // 相手の新着バッジ用に、親の要請へ最終メッセージ情報を記録
   DB.update('requests/'+rid, {lastMsgAt:Date.now(), lastMsgByUid:uid});
   localStorage.setItem('shokunin_seen_'+rid, Date.now()); // 自分は既読
+}
+function sendDealFile(file){
+  if(!openDealRid) return;
+  const mine=myCompanyEntry(); const uid=DB.auth.user&&DB.auth.user.uid; const rid=openDealRid;
+  uploadAndSend(file, 'deal_'+rid, 'deals/'+rid, {byEmail:myUser.email, byUid:uid, byName:(mine&&mine.name)||myUser.email}, ()=>{
+    DB.update('requests/'+rid, {lastMsgAt:Date.now(), lastMsgByUid:uid});
+    localStorage.setItem('shokunin_seen_'+rid, Date.now());
+  });
 }
 
 document.getElementById('logoutHdr').onclick=()=>DB.auth.signOut().then(()=>H.toast('ログアウトしました','ok'));
