@@ -91,15 +91,8 @@
     DB.set = (path, obj) => DB.ready.then(() => ref(path).set(obj));
     DB.update = (path, obj) => DB.ready.then(() => ref(path).update(obj));
     DB.remove = (path) => DB.ready.then(() => ref(path).remove());
-    // ファイル（写真・PDF）を Storage にアップロードしてダウンロードURLを返す
-    DB.uploadChatFile = (folder, file) => DB.ready.then(function () {
-      if (!firebase.storage) throw new Error("Storage SDK が読み込まれていません");
-      var safe = (file.name || "file").replace(/[^\w.\-]/g, "_");
-      var p = ROOT + "/chat/" + folder + "/" + Date.now() + "_" + safe;
-      var sref = firebase.storage().ref().child(p);
-      return sref.put(file).then(function (snap) { return snap.ref.getDownloadURL(); })
-        .then(function (url) { return { url: url, name: file.name || "file", type: file.type || "", size: file.size || 0 }; });
-    });
+    // ファイル（写真・PDF）：Storage不要。写真は圧縮してデータURLでメッセージに保存。
+    DB.uploadChatFile = (folder, file) => H.prepareAttachment(file);
     return void (global.DB = DB);
   }
 
@@ -202,15 +195,8 @@
     }
   };
 
-  // お試しモード：Storageが無いのでデータURL（端末内）で代替（動作確認用）
-  DB.uploadChatFile = function (folder, file) {
-    return new Promise(function (res, rej) {
-      var fr = new FileReader();
-      fr.onload = function () { res({ url: fr.result, name: file.name || "file", type: file.type || "", size: file.size || 0 }); };
-      fr.onerror = rej;
-      fr.readAsDataURL(file);
-    });
-  };
+  // お試しモードも同じく圧縮データURLで送る
+  DB.uploadChatFile = function (folder, file) { return H.prepareAttachment(file); };
 
   global.DB = DB;
 })(window);

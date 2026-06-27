@@ -106,6 +106,36 @@
     return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   };
 
+  // 添付ファイルを送信用に変換する（Storage不要）。
+  // 写真は自動で縮小・圧縮してデータURLにする（DBに直接保存できる軽さに）。
+  // 画像以外（PDF等）は小さいものだけデータURLで送る（大きいものはStorageが必要）。
+  H.prepareAttachment = function (file) {
+    return new Promise(function (resolve, reject) {
+      var isImg = (file.type || "").indexOf("image") === 0;
+      if (isImg) {
+        var url = URL.createObjectURL(file);
+        var img = new Image();
+        img.onload = function () {
+          var max = 1200, w = img.width, h = img.height;
+          if (w > max || h > max) { if (w >= h) { h = Math.round(h * max / w); w = max; } else { w = Math.round(w * max / h); h = max; } }
+          var c = document.createElement("canvas"); c.width = w; c.height = h;
+          c.getContext("2d").drawImage(img, 0, 0, w, h);
+          try { URL.revokeObjectURL(url); } catch (_) {}
+          var data = c.toDataURL("image/jpeg", 0.6);
+          resolve({ url: data, name: file.name || "photo.jpg", type: "image/jpeg", size: data.length });
+        };
+        img.onerror = function () { try { URL.revokeObjectURL(url); } catch (_) {} reject(new Error("画像を読み込めませんでした")); };
+        img.src = url;
+      } else {
+        if (file.size > 800 * 1024) { reject(new Error("このPDF/ファイルは大きすぎます（写真は送れます。大きなPDFはStorage設定が必要です）")); return; }
+        var fr = new FileReader();
+        fr.onload = function () { resolve({ url: fr.result, name: file.name || "file", type: file.type || "", size: file.size }); };
+        fr.onerror = function () { reject(new Error("ファイルを読み込めませんでした")); };
+        fr.readAsDataURL(file);
+      }
+    });
+  };
+
   // オブジェクト（Firebaseの連想配列）→ [{_key, ...}] 配列
   H.toArr = (obj) =>
     obj ? Object.keys(obj).map((k) => Object.assign({ _key: k }, obj[k])) : [];
