@@ -552,7 +552,8 @@ document.querySelectorAll('.tabbar button').forEach(b=>{
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
     b.classList.add('on');
     document.getElementById('page-'+b.dataset.page).classList.add('on');
-    if(b.dataset.page==='contact'){ markContactSeen(); renderContact(); }
+    if(b.dataset.page==='contact'){ ensureContactSubscription(); markContactSeen(); renderContact(); }
+    if(b.dataset.page==='req'){ markDecisionsSeen(); }
   };
 });
 
@@ -1191,11 +1192,15 @@ function renderContact(){
 }
 function sendContact(){
   const inp=document.getElementById('ctInput'); if(!inp) return;
-  const text=inp.value.trim(); if(!text) return;
-  const mine=myCompanyEntry(); if(!mine) return;
+  const text=inp.value.trim();
+  if(!text){ H.toast('メッセージを入力してください','err'); return; }
+  const mine=myCompanyEntry();
+  if(!mine){ H.toast('連絡には「自社の大工」タブでログイン（工務店登録）が必要です','err'); goTab('update'); return; }
   const uid=DB.auth.user&&DB.auth.user.uid;
-  DB.push('companyChats/'+mine._key, {byUid:uid, byName:mine.name||'', byAdmin:false, text, at:Date.now()});
-  markContactSeen();
+  inp.value=''; // 先に空にして二重送信を防ぐ
+  DB.push('companyChats/'+mine._key, {byUid:uid, byName:mine.name||'', byAdmin:false, text, at:Date.now()})
+    .then(()=>{ H.toast('管理者へ送信しました','ok'); markContactSeen(); })
+    .catch(()=>{ inp.value=text; }); // 失敗時は入力を戻す（共通層がエラー内容をトースト表示）
 }
 
 function openRequestForm(kid){
@@ -1337,12 +1342,23 @@ function reqStatusLabel(s){
 // ===== 新着バッジ（応援要請・書き込み件数） =====
 function seenAt(rid){ return +(localStorage.getItem('shokunin_seen_'+rid)||0); }
 function markSeen(rid){ localStorage.setItem('shokunin_seen_'+rid, Date.now()); updateBadges(); }
+// 自分が送った要請が承認/辞退されたものを既読化（応援タブを開いたとき）
+function markDecisionsSeen(){
+  const mine=myCompanyEntry(); if(!mine) return;
+  H.toArr(reqByMe).forEach(r=>{
+    if(r.fromCompanyKey===mine._key && (r.status==='accepted'||r.status==='declined') && (r.decidedAt||0)>seenAt(r._key)){
+      localStorage.setItem('shokunin_seen_'+r._key, Date.now());
+    }
+  });
+  updateBadges();
+}
 // このリクエストが「要対応/新着」か（受信の申請中 or 相手からの未読メッセージ）
 function reqIsNew(r){
   const mine=myCompanyEntry(); if(!mine) return false;
   const myUid=DB.auth.user&&DB.auth.user.uid;
   const incoming = r.toCompanyKey===mine._key;
   if(incoming && r.status==='pending') return true;
+  if(r.fromCompanyKey===mine._key && (r.status==='accepted'||r.status==='declined') && (r.decidedAt||0)>seenAt(r._key)) return true; // 自分の要請が承認/辞退された
   if(r.changeReq && r.changeReq.byUid && r.changeReq.byUid!==myUid) return true; // 相手からの変更依頼が保留中
   if(r.status==='cancelled' && r.cancelledByUid && r.cancelledByUid!==myUid && (r.cancelledAt||0)>seenAt(r._key)) return true; // 相手が取引を解除
   if(r.lastMsgAt && r.lastMsgByUid && r.lastMsgByUid!==myUid && r.lastMsgAt>seenAt(r._key)) return true;
@@ -1392,12 +1408,34 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').then
 function notifGranted(){ return ('Notification' in window) && Notification.permission==='granted'; }
 function loadNotified(){ try{ return JSON.parse(localStorage.getItem('shokunin_notified')||'{}'); }catch(_){ return {}; } }
 function saveNotified(o){ try{ localStorage.setItem('shokunin_notified', JSON.stringify(o)); }catch(_){} }
+// 通知音（短いビープ）。ブラウザの自動再生制限があるため、ユーザー操作時にunlockBeep()で有効化する。
+let _audioCtx=null;
+function unlockBeep(){ try{ const C=window.AudioContext||window.webkitAudioContext; if(!C) return; if(!_audioCtx) _audioCtx=new C(); if(_audioCtx.state==='suspended') _audioCtx.resume(); }catch(_){} }
+function beep(){
+  try{
+    const C=window.AudioContext||window.webkitAudioContext; if(!C) return;
+    if(!_audioCtx) _audioCtx=new C();
+    if(_audioCtx.state==='suspended') _audioCtx.resume();
+    const o=_audioCtx.createOscillator(), g=_audioCtx.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(880,_audioCtx.currentTime); o.frequency.setValueAtTime(660,_audioCtx.currentTime+0.12);
+    g.gain.setValueAtTime(0.0001,_audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.12,_audioCtx.currentTime+0.02); g.gain.exponentialRampToValueAtTime(0.0001,_audioCtx.currentTime+0.32);
+    o.connect(g); g.connect(_audioCtx.destination); o.start(); o.stop(_audioCtx.currentTime+0.34);
+  }catch(_){}
+}
 function fireNotif(title, body, tag){
   try{
     const opt={ body, tag, icon:'icon-192.png', badge:'icon-192.png', data:{url:'./index.html'}, renotify:true };
     if(swReg && swReg.showNotification){ swReg.showNotification(title, opt); }
     else if('Notification' in window){ new Notification(title, opt); }
   }catch(_){}
+  beep(); // 表示に加えて音でも知らせる（アプリを開いている間）
+}
+// 通知のテスト（表示と音をその場で確認）
+function notifTest(){
+  unlockBeep();
+  if(!notifGranted()){ H.toast('先に「通知をオンにする」を押してください','err'); return; }
+  fireNotif('大工シェア：テスト通知 🔔', '通知の表示と音のテストです。これが見えて音が鳴れば設定OKです。', 'test:'+Date.now());
+  H.toast('テスト通知を送りました（表示と音を確認してください）','ok');
 }
 function runNotifications(){
   if(!notifGranted() || !myCompanyEntry()) return;
@@ -1421,9 +1459,10 @@ async function enableNotifications(){
   let perm=Notification.permission;
   if(perm!=='granted'){ try{ perm=await Notification.requestPermission(); }catch(_){ perm=Notification.permission; } }
   if(perm!=='granted'){ H.toast('通知が許可されませんでした。端末/ブラウザの設定から許可できます','err'); renderInbox(); return; }
+  unlockBeep(); // この操作（ユーザー操作）で通知音を有効化
   // 既存の未対応はシード（過去分を一斉通知しない）
   const seen=loadNotified(); inboxItems().forEach(it=>{ if(it.key) seen[it.key]=Date.now(); }); saveNotified(seen);
-  H.toast('通知をオンにしました','ok'); renderInbox();
+  H.toast('通知をオンにしました。下の「通知をテスト」で表示と音を確認できます','ok'); renderInbox();
 }
 // ===== お知らせ・受信箱（未対応の内容を一覧表示） =====
 function inboxItems(){
@@ -1433,6 +1472,10 @@ function inboxItems(){
   H.toArr(reqByMe).forEach(r=>{
     if(r.toCompanyKey===mine._key && r.status==='pending')
       items.push({key:'req:'+r._key,ic:'🤝',t:'応援要請が届いています',d:`${r.fromCompanyName||''} → 大工 ${r.craftsmanName||''}（${r.dateText||'日程未定'}）`,go:'req',at:r.createdAt||0});
+    if(r.fromCompanyKey===mine._key && (r.status==='accepted'||r.status==='declined') && (r.decidedAt||0)>seenAt(r._key)){
+      const ok=r.status==='accepted';
+      items.push({key:'decided:'+r._key+':'+(r.decidedAt||0),ic:ok?'✅':'🙅',t:ok?'応援要請が承認されました':'応援要請が辞退されました',d:`${r.toCompanyName||''}／大工 ${r.craftsmanName||''}（${r.dateText||''}）`,go:'req',at:r.decidedAt||0});
+    }
     const crToMe = r.changeReq && r.changeReq.byUid && r.changeReq.byUid!==myUid;
     if(crToMe)
       items.push({key:'chg:'+r._key+':'+(r.changeReq.at||0),ic:'📅',t:'日程変更の依頼',d:`大工 ${r.craftsmanName||''}：新しい日程 ${r.changeReq.dateText||''}（${r.changeReq.byName||''}より）`,go:'req',at:r.changeReq.at||0});
@@ -1452,12 +1495,16 @@ function inboxItems(){
   return items.sort((a,b)=>(b.at||0)-(a.at||0));
 }
 function notifHeadHTML(){
-  if(!('Notification' in window)) return '';
-  if(Notification.permission==='granted') return '<div class="count" style="margin-bottom:10px;color:var(--ok)">🔔 通知オン：新着があるとこの端末に通知します（アプリを開いている間）。</div>';
+  if(!('Notification' in window)) return '<div class="count" style="margin-bottom:10px;color:var(--warn)">🔕 この端末/ブラウザは通知に対応していません。</div>';
+  if(Notification.permission==='granted') return '<div class="count" style="margin-bottom:6px;color:var(--ok)">🔔 通知オン：新着があるとこの端末に通知します（アプリを開いている間）。</div>'
+    +'<button class="btn ghost sm" id="notifTestBtn" style="width:100%;margin-bottom:10px">🔔 通知をテスト（表示と音）</button>';
   if(Notification.permission==='denied') return '<div class="count" style="margin-bottom:10px;color:var(--warn)">🔕 通知がブロックされています。端末/ブラウザの設定でこのサイトの通知を許可してください。</div>';
-  return '<div style="margin-bottom:12px"><button class="btn" id="notifOnBtn" style="width:100%">🔔 通知をオンにする</button><div class="count" style="margin-top:6px">許可すると、応援要請や新着メッセージをこの端末に通知します。</div></div>';
+  return '<div style="margin-bottom:12px"><button class="btn" id="notifOnBtn" style="width:100%">🔔 通知をオンにする</button><div class="count" style="margin-top:6px">許可すると、応援要請・承認・新着メッセージをこの端末に通知します。</div></div>';
 }
-function bindNotifBtn(){ const b=document.getElementById('notifOnBtn'); if(b) b.onclick=enableNotifications; }
+function bindNotifBtn(){
+  const b=document.getElementById('notifOnBtn'); if(b) b.onclick=enableNotifications;
+  const t=document.getElementById('notifTestBtn'); if(t) t.onclick=notifTest;
+}
 function renderInbox(){
   const list=document.getElementById('inboxList'); if(!list) return;
   const head=notifHeadHTML();
@@ -1644,8 +1691,8 @@ function dealThreadHTML(){
   return h;
 }
 function bindReqCards(box){
-  box.querySelectorAll('.acc').forEach(b=>b.onclick=()=>DB.update('requests/'+b.dataset.rid,{status:'accepted'}).then(()=>H.toast('承認しました','ok')));
-  box.querySelectorAll('.dec').forEach(b=>b.onclick=()=>DB.update('requests/'+b.dataset.rid,{status:'declined'}).then(()=>H.toast('辞退しました','ok')));
+  box.querySelectorAll('.acc').forEach(b=>b.onclick=()=>DB.update('requests/'+b.dataset.rid,{status:'accepted', decidedAt:Date.now()}).then(()=>H.toast('承認しました','ok')));
+  box.querySelectorAll('.dec').forEach(b=>b.onclick=()=>DB.update('requests/'+b.dataset.rid,{status:'declined', decidedAt:Date.now(), declinedAt:Date.now()}).then(()=>H.toast('辞退しました','ok')));
   box.querySelectorAll('.req-edit').forEach(b=>b.onclick=()=>openRequestEdit(b.dataset.rid));
   box.querySelectorAll('.req-del').forEach(b=>b.onclick=()=>deleteRequest(b.dataset.rid));
   box.querySelectorAll('.chg-req').forEach(b=>b.onclick=()=>openChangeForm(b.dataset.rid));
