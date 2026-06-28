@@ -134,6 +134,8 @@
   .helpitem{border:1px solid var(--line); border-radius:10px; padding:0; margin-bottom:8px; background:#fff; overflow:hidden}
   .helpitem summary{cursor:pointer; font-weight:800; font-size:14px; padding:11px 12px; list-style:none; color:var(--ink)}
   .helpitem summary::-webkit-details-marker{display:none}
+  .termsbox{background:#fdeceb; border:1.5px solid #f0c4c0; color:var(--warn); border-radius:8px; padding:10px 12px; font-weight:800; margin:6px 0 12px; line-height:1.6}
+  .termsbox.ok{background:#eafaf0; border-color:#b6e6c8; color:#1a7a45}
   .helpitem summary::before{content:"＋ "; color:var(--brand); font-weight:800}
   .helpitem[open] summary::before{content:"− "}
   .helpitem[open] summary{border-bottom:1px solid var(--line)}
@@ -251,7 +253,7 @@
   <section class="page" id="page-req">
     <div class="card" style="padding:11px 14px">
       <b>🤝 応援要請</b>
-      <div class="count" style="margin:4px 0 0">他社の大工を借りたいときは「大工をさがす」から要請できます。労働条件・支払い条件のやり取りは当事者だけが見られます（管理者は取引に関与しません）。</div>
+      <div class="count" style="margin:4px 0 0">他社の大工を借りたいときは「大工をさがす」から要請できます。労働条件・支払い条件のやり取りは当事者だけが見られます。<br>⚠️ <b>管理者は当事者間のトラブル・事故・事件・費用未払い等に一切関与しません</b>（当事者の責任で解決してください／詳細は利用規約）。</div>
     </div>
     <div class="card" id="histCard" style="padding:11px 14px; display:none">
       <button class="btn ghost sm" id="histToggle" style="width:100%">💬 当事者どうしのやり取り履歴（過去3か月）を見る</button>
@@ -466,6 +468,15 @@
   </div>
 </div>
 
+<!-- 利用規約・同意 -->
+<div class="ov" id="termsOv">
+  <div class="sheet">
+    <h3>📜 「職人シェア」アプリ利用規約</h3>
+    <div id="termsBody" style="max-height:58vh; overflow:auto; font-size:13px; line-height:1.75; border:1px solid var(--line); border-radius:10px; padding:12px"></div>
+    <div id="termsFoot"></div>
+  </div>
+</div>
+
 <!-- 下部タブ -->
 <nav class="tabbar">
   <button class="on" data-page="find"><span class="ic">🔍</span>大工をさがす</button>
@@ -478,7 +489,7 @@
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-const APP_VERSION = '2026-06-28a'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-28b'; // 画面で最新版か確認するための版番号
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
 let reviewTarget = null, rvValue = 0;
@@ -590,6 +601,7 @@ DB.auth.onChange(u=>{
   myUser=u; renderMyArea(); renderFind(); renderCompanies();
   // ログイン直後はリアルタイム購読の再評価を待たず、その場で最新データを取得して即反映（体感を速く）
   if(u && u.email && _loginRefreshed!==u.uid){ _loginRefreshed=u.uid; refreshCoreData(); }
+  if(u && u.email && typeof maybePromptTerms==='function') setTimeout(maybePromptTerms, 900); // 初回ログイン時に規約同意を求める
 });
 // ログイン直後などに、主要データを一括取得して即座に反映する
 function refreshCoreData(){
@@ -768,6 +780,7 @@ function renderMyArea(){
   if(!box||!list) return;
   ensureReqSubscription();
   ensureContactSubscription();
+  if(typeof maybePromptTerms==='function') maybePromptTerms(); // 初回ログイン時に規約同意（会社情報が読めた段階でも判定）
   const lh=document.getElementById('logoutHdr'); if(lh) lh.style.display = loggedIn()?'flex':'none';
   if(!loggedIn()){
     box.innerHTML = `
@@ -1633,14 +1646,83 @@ function renderHelp(){
   const list=document.getElementById('helpList'); if(!list) return;
   const q=((document.getElementById('helpSearch')||{}).value||'').trim().toLowerCase();
   const items=HELP_TOPICS.filter(it=>!q || (it.t+' '+it.k+' '+it.a).toLowerCase().includes(q));
-  if(!items.length){ list.innerHTML='<div class="empty" style="padding:18px">該当する項目がありません。別のキーワードでお試しください。</div>'; return; }
-  list.innerHTML=items.map(it=>`<details class="helpitem"><summary>${H.esc(it.t)}</summary><div class="helpa">${H.esc(it.a)}</div></details>`).join('');
+  const termsBtn='<button class="btn ghost sm" id="helpTermsBtn" style="width:100%;margin-bottom:10px">📜 利用規約・免責事項を見る（同意状況の確認）</button>';
+  const body=items.length?items.map(it=>`<details class="helpitem"><summary>${H.esc(it.t)}</summary><div class="helpa">${H.esc(it.a)}</div></details>`).join('')
+    :'<div class="empty" style="padding:18px">該当する項目がありません。別のキーワードでお試しください。</div>';
+  list.innerHTML=termsBtn+body;
+  const tb=document.getElementById('helpTermsBtn'); if(tb) tb.onclick=()=>{ document.getElementById('helpOv').classList.remove('on'); showTerms(!termsAgreedEffective()); };
 }
 function openHelp(){ document.getElementById('helpSearch').value=''; renderHelp(); document.getElementById('helpOv').classList.add('on'); }
 document.getElementById('helpBtn').onclick=openHelp;
 document.getElementById('helpClose').onclick=()=>document.getElementById('helpOv').classList.remove('on');
 document.getElementById('helpOv').onclick=e=>{ if(e.target.id==='helpOv') e.currentTarget.classList.remove('on'); };
 document.getElementById('helpSearch').oninput=renderHelp;
+
+// ===== 利用規約・同意 =====
+const TERMS_VERSION='2026-06-28';
+const TERMS_HTML=`
+  <div class="termsbox">【最重要・免責】管理者（当塾）は、ユーザー（工務店・職人）間で発生したトラブル・事故・労災・事件・紛争・費用未払い・損害等に <u>一切関与せず、いかなる責任も負いません</u>。当事者双方の費用と責任で直接解決してください。</div>
+  <p>本規約は、一棟司塾匠（以下「当塾」）が運営・提供する職人マッチング・シェアリング用WEBアプリケーション（以下「本アプリ」）を、当塾の工務店メンバーシップ会員およびその所属職人（以下、総称して「ユーザー」）が利用する際の諸条件を定めるものです。</p>
+  <p><b>第1条（目的）</b><br>本アプリは、地場工務店間における繁忙期・閑散期の職人の相互融通（職人シェアリング）、および技術情報の交換を円滑に行うためのプラットフォーム（場）を提供するものです。</p>
+  <p><b>第2条（ユーザー間の契約関係）</b><br>本アプリを通じて行われる職人の貸し借り、応援要請、外注請負、その他の取引に関する契約（応援契約、請負契約、在籍出向契約等）は、すべてユーザー（工務店および職人）間で直接締結されるものとします。</p>
+  <p><b>第3条（管理者完全免責・ユーザー間トラブルの不関与）</b><br>本アプリの管理者（当塾）は、ユーザー間で発生した施工不備、遅延、事故、労災、対人対物賠償、費用の未払い、その他一切のトラブル、紛争、損害について、その理由の如何を問わず一切関与せず、何らの責任（仲裁責任、損害賠償責任等）も負わないものとします。<br>ユーザー間でトラブルが生じた場合は、当事者たるユーザー双方の費用と責任において直接これを解決するものとし、当塾に対して一切の負担や迷惑をかけないものとします。</p>
+  <p><b>第4条（利用資格）</b><br>本アプリを利用できるのは、当塾の「工務店メンバーシップ会員企業」に所属する経営者、役員、社員、および当該企業が登録を認めた所属職人に限られます。</p>
+  <p><b>第5条（アカウントの管理責任）</b><br>ユーザーは、自己の責任において本アプリのログイン情報（ID・パスワード等）を厳重に管理するものとします。<br>ユーザーは、いかなる場合もアカウントを第三者に譲渡・貸与、または複数人で共有することはできません。アカウントの管理不十分による損害の責任はユーザー本人が負うものとします。</p>
+  <p><b>第6条（禁止事項）</b><br>ユーザーは、本アプリの利用にあたり、以下の行為を行ってはなりません。<br>(1) 虚偽の登録情報、または実体と異なる職人スキル・稼働状況を掲載する行為<br>(2) 本アプリで得た他のユーザーの個人情報や経営情報を、職人シェア以外の目的に流用または外部に漏洩する行為<br>(3) 他のユーザーに対する誹謗中傷、名誉毀損、または不適切な引き抜き行為<br>(4) 本アプリのシステムに過度な負荷をかける行為、またはリバースエンジニアリング等の不正解析行為<br>(5) その他、当塾が不適切と判断する行為</p>
+  <p><b>第7条（利用停止およびアカウント削除）</b><br>ユーザーが前条各号のいずれかに該当した場合、または当塾の会員制度を退会した（会費の未払いを含む）場合、当塾は事前の通知なく当該ユーザーの本アプリ利用を停止し、アカウントを削除できるものとします。</p>
+  <p><b>第8条（アプリの変更・中断）</b><br>当塾は、システムの保守点検、機能アップデート、または予期せぬ通信障害等の事由がある場合、ユーザーに事前に通知することなく、本アプリの全部または一部の提供を一時的に中断または変更することができるものとします。これによりユーザーに生じた損害について、当塾は一切の責任を負いません。</p>
+  <p><b>第9条（規約の改定）</b><br>当塾は、必要と判断した場合には、ユーザーの承諾を得ることなく本規約を随時変更できるものとします。変更後の規約は本アプリ上、または当塾の指定する方法で告知された時点から効力を生じるものとします。</p>
+`;
+function termsAgreedVer(){ try{ return localStorage.getItem('shokunin_terms_agreed')||''; }catch(_){ return ''; } }
+function showTerms(consent){
+  document.getElementById('termsBody').innerHTML=TERMS_HTML;
+  const foot=document.getElementById('termsFoot');
+  const agreed=termsAgreedEffective();
+  const at=localStorage.getItem('shokunin_terms_agreed_at');
+  if(consent && !agreed){
+    foot.innerHTML='<div class="count" style="margin:10px 0">上記（特に免責事項）に同意のうえご利用ください。</div><button class="btn full" id="termsAgree">同意して利用を開始する</button>';
+    document.getElementById('termsAgree').onclick=agreeTerms;
+  } else {
+    foot.innerHTML=(agreed?'<div class="termsbox ok" style="margin:10px 0">✅ 同意済み（版 '+TERMS_VERSION+(at?'・'+H.fmtDate(+at):'')+'）</div>':'')+'<button class="btn full" id="termsClose2">閉じる</button>';
+    document.getElementById('termsClose2').onclick=()=>document.getElementById('termsOv').classList.remove('on');
+  }
+  document.getElementById('termsOv').classList.add('on');
+}
+function agreeTerms(){
+  localStorage.setItem('shokunin_terms_agreed', TERMS_VERSION);
+  localStorage.setItem('shokunin_terms_agreed_at', Date.now());
+  recordTermsConsent();
+  document.getElementById('termsOv').classList.remove('on');
+  H.toast('利用規約に同意しました','ok');
+}
+// ログイン中なら、同意状況を会社情報にも記録（管理者が確認できるように）
+function recordTermsConsent(){
+  if(termsAgreedVer()!==TERMS_VERSION) return;
+  const mine=myCompanyEntry(); if(mine && mine.termsAgreed!==TERMS_VERSION){
+    DB.update('companies/'+mine._key, { termsAgreed:TERMS_VERSION, termsAgreedAt:Date.now() }).catch(()=>{});
+  }
+}
+document.getElementById('termsOv').onclick=e=>{ if(e.target.id==='termsOv' && termsAgreedEffective()) e.currentTarget.classList.remove('on'); };
+// 同意済みかどうか（この端末 or ログイン中の会社のいずれかで同意済みならOK）
+function termsAgreedEffective(){
+  if(termsAgreedVer()===TERMS_VERSION) return true;
+  const mine=(typeof myCompanyEntry==='function')?myCompanyEntry():null;
+  return !!(mine && mine.termsAgreed===TERMS_VERSION);
+}
+// 規約同意は「初回ログイン時」に求める。2回目以降（同意済み）は表示しない。
+function maybePromptTerms(){
+  if(!loggedIn()) return;                 // 未ログイン（閲覧のみ）は求めない
+  const localAgreed=termsAgreedVer()===TERMS_VERSION;
+  const mine=myCompanyEntry();
+  const coAgreed=!!(mine && mine.termsAgreed===TERMS_VERSION);
+  if(localAgreed || coAgreed){
+    if(localAgreed && mine && !coAgreed) recordTermsConsent();                       // 端末は同意済→会社にも記録
+    if(coAgreed && !localAgreed){ try{ localStorage.setItem('shokunin_terms_agreed',TERMS_VERSION); }catch(_){} } // 会社が同意済→端末にも反映
+    return;
+  }
+  const ov=document.getElementById('termsOv');
+  if(ov && !ov.classList.contains('on')) showTerms(true); // 初回ログイン：未同意なら表示
+}
 // 取引が「終了済み」か（解除・辞退・完了＝承認済みで工期終了）
 function reqIsFinished(r){
   if(r.status==='cancelled' || r.status==='declined') return true;

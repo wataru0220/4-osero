@@ -396,7 +396,8 @@ function renderCoList(){
         <div><div class="nm">${H.esc(c.name)}</div>
         <div class="meta">📍${H.esc(c.area||'—')}　👤${H.esc(c.contact||'—')}　📞${H.esc(c.tel||'—')}</div>
         <div class="meta">🔑${H.esc(c.ownerEmail||'（ログインメール未設定）')}</div>
-        <div class="meta">所属大工 ${cnt}名　評価 ${H.stars(r.avg)}（${r.count}件）</div></div>
+        <div class="meta">所属大工 ${cnt}名　評価 ${H.stars(r.avg)}（${r.count}件）</div>
+        <div class="meta">📜 規約同意：${c.termsAgreed?('<span style="color:#1a7a45;font-weight:800">済</span>（版'+H.esc(c.termsAgreed)+(c.termsAgreedAt?'・'+H.fmtDate(c.termsAgreedAt):'')+'）'):'<span style="color:var(--warn);font-weight:800">未</span>'}</div></div>
       </div>
       ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
       <div class="acts">
