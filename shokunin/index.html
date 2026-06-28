@@ -1064,26 +1064,39 @@ document.getElementById('ceSave').onclick=()=>{
 // ===== 空き予定カレンダー（3ヶ月） =====
 let availDraft={}, availCraftKey=null;  // 自社の編集用
 function calToday(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-function calMonths3(){ const n=new Date(); return [0,1,2].map(i=>new Date(n.getFullYear(), n.getMonth()+i, 1)); }
-function monthGridHTML(monthDate, availMap, editable, reqMap){
+// 今日から3か月後（同日）の日付文字列。表示はこの「現在〜3か月後」を日割りで行う
+function calEnd3(){ const d=new Date(); d.setMonth(d.getMonth()+3); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+// 今月から3か月後を含む月までの「月初」一覧（最大4枚）
+function calMonthsRange(){
+  const n=new Date(); const e=new Date(); e.setMonth(e.getMonth()+3);
+  const out=[]; let y=n.getFullYear(), m=n.getMonth();
+  const ey=e.getFullYear(), em=e.getMonth();
+  while(y<ey || (y===ey && m<=em)){ out.push(new Date(y,m,1)); m++; if(m>11){ m=0; y++; } }
+  return out;
+}
+function monthGridHTML(monthDate, availMap, editable, reqMap, endS){
   const y=monthDate.getFullYear(), m=monthDate.getMonth();
   const startWd=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(), todayS=calToday();
+  endS=endS||calEnd3();
   let cells='';
   for(let i=0;i<startWd;i++) cells+='<div class="cal-cell empty"></div>';
   for(let d=1;d<=days;d++){
     const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    const st=availMap[ds], past=ds<todayS, color=st?H.statusOf(st).color:'';
+    // 表示範囲は「今日〜3か月後」だけ。範囲外（過去・3か月より先）は空欄にする
+    if(ds<todayS || ds>endS){ cells+='<div class="cal-cell empty"></div>'; continue; }
+    const st=availMap[ds], color=st?H.statusOf(st).color:'';
     const reqs=reqMap&&reqMap[ds];
     const reqTag=reqs&&reqs.length?`<div class="cal-req" title="${H.esc(reqs.join('、'))}">🤝${H.esc(reqs[0])}${reqs.length>1?'他':''}</div>`:'';
-    cells+=`<div class="cal-cell${past?' past':''}${(editable&&!past)?' edit':''}${reqs&&reqs.length?' has-req':''}" ${(editable&&!past)?`data-date="${ds}"`:''} style="${color?`background:${color};color:#fff;border-color:${color}`:''}">${d}${reqTag}</div>`;
+    cells+=`<div class="cal-cell${editable?' edit':''}${reqs&&reqs.length?' has-req':''}" ${editable?`data-date="${ds}"`:''} style="${color?`background:${color};color:#fff;border-color:${color}`:''}">${d}${reqTag}</div>`;
   }
   return `<div class="cal-month"><div class="cal-title">${y}年${m+1}月</div><div class="cal-grid">`
     +['日','月','火','水','木','金','土'].map(w=>`<div class="cal-wd">${w}</div>`).join('')+cells+`</div></div>`;
 }
 function calHTML(availMap, editable, reqMap){
-  return '<div class="cal-legend"><span class="lg" style="background:#1aa260"></span>空き（タップで切替・一日単位）'
+  const endS=calEnd3();
+  return '<div class="cal-legend"><span class="lg" style="background:#1aa260"></span>空き（タップで切替・一日単位）／表示は今日〜3か月後まで'
     + (reqMap&&Object.keys(reqMap).length?'　<span style="color:var(--accent);font-weight:800">🤝＝応援要請が入っている日（要請元の工務店名）</span>':'')+'</div>'
-    + calMonths3().map(md=>monthGridHTML(md, availMap||{}, editable, reqMap)).join('');
+    + calMonthsRange().map(md=>monthGridHTML(md, availMap||{}, editable, reqMap, endS)).join('');
 }
 // 自社の大工へ来ている応援要請を日付→工務店名 のマップにする（owner視点・申請中/承認のみ）
 function rangeDays(from,to){ if(!from) return []; const out=[]; const d=new Date(from); const end=new Date(to||from); let n=0; while(d<=end && n<400){ out.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')); d.setDate(d.getDate()+1); n++; } return out; }
