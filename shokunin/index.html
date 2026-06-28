@@ -406,6 +406,12 @@
       <div class="count" style="margin-top:4px">この大工が「空き」に設定した日だけ選べます（複数選択可）。空き以外の日は要請できません。</div>
     </div>
     <div class="field"><label>現場・作業内容</label><textarea id="reqWork" placeholder="例）木造2階の内装下地・ボード貼り"></textarea></div>
+    <div class="field"><label>応援条件（費用の負担）</label>
+      <div class="row"><div style="flex:1"><div class="count" style="margin:0 0 2px">🅿 駐車料金</div><select id="reqParking"></select></div>
+        <div style="flex:1"><div class="count" style="margin:0 0 2px">🏨 宿泊費</div><select id="reqLodging"></select></div></div>
+      <div style="margin-top:8px"><div class="count" style="margin:0 0 2px">🚗 遠方の交通費（有料道路など）</div><select id="reqTransport"></select></div>
+      <div class="count" style="margin-top:4px">※ 目安です。詳細・金額は送信後の「条件のやり取り」で当事者間で確認してください。</div>
+    </div>
     <div class="field"><label>依頼元の連絡先</label><input type="text" id="reqContact" placeholder="例）090-1234-5678（担当：〇〇）"></div>
     <div class="field"><label>メッセージ（任意）</label><textarea id="reqMsg" placeholder="ご相談など"></textarea></div>
     <div class="count">※ 労働条件・支払い条件は、送信後に表示される「条件のやり取り」で当事者だけで相談できます。</div>
@@ -1164,6 +1170,14 @@ function fillReqWard(){
 document.getElementById('reqPref').onchange=fillReqCity;
 document.getElementById('reqCity').onchange=fillReqWard;
 
+// 応援条件（費用負担）の選択肢
+const COND_OPTS=['要相談','依頼元（借りる側）が負担','大工側（貸す側）が負担','実費精算','なし'];
+(function(){
+  const opts=COND_OPTS.map(o=>`<option>${o}</option>`).join('');
+  ['reqParking','reqLodging','reqTransport'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=opts; });
+})();
+function setCond(id,v){ const el=document.getElementById(id); if(el) el.value=(v&&COND_OPTS.indexOf(v)>=0)?v:'要相談'; }
+
 // 自社のreqIndexを購読し、含まれる要請を個別に購読する（当事者だけが読める設計）
 function ensureReqSubscription(){
   const ck=(myCompanyEntry()||{})._key||null;
@@ -1269,6 +1283,7 @@ function openRequestForm(kid){
   document.getElementById('reqTitle').textContent='応援要請：'+k.name;
   document.getElementById('reqSub').textContent='所属「'+(k.companyName||'')+'」へ依頼します';
   ['reqWork','reqContact','reqMsg'].forEach(id=>document.getElementById(id).value='');
+  setCond('reqParking','要相談'); setCond('reqLodging','要相談'); setCond('reqTransport','要相談');
   document.getElementById('reqPref').value=''; fillReqCity();
   document.getElementById('reqContact').value=mine.tel||'';
   renderReqDates(k, []);
@@ -1299,6 +1314,7 @@ function openRequestEdit(rid){
   const preDates=(r.dates&&r.dates.length)?r.dates:rangeDays(r.dateFrom,r.dateTo);
   renderReqDates(craftsmen[r.craftsmanKey]||{avail:{}}, preDates);
   document.getElementById('reqWork').value=r.work||'';
+  setCond('reqParking',r.parking); setCond('reqLodging',r.lodging); setCond('reqTransport',r.transport);
   document.getElementById('reqContact').value=r.contact||'';
   document.getElementById('reqMsg').value=r.message||'';
   document.getElementById('reqSend').textContent='この内容で更新';
@@ -1327,7 +1343,8 @@ document.getElementById('reqSend').onclick=()=>{
   const site=pref+city+(ward||'');
   const dateText=dates.map(fmtReqDate).join('、');
   const fields={ site, sitePref:pref, siteCity:city, siteWard:ward||'', dateText, dates, dateFrom:dates[0], dateTo:dates[dates.length-1],
-    work:rqVal('reqWork').trim(), contact:rqVal('reqContact').trim(), message:rqVal('reqMsg').trim() };
+    work:rqVal('reqWork').trim(), contact:rqVal('reqContact').trim(), message:rqVal('reqMsg').trim(),
+    parking:rqVal('reqParking'), lodging:rqVal('reqLodging'), transport:rqVal('reqTransport') };
   if(editReqKey){
     DB.update('requests/'+editReqKey, fields)
       .then(()=>{ document.getElementById('reqOv').classList.remove('on'); H.toast('応援要請を更新しました','ok'); });
@@ -1756,6 +1773,7 @@ function reqCardHTML(r,kind){
     ${r.status==='cancelled'?`<div class="cancelband">🚫 この取引は解除されました${r.cancelledByName?`（${H.esc(r.cancelledByName)}）`:''}${r.cancelledReason?`<div class="meta2" style="color:inherit;margin-top:2px">理由：${H.esc(r.cancelledReason)}</div>`:''}</div>`:''}
     ${evalHTML}
     ${r.work?`<div class="meta2">🛠 ${H.esc(r.work)}</div>`:''}
+    ${(r.parking||r.lodging||r.transport)?`<div class="note">💴 応援条件　🅿駐車料金：${H.esc(r.parking||'要相談')}／🏨宿泊費：${H.esc(r.lodging||'要相談')}／🚗遠方交通費：${H.esc(r.transport||'要相談')}</div>`:''}
     ${r.contact?`<div class="meta2">📞 ${H.esc(r.contact)}</div>`:''}
     ${r.message?`<div class="note">💬 ${H.esc(r.message)}</div>`:''}
     ${cr?`<div class="chgbox">
