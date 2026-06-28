@@ -134,7 +134,8 @@
   .helpitem{border:1px solid var(--line); border-radius:10px; padding:0; margin-bottom:8px; background:#fff; overflow:hidden}
   .helpitem summary{cursor:pointer; font-weight:800; font-size:14px; padding:11px 12px; list-style:none; color:var(--ink)}
   .helpitem summary::-webkit-details-marker{display:none}
-  .appfooter{text-align:center; padding:14px 0 6px; margin-top:6px; border-top:1px solid var(--line)}
+  .topterms{text-align:right; margin:0 0 8px}
+  .topterms .btn{color:var(--warn); border-color:#f0c4c0}
   .termsbox{background:#fdeceb; border:1.5px solid #f0c4c0; color:var(--warn); border-radius:8px; padding:10px 12px; font-weight:800; margin:6px 0 12px; line-height:1.6}
   .termsbox.ok{background:#eafaf0; border-color:#b6e6c8; color:#1a7a45}
   .helpitem summary::before{content:"＋ "; color:var(--brand); font-weight:800}
@@ -221,6 +222,8 @@
 
 <div class="wrap">
   <div id="modebar"></div>
+  <!-- 画面上部に常設：利用規約をいつでも確認 -->
+  <div class="topterms"><button class="btn ghost sm" id="footTermsBtn">📜 利用規約・免責事項を確認</button></div>
 
   <!-- ============ 大工をさがす ============ -->
   <section class="page on" id="page-find">
@@ -271,11 +274,6 @@
     </div>
     <div id="contactBox"></div>
   </section>
-
-  <!-- 常時表示フッター：利用規約をいつでも開ける -->
-  <div class="appfooter">
-    <button class="btn ghost sm" id="footTermsBtn">📜 利用規約・免責事項</button>
-  </div>
 </div>
 
 <!-- 評価モーダル（★のみ・1社1件・本人はいつでも変更/削除可） -->
@@ -496,7 +494,7 @@
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-const APP_VERSION = '2026-06-28d'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-28e'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-06-28'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
