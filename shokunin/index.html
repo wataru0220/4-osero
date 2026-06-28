@@ -494,7 +494,7 @@
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-const APP_VERSION = '2026-06-28e'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-28f'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-06-28'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -890,14 +890,15 @@ function renderOwnArea(mine){
   document.getElementById('addCraftBtn').onclick=()=>openCraftForm(null);
   updateDraftHint();
   list.querySelectorAll('.updMemo').forEach(inp=>{
-    inp.onchange=()=>DB.update('craftsmen/'+inp.dataset.key,{availMemo:inp.value.trim(),updatedAt:Date.now()}).then(()=>H.toast('メモを保存しました','ok'));
+    inp.onchange=()=>{ const key=inp.dataset.key, memo=inp.value.trim();
+      DB.update('craftsmen/'+key,{availMemo:memo,updatedAt:Date.now()}).then(()=>{ if(craftsmen[key]) craftsmen[key].availMemo=memo; H.toast('メモを保存しました','ok'); }); };
   });
   list.querySelectorAll('.ce-edit').forEach(b=>b.onclick=()=>openCraftForm(b.dataset.key));
   list.querySelectorAll('.ce-avail').forEach(b=>b.onclick=()=>openAvailEditor(b.dataset.key));
   list.querySelectorAll('.ce-del').forEach(b=>b.onclick=()=>{
-    const k=craftsmen[b.dataset.key]||{};
+    const key=b.dataset.key, k=craftsmen[key]||{};
     if(!confirm('「'+(k.name||'')+'」を削除しますか？')) return;
-    DB.remove('craftsmen/'+b.dataset.key).then(()=>H.toast('削除しました','ok'));
+    DB.remove('craftsmen/'+key).then(()=>{ delete craftsmen[key]; renderFind(); renderCompanies(); renderMyArea(); H.toast('削除しました','ok'); });
   });
 }
 
@@ -1097,10 +1098,19 @@ document.getElementById('ceSave').onclick=()=>{
     updatedAt:Date.now()
   };
   const wasNew=!editCraftKey;
+  const newRec=Object.assign({availMemo:'',avail:{},createdAt:Date.now()},data);
   const p=editCraftKey
     ? DB.update('craftsmen/'+editCraftKey,data)
-    : DB.push('craftsmen', Object.assign({availMemo:'',avail:{},createdAt:Date.now()},data));
-  p.then(()=>{ if(wasNew) clearCraftDraft(); document.getElementById('craftOv').classList.remove('on'); H.toast(editCraftKey?'大工情報を更新しました':'大工を登録しました','ok'); });
+    : DB.push('craftsmen', newRec);
+  p.then((newKey)=>{
+    if(wasNew) clearCraftDraft();
+    // ライブ購読の反映を待たず、その場で即時反映（通信が遅くても画面が即更新）
+    const key = editCraftKey || newKey;
+    if(key){ craftsmen[key]=Object.assign({}, craftsmen[key]||(wasNew?newRec:{}), data); }
+    renderFind(); renderCompanies(); renderMyArea();
+    document.getElementById('craftOv').classList.remove('on');
+    H.toast(editCraftKey?'大工情報を更新しました':'大工を登録しました','ok');
+  });
 };
 
 // ===== 空き予定カレンダー（3ヶ月） =====
@@ -1173,8 +1183,13 @@ document.getElementById('availCancel').onclick=()=>document.getElementById('avai
 document.getElementById('availOv').onclick=e=>{ if(e.target.id==='availOv') e.currentTarget.classList.remove('on'); };
 document.getElementById('availSave').onclick=()=>{
   if(!availCraftKey) return;
-  DB.set('craftsmen/'+availCraftKey+'/avail', availDraft)
-    .then(()=>{ document.getElementById('availOv').classList.remove('on'); H.toast('空き予定を保存しました','ok'); });
+  const key=availCraftKey, snap=Object.assign({}, availDraft);
+  DB.set('craftsmen/'+key+'/avail', snap)
+    .then(()=>{
+      if(craftsmen[key]) craftsmen[key].avail=snap; // 即時反映
+      renderFind(); renderCompanies(); renderMyArea();
+      document.getElementById('availOv').classList.remove('on'); H.toast('空き予定を保存しました','ok');
+    });
 };
 
 // ===== 応援要請 =====
