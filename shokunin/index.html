@@ -166,6 +166,9 @@
   .chatform input,.chatform textarea{flex:2; border:0; padding:9px; font-size:15px; outline:none; background:transparent; font-family:inherit; resize:vertical; min-height:20px; max-height:140px; line-height:1.5}
   .chatform button{flex:none; padding:10px 18px}
   .bubble .bx{white-space:pre-wrap; word-break:break-word}
+  .chatlink{text-decoration:underline; word-break:break-all}
+  .bubble.them .chatlink{color:var(--brand-dark)}
+  .bubble.mine .chatlink{color:#fff}
   .chatimg{max-width:200px; max-height:200px; border-radius:8px; display:block; margin-bottom:3px}
   .chatfile{display:inline-block; background:rgba(255,255,255,.25); border:1px solid currentColor; border-radius:8px; padding:6px 10px; font-weight:700; text-decoration:none; color:inherit; margin-bottom:3px}
   .bubble.them .chatfile{background:#fff}
@@ -494,7 +497,7 @@
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-const APP_VERSION = '2026-06-28f'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-28g'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-06-28'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -1936,7 +1939,7 @@ function chatBubblesHTML(msgs, opts){
     const showName=!mine && key!==prevKey; // 相手の名前は発言者が変わった時だけ（連続はまとめる）
     prevKey=key;
     const acts=opts.actionsFn?opts.actionsFn(m,mine):'';
-    return `<div class="bubble ${mine?'mine':'them'}">${showName?`<div class="who">${H.esc(name)}</div>`:''}${attachHTML(m)}${m.text?`<div class="bx">${H.esc(m.text)}</div>`:''}<div class="bt">${H.fmtDate(m.at)}${acts}</div></div>`;
+    return `<div class="bubble ${mine?'mine':'them'}">${showName?`<div class="who">${H.esc(name)}</div>`:''}${attachHTML(m)}${m.text?`<div class="bx">${H.linkify(m.text)}</div>`:''}<div class="bt">${H.fmtDate(m.at)}${acts}</div></div>`;
   }).join('');
 }
 function dealThreadHTML(){

@@ -114,6 +114,25 @@
   // 大工の表示年齢（生年月日があれば自動計算、なければ従来のage）
   H.craftAge = (k) => (k && k.birth) ? H.ageFromBirth(k.birth) : (k && k.age) || null;
 
+  // メッセージ本文をエスケープしつつ、URL（http(s)://… や www.…）だけをリンク化する。
+  // 先に全文をエスケープ相当の処理にし、URL部分のみ <a> で包む（XSS安全。javascript: 等はマッチしない）。
+  H.linkify = function (raw) {
+    raw = String(raw == null ? "" : raw);
+    var re = /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/gi;
+    var out = "", last = 0, m;
+    while ((m = re.exec(raw))) {
+      out += H.esc(raw.slice(last, m.index));
+      var url = m[0], trail = "";
+      var tm = url.match(/[)\]\.,。、！？!?）」]+$/); // 末尾の句読点・閉じ括弧は除外
+      if (tm) { trail = tm[0]; url = url.slice(0, url.length - trail.length); }
+      var href = /^www\./i.test(url) ? "https://" + url : url;
+      out += '<a href="' + H.esc(href) + '" target="_blank" rel="noopener" class="chatlink">' + H.esc(url) + "</a>" + H.esc(trail);
+      last = m.index + m[0].length;
+    }
+    out += H.esc(raw.slice(last));
+    return out;
+  };
+
   H.fmtDate = (ts) => {
     if (!ts) return "";
     const d = new Date(ts);
