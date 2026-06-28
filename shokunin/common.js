@@ -100,6 +100,20 @@
   // "M/D" 表記
   H.mdFromYmd = (s) => { const p = String(s).split("-"); return (+p[1]) + "/" + (+p[2]); };
 
+  // 生年月日(YYYY-MM-DD)から現在の満年齢を計算（自動更新）。不正なら null。
+  H.ageFromBirth = (b) => {
+    if (!b) return null;
+    const p = String(b).split("-"); if (p.length < 3) return null;
+    const by = +p[0], bm = +p[1], bd = +p[2];
+    if (!by || !bm || !bd) return null;
+    const n = new Date();
+    let a = n.getFullYear() - by;
+    if (n.getMonth() + 1 < bm || (n.getMonth() + 1 === bm && n.getDate() < bd)) a--;
+    return (a >= 0 && a < 130) ? a : null;
+  };
+  // 大工の表示年齢（生年月日があれば自動計算、なければ従来のage）
+  H.craftAge = (k) => (k && k.birth) ? H.ageFromBirth(k.birth) : (k && k.age) || null;
+
   H.fmtDate = (ts) => {
     if (!ts) return "";
     const d = new Date(ts);

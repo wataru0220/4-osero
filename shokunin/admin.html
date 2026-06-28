@@ -423,7 +423,7 @@ function kItemHTML(k){
   return `<div class="item">
     <div class="top">
       <div><div class="nm">${H.esc(k.name)} ${ok?'<span class="okbadge">認証済✓</span>':'<span class="waitbadge">認証待ち</span>'}</div>
-      <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')}　${H.fmtPrice(k.price)}　技術力 ${H.stars(r.avg)}（${r.count}件）</div></div>
+      <div class="meta">${(()=>{const a=H.craftAge(k);return a?a+'歳・':'';})()}${H.esc(k.gender||'')}　${H.fmtPrice(k.price)}　技術力 ${H.stars(r.avg)}（${r.count}件）</div></div>
       ${availPill}
     </div>
     <div>${H.chips(k.good,'o')}${H.chips(k.ng,'ng')}</div>

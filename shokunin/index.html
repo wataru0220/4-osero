@@ -307,7 +307,7 @@
     <div class="count" id="ceDraftNote" style="display:none;color:var(--ok)">📝 入力中の内容を自動保存しています（保存前でも消えません）。<a id="ceDraftDiscard" style="text-decoration:underline;cursor:pointer">下書きを破棄</a></div>
     <div class="field"><label class="req">氏名</label><input type="text" id="ceName" placeholder="例）田中 一郎"></div>
     <div class="row">
-      <div class="field"><label>年齢</label><input type="number" id="ceAge" min="0" max="99" placeholder="例）42"></div>
+      <div class="field"><label>生年月日</label><input type="date" id="ceBirth"><div class="count" id="ceAgeShow" style="margin-top:2px">年齢：—（自動計算）</div></div>
       <div class="field"><label>性別</label>
         <select id="ceGender"><option value="">—</option><option>男</option><option>女</option><option>その他</option></select></div>
     </div>
@@ -420,8 +420,9 @@
     <div class="field"><label>応援条件（費用の負担）</label>
       <div class="row"><div style="flex:1"><div class="count" style="margin:0 0 2px">🅿 駐車料金</div><select id="reqParking"></select></div>
         <div style="flex:1"><div class="count" style="margin:0 0 2px">🏨 宿泊費</div><select id="reqLodging"></select></div></div>
-      <div style="margin-top:8px"><div class="count" style="margin:0 0 2px">🚗 遠方の交通費（有料道路など）</div><select id="reqTransport"></select></div>
-      <div class="count" style="margin-top:4px">※ 目安です。詳細・金額は送信後の「条件のやり取り」で当事者間で確認してください。</div>
+      <div class="row" style="margin-top:8px"><div style="flex:1"><div class="count" style="margin:0 0 2px">🚗 遠方の交通費</div><select id="reqTransport"></select></div>
+        <div style="flex:1"><div class="count" style="margin:0 0 2px">🛣 有料道路</div><select id="reqToll"></select></div></div>
+      <div class="count" style="margin-top:4px">※ 目安です。金額やその他の条件は「メッセージ欄」や送信後の「条件のやり取り」で当事者間でご確認ください。</div>
     </div>
     <div class="field"><label>依頼元の連絡先</label><input type="text" id="reqContact" placeholder="例）090-1234-5678（担当：〇〇）"></div>
     <div class="field"><label>メッセージ（任意）</label><textarea id="reqMsg" placeholder="ご相談など"></textarea></div>
@@ -495,7 +496,7 @@
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-const APP_VERSION = '2026-06-28c'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-28d'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-06-28'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -687,7 +688,7 @@ function kCardHTML(k){
         <button class="favbtn kfav${fav?' on':''}" data-key="${k._key}" title="お気に入り">${fav?'★':'☆'}</button>
       </div>
     </div>
-    <div class="meta">${k.age?k.age+'歳・':''}${H.esc(k.gender||'')} ｜ 技術力: ${H.stars(r.avg)}${r.count?`（${r.count}件・利用者全員の平均）`:''}</div>
+    <div class="meta">${(()=>{const a=H.craftAge(k);return a?a+'歳・':'';})()}${H.esc(k.gender||'')} ｜ 技術力: ${H.stars(r.avg)}${r.count?`（${r.count}件・利用者全員の平均）`:''}</div>
     <div style="margin-top:6px"><span class="price">${H.fmtPrice(k.price)}</span></div>
     ${free.length?`<div class="availmemo">📅 直近の空き：${free.slice(0,6).map(H.mdFromYmd).join('、')}${free.length>6?' …':''}</div>`:''}
     ${k.availMemo?`<div class="availmemo">🗓 ${H.esc(k.availMemo)}</div>`:''}
@@ -1017,7 +1018,7 @@ function openCraftForm(key){
   document.getElementById('ceTitle').textContent=key?'大工の情報を編集':'大工を登録';
   document.getElementById('ceSub').textContent='所属：'+(mine.name||'');
   document.getElementById('ceName').value=k.name||'';
-  document.getElementById('ceAge').value=k.age||'';
+  document.getElementById('ceBirth').value=k.birth||''; updateAgeShow();
   document.getElementById('ceGender').value=k.gender||'';
   document.getElementById('cePrice').value=k.price||'';
   const sg=splitByMaster(k.good,H.workTypes); setChecked('ceGood',sg.checked); ceGoodCustom.set(sg.custom);
@@ -1032,16 +1033,21 @@ function openCraftForm(key){
 function closeCraftForm(){ editCraftKey=null; document.getElementById('craftOv').classList.remove('on'); }
 // ===== 大工入力の下書き自動保存（新規登録のみ・保存前でも消えない） =====
 function loadCraftDraft(){ try{ const d=JSON.parse(localStorage.getItem('shokunin_craft_draft')||'null'); return (d&&hasCraftDraftContent(d))?d:null; }catch(_){ return null; } }
-function hasCraftDraftContent(d){ return !!(d && ((d.name||'').trim()||d.age||d.gender||d.price||(d.good&&d.good.length)||(d.ng&&d.ng.length)||(d.quals&&d.quals.length)||(d.goodCustom&&d.goodCustom.length)||(d.ngCustom&&d.ngCustom.length)||(d.qualCustom&&d.qualCustom.length))); }
+function hasCraftDraftContent(d){ return !!(d && ((d.name||'').trim()||d.birth||d.gender||d.price||(d.good&&d.good.length)||(d.ng&&d.ng.length)||(d.quals&&d.quals.length)||(d.goodCustom&&d.goodCustom.length)||(d.ngCustom&&d.ngCustom.length)||(d.qualCustom&&d.qualCustom.length))); }
+function updateAgeShow(){
+  const el=document.getElementById('ceAgeShow'); if(!el) return;
+  const a=H.ageFromBirth(document.getElementById('ceBirth').value);
+  el.textContent = a!=null ? ('年齢：'+a+'歳（自動計算）') : '年齢：—（自動計算）';
+}
 function collectCraftForm(){
   const v=id=>document.getElementById(id).value;
-  return { name:v('ceName'), age:v('ceAge'), gender:v('ceGender'), price:v('cePrice'),
+  return { name:v('ceName'), birth:v('ceBirth'), gender:v('ceGender'), price:v('cePrice'),
     good:getChecked('ceGood'), ng:getChecked('ceNg'), quals:getChecked('ceQual'),
     goodCustom:ceGoodCustom.get(), ngCustom:ceNgCustom.get(), qualCustom:ceCustomQuals.get() };
 }
 function applyCraftDraft(d){
   document.getElementById('ceName').value=d.name||'';
-  document.getElementById('ceAge').value=d.age||'';
+  document.getElementById('ceBirth').value=d.birth||''; updateAgeShow();
   document.getElementById('ceGender').value=d.gender||'';
   document.getElementById('cePrice').value=d.price||'';
   setChecked('ceGood',d.good||[]); setChecked('ceNg',d.ng||[]); setChecked('ceQual',d.quals||[]);
@@ -1062,11 +1068,13 @@ function updateDraftHint(){
 }
 // 入力のたびに自動保存（テキスト/数値/選択/チェック/その他チップ追加削除を網羅）
 ['input','change','click'].forEach(ev=>document.getElementById('craftOv').addEventListener(ev,()=>{ setTimeout(saveCraftDraft,0); }));
+document.getElementById('ceBirth').addEventListener('change', updateAgeShow);
+document.getElementById('ceBirth').addEventListener('input', updateAgeShow);
 document.getElementById('ceDraftDiscard').onclick=()=>{
   if(!confirm('入力中の下書きを破棄しますか？')) return;
   clearCraftDraft();
   // フォームを空に戻す
-  ['ceName','ceAge','ceGender','cePrice'].forEach(id=>document.getElementById(id).value='');
+  ['ceName','ceBirth','ceGender','cePrice'].forEach(id=>document.getElementById(id).value=''); updateAgeShow();
   setChecked('ceGood',[]); setChecked('ceNg',[]); setChecked('ceQual',[]);
   ceGoodCustom.set([]); ceNgCustom.set([]); ceCustomQuals.set([]);
   H.toast('下書きを破棄しました','ok');
@@ -1078,9 +1086,10 @@ document.getElementById('ceSave').onclick=()=>{
   if(!mine){ H.toast('先に自社の工務店を登録してください','err'); return; }
   const name=document.getElementById('ceName').value.trim();
   if(!name){ H.toast('氏名を入力してください','err'); return; }
+  const birth=document.getElementById('ceBirth').value||'';
   const data={
     name, companyKey:mine._key, companyName:mine.name||'',
-    age:+document.getElementById('ceAge').value||null,
+    birth, age:H.ageFromBirth(birth),
     gender:document.getElementById('ceGender').value,
     price:+document.getElementById('cePrice').value||null,
     unit:'day',
@@ -1203,7 +1212,7 @@ document.getElementById('reqCity').onchange=fillReqWard;
 const COND_OPTS=['要相談','依頼元（借りる側）が負担','大工側（貸す側）が負担','実費精算','なし'];
 (function(){
   const opts=COND_OPTS.map(o=>`<option>${o}</option>`).join('');
-  ['reqParking','reqLodging','reqTransport'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=opts; });
+  ['reqParking','reqLodging','reqTransport','reqToll'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=opts; });
 })();
 function setCond(id,v){ const el=document.getElementById(id); if(el) el.value=(v&&COND_OPTS.indexOf(v)>=0)?v:'要相談'; }
 
@@ -1312,7 +1321,7 @@ function openRequestForm(kid){
   document.getElementById('reqTitle').textContent='応援要請：'+k.name;
   document.getElementById('reqSub').textContent='所属「'+(k.companyName||'')+'」へ依頼します';
   ['reqWork','reqContact','reqMsg'].forEach(id=>document.getElementById(id).value='');
-  setCond('reqParking','要相談'); setCond('reqLodging','要相談'); setCond('reqTransport','要相談');
+  setCond('reqParking','要相談'); setCond('reqLodging','要相談'); setCond('reqTransport','要相談'); setCond('reqToll','要相談');
   document.getElementById('reqPref').value=''; fillReqCity();
   document.getElementById('reqContact').value=mine.tel||'';
   renderReqDates(k, []);
@@ -1343,7 +1352,7 @@ function openRequestEdit(rid){
   const preDates=(r.dates&&r.dates.length)?r.dates:rangeDays(r.dateFrom,r.dateTo);
   renderReqDates(craftsmen[r.craftsmanKey]||{avail:{}}, preDates);
   document.getElementById('reqWork').value=r.work||'';
-  setCond('reqParking',r.parking); setCond('reqLodging',r.lodging); setCond('reqTransport',r.transport);
+  setCond('reqParking',r.parking); setCond('reqLodging',r.lodging); setCond('reqTransport',r.transport); setCond('reqToll',r.toll);
   document.getElementById('reqContact').value=r.contact||'';
   document.getElementById('reqMsg').value=r.message||'';
   document.getElementById('reqSend').textContent='この内容で更新';
@@ -1373,7 +1382,7 @@ document.getElementById('reqSend').onclick=()=>{
   const dateText=dates.map(fmtReqDate).join('、');
   const fields={ site, sitePref:pref, siteCity:city, siteWard:ward||'', dateText, dates, dateFrom:dates[0], dateTo:dates[dates.length-1],
     work:rqVal('reqWork').trim(), contact:rqVal('reqContact').trim(), message:rqVal('reqMsg').trim(),
-    parking:rqVal('reqParking'), lodging:rqVal('reqLodging'), transport:rqVal('reqTransport') };
+    parking:rqVal('reqParking'), lodging:rqVal('reqLodging'), transport:rqVal('reqTransport'), toll:rqVal('reqToll') };
   if(editReqKey){
     DB.update('requests/'+editReqKey, fields)
       .then(()=>{ document.getElementById('reqOv').classList.remove('on'); H.toast('応援要請を更新しました','ok'); });
@@ -1868,7 +1877,7 @@ function reqCardHTML(r,kind){
     ${r.status==='cancelled'?`<div class="cancelband">🚫 この取引は解除されました${r.cancelledByName?`（${H.esc(r.cancelledByName)}）`:''}${r.cancelledReason?`<div class="meta2" style="color:inherit;margin-top:2px">理由：${H.esc(r.cancelledReason)}</div>`:''}</div>`:''}
     ${evalHTML}
     ${r.work?`<div class="meta2">🛠 ${H.esc(r.work)}</div>`:''}
-    ${(r.parking||r.lodging||r.transport)?`<div class="note">💴 応援条件　🅿駐車料金：${H.esc(r.parking||'要相談')}／🏨宿泊費：${H.esc(r.lodging||'要相談')}／🚗遠方交通費：${H.esc(r.transport||'要相談')}</div>`:''}
+    ${(r.parking||r.lodging||r.transport||r.toll)?`<div class="note">💴 応援条件　🅿駐車料金：${H.esc(r.parking||'要相談')}／🏨宿泊費：${H.esc(r.lodging||'要相談')}／🚗遠方交通費：${H.esc(r.transport||'要相談')}／🛣有料道路：${H.esc(r.toll||'要相談')}</div>`:''}
     ${r.contact?`<div class="meta2">📞 ${H.esc(r.contact)}</div>`:''}
     ${r.message?`<div class="note">💬 ${H.esc(r.message)}</div>`:''}
     ${cr?`<div class="chgbox">
