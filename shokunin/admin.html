@@ -160,6 +160,9 @@
     <input type="text" id="coSearch" placeholder="🔍 工務店名で検索" style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:10px">
     <div id="sampleClean"></div>
     <div id="coList"></div>
+    <h2 class="sec" style="margin-top:18px">🗑 退会した工務店（1か月以内は呼び戻し可能）</h2>
+    <div class="count" style="margin:-4px 2px 8px">退会（削除）した工務店は1か月間ここに保管されます。期限を過ぎると自動で完全に削除されます。</div>
+    <div id="deletedCoBox"></div>
   </section>
 
   <!-- ========== 大工 ========== -->
@@ -198,6 +201,8 @@
 <script src="common.js"></script>
 <script>
 let companies={}, craftsmen={}, reviews={}, approvals={}, requests={};
+let deletedCompanies={}; // 退会（ソフト削除）した工務店の保管。1か月以内は呼び戻し可
+const DELETED_KEEP_DAYS=30; // 退会後この日数だけ保管（呼び戻し可能）。購読の同期発火より前に宣言（TDZ回避）
 let ctCompanyKey=null, ctMsgs=[], ctUnsub=null; // 工務店連絡チャット（選択中）
 let ctChats={}, ctChatSubs={}; // 全工務店の連絡（新着検知・一覧用）
 
@@ -348,23 +353,70 @@ function boot(){
   DB.on('reviews', v=>{ reviews=v||{}; renderHist(); renderCoList(); renderKList(); });
   DB.on('approvals', v=>{ approvals=v||{}; renderKList(); });
   DB.on('requests', v=>{ requests=v||{}; renderReqList(); });
+  DB.on('deletedCompanies', v=>{ deletedCompanies=v||{}; purgeExpiredDeleted(); renderDeletedCompanies(); });
 }
 
 // ===== 工務店 =====
 // 登録・編集は利用者アプリで行う。管理者は一覧確認・削除のみ。
+function stripKey(o){ const x=Object.assign({},o); delete x._key; return x; }
+// 退会（ソフト削除）：所属大工・認証・評価ごと deletedCompanies に退避し、現役から外す
 function delCompany(key){
   const c=companies[key]||{};
   const crafts=H.toArr(craftsmen).filter(k=>k.companyKey===key);
-  if(!confirm('「'+(c.name||'')+'」を削除しますか？'+(crafts.length?'\n※所属の大工 '+crafts.length+' 名も一緒に削除されます。':'')+'\n（元に戻せません）')) return;
+  if(!confirm('「'+(c.name||'')+'」を退会（削除）しますか？'+(crafts.length?'\n所属の大工 '+crafts.length+' 名も対象です。':'')+'\n※1か月以内なら管理アプリから呼び戻せます。')) return;
   const craftKeys=new Set(crafts.map(k=>k._key));
-  const ops=[];
+  const archive={ deletedAt:Date.now(), name:c.name||'', company:stripKey(c), craftsmen:{}, approvals:{}, reviews:{} };
+  crafts.forEach(k=>{ archive.craftsmen[k._key]=stripKey(k); if(H.isApproved(approvals,k._key)) archive.approvals[k._key]=true; });
+  H.toArr(reviews).forEach(r=>{ if((r.type==='company'&&r.targetKey===key)||(r.type==='craftsman'&&craftKeys.has(r.targetKey))) archive.reviews[r._key]=stripKey(r); });
+  const ops=[ DB.set('deletedCompanies/'+key, archive) ];
   crafts.forEach(k=>{ ops.push(DB.remove('craftsmen/'+k._key)); ops.push(DB.remove('approvals/craftsman/'+k._key)); });
-  // 工務店・所属大工への評価も削除
-  H.toArr(reviews).forEach(r=>{ if((r.type==='company'&&r.targetKey===key)||(r.type==='craftsman'&&craftKeys.has(r.targetKey))) ops.push(DB.remove('reviews/'+r._key)); });
+  Object.keys(archive.reviews).forEach(rid=>ops.push(DB.remove('reviews/'+rid)));
   ops.push(DB.remove('companies/'+key));
   Promise.all(ops)
-    .then(()=>H.toast('工務店と所属の大工'+(crafts.length?'（'+crafts.length+'名）':'')+'を削除しました','ok'))
-    .catch(e=>H.toast('一部削除できませんでした：'+((e&&e.message)||e),'err'));
+    .then(()=>H.toast('退会にしました（1か月以内なら呼び戻せます）','ok'))
+    .catch(e=>H.toast('処理できませんでした：'+((e&&e.message)||e),'err'));
+}
+// 呼び戻し：退避データを現役に書き戻す
+function restoreCompany(key){
+  const a=deletedCompanies[key]; if(!a) return;
+  if(!confirm('「'+(a.name||'')+'」を呼び戻しますか？（所属の大工も復元されます）')) return;
+  const ops=[];
+  if(a.company) ops.push(DB.set('companies/'+key, a.company));
+  Object.keys(a.craftsmen||{}).forEach(kid=>ops.push(DB.set('craftsmen/'+kid, a.craftsmen[kid])));
+  Object.keys(a.approvals||{}).forEach(kid=>ops.push(DB.set('approvals/craftsman/'+kid, true)));
+  Object.keys(a.reviews||{}).forEach(rid=>ops.push(DB.set('reviews/'+rid, a.reviews[rid])));
+  ops.push(DB.remove('deletedCompanies/'+key));
+  Promise.all(ops)
+    .then(()=>H.toast('呼び戻しました','ok'))
+    .catch(e=>H.toast('呼び戻せませんでした：'+((e&&e.message)||e),'err'));
+}
+// 完全削除（手動）
+function purgeCompany(key){
+  const a=deletedCompanies[key]||{};
+  if(!confirm('「'+(a.name||'')+'」を完全に削除しますか？（元に戻せません）')) return;
+  DB.remove('deletedCompanies/'+key).then(()=>H.toast('完全に削除しました','ok'));
+}
+// 期限（1か月）切れの退会データを自動で完全削除
+function purgeExpiredDeleted(){
+  const cut=Date.now()-DELETED_KEEP_DAYS*24*3600*1000;
+  H.toArr(deletedCompanies).forEach(a=>{ if((a.deletedAt||0)<cut){ DB.remove('deletedCompanies/'+a._key).catch(()=>{}); } });
+}
+function renderDeletedCompanies(){
+  const box=document.getElementById('deletedCoBox'); if(!box) return;
+  const arr=H.toArr(deletedCompanies).sort((a,b)=>(b.deletedAt||0)-(a.deletedAt||0));
+  if(!arr.length){ box.innerHTML='<div class="empty" style="padding:14px">退会した工務店はありません。</div>'; return; }
+  box.innerHTML=arr.map(a=>{
+    const left=Math.max(0, Math.ceil((DELETED_KEEP_DAYS*24*3600*1000-(Date.now()-(a.deletedAt||0)))/(24*3600*1000)));
+    const cn=Object.keys(a.craftsmen||{}).length;
+    return `<div class="item">
+      <div class="top"><div><div class="nm">${H.esc(a.name||'(名称不明)')}</div>
+        <div class="meta">退会日：${H.fmtDate(a.deletedAt)}　所属大工 ${cn}名</div>
+        <div class="meta" style="color:var(--warn);font-weight:800">あと ${left} 日で完全に削除されます</div></div></div>
+      <div class="acts">
+        <button class="btn sm" onclick="restoreCompany('${a._key}')">↩ 呼び戻す</button>
+        <button class="btn danger sm" onclick="purgeCompany('${a._key}')">完全削除</button>
+      </div></div>`;
+  }).join('');
 }
 // サンプルデータ（example.com のオーナー）を見つける
 function sampleCompanies(){ return H.toArr(companies).filter(c=>String(c.ownerEmail||'').toLowerCase().endsWith('@example.com')); }
@@ -450,9 +502,9 @@ function kItemHTML(k){
 function adminRefresh(){
   const btn=document.getElementById('refreshBtn'); const ic=btn&&btn.querySelector('.ic');
   if(btn) btn.disabled=true; if(ic) ic.textContent='⏳';
-  Promise.all([DB.get('companies'),DB.get('craftsmen'),DB.get('reviews'),DB.get('approvals'),DB.get('requests')])
-    .then(([co,cr,rv,ap,rq])=>{ companies=co||{}; craftsmen=cr||{}; reviews=rv||{}; approvals=ap||{}; requests=rq||{};
-      renderCoList(); renderKList(); renderHist(); renderReqList(); fillContactCompanies(); subscribeAllChats(); renderCtOverview(); })
+  Promise.all([DB.get('companies'),DB.get('craftsmen'),DB.get('reviews'),DB.get('approvals'),DB.get('requests'),DB.get('deletedCompanies')])
+    .then(([co,cr,rv,ap,rq,dc])=>{ companies=co||{}; craftsmen=cr||{}; reviews=rv||{}; approvals=ap||{}; requests=rq||{}; deletedCompanies=dc||{};
+      renderCoList(); renderKList(); renderHist(); renderReqList(); fillContactCompanies(); subscribeAllChats(); renderCtOverview(); purgeExpiredDeleted(); renderDeletedCompanies(); })
     .catch(()=>{})
     .finally(()=>{ if(ic) ic.textContent='🔄'; if(btn) btn.disabled=false; H.toast('最新の情報に更新しました','ok'); });
 }
@@ -666,6 +718,7 @@ function delRequest(rid, fromCk, toCk){
 
 // グローバル公開（onclick用）
 window.delCompany=delCompany; window.delCraftsman=delCraftsman;
+window.restoreCompany=restoreCompany; window.purgeCompany=purgeCompany;
 window.approveCraftsman=approveCraftsman; window.unapproveCraftsman=unapproveCraftsman;
 window.delReview=delReview; window.delRequest=delRequest;
 </script>

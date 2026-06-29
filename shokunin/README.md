@@ -138,6 +138,13 @@
 - `deals`（条件のやり取り）は当事者2社だけが読み書き可。**管理者は対象外**＝取引内容は見られません。
 - 旧バージョンから更新する場合は、`shokunin` 直下の `".read": "auth != null"` を**消して**上記の各コレクションごとの `.read` に置き換えてください（応援要請を当事者限定にするため）。
 - ルール公開後、反映まで数十秒かかることがあります。
+- **退会した工務店の保管（呼び戻し用）** を使う場合、`shokunin` の中に下記の `deletedCompanies`（管理者のみ読み書き）を追加してください。簡易ルール（`shokunin: { ".read": "auth != null", ".write": "auth != null" }`）のままなら追加不要で動作します。
+```json
+"deletedCompanies": {
+  ".read": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true",
+  ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
+}
+```
 
 > 段階的に始めたい場合は、まず `"shokunin": { ".read": true, ".write": true }` で動作確認してから上記の厳格ルールへ移行すると安全です。
 
