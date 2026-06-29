@@ -1,0 +1,25 @@
+{
+  "name": "勤怠入力｜現場作業報告",
+  "short_name": "勤怠入力",
+  "description": "現場の勤怠・作業報告を入力するアプリ",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1f6feb",
+  "theme_color": "#1f6feb",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

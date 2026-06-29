@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#1f6feb">
 <title>勤怠入力｜現場作業報告</title>
+<!-- ホーム画面に追加（PWA / Appleタッチアイコン） -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="勤怠入力">
 <!-- Firebase (オセロと同じ compat 版) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -86,10 +94,29 @@
   .done pre{white-space:pre-wrap; word-break:break-word; font-family:inherit; font-size:14px; background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px; margin:0}
   .footlink{display:block; text-align:center; margin-top:10px; font-size:13px; color:var(--sub); text-decoration:none}
   .chip{display:inline-block; background:var(--chip); color:var(--brand-dark); border-radius:20px; padding:3px 10px; font-size:12px; font-weight:700}
+  /* ヘルプ（使い方の検索） */
+  .helpbtn{position:absolute; right:14px; top:14px; background:rgba(255,255,255,.18); color:#fff;
+    border:1px solid rgba(255,255,255,.5); border-radius:20px; padding:6px 12px; font-size:13px; font-weight:700; cursor:pointer}
+  .helpbtn:active{transform:translateY(1px)}
+  .ov{position:fixed; inset:0; background:rgba(15,36,54,.5); display:none; align-items:flex-start; justify-content:center; z-index:60; overflow:auto; padding:24px 12px}
+  .ov.on{display:flex}
+  .sheet{background:#fff; border-radius:14px; padding:18px; width:100%; max-width:520px; box-shadow:0 12px 40px rgba(0,0,0,.25)}
+  .sheethead{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
+  .sheethead h3{margin:0; font-size:17px}
+  .sheet .x{background:#fff; border:1px solid var(--line); border-radius:8px; width:34px; height:34px; font-size:16px; cursor:pointer; color:var(--sub)}
+  #helpSearch{width:100%; padding:11px; border:1.5px solid var(--line); border-radius:10px; margin-bottom:10px}
+  .helpitem{border:1px solid var(--line); border-radius:10px; margin-bottom:8px; overflow:hidden}
+  .helpitem summary{padding:12px 14px; font-weight:700; cursor:pointer; list-style:none; color:var(--ink); font-size:14.5px}
+  .helpitem summary::-webkit-details-marker{display:none}
+  .helpitem summary::before{content:"＋ "; color:var(--brand); font-weight:800}
+  .helpitem[open] summary::before{content:"－ "}
+  .helpa{padding:0 14px 12px; font-size:14px; color:var(--sub); line-height:1.6}
+  .helpempty{padding:18px; text-align:center; color:var(--sub)}
 </style>
 </head>
 <body>
 <header>
+  <button class="helpbtn" id="helpBtn" type="button">❓ 使い方</button>
   <h1>🏗️ 現場作業報告</h1>
   <div class="who" id="whoLine">読み込み中…</div>
 </header>
@@ -170,6 +197,18 @@
   <div id="myRecords"><div class="hint" style="padding:4px">まだ報告はありません。</div></div>
 
   <a class="footlink" href="admin.html">管理者の方はこちら（集計・Excel出力）</a>
+</div>
+
+<!-- ヘルプ（使い方の検索） -->
+<div class="ov" id="helpOv">
+  <div class="sheet">
+    <div class="sheethead">
+      <h3>❓ アプリの使い方</h3>
+      <button class="x" id="helpClose" type="button">✕</button>
+    </div>
+    <input type="text" id="helpSearch" placeholder="🔍 キーワードで検索（例：現場、修正、LINE、半日）">
+    <div id="helpList"></div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -323,6 +362,31 @@
   }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 
+  // ---- ヘルプ（使い方の検索） ----
+  const HELP_TOPICS=[
+    {t:'氏名を選ぶ', k:'氏名 名前 自分 選択 記憶', a:'「氏名」から自分を選びます。一度選ぶとこの端末に記憶され、次回から自動で選ばれます。名前が無いときは管理者に登録を依頼してください。'},
+    {t:'作業日を入れる', k:'作業日 日付 カレンダー 日 過去', a:'「作業日」に現場へ入った日を入れます。初期値は今日です。前の日の分も日付を選んで報告できます。'},
+    {t:'現場を選ぶ／その他で自由入力', k:'現場 場所 選択 その他 自由入力', a:'「現場」から選びます。一覧に無い現場は「＋その他（自由入力）」を選ぶと現場名を直接入力できます。'},
+    {t:'勤務区分（終日／半日）', k:'勤務区分 終日 半日 1日 0.5 工数', a:'「終日（1.0日）」か「半日（0.5日）」を選びます。人件費の日数計算に使われます。'},
+    {t:'作業時間・休憩を入れる', k:'時間 開始 終了 休憩 実働 時給', a:'開始・終了・休憩(分)を入れると実働時間が自動で計算されます。時給の方は入力推奨です（日給の方は任意）。'},
+    {t:'作業内容・備考を書く', k:'作業内容 備考 メモ 内容', a:'「作業内容」に行った作業（例：2F内装ボード貼り）を書きます。「備考」は任意（例：資材待ちで午前のみ）です。'},
+    {t:'報告する（送信）', k:'報告 送信 提出 登録 保存', a:'入力できたら「この内容で報告する」を押します。送信後に報告内容が表示され、そのままLINE共有もできます。'},
+    {t:'LINEグループに貼る', k:'LINE 共有 シェア グループ 貼る コピー', a:'送信後に出る「📲この報告をLINEグループに貼る」を押すと共有画面が開きます。対応していない端末では内容がコピーされるので、LINEに貼り付けてください。'},
+    {t:'過去の報告を修正する', k:'修正 編集 直す 訂正', a:'画面下の「最近の報告（自分）」で対象の「✏️修正」を押すと内容が読み込まれます。直したら「修正を保存」を押してください。'},
+    {t:'報告を削除する', k:'削除 消す 取り消し', a:'「最近の報告（自分）」で「🗑削除」を押すと、その報告を削除できます（確認あり）。'},
+    {t:'ホーム画面に追加する', k:'ホーム画面 アイコン インストール アプリ pwa 追加', a:'iPhoneはSafariの共有ボタン→「ホーム画面に追加」。Androidは右上メニュー→「ホーム画面に追加」。次回からアプリのように開けます。'},
+    {t:'報告できない・保存されないとき', k:'保存 できない エラー 接続 オフライン firebase 未設定 失敗', a:'「Firebase未設定」と出るときは管理者に連絡してください。電波が悪いと送信に失敗します。電波の良い場所でもう一度お試しください。'}
+  ];
+  function renderHelp(){
+    const q=($('helpSearch').value||'').trim().toLowerCase();
+    const items=HELP_TOPICS.filter(it=>!q||(it.t+' '+it.k+' '+it.a).toLowerCase().includes(q));
+    const box=$('helpList');
+    if(!items.length){ box.innerHTML='<div class="helpempty">該当する項目がありません。別のことばでお試しください。</div>'; return; }
+    box.innerHTML=items.map(it=>'<details class="helpitem"><summary>'+esc(it.t)+'</summary><div class="helpa">'+esc(it.a)+'</div></details>').join('');
+  }
+  function openHelp(){ $('helpSearch').value=''; renderHelp(); $('helpOv').classList.add('on'); }
+  function closeHelp(){ $('helpOv').classList.remove('on'); }
+
   // ---- LINEなどへ共有（公式アカウント不要。スマホの共有シートを使う） ----
   async function shareReport(){
     const text = lastReportText; if(!text) return;
@@ -399,6 +463,11 @@
     });
     $('submitBtn').addEventListener('click', submit);
     $('shareBtn').addEventListener('click', shareReport);
+    // ヘルプ
+    $('helpBtn').addEventListener('click', openHelp);
+    $('helpClose').addEventListener('click', closeHelp);
+    $('helpOv').addEventListener('click', e=>{ if(e.target===$('helpOv')) closeHelp(); });
+    $('helpSearch').addEventListener('input', renderHelp);
   }
 
   function boot(){

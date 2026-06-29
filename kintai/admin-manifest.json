@@ -1,0 +1,25 @@
+{
+  "name": "勤怠管理｜集計・Excel出力",
+  "short_name": "勤怠管理",
+  "description": "勤怠の集計・人件費管理・Excel出力を行う管理者用アプリ",
+  "start_url": "./admin.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#16324f",
+  "theme_color": "#16324f",
+  "icons": [
+    {
+      "src": "admin-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "admin-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#16324f">
 <title>勤怠管理（集計・Excel出力）</title>
+<!-- ホーム画面に追加（PWA / Appleタッチアイコン） -->
+<link rel="manifest" href="admin-manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="admin-icon-192.png">
+<link rel="apple-touch-icon" href="admin-apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="勤怠管理">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <!-- Excel出力 (SheetJS) -->
@@ -72,6 +80,19 @@
   .modal .mbtns{display:flex; gap:8px; margin-top:14px}
   .modal .mbtns button{flex:1; padding:11px; border-radius:9px; font-weight:700; cursor:pointer; border:0}
   .modal .mbtns .save{background:var(--ok); color:#fff} .modal .mbtns .cancel{background:#fff; color:var(--sub); border:1.5px solid var(--line)}
+  /* ヘルプ（使い方の検索） */
+  .helpbtn{background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.45);
+    border-radius:20px; padding:6px 12px; font-size:13px; font-weight:700; cursor:pointer}
+  .helphead{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
+  .helphead h3{margin:0; font-size:16px}
+  #helpSearch{width:100%; padding:10px; border:1.5px solid var(--line); border-radius:8px; margin-bottom:10px; font-size:14px}
+  .helpitem{border:1px solid var(--line); border-radius:10px; margin-bottom:8px; overflow:hidden}
+  .helpitem summary{padding:11px 13px; font-weight:700; cursor:pointer; list-style:none; font-size:14px; color:var(--ink)}
+  .helpitem summary::-webkit-details-marker{display:none}
+  .helpitem summary::before{content:"＋ "; color:var(--accent); font-weight:800}
+  .helpitem[open] summary::before{content:"－ "}
+  .helpa{padding:0 13px 12px; font-size:13.5px; color:var(--sub); line-height:1.65}
+  .helpempty{padding:18px; text-align:center; color:var(--sub)}
 </style>
 </head>
 <body>
@@ -88,6 +109,7 @@
 <header>
   <h1>🏗️ 勤怠管理</h1>
   <span class="sp"></span>
+  <button class="helpbtn" id="helpBtn" type="button">❓ 使い方</button>
   <a href="index.html">＋ 入力フォームへ</a>
 </header>
 
@@ -254,6 +276,18 @@
   </div>
 </div>
 
+<!-- ヘルプ（使い方の検索） -->
+<div class="modal-ov" id="helpModal">
+  <div class="modal">
+    <div class="helphead">
+      <h3>❓ 管理画面の使い方</h3>
+      <button class="sm" id="helpClose" type="button">✕ 閉じる</button>
+    </div>
+    <input type="text" id="helpSearch" placeholder="🔍 キーワードで検索（例：給与、Excel、絞り込み、削除）">
+    <div id="helpList"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -318,6 +352,7 @@
 
   function startApp(){
     $('app').classList.remove('hide');
+    bindHelp();
     if(!initFirebase()){ toast('Firebase未設定です（config.js）','err'); return; }
     setThisMonth();
     bindTabs(); bindFilters(); bindMasters(); bindEditModal(); $('exportBtn').onclick=exportExcel;
@@ -681,6 +716,36 @@
 
     XLSX.writeFile(wb, '勤怠_人件費_'+(from||'all')+'_'+(to||'all')+'.xlsx');
     toast('Excelを出力しました','ok');
+  }
+
+  // ---------- ヘルプ（使い方の検索） ----------
+  const HELP_TOPICS=[
+    {t:'管理画面を開く（パスコード）', k:'パスコード ログイン 開く ロック 管理', a:'config.jsで設定したパスコードを入力して開きます。一度開くとそのタブを閉じるまで記憶されます。パスコード未設定ならそのまま開きます。'},
+    {t:'期間で絞り込む（今月など）', k:'期間 絞り込み 今月 開始日 終了日 日付', a:'上部の「開始日」「終了日」で対象期間を指定します。「今月」ボタンで当月にすぐ設定できます。変更すると集計が自動更新されます。'},
+    {t:'現場・氏名で絞り込む', k:'現場 氏名 絞り込み フィルタ 選択', a:'「現場」「氏名」のプルダウンで対象をしぼれます。「すべて」で全件に戻ります。'},
+    {t:'合計（KPI）の見方', k:'kpi 人件費 合計 日数 時間 件数 集計', a:'絞り込み範囲の「人件費合計」「延べ出勤日数」「延べ実働時間」「報告件数」が上部に表示されます。'},
+    {t:'従業員を追加する', k:'従業員 追加 登録 氏名 マスタ', a:'「従業員（給与）」タブで氏名・給与方式・単価を入れて「追加」します。氏名はクラウド共有、給与はこの端末のみに保存されます。'},
+    {t:'給与（日給／時給・単価）を設定', k:'給与 日給 時給 単価 賃金 設定', a:'「従業員（給与）」タブで各人の方式（日給/時給）と単価を設定します。日給は1日あたり、時給は1時間あたりの金額。Excel出力に自動反映されます。'},
+    {t:'給与は端末だけに保存される', k:'給与 ローカル 端末 セキュリティ 非公開 クラウド 漏れ', a:'給与（方式・単価）はこの管理者端末のブラウザにのみ保存され、クラウド（Firebase）や入力フォームには送られません。従業員からは見えません。'},
+    {t:'給与のバックアップ／別PCへ引き継ぎ', k:'バックアップ 復元 引き継ぎ json 別pc 移行', a:'「従業員（給与）」タブ下の「⬇給与設定をバックアップ(JSON)」で書き出し、別PCで「⬆復元」から読み込むと給与設定を引き継げます。'},
+    {t:'現場を追加・編集する', k:'現場 追加 編集 マスタ 名前 無効', a:'「現場」タブで現場名を追加できます。一覧で名前の直接編集、無効化・削除もできます。'},
+    {t:'記録を修正・削除する', k:'記録 修正 編集 削除 訂正 一覧', a:'「記録一覧」タブで各行の「修正」から内容を直せます（管理者は全員の記録を修正可）。「削除」で記録を消せます。'},
+    {t:'Excelを出力する', k:'excel エクセル 出力 ダウンロード 数式 帳票', a:'「集計・Excel出力」タブの「📊Excelファイルをダウンロード」で、現在の絞り込み範囲を複数シート・数式入りで出力します。Excel上で単価を直すと自動で再計算されます。'},
+    {t:'現場×氏名クロス集計の見方', k:'クロス 集計 現場 氏名 出勤日数 表', a:'「現場×氏名（出勤日数）」表で、どの現場に誰が何日入ったかを一覧できます。行＝現場、列＝氏名、数字＝出勤日数です。'},
+    {t:'ホーム画面に追加する', k:'ホーム画面 アイコン インストール アプリ pwa 追加', a:'iPhoneはSafariの共有ボタン→「ホーム画面に追加」。Androidは右上メニュー→「ホーム画面に追加」。次回からアプリのように開けます。'}
+  ];
+  function renderHelp(){
+    const q=($('helpSearch').value||'').trim().toLowerCase();
+    const items=HELP_TOPICS.filter(it=>!q||(it.t+' '+it.k+' '+it.a).toLowerCase().includes(q));
+    const box=$('helpList');
+    if(!items.length){ box.innerHTML='<div class="helpempty">該当する項目がありません。別のことばでお試しください。</div>'; return; }
+    box.innerHTML=items.map(it=>'<details class="helpitem"><summary>'+esc(it.t)+'</summary><div class="helpa">'+esc(it.a)+'</div></details>').join('');
+  }
+  function bindHelp(){
+    $('helpBtn').onclick=()=>{ $('helpSearch').value=''; renderHelp(); $('helpModal').classList.add('show'); };
+    $('helpClose').onclick=()=> $('helpModal').classList.remove('show');
+    $('helpModal').addEventListener('click', e=>{ if(e.target===$('helpModal')) $('helpModal').classList.remove('show'); });
+    $('helpSearch').addEventListener('input', renderHelp);
   }
 
   // ---------- 起動 ----------
