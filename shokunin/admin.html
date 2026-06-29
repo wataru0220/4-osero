@@ -354,9 +354,17 @@ function boot(){
 // 登録・編集は利用者アプリで行う。管理者は一覧確認・削除のみ。
 function delCompany(key){
   const c=companies[key]||{};
-  const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===key).length;
-  if(!confirm('「'+(c.name||'')+'」を削除しますか？'+(cnt?'\n※所属大工 '+cnt+' 名の所属表示が空欄になります。':''))) return;
-  DB.remove('companies/'+key).then(()=>H.toast('削除しました','ok'));
+  const crafts=H.toArr(craftsmen).filter(k=>k.companyKey===key);
+  if(!confirm('「'+(c.name||'')+'」を削除しますか？'+(crafts.length?'\n※所属の大工 '+crafts.length+' 名も一緒に削除されます。':'')+'\n（元に戻せません）')) return;
+  const craftKeys=new Set(crafts.map(k=>k._key));
+  const ops=[];
+  crafts.forEach(k=>{ ops.push(DB.remove('craftsmen/'+k._key)); ops.push(DB.remove('approvals/craftsman/'+k._key)); });
+  // 工務店・所属大工への評価も削除
+  H.toArr(reviews).forEach(r=>{ if((r.type==='company'&&r.targetKey===key)||(r.type==='craftsman'&&craftKeys.has(r.targetKey))) ops.push(DB.remove('reviews/'+r._key)); });
+  ops.push(DB.remove('companies/'+key));
+  Promise.all(ops)
+    .then(()=>H.toast('工務店と所属の大工'+(crafts.length?'（'+crafts.length+'名）':'')+'を削除しました','ok'))
+    .catch(e=>H.toast('一部削除できませんでした：'+((e&&e.message)||e),'err'));
 }
 // サンプルデータ（example.com のオーナー）を見つける
 function sampleCompanies(){ return H.toArr(companies).filter(c=>String(c.ownerEmail||'').toLowerCase().endsWith('@example.com')); }
