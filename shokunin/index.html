@@ -189,6 +189,8 @@
   .cal-cell.empty{border:0; background:transparent}
   .cal-cell.past{opacity:.3}
   .cal-cell.edit{cursor:pointer; touch-action:pan-y; user-select:none; -webkit-user-select:none}
+  .cal-cell.team{position:relative; cursor:pointer; flex-direction:column; gap:0; min-height:36px}
+  .cal-cnt{font-size:10px; font-weight:800; line-height:1; background:rgba(255,255,255,.85); color:#1a7a45; border-radius:8px; padding:0 4px; margin-top:1px}
   .deallink{color:var(--brand-dark); font-weight:700; cursor:pointer; text-decoration:underline}
   .deallink.dealdel{color:var(--warn)}
   .count{font-size:12px; color:var(--sub); margin:0 2px 8px}
@@ -390,6 +392,16 @@
   </div>
 </div>
 
+<!-- 自社の大工 全員の空き予定をまとめて確認（読み取り専用） -->
+<div class="ov" id="teamAvailOv">
+  <div class="sheet">
+    <h3>📅 自社の空き予定（全員）</h3>
+    <div id="teamAvailDetail" style="margin-bottom:8px"></div>
+    <div id="teamAvailCal"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="teamAvailClose">閉じる</button></div>
+  </div>
+</div>
+
 <!-- アプリにする（ホーム画面に追加）手順モーダル -->
 <div class="ov" id="installOv">
   <div class="sheet">
@@ -497,7 +509,7 @@
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-const APP_VERSION = '2026-06-28h'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-28i'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-06-28'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -867,7 +879,8 @@ function renderOwnArea(mine){
         <div class="count" style="margin:3px 0 0">📍${H.esc(mine.area||'—')}　📞${H.esc(mine.tel||'—')}</div></div>
         <button class="btn ghost sm" id="editCoBtn">✏️ 会社情報</button>
       </div></div>`;
-  html+='<button class="btn full" id="addCraftBtn" style="margin-bottom:12px">＋ 大工を登録</button>';
+  html+='<button class="btn full" id="addCraftBtn" style="margin-bottom:8px">＋ 大工を登録</button>';
+  if(arr.length) html+='<button class="btn ghost full" id="teamAvailBtn" style="margin-bottom:12px">📅 自社の空き予定をまとめて見る（'+arr.length+'名）</button>';
   if(!arr.length){
     html+='<div class="empty">自社の大工がまだ登録されていません。上の「＋ 大工を登録」から追加してください。</div>';
   }else{
@@ -891,6 +904,7 @@ function renderOwnArea(mine){
   list.innerHTML=html;
   document.getElementById('editCoBtn').onclick=()=>openCompanyForm(mine._key);
   document.getElementById('addCraftBtn').onclick=()=>openCraftForm(null);
+  const tab=document.getElementById('teamAvailBtn'); if(tab) tab.onclick=openTeamAvail;
   updateDraftHint();
   list.querySelectorAll('.updMemo').forEach(inp=>{
     inp.onchange=()=>{ const key=inp.dataset.key, memo=inp.value.trim();
@@ -1231,6 +1245,46 @@ document.getElementById('availSave').onclick=()=>{
       document.getElementById('availOv').classList.remove('on'); H.toast('空き予定を保存しました','ok');
     });
 };
+
+// ===== 自社の大工 全員の空き予定をまとめて表示（読み取り専用） =====
+function teamAvailMap(){
+  const mine=myCompanyEntry(); if(!mine) return {};
+  const map={}; // 日付 -> [大工名]
+  H.toArr(craftsmen).filter(k=>k.companyKey===mine._key).forEach(k=>{
+    Object.keys(k.avail||{}).forEach(d=>{ if(k.avail[d]==='free') (map[d]=map[d]||[]).push(k.name||'(無名)'); });
+  });
+  return map;
+}
+function teamMonthGridHTML(monthDate, map, endS){
+  const y=monthDate.getFullYear(), m=monthDate.getMonth();
+  const startWd=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(), todayS=calToday();
+  let cells='';
+  for(let i=0;i<startWd;i++) cells+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=days;d++){
+    const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    if(ds<todayS || ds>endS){ cells+='<div class="cal-cell empty"></div>'; continue; }
+    const cnt=(map[ds]||[]).length;
+    cells+=`<div class="cal-cell team" data-date="${ds}" style="${cnt>0?'background:#1aa260;color:#fff;border-color:#1aa260':''}">${d}${cnt>0?`<div class="cal-cnt">${cnt}</div>`:''}</div>`;
+  }
+  return `<div class="cal-month"><div class="cal-title">${y}年${m+1}月</div><div class="cal-grid">`
+    +['日','月','火','水','木','金','土'].map(w=>`<div class="cal-wd">${w}</div>`).join('')+cells+`</div></div>`;
+}
+function renderTeamAvail(){
+  const map=teamAvailMap();
+  const box=document.getElementById('teamAvailCal'); if(!box) return;
+  box.innerHTML='<div class="cal-legend"><span class="lg" style="background:#1aa260"></span>緑＝空きの大工がいる日（数字＝人数）。日付をタップで名前を表示／今日〜3か月後</div>'
+    + calMonthsRange().map(md=>teamMonthGridHTML(md, map, calEnd3())).join('');
+  box.querySelectorAll('.cal-cell.team[data-date]').forEach(c=>c.onclick=()=>showTeamDay(c.dataset.date, map));
+  showTeamDay(calToday(), map); // 初期表示は今日
+}
+function showTeamDay(ds, map){
+  const el=document.getElementById('teamAvailDetail'); if(!el) return;
+  const names=map[ds]||[];
+  el.innerHTML=`<div class="note">📅 <b>${H.esc(H.mdFromYmd(ds))}</b>　${names.length?('空き '+names.length+'名：'+names.map(H.esc).join('、')):'空きの大工はいません'}</div>`;
+}
+function openTeamAvail(){ if(!myCompanyEntry()) return; renderTeamAvail(); document.getElementById('teamAvailOv').classList.add('on'); }
+document.getElementById('teamAvailClose').onclick=()=>document.getElementById('teamAvailOv').classList.remove('on');
+document.getElementById('teamAvailOv').onclick=e=>{ if(e.target.id==='teamAvailOv') e.currentTarget.classList.remove('on'); };
 
 // ===== 応援要請 =====
 function goTab(page){ const b=document.querySelector('.tabbar button[data-page="'+page+'"]'); if(b) b.click(); }
