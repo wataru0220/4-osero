@@ -188,7 +188,7 @@
   .cal-cell{min-height:30px; display:flex; align-items:center; justify-content:center; font-size:12px; border:1px solid var(--line); border-radius:6px; background:#fff}
   .cal-cell.empty{border:0; background:transparent}
   .cal-cell.past{opacity:.3}
-  .cal-cell.edit{cursor:pointer}
+  .cal-cell.edit{cursor:pointer; touch-action:pan-y; user-select:none; -webkit-user-select:none}
   .deallink{color:var(--brand-dark); font-weight:700; cursor:pointer; text-decoration:underline}
   .deallink.dealdel{color:var(--warn)}
   .count{font-size:12px; color:var(--sub); margin:0 2px 8px}
@@ -381,7 +381,7 @@
 <div class="ov" id="availOv">
   <div class="sheet">
     <h3 id="availTitle">空き予定（3ヶ月）</h3>
-    <div class="count" style="margin-bottom:8px">日付をタップすると「空き → 一部空き → 稼働中 → 未設定」と切り替わります。3ヶ月先まで登録できます。</div>
+    <div class="count" style="margin-bottom:8px">日付をタップで「空き ⇔ 未設定」を切替。<b>横にスワイプ（指でなぞる）すると連続でまとめて入力</b>できます。今日〜3か月後まで登録できます。</div>
     <div id="availCal"></div>
     <div class="row" style="margin-top:10px">
       <button class="btn ghost" id="availCancel">閉じる</button>
@@ -497,7 +497,7 @@
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-const APP_VERSION = '2026-06-28g'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-28h'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-06-28'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -1118,6 +1118,7 @@ document.getElementById('ceSave').onclick=()=>{
 
 // ===== 空き予定カレンダー（3ヶ月） =====
 let availDraft={}, availCraftKey=null;  // 自社の編集用
+let avDrag={started:false, active:false, paint:'', startX:0, startY:0, startCell:null, justDragged:false}; // スワイプ連続入力
 function calToday(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 // 今日から3か月後（同日）の日付文字列。表示はこの「現在〜3か月後」を日割りで行う
 function calEnd3(){ const d=new Date(); d.setMonth(d.getMonth()+3); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -1175,12 +1176,48 @@ function openAvailEditor(key){
 function renderAvailEditor(){
   const box=document.getElementById('availCal');
   box.innerHTML=calHTML(availDraft, true, reqMapForCraft(availCraftKey));
+  // タップ＝1日トグル（ドラッグ後のクリックは無視）
   box.querySelectorAll('.cal-cell.edit').forEach(c=>c.onclick=()=>{
-    const ds=c.dataset.date, order=['','free'];
-    const nxt=order[(order.indexOf(availDraft[ds]||'')+1)%4];
-    if(nxt) availDraft[ds]=nxt; else delete availDraft[ds];
+    if(avDrag.justDragged){ avDrag.justDragged=false; return; }
+    const ds=c.dataset.date;
+    if(availDraft[ds]) delete availDraft[ds]; else availDraft[ds]='free';
     renderAvailEditor();
   });
+  bindAvailDrag(box);
+}
+// 1セルを現在の塗りモードで反映（再描画せず見た目も更新）
+function paintAvailCell(cell){
+  if(!cell||!cell.dataset||!cell.dataset.date) return;
+  const ds=cell.dataset.date;
+  if(avDrag.paint==='free') availDraft[ds]='free'; else delete availDraft[ds];
+  const color = avDrag.paint==='free' ? H.statusOf('free').color : '';
+  cell.style.background=color||''; cell.style.color=color?'#fff':''; cell.style.borderColor=color||'';
+}
+// カレンダーを横スワイプ（ドラッグ）して連続入力。縦方向はスクロール優先。
+function bindAvailDrag(box){
+  box.onpointerdown=e=>{
+    const cell=e.target&&e.target.closest?e.target.closest('.cal-cell.edit'):null;
+    if(!cell||!cell.dataset.date) return;
+    avDrag.started=true; avDrag.active=false; avDrag.startX=e.clientX; avDrag.startY=e.clientY; avDrag.startCell=cell;
+    avDrag.paint = availDraft[cell.dataset.date] ? 'erase' : 'free'; // 空きなら消す／空なら空きにする
+    try{ box.setPointerCapture(e.pointerId); }catch(_){}
+  };
+  box.onpointermove=e=>{
+    if(!avDrag.started) return;
+    if(!avDrag.active){
+      const dx=Math.abs(e.clientX-avDrag.startX), dy=Math.abs(e.clientY-avDrag.startY);
+      if(dx<8 || dx<dy) return;       // 横に十分動いたらドラッグ開始（縦が大きければスクロール）
+      avDrag.active=true; paintAvailCell(avDrag.startCell);
+    }
+    e.preventDefault();
+    const el=document.elementFromPoint(e.clientX, e.clientY);
+    const cell=el&&el.closest?el.closest('.cal-cell.edit'):null;
+    if(cell) paintAvailCell(cell);
+  };
+  box.onpointerup=box.onpointercancel=()=>{
+    if(avDrag.active){ avDrag.justDragged=true; renderAvailEditor(); }
+    avDrag.started=false; avDrag.active=false;
+  };
 }
 document.getElementById('availCancel').onclick=()=>document.getElementById('availOv').classList.remove('on');
 document.getElementById('availOv').onclick=e=>{ if(e.target.id==='availOv') e.currentTarget.classList.remove('on'); };
