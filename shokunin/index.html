@@ -515,7 +515,7 @@
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-const APP_VERSION = '2026-06-28j'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-28k'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-06-28'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -1979,8 +1979,8 @@ function reqCardHTML(r,kind){
   const needReview=needsMyReview(r); // 活用後の評価が必須
   const partnerKey = kind==='sent' ? (r.toCompanyKey||'') : (r.fromCompanyKey||'');
   const partnerName = kind==='sent' ? (r.toCompanyName||'相手工務店') : (r.fromCompanyName||'相手工務店');
-  const evalHTML = (r.status==='accepted') ? `<div class="evalbox">
-      <div class="seclabel" style="margin-top:0">⭐ 評価（5段階・利用者全員の平均に反映）</div>
+  const evalHTML = reqCompleted(r) ? `<div class="evalbox">
+      <div class="seclabel" style="margin-top:0">⭐ 評価（工期終了・完了した取引のみ／5段階・利用者全員の平均に反映）</div>
       ${kind==='sent' ? (needReview
         ? `<div class="reviewneed" style="margin-top:6px">活用後の評価が<b>必須</b>です。<div class="row" style="margin-top:6px"><button class="btn sm rv-craft" data-ckey="${r.craftsmanKey||''}" data-cname="${H.esc(r.craftsmanName||'')}" data-rid="${r._key}">⭐ 大工「${H.esc(r.craftsmanName||'')}」を評価（必須）</button></div></div>`
         : `<button class="btn ghost sm rv-craft" data-ckey="${r.craftsmanKey||''}" data-cname="${H.esc(r.craftsmanName||'')}" data-rid="${r._key}" style="width:100%;margin-top:6px">⭐ 大工「${H.esc(r.craftsmanName||'')}」を評価</button>`)
@@ -2125,10 +2125,12 @@ function reviewOwnerEmail(type,key){
   return type==='company' ? (companies[key]||{}).ownerEmail : (companies[(craftsmen[key]||{}).companyKey]||{}).ownerEmail;
 }
 // 取引・活用の実績があるか（承認済みの応援要請が当事者間にあるか）。これがある相手だけ評価できる。
+// 成立（承認済み）かつ完了（工期が終了）した取引か。解除・辞退・申請中・未完了は不可。
+function reqCompleted(r){ if(!r||r.status!=='accepted') return false; const end=r.dateTo||r.dateFrom; return !!(end && end<H.todayStr()); }
 function canEvaluate(type,key){
   const mine=myCompanyEntry(); if(!mine) return false;
   return H.toArr(reqByMe).some(r=>{
-    if(r.status!=='accepted') return false;
+    if(!reqCompleted(r)) return false; // 仕事が成立して完了した取引のみ評価可（解除は不可）
     if(type==='craftsman') return r.fromCompanyKey===mine._key && r.craftsmanKey===key;       // 自分が活用した大工
     return (r.fromCompanyKey===mine._key && r.toCompanyKey===key) ||                            // 取引のある工務店
            (r.toCompanyKey===mine._key && r.fromCompanyKey===key);
@@ -2142,7 +2144,7 @@ function openReview(type,key,name,reqId){
   // 評価の保存には本人確認（認証）が必要。未ログインのときはログインへ誘導
   if(!uid){ H.toast('評価するには「自社の大工」タブでログインしてください','err'); goTab('update'); return; }
   // 取引・活用の実績がある相手だけ評価できる（取引のない工務店・活用していない大工は不可）
-  if(!canEvaluate(type,key)){ H.toast(type==='craftsman'?'活用した大工のみ評価できます（応援要請の成立が必要）':'取引のある工務店のみ評価できます（応援要請の成立が必要）','err'); return; }
+  if(!canEvaluate(type,key)){ H.toast(type==='craftsman'?'仕事が成立して完了（工期終了）した大工のみ評価できます（解除した取引は不可）':'仕事が成立して完了（工期終了）した相手工務店のみ評価できます（解除した取引は不可）','err'); return; }
   reviewTarget={type,key,name,reqId:reqId||null};
   const existing=uid? H.toArr(reviews).find(r=>r.type===type && r.targetKey===key && r.byUid===uid) : null;
   myReviewKey = existing? existing._key : null;

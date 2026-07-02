@@ -122,7 +122,7 @@
     <div id="hbtns" style="display:flex; flex-direction:column; gap:6px; flex:none">
       <button class="hbtn" id="refreshBtn"><span class="ic">🔄</span>更新</button>
       <button class="hbtn" id="installBtn"><span class="ic">⬇️</span>アプリにする</button>
-      <button class="hbtn" id="inviteBtn"><span class="ic">📲</span>利用者用URLを共有</button>
+      <button class="hbtn" id="inviteBtn"><span class="ic">🔗</span>利用者用URLをコピー</button>
     </div>
   </div>
 </header>
@@ -578,16 +578,19 @@ function userAppUrl(){
   else if(/\/$/.test(p)) p=p+'index.html';
   return location.origin+p;
 }
-async function shareToLine(text){
-  if(navigator.share){
-    try{ await navigator.share({text}); return; }catch(e){ if(e&&e.name==='AbortError') return; }
-  }
-  try{ await navigator.clipboard.writeText(text); H.toast('内容をコピーしました。LINEに貼り付けて送ってください','ok'); }catch(_){}
-  window.open('https://line.me/R/msg/text/?'+encodeURIComponent(text),'_blank');
+// 利用者用URLはコピーのみ（メール/LINE/SMS等はご自身のアプリで貼り付けて共有）
+function copyUserUrl(){
+  const url=userAppUrl();
+  const done=()=>H.toast('利用者用URLをコピーしました。メールやLINE等に貼り付けて配布してください','ok');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done).catch(()=>fallbackCopy(url,done));
+  }else fallbackCopy(url,done);
 }
-document.getElementById('inviteBtn').onclick=()=>shareToLine(
-  '【大工シェア ネットワーク】\n工務店どうしで大工をシェアし、空き状況をリアルタイムに共有できるアプリです。\n下記から参加できます👇\n'+userAppUrl()
-);
+function fallbackCopy(text, done){
+  try{ const t=document.createElement('textarea'); t.value=text; t.style.position='fixed'; t.style.opacity='0'; document.body.appendChild(t); t.focus(); t.select(); document.execCommand('copy'); document.body.removeChild(t); done(); }
+  catch(_){ prompt('この利用者用URLをコピーしてください', text); }
+}
+document.getElementById('inviteBtn').onclick=copyUserUrl;
 
 // 応援要請の一覧（管理者は概要のみ。条件のやり取り deals は読めない）
 function renderReqList(){
