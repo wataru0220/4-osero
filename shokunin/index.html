@@ -191,6 +191,11 @@
   .cal-cell.edit{cursor:pointer; touch-action:pan-y; user-select:none; -webkit-user-select:none}
   .cal-cell.team{position:relative; cursor:pointer; flex-direction:column; gap:0; min-height:36px}
   .cal-cnt{font-size:10px; font-weight:800; line-height:1; background:rgba(255,255,255,.85); color:#1a7a45; border-radius:8px; padding:0 4px; margin-top:1px}
+  .cal-cell.team.sel{outline:3px solid var(--accent); outline-offset:-3px}
+  #teamAvailDetail{position:sticky; top:0; z-index:3; background:var(--card); padding:6px 0 8px}
+  .teamday{border:1.5px solid var(--brand); border-radius:10px; padding:9px 11px; font-size:14px; line-height:1.6}
+  .teamday .d{font-weight:800; margin-bottom:2px}
+  .teamday .nm{color:#1a7a45; font-weight:700}
   .deallink{color:var(--brand-dark); font-weight:700; cursor:pointer; text-decoration:underline}
   .deallink.dealdel{color:var(--warn)}
   .count{font-size:12px; color:var(--sub); margin:0 2px 8px}
@@ -396,7 +401,8 @@
 <div class="ov" id="teamAvailOv">
   <div class="sheet">
     <h3>📅 自社の空き予定（全員）</h3>
-    <div id="teamAvailDetail" style="margin-bottom:8px"></div>
+    <div class="count" style="margin-bottom:6px">日付をタップすると、その日に空いている大工の名前が下の枠に出ます。</div>
+    <div id="teamAvailDetail"></div>
     <div id="teamAvailCal"></div>
     <div class="row" style="margin-top:10px"><button class="btn" id="teamAvailClose">閉じる</button></div>
   </div>
@@ -509,7 +515,7 @@
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-const APP_VERSION = '2026-06-28i'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-28j'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-06-28'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -1274,13 +1280,20 @@ function renderTeamAvail(){
   const box=document.getElementById('teamAvailCal'); if(!box) return;
   box.innerHTML='<div class="cal-legend"><span class="lg" style="background:#1aa260"></span>緑＝空きの大工がいる日（数字＝人数）。日付をタップで名前を表示／今日〜3か月後</div>'
     + calMonthsRange().map(md=>teamMonthGridHTML(md, map, calEnd3())).join('');
-  box.querySelectorAll('.cal-cell.team[data-date]').forEach(c=>c.onclick=()=>showTeamDay(c.dataset.date, map));
+  box.querySelectorAll('.cal-cell.team[data-date]').forEach(c=>c.onclick=()=>{
+    box.querySelectorAll('.cal-cell.team.sel').forEach(x=>x.classList.remove('sel'));
+    c.classList.add('sel');
+    showTeamDay(c.dataset.date, map);
+  });
   showTeamDay(calToday(), map); // 初期表示は今日
 }
 function showTeamDay(ds, map){
   const el=document.getElementById('teamAvailDetail'); if(!el) return;
   const names=map[ds]||[];
-  el.innerHTML=`<div class="note">📅 <b>${H.esc(H.mdFromYmd(ds))}</b>　${names.length?('空き '+names.length+'名：'+names.map(H.esc).join('、')):'空きの大工はいません'}</div>`;
+  const wd=['日','月','火','水','木','金','土'][new Date(ds).getDay()];
+  el.innerHTML=`<div class="teamday"><div class="d">📅 ${H.esc(H.mdFromYmd(ds))}（${wd}）</div>${names.length
+    ? '空いている大工（'+names.length+'名）：<span class="nm">'+names.map(H.esc).join('、')+'</span>'
+    : '<span style="color:var(--sub)">この日に空きの大工はいません</span>'}</div>`;
 }
 function openTeamAvail(){ if(!myCompanyEntry()) return; renderTeamAvail(); document.getElementById('teamAvailOv').classList.add('on'); }
 document.getElementById('teamAvailClose').onclick=()=>document.getElementById('teamAvailOv').classList.remove('on');
