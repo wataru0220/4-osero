@@ -515,7 +515,7 @@
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-const APP_VERSION = '2026-06-28k'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-29a'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-06-28'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -651,11 +651,27 @@ function manualRefresh(){
 }
 document.getElementById('refreshBtn').onclick=manualRefresh;
 
+// ===== 再描画のバッチ化 =====
+// 複数のデータ更新が同時に届いたとき、画面ごとに何度も描き直さず1回にまとめる（入力・操作の体感を軽くする）
+const _renderQueue={};
+function scheduleRender(){
+  for(let i=0;i<arguments.length;i++) _renderQueue[arguments[i]]=1;
+  if(scheduleRender._t) return;
+  scheduleRender._t=setTimeout(()=>{
+    scheduleRender._t=null;
+    const q=Object.assign({},_renderQueue); Object.keys(_renderQueue).forEach(k=>delete _renderQueue[k]);
+    try{ if(q.find) renderFind(); }catch(_){}
+    try{ if(q.co) renderCompanies(); }catch(_){}
+    try{ if(q.my) renderMyArea(); }catch(_){}
+    try{ if(q.req) renderRequests(); }catch(_){}
+  }, 30);
+}
+
 // ===== データ購読（リアルタイム） =====
-DB.on('companies', v=>{ companies=v||{}; renderCompanies(); renderFind(); renderMyArea(); });
-DB.on('craftsmen', v=>{ craftsmen=v||{}; renderFind(); renderCompanies(); renderMyArea(); });
-DB.on('reviews', v=>{ reviews=v||{}; renderFind(); renderCompanies(); });
-DB.on('approvals', v=>{ approvals=v||{}; renderFind(); renderCompanies(); renderMyArea(); });
+DB.on('companies', v=>{ companies=v||{}; scheduleRender('co','find','my'); });
+DB.on('craftsmen', v=>{ craftsmen=v||{}; scheduleRender('find','co','my'); });
+DB.on('reviews', v=>{ reviews=v||{}; scheduleRender('find','co'); });
+DB.on('approvals', v=>{ approvals=v||{}; scheduleRender('find','co','my'); });
 
 // ===== 大工をさがす =====
 function matchFilter(k){
@@ -965,6 +981,8 @@ document.getElementById('coeSave').onclick=()=>{
   };
   // 既存会社の編集：会社情報だけ更新
   if(editCoKey){
+    if(companies[editCoKey]) Object.assign(companies[editCoKey], data); // 即時反映
+    scheduleRender('co','my','find');
     DB.update('companies/'+editCoKey,data).then(()=>{ closeCompanyForm(); H.toast('会社情報を更新しました','ok'); });
     return;
   }
@@ -1350,12 +1368,12 @@ function ensureReqSubscription(){
       if(!reqUnsub[rid]){
         reqUnsub[rid]=DB.on('requests/'+rid, r=>{
           if(r) reqByMe[rid]=Object.assign({_key:rid},r); else delete reqByMe[rid];
-          renderRequests();
+          scheduleRender('req'); // 複数の要請が同時に届いても1回だけ再描画
         });
       }
     });
     Object.keys(reqUnsub).forEach(rid=>{ if(ids.indexOf(rid)<0){ reqUnsub[rid](); delete reqUnsub[rid]; delete reqByMe[rid]; } });
-    renderRequests();
+    scheduleRender('req');
   });
 }
 
@@ -1407,7 +1425,9 @@ function sendContact(){
   if(!mine){ H.toast('連絡には「自社の大工」タブでログイン（工務店登録）が必要です','err'); goTab('update'); return; }
   const uid=DB.auth.user&&DB.auth.user.uid;
   inp.value=''; // 先に空にして二重送信を防ぐ
-  DB.push('companyChats/'+mine._key, {byUid:uid, byName:mine.name||'', byAdmin:false, text, at:Date.now()})
+  const msg={byUid:uid, byName:mine.name||'', byAdmin:false, text, at:Date.now()};
+  contactMsgs.push(Object.assign({_key:'tmp'+msg.at},msg)); renderContact(); // 送信を待たず即時表示
+  DB.push('companyChats/'+mine._key, msg)
     .then(()=>{ H.toast('管理者へ送信しました','ok'); markContactSeen(); })
     .catch(()=>{ inp.value=text; }); // 失敗時は入力を戻す（共通層がエラー内容をトースト表示）
 }
@@ -1547,19 +1567,22 @@ function applyChange(rid){
   const r=reqByMe[rid], cr=r&&r.changeReq; if(!cr) return;
   if(!confirm('活用日を「'+(cr.dateText||'')+'」に変更しますか？')) return;
   const uid=DB.auth.user&&DB.auth.user.uid;
-  DB.update('requests/'+rid, { dateFrom:cr.dateFrom, dateTo:cr.dateTo, dateText:cr.dateText, changeReq:null, lastMsgAt:Date.now(), lastMsgByUid:uid })
+  Object.assign(r,{dateFrom:cr.dateFrom,dateTo:cr.dateTo,dateText:cr.dateText,dates:null,changeReq:null}); scheduleRender('req'); // 即時反映
+  DB.update('requests/'+rid, { dateFrom:cr.dateFrom, dateTo:cr.dateTo, dateText:cr.dateText, dates:null, changeReq:null, lastMsgAt:Date.now(), lastMsgByUid:uid })
     .then(()=>{ H.toast('活用日を変更しました','ok'); markSeen(rid); });
 }
 function declineChange(rid){
   const r=reqByMe[rid]; if(!r||!r.changeReq) return;
   if(!confirm('この変更依頼を辞退しますか？（活用日はそのままです）')) return;
   const uid=DB.auth.user&&DB.auth.user.uid;
+  r.changeReq=null; scheduleRender('req'); // 即時反映
   DB.update('requests/'+rid, { changeReq:null, lastMsgAt:Date.now(), lastMsgByUid:uid })
     .then(()=>{ H.toast('変更を辞退しました','ok'); markSeen(rid); });
 }
 function cancelChange(rid){
   const r=reqByMe[rid]; if(!r||!r.changeReq) return;
   if(!confirm('変更依頼を取り消しますか？')) return;
+  r.changeReq=null; scheduleRender('req'); // 即時反映
   DB.update('requests/'+rid, { changeReq:null }).then(()=>{ H.toast('変更依頼を取り消しました','ok'); });
 }
 // 取引自体を解除（予定変更で条件が合わなくなった等。当事者どちらからでも可）
@@ -1567,10 +1590,11 @@ function cancelDeal(rid){
   const r=reqByMe[rid]; if(!r) return;
   if(!confirm('この取引（応援要請）を解除しますか？\n※活用の予定・条件はすべて無効になります。元に戻せません。')) return;
   const reason=(prompt('解除の理由（任意・相手にも表示されます）','')||'').trim();
-  const mine=myCompanyEntry(); const uid=DB.auth.user&&DB.auth.user.uid;
+  const mine=myCompanyEntry(); const uid=DB.auth.user&&DB.auth.user.uid; const now=Date.now();
+  Object.assign(r,{status:'cancelled',changeReq:null,cancelledByUid:uid,cancelledByName:(mine&&mine.name)||myUser.email,cancelledReason:reason,cancelledAt:now}); scheduleRender('req'); // 即時反映
   DB.update('requests/'+rid, { status:'cancelled', changeReq:null,
-    cancelledByUid:uid, cancelledByName:(mine&&mine.name)||myUser.email, cancelledReason:reason, cancelledAt:Date.now(),
-    lastMsgAt:Date.now(), lastMsgByUid:uid })
+    cancelledByUid:uid, cancelledByName:(mine&&mine.name)||myUser.email, cancelledReason:reason, cancelledAt:now,
+    lastMsgAt:now, lastMsgByUid:uid })
     .then(()=>{ H.toast('取引を解除しました','ok'); markSeen(rid); });
 }
 
@@ -2060,8 +2084,16 @@ function dealThreadHTML(){
   return h;
 }
 function bindReqCards(box){
-  box.querySelectorAll('.acc').forEach(b=>b.onclick=()=>DB.update('requests/'+b.dataset.rid,{status:'accepted', decidedAt:Date.now()}).then(()=>H.toast('承認しました','ok')));
-  box.querySelectorAll('.dec').forEach(b=>b.onclick=()=>DB.update('requests/'+b.dataset.rid,{status:'declined', decidedAt:Date.now(), declinedAt:Date.now()}).then(()=>H.toast('辞退しました','ok')));
+  box.querySelectorAll('.acc').forEach(b=>b.onclick=()=>{
+    const rid=b.dataset.rid, now=Date.now();
+    if(reqByMe[rid]){ reqByMe[rid].status='accepted'; reqByMe[rid].decidedAt=now; scheduleRender('req'); } // 即時反映
+    DB.update('requests/'+rid,{status:'accepted', decidedAt:now}).then(()=>H.toast('承認しました','ok'));
+  });
+  box.querySelectorAll('.dec').forEach(b=>b.onclick=()=>{
+    const rid=b.dataset.rid, now=Date.now();
+    if(reqByMe[rid]){ reqByMe[rid].status='declined'; reqByMe[rid].decidedAt=now; reqByMe[rid].declinedAt=now; scheduleRender('req'); }
+    DB.update('requests/'+rid,{status:'declined', decidedAt:now, declinedAt:now}).then(()=>H.toast('辞退しました','ok'));
+  });
   box.querySelectorAll('.req-edit').forEach(b=>b.onclick=()=>openRequestEdit(b.dataset.rid));
   box.querySelectorAll('.req-del').forEach(b=>b.onclick=()=>deleteRequest(b.dataset.rid));
   box.querySelectorAll('.chg-req').forEach(b=>b.onclick=()=>openChangeForm(b.dataset.rid));
@@ -2102,7 +2134,10 @@ function sendDeal(){
   const text=inp.value.trim(); if(!text) return;
   const mine=myCompanyEntry(); const uid=DB.auth.user&&DB.auth.user.uid;
   const rid=openDealRid;
-  DB.push('deals/'+rid, {byEmail:myUser.email, byUid:uid, byName:(mine&&mine.name)||myUser.email, text, at:Date.now()});
+  const msg={byEmail:myUser.email, byUid:uid, byName:(mine&&mine.name)||myUser.email, text, at:Date.now()};
+  inp.value='';
+  dealMsgs.push(Object.assign({_key:'tmp'+msg.at},msg)); scheduleRender('req'); // 送信を待たず即時表示（購読が届いたら正式データに置き換わる）
+  DB.push('deals/'+rid, msg);
   // 相手の新着バッジ用に、親の要請へ最終メッセージ情報を記録
   DB.update('requests/'+rid, {lastMsgAt:Date.now(), lastMsgByUid:uid});
   localStorage.setItem('shokunin_seen_'+rid, Date.now()); // 自分は既読
@@ -2170,13 +2205,17 @@ document.getElementById('rvSubmit').onclick=async()=>{
   const {type,key,name,reqId}=reviewTarget;
   const byEmail=(DB.auth.user&&DB.auth.user.email)||null;
   if(myReviewKey){
+    if(reviews[myReviewKey]) Object.assign(reviews[myReviewKey],{rating:rvValue,byCompany:by}); // 即時反映
     await DB.update('reviews/'+myReviewKey,{rating:rvValue, byCompany:by});
   }else{
     // ★のみ。1対象1件。byUid/byEmail で本人を識別（byEmailは自己評価の除外に使用）
-    await DB.push('reviews',{type,targetKey:key,targetName:name,rating:rvValue,byCompany:by,byUid:uid,byEmail:byEmail,at:Date.now()});
+    const rec={type,targetKey:key,targetName:name,rating:rvValue,byCompany:by,byUid:uid,byEmail:byEmail,at:Date.now()};
+    reviews['tmp'+rec.at]=rec; // 即時反映（購読が届いたら正式データに置き換わる）
+    await DB.push('reviews',rec).then(k=>{ delete reviews['tmp'+rec.at]; if(k) reviews[k]=rec; });
   }
   // 活用後の必須評価から開いた場合は、その要請を評価済みにする
-  if(reqId){ try{ await DB.update('requests/'+reqId,{reviewedByFrom:true}); }catch(_){ } }
+  if(reqId){ if(reqByMe[reqId]) reqByMe[reqId].reviewedByFrom=true; try{ await DB.update('requests/'+reqId,{reviewedByFrom:true}); }catch(_){ } }
+  scheduleRender('find','co','req');
   document.getElementById('reviewOv').classList.remove('on');
   H.toast(myReviewKey?'評価を更新しました':'評価を送信しました。ありがとうございます！','ok');
 };
