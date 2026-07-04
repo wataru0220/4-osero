@@ -515,7 +515,7 @@
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-const APP_VERSION = '2026-06-29b'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-29c'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-06-28'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -1815,8 +1815,8 @@ function renderHelp(){
   const q=((document.getElementById('helpSearch')||{}).value||'').trim().toLowerCase();
   const items=HELP_TOPICS.filter(it=>!q || (it.t+' '+it.k+' '+it.a).toLowerCase().includes(q));
   const videoBtns='<div class="row" style="margin-bottom:8px">'
-    +'<a class="btn sm" href="guide-howto.mp4" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">▶ 使い方動画（3分半）</a>'
-    +'<a class="btn ghost sm" href="guide-value.mp4" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">▶ アプリの価値紹介（2分半）</a></div>';
+    +'<a class="btn sm" href="guide-howto.mp4" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">▶ 使い方動画（約3分）</a>'
+    +'<a class="btn ghost sm" href="guide-value.mp4" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">▶ アプリの価値紹介（約2分半）</a></div>';
   const termsBtn='<button class="btn ghost sm" id="helpTermsBtn" style="width:100%;margin-bottom:10px">📜 利用規約・免責事項を見る（同意状況の確認）</button>';
   const body=items.length?items.map(it=>`<details class="helpitem"><summary>${H.esc(it.t)}</summary><div class="helpa">${H.esc(it.a)}</div></details>`).join('')
     :'<div class="empty" style="padding:18px">該当する項目がありません。別のキーワードでお試しください。</div>';
