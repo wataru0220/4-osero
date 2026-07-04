@@ -6,11 +6,17 @@
 (function (global) {
   const CFG = global.SHOKUNIN_CONFIG || {};
   const ROOT = CFG.dbRoot || "shokunin";
-  const hasFirebase =
+
+  // 体験モード（URLに ?demo=1）：本番データに触れず、この端末内だけで動く。
+  // データは24時間で自動リセット（=1日で消える体験用アプリ）。
+  let DEMO = false;
+  try { DEMO = /[?&]demo=1/.test(global.location.search || ""); } catch (_) {}
+
+  const hasFirebase = !DEMO &&
     typeof firebase !== "undefined" &&
     CFG.firebase && CFG.firebase.apiKey && CFG.firebase.databaseURL;
 
-  const DB = { mode: hasFirebase ? "firebase" : "local", root: ROOT };
+  const DB = { mode: hasFirebase ? "firebase" : "local", root: ROOT, demo: DEMO };
 
   // ---------- 小物 ----------
   function deepGet(obj, path) {
@@ -99,13 +105,26 @@
   // =========================================================
   //  お試しモード（localStorage、同端末の別タブとも同期）
   // =========================================================
-  const LS_KEY = "shokunin_localdb";
+  const LS_KEY = DEMO ? "shokunin_demo_db" : "shokunin_localdb";
+  // 体験モードは24時間で自動リセット（データが1日で消える）
+  if (DEMO) {
+    try {
+      const BORN_KEY = "shokunin_demo_born";
+      const born = +(localStorage.getItem(BORN_KEY) || 0);
+      if (!born) { localStorage.setItem(BORN_KEY, Date.now()); }
+      else if (Date.now() - born > 24 * 3600 * 1000) {
+        localStorage.removeItem(LS_KEY);
+        localStorage.removeItem("shokunin_demouser");
+        localStorage.setItem(BORN_KEY, Date.now());
+      }
+    } catch (_) {}
+  }
   const listeners = []; // {path, cb}
   let store = {};
   try { store = JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch (_) {}
 
   let bc = null;
-  try { bc = new BroadcastChannel("shokunin_db"); } catch (_) {}
+  try { bc = new BroadcastChannel(DEMO ? "shokunin_db_demo" : "shokunin_db"); } catch (_) {}
 
   function persist(broadcast) {
     localStorage.setItem(LS_KEY, JSON.stringify(store));

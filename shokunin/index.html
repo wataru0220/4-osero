@@ -545,7 +545,11 @@ const _cleanupTried = {};                                    // 6か月超の自
 // モード表示
 (function(){
   const m = document.getElementById('modebar');
-  if (DB.mode === 'local') {
+  if (DB.demo) {
+    m.className = 'modebar local';
+    m.innerHTML = '🧪 <b>体験モード</b>：自由に操作してお試しください。データはこの端末内だけに保存され、<b>24時間で自動的に消えます</b>（本番には影響しません）。';
+    DB._seedIfEmpty(H.demoSeed());
+  } else if (DB.mode === 'local') {
     m.className = 'modebar local';
     m.innerHTML = '⚠️ <b>お試しモード</b>：この端末内だけで動作中（他端末とは共有されません）。共有するには config.js に Firebase を設定してください。';
     DB._seedIfEmpty(H.seed());

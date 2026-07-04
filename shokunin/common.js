@@ -195,6 +195,28 @@
     return { companies: {}, craftsmen: {}, reviews: {}, approvals: { craftsman: {} } };
   };
 
+  // 体験モード（?demo=1）用のサンプルデータ。実データとは完全に分離され、24時間で自動リセットされる。
+  H.demoSeed = function () {
+    const now = Date.now();
+    const _d = new Date();
+    const plus = (n) => { const d = new Date(_d); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+    return {
+      companies: {
+        DC1: { name: "（見本）山田工務店", nameKana: "やまだこうむてん", tel: "022-111-2222", area: "宮城県／仙台市", contact: "山田 太郎", ownerEmail: "yamada@demo.jp", notes: "体験用の見本データです。", createdAt: now },
+        DC2: { name: "（見本）佐藤建設", nameKana: "さとうけんせつ", tel: "024-333-4444", area: "福島県／郡山市", contact: "佐藤 健", ownerEmail: "sato@demo.jp", notes: "現場管理がしっかりしている。", createdAt: now }
+      },
+      craftsmen: {
+        DK1: { name: "（見本）田中 一郎", companyKey: "DC1", companyName: "（見本）山田工務店", birth: "1984-05-10", age: 42, gender: "男", quals: ["建築大工技能士(1級)"], good: ["①和室内部造作", "④建方、構造組立"], ng: [], price: 24000, unit: "day", avail: { [plus(2)]: "free", [plus(3)]: "free", [plus(7)]: "free" }, availMemo: "来週空きあります", createdAt: now, updatedAt: now },
+        DK2: { name: "（見本）高橋 修", companyKey: "DC2", companyName: "（見本）佐藤建設", birth: "1991-02-20", age: 35, gender: "男", quals: ["建築大工技能士(2級)"], good: ["⑥ボード張り", "⑦フローリング施工"], ng: ["④建方、構造組立"], price: 22000, unit: "day", avail: { [plus(1)]: "free", [plus(4)]: "free", [plus(5)]: "free" }, availMemo: "", createdAt: now, updatedAt: now }
+      },
+      reviews: {
+        DR1: { type: "craftsman", targetKey: "DK1", targetName: "（見本）田中 一郎", rating: 5, byCompany: "（見本）佐藤建設", byUid: "demo:sato", at: now - 100000 },
+        DR2: { type: "company", targetKey: "DC1", targetName: "（見本）山田工務店", rating: 4, byCompany: "（見本）佐藤建設", byUid: "demo:sato", at: now - 50000 }
+      },
+      approvals: { craftsman: { DK1: true, DK2: true } }
+    };
+  };
+
   // 書き込み失敗（Firebaseの権限エラー等）を必ず画面に表示する。
   // これまでは .catch が無く、失敗してもメッセージが出ない「沈黙の失敗」だった。
   if (global.DB) {
