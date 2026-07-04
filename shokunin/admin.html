@@ -123,6 +123,7 @@
       <button class="hbtn" id="refreshBtn"><span class="ic">🔄</span>更新</button>
       <button class="hbtn" id="installBtn"><span class="ic">⬇️</span>アプリにする</button>
       <button class="hbtn" id="inviteBtn"><span class="ic">🔗</span>利用者用URLをコピー</button>
+      <button class="hbtn" id="demoQrBtn"><span class="ic">📱</span>体験版のQRコード</button>
     </div>
   </div>
 </header>
@@ -134,6 +135,21 @@
     <div class="count" style="margin-bottom:10px">ホーム画面に追加すると、アイコンから1タップで全画面起動できます。</div>
     <div id="installSteps"></div>
     <div class="row" style="margin-top:10px"><button class="btn" id="installClose">とじる</button></div>
+  </div>
+</div>
+
+<!-- 体験版QRコード モーダル -->
+<div class="ov" id="demoQrOv">
+  <div class="sheet">
+    <h3>📱 体験版の配布用QRコード</h3>
+    <div class="count" style="margin-bottom:10px">このQRコードをスマホのカメラで読み取ると、<b>体験モード</b>で開きます。データはその端末内だけに保存され、<b>24時間で自動的に消えます</b>（本番には影響しません）。工務店さんへの案内・チラシ・名刺などにご利用ください。</div>
+    <div id="demoQrBox" style="display:flex;justify-content:center;padding:10px;background:#fff;border-radius:12px;border:1px solid var(--line)"></div>
+    <div class="count" id="demoQrUrl" style="margin:10px 0;word-break:break-all;text-align:center"></div>
+    <div class="row" style="margin-top:6px">
+      <button class="btn ghost" id="demoQrCopy">🔗 体験版URLをコピー</button>
+      <button class="btn ghost" id="demoQrSave">🖼 画像を保存</button>
+    </div>
+    <div class="row" style="margin-top:8px"><button class="btn" id="demoQrClose">とじる</button></div>
   </div>
 </div>
 
@@ -199,6 +215,7 @@
 
 <script src="data.js"></script>
 <script src="common.js"></script>
+<script src="qrcode.min.js"></script>
 <script>
 let companies={}, craftsmen={}, reviews={}, approvals={}, requests={};
 let deletedCompanies={}; // 退会（ソフト削除）した工務店の保管。1か月以内は呼び戻し可
@@ -591,6 +608,38 @@ function fallbackCopy(text, done){
   catch(_){ prompt('この利用者用URLをコピーしてください', text); }
 }
 document.getElementById('inviteBtn').onclick=copyUserUrl;
+
+// ---- 体験版の配布用QRコード（利用者URL + ?demo=1） ----
+function demoAppUrl(){ return userAppUrl()+'?demo=1'; }
+function openDemoQr(){
+  const url=demoAppUrl();
+  const box=document.getElementById('demoQrBox');
+  document.getElementById('demoQrUrl').textContent=url;
+  try{
+    const qr=qrcode(0,'M'); qr.addData(url); qr.make();
+    box.innerHTML=qr.createSvgTag({cellSize:6, margin:4, scalable:true});
+    const svg=box.querySelector('svg'); if(svg){ svg.setAttribute('width','240'); svg.setAttribute('height','240'); }
+  }catch(e){ box.innerHTML='<div class="count" style="color:var(--warn)">QRコードを生成できませんでした：'+((e&&e.message)||e)+'</div>'; }
+  document.getElementById('demoQrOv').classList.add('on');
+}
+function saveDemoQr(){
+  const svg=document.querySelector('#demoQrBox svg'); if(!svg){ return; }
+  // SVG→PNGに変換してダウンロード
+  const xml=new XMLSerializer().serializeToString(svg);
+  const img=new Image();
+  img.onload=function(){
+    const S=720; const c=document.createElement('canvas'); c.width=S; c.height=S;
+    const ctx=c.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,S,S); ctx.drawImage(img,0,0,S,S);
+    const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download='daiku-share-taiken-qr.png'; a.click();
+  };
+  img.onerror=function(){ H.toast('画像の保存に失敗しました。QRを長押し／右クリックで保存してください','err'); };
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(xml);
+}
+document.getElementById('demoQrBtn').onclick=openDemoQr;
+document.getElementById('demoQrClose').onclick=()=>document.getElementById('demoQrOv').classList.remove('on');
+document.getElementById('demoQrOv').onclick=e=>{ if(e.target.id==='demoQrOv') e.currentTarget.classList.remove('on'); };
+document.getElementById('demoQrCopy').onclick=()=>{ const url=demoAppUrl(); const done=()=>H.toast('体験版URLをコピーしました','ok'); if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(done).catch(()=>fallbackCopy(url,done)); } else fallbackCopy(url,done); };
+document.getElementById('demoQrSave').onclick=saveDemoQr;
 
 // 応援要請の一覧（管理者は概要のみ。条件のやり取り deals は読めない）
 function renderReqList(){
