@@ -196,25 +196,65 @@
   };
 
   // 体験モード（?demo=1）用のサンプルデータ。実データとは完全に分離され、24時間で自動リセットされる。
+  // 仮想の工務店10社＋大工30名、あなたの会社（DCYOU）、PCからの受信依頼を用意。PCが相手役として自動応答する。
   H.demoSeed = function () {
     const now = Date.now();
     const _d = new Date();
-    const plus = (n) => { const d = new Date(_d); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
-    return {
-      companies: {
-        DC1: { name: "（見本）山田工務店", nameKana: "やまだこうむてん", tel: "022-111-2222", area: "宮城県／仙台市", contact: "山田 太郎", ownerEmail: "yamada@demo.jp", notes: "体験用の見本データです。", createdAt: now },
-        DC2: { name: "（見本）佐藤建設", nameKana: "さとうけんせつ", tel: "024-333-4444", area: "福島県／郡山市", contact: "佐藤 健", ownerEmail: "sato@demo.jp", notes: "現場管理がしっかりしている。", createdAt: now }
-      },
-      craftsmen: {
-        DK1: { name: "（見本）田中 一郎", companyKey: "DC1", companyName: "（見本）山田工務店", birth: "1984-05-10", age: 42, gender: "男", quals: ["建築大工技能士(1級)"], good: ["①和室内部造作", "④建方、構造組立"], ng: [], price: 24000, unit: "day", avail: { [plus(2)]: "free", [plus(3)]: "free", [plus(7)]: "free" }, availMemo: "来週空きあります", createdAt: now, updatedAt: now },
-        DK2: { name: "（見本）高橋 修", companyKey: "DC2", companyName: "（見本）佐藤建設", birth: "1991-02-20", age: 35, gender: "男", quals: ["建築大工技能士(2級)"], good: ["⑥ボード張り", "⑦フローリング施工"], ng: ["④建方、構造組立"], price: 22000, unit: "day", avail: { [plus(1)]: "free", [plus(4)]: "free", [plus(5)]: "free" }, availMemo: "", createdAt: now, updatedAt: now }
-      },
-      reviews: {
-        DR1: { type: "craftsman", targetKey: "DK1", targetName: "（見本）田中 一郎", rating: 5, byCompany: "（見本）佐藤建設", byUid: "demo:sato", at: now - 100000 },
-        DR2: { type: "company", targetKey: "DC1", targetName: "（見本）山田工務店", rating: 4, byCompany: "（見本）佐藤建設", byUid: "demo:sato", at: now - 50000 }
-      },
-      approvals: { craftsman: { DK1: true, DK2: true } }
+    const ymd = (n) => { const d = new Date(_d); d.setDate(d.getDate() + n); const p = (x) => String(x).padStart(2, "0"); return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()); };
+    const md = (n) => { const d = new Date(_d); d.setDate(d.getDate() + n); return (d.getMonth() + 1) + "/" + d.getDate(); };
+
+    const coNames = ["青葉建築", "みちのく工務店", "伊達住建", "蔵王ハウジング", "北上川ホーム", "杜の都工務店", "南部大工社", "最上川建設", "会津匠の家", "八戸海風建築"];
+    const coArea = ["宮城県／仙台市", "岩手県／盛岡市", "宮城県／石巻市", "山形県／山形市", "岩手県／北上市", "宮城県／仙台市", "青森県／青森市", "山形県／新庄市", "福島県／会津若松市", "青森県／八戸市"];
+    const coContact = ["青木 誠", "南 健一", "伊達 政人", "蔵田 修", "北川 剛", "杜野 亮", "南部 昭", "最上 徹", "会田 匠", "八戸 海斗"];
+    const coTel = ["022-201-1010", "019-202-2020", "0225-30-3030", "023-40-4040", "0197-50-5050", "022-60-6060", "017-70-7070", "0233-80-8080", "0242-90-9090", "0178-10-1100"];
+    const craftName = ["佐々木 大輔", "高橋 亮", "鈴木 健太", "伊藤 翔太", "渡辺 淳", "山本 誠", "中村 拓也", "小林 悟", "加藤 隆", "吉田 学", "山田 直樹", "松本 洋平", "井上 剛", "木村 圭", "林 秀樹", "清水 昭", "山口 力", "森 大地", "池田 稔", "橋本 亮介", "阿部 慎一", "石川 徹", "前田 智也", "藤田 康", "後藤 誠治", "岡田 徹平", "長谷川 悠", "村上 健", "近藤 光", "遠藤 竜也"];
+    const skills = ["①和室内部造作", "②洋室内部造作", "③階段造作", "④建方、構造組立", "⑤構造体墨付け", "⑥ボード張り", "⑦フローリング施工", "⑧高気密、高断熱施工"];
+    const quals = ["建築大工技能士(1級)", "建築大工技能士(2級)", "二級建築士", "職長・安全衛生責任者", "玉掛け", "足場の組立て等作業主任者"];
+    const availSets = [[2, 3, 9], [1, 5, 12], [4, 8, 15], [6, 11, 18], [3, 7, 20], [2, 9, 16]];
+
+    const companies = {}, craftsmen = {}, reviews = {}, approvals = { craftsman: {} }, requests = {}, reqIndex = {}, deals = {};
+
+    for (let i = 0; i < 10; i++) {
+      const ck = "DC" + (i + 1);
+      companies[ck] = { name: coNames[i], nameKana: "", tel: coTel[i], area: coArea[i], contact: coContact[i], ownerEmail: "pc" + (i + 1) + "@demo.jp", notes: "", createdAt: now - i * 100000 };
+      for (let j = 0; j < 3; j++) {
+        const gi = i * 3 + j;
+        const kid = "DK" + (gi + 1);
+        const avail = {}; availSets[gi % availSets.length].forEach((o) => { avail[ymd(o)] = "free"; });
+        craftsmen[kid] = {
+          name: craftName[gi], companyKey: ck, companyName: coNames[i],
+          age: 28 + (gi % 22), gender: "男", quals: [quals[gi % quals.length]],
+          good: [skills[gi % 8], skills[(gi + 3) % 8]], ng: [], price: 18000 + ((gi * 1000) % 11000),
+          unit: "day", avail: avail, availMemo: (j === 0 ? "来週に空きあり" : ""), createdAt: now, updatedAt: now
+        };
+        approvals.craftsman[kid] = true;
+        if (gi % 3 === 0) reviews["DRV" + kid] = { type: "craftsman", targetKey: kid, targetName: craftName[gi], rating: 4 + (gi % 2), byCompany: "（体験）あなたの工務店", byUid: "demo:you", at: now - gi * 60000 };
+      }
+      if (i % 4 === 0) reviews["DRC" + ck] = { type: "company", targetKey: ck, targetName: coNames[i], rating: 4 + ((i / 4) % 2 ? 1 : 0), byCompany: "（体験）あなたの工務店", byUid: "demo:you", at: now - i * 40000 };
+    }
+
+    // あなたの会社（ログイン不要で自動的にこの会社として操作する）＋自社大工2名
+    companies["DCYOU"] = { name: "（体験）あなたの工務店", nameKana: "あなたのこうむてん", tel: "022-000-0000", area: "宮城県／仙台市", contact: "体験 太郎", ownerEmail: "you@demo.jp", notes: "これはあなたの会社です。自由に操作してください。", termsAgreed: "demo", termsAgreedAt: now, createdAt: now };
+    craftsmen["DKY1"] = { name: "自社 一郎", companyKey: "DCYOU", companyName: "（体験）あなたの工務店", age: 38, gender: "男", quals: ["建築大工技能士(1級)"], good: ["①和室内部造作", "③階段造作"], ng: [], price: 23000, unit: "day", avail: { [ymd(2)]: "free", [ymd(3)]: "free", [ymd(6)]: "free" }, availMemo: "", createdAt: now, updatedAt: now };
+    craftsmen["DKY2"] = { name: "自社 次郎", companyKey: "DCYOU", companyName: "（体験）あなたの工務店", age: 29, gender: "男", quals: ["建築大工技能士(2級)"], good: ["⑥ボード張り"], ng: [], price: 20000, unit: "day", avail: { [ymd(4)]: "free", [ymd(5)]: "free" }, availMemo: "", createdAt: now, updatedAt: now };
+    approvals.craftsman["DKY1"] = true; approvals.craftsman["DKY2"] = true;
+
+    // PC（DC1）→ あなたの大工DKY1 への応援要請（受信・承認待ち）。承認して条件のやり取りを体験できる。
+    const rid = "DEMOIN1";
+    requests[rid] = {
+      fromCompanyKey: "DC1", fromCompanyName: coNames[0], fromEmail: "pc1@demo.jp",
+      toCompanyKey: "DCYOU", toCompanyName: "（体験）あなたの工務店", toOwnerEmail: "you@demo.jp",
+      craftsmanKey: "DKY1", craftsmanName: "自社 一郎", status: "pending",
+      site: "宮城県仙台市青葉区", sitePref: "宮城県", siteCity: "仙台市", siteWard: "青葉区",
+      dates: [ymd(3)], dateFrom: ymd(3), dateTo: ymd(3), dateText: md(3),
+      work: "内装造作の応援", parking: "依頼元（借りる側）が負担", lodging: "なし", transport: "実費精算", toll: "依頼元（借りる側）が負担",
+      contact: "090-0000-1111", message: "急ぎで恐縮ですが、内装造作の応援をお願いできないでしょうか。",
+      createdAt: now - 200000, lastMsgAt: now - 190000, lastMsgByUid: "demo:DC1"
     };
+    reqIndex["DCYOU"] = { [rid]: true }; reqIndex["DC1"] = { [rid]: true };
+    deals[rid] = { M1: { byUid: "demo:DC1", byName: coNames[0], text: "はじめまして。" + coNames[0] + "です。内装造作の応援をお願いできればと思いご連絡しました。ご検討よろしくお願いします。", at: now - 190000 } };
+
+    return { companies, craftsmen, reviews, approvals, requests, reqIndex, deals };
   };
 
   // 書き込み失敗（Firebaseの権限エラー等）を必ず画面に表示する。

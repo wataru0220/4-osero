@@ -525,12 +525,13 @@
 <script src="data.js"></script>
 <script src="common.js"></script>
 <script>
-const APP_VERSION = '2026-06-29d'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-29e'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-06-28'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
 let reviewTarget = null, rvValue = 0;
 let myUser = null;
+let demoReqs = {}; // 体験モードのPC自動応答用（購読同期発火より前に宣言してTDZ回避）
 let openAvailView = null; // find カードで開いている読み取り専用カレンダー（renderより前に宣言が必要）
 let openCoView = null; // 工務店一覧で「所属大工」を展開中の工務店キー
 // お気に入り（この端末に保存・ログイン不要）
@@ -557,8 +558,11 @@ const _cleanupTried = {};                                    // 6か月超の自
   const m = document.getElementById('modebar');
   if (DB.demo) {
     m.className = 'modebar local';
-    m.innerHTML = '🧪 <b>体験モード</b>：自由に操作してお試しください。データはこの端末内だけに保存され、<b>24時間で自動的に消えます</b>（本番には影響しません）。';
+    m.innerHTML = '🧪 <b>体験モード</b>：ログイン不要で、あなたは「（体験）あなたの工務店」として操作できます。相手の工務店（PC）が応援要請の承認や返信を自動で行います。データは端末内だけに保存され<b>24時間で自動的に消えます</b>（本番には影響しません）。';
     DB._seedIfEmpty(H.demoSeed());
+    try{ localStorage.setItem('shokunin_terms_agreed', TERMS_VERSION); }catch(_){}   // 体験は規約同意プロンプトを省略
+    if(!(DB.auth.user && DB.auth.user.email)) DB.auth.signIn('you@demo.jp');           // ログインせず自動的に「あなたの工務店」として利用
+    if(typeof startDemoBot==='function') startDemoBot();                                // PCを相手役として自動応答
   } else if (DB.mode === 'local') {
     m.className = 'modebar local';
     m.innerHTML = '⚠️ <b>お試しモード</b>：この端末内だけで動作中（他端末とは共有されません）。共有するには config.js に Firebase を設定してください。';
@@ -569,6 +573,62 @@ const _cleanupTried = {};                                    // 6か月超の自
   }
   m.innerHTML += ' <span style="opacity:.7">（版 '+APP_VERSION+'）</span>';
 })();
+
+// ===== 体験モード：PCを相手役にして応援のやり取りを体験できるようにする =====
+// PC企業のキーは DC1..DC10（あなたの会社 DCYOU は対象外）。
+function isDemoPc(coKey){ return !!coKey && /^DC[0-9]/.test(coKey); }
+function demoPersonaFor(r){ // 取引の相手（PC側）を返す
+  const meKey=(myCompanyEntry()||{})._key;
+  if(r.fromCompanyKey===meKey) return { key:r.toCompanyKey, name:r.toCompanyName, uid:'demo:'+r.toCompanyKey };
+  return { key:r.fromCompanyKey, name:r.fromCompanyName, uid:'demo:'+r.fromCompanyKey };
+}
+function startDemoBot(){
+  if(!DB.demo || window.__demoBot) return; window.__demoBot=1;
+  const handled={}, replied={};
+  // 1) あなたがPC企業へ送った応援要請（pending）を、少し待ってPCが自動で承認
+  DB.on('requests', v=>{
+    demoReqs=v||{};
+    const meKey=(myCompanyEntry()||{})._key;
+    H.toArr(demoReqs).forEach(r=>{
+      if(r.status==='pending' && r.fromCompanyKey===meKey && isDemoPc(r.toCompanyKey) && !handled[r._key]){
+        handled[r._key]=1; setTimeout(()=>demoDecide(r._key), 3500+Math.random()*4000);
+      }
+    });
+  });
+  // 2) 条件のやり取りチャットで、あなたの発言にPCが自動で返信
+  DB.on('deals', all=>{
+    const meUid=DB.auth.user&&DB.auth.user.uid; if(!meUid) return;
+    Object.keys(all||{}).forEach(rid=>{
+      const msgs=all[rid]||{}; const keys=Object.keys(msgs);
+      if(!keys.length || !demoReqs[rid]) return;
+      keys.sort((a,b)=>(msgs[a].at||0)-(msgs[b].at||0));
+      const lk=keys[keys.length-1], last=msgs[lk];
+      if(last && last.byUid===meUid && !replied[lk]){
+        replied[lk]=1; setTimeout(()=>demoReply(rid, last.text||''), 2500+Math.random()*3000);
+      }
+    });
+  });
+}
+function demoDecide(rid){
+  const r=demoReqs[rid]; if(!r || r.status!=='pending') return;
+  const p=demoPersonaFor(r), now=Date.now();
+  DB.update('requests/'+rid, { status:'accepted', decidedAt:now, lastMsgAt:now, lastMsgByUid:p.uid });
+  DB.push('deals/'+rid, { byUid:p.uid, byName:p.name, text:'ご依頼ありがとうございます。'+(r.craftsmanName||'弊社の大工')+'で対応可能です。この日程・条件で進めさせてください。当日の詳細はこちらでご相談しましょう。', at:now });
+  H.toast('「'+p.name+'」が応援要請を承認しました（体験）', 'ok');
+}
+function demoReply(rid, userText){
+  const r=demoReqs[rid]; if(!r) return;
+  const p=demoPersonaFor(r), t=userText||'', now=Date.now();
+  let reply;
+  if(/住所|場所|地図|現場|どこ/.test(t)) reply='現場の住所、確認しました。当日はそちらへ向かいます。';
+  else if(/日当|円|支払|報酬|金額|いくら/.test(t)) reply='金額の件、承知しました。その条件で問題ありません。';
+  else if(/時間|集合|何時|朝|ＡＭ|am/i.test(t)) reply='当日は朝8時に現場集合で大丈夫です。';
+  else if(/写真|画像|図面|pdf|資料/i.test(t)) reply='資料ありがとうございます。確認しておきます。';
+  else if(/ありがと|よろしく|お願い|了解|承知/.test(t)) reply='こちらこそ、よろしくお願いします！';
+  else { const pool=['承知しました。','はい、大丈夫です。','ありがとうございます、助かります。','了解しました。当日お会いしましょう。']; reply=pool[Math.floor(Math.random()*pool.length)]; }
+  DB.push('deals/'+rid, { byUid:p.uid, byName:p.name, text:reply, at:now });
+  DB.update('requests/'+rid, { lastMsgAt:now, lastMsgByUid:p.uid });
+}
 
 // ===== PWA：ホーム画面に追加（ボタン1つでアプリ化・全画面起動） =====
 let deferredPrompt=null;
@@ -842,7 +902,7 @@ function renderMyArea(){
   ensureReqSubscription();
   ensureContactSubscription();
   if(typeof maybePromptTerms==='function') maybePromptTerms(); // 初回ログイン時に規約同意（会社情報が読めた段階でも判定）
-  const lh=document.getElementById('logoutHdr'); if(lh) lh.style.display = loggedIn()?'flex':'none';
+  const lh=document.getElementById('logoutHdr'); if(lh) lh.style.display = (loggedIn() && !DB.demo)?'flex':'none';
   if(!loggedIn()){
     box.innerHTML = `
       <b>🔑 工務店ログイン</b>
@@ -862,11 +922,16 @@ function renderMyArea(){
     list.innerHTML='';
     return;
   }
-  box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-      <div><div style="font-weight:800">${H.esc(myUser.email)}</div><div class="count" style="margin:2px 0 0">${H.isAdmin(myUser)?'管理者としてログイン中':'ログイン中'}</div></div>
-      <button class="btn ghost sm" id="logoutBtn">ログアウト</button>
-    </div>`;
-  document.getElementById('logoutBtn').onclick=()=>DB.auth.signOut().then(()=>H.toast('ログアウトしました','ok'));
+  if(DB.demo){
+    box.innerHTML = `<div style="font-weight:800">🧪 体験モード</div>
+      <div class="count" style="margin:2px 0 0">あなたは「（体験）あなたの工務店」として操作中です（ログイン不要）。下に自社の大工がいます。「大工をさがす」から他社へ応援要請を送ると、相手（PC）が自動で承認・返信します。</div>`;
+  } else {
+    box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div><div style="font-weight:800">${H.esc(myUser.email)}</div><div class="count" style="margin:2px 0 0">${H.isAdmin(myUser)?'管理者としてログイン中':'ログイン中'}</div></div>
+        <button class="btn ghost sm" id="logoutBtn">ログアウト</button>
+      </div>`;
+    document.getElementById('logoutBtn').onclick=()=>DB.auth.signOut().then(()=>H.toast('ログアウトしました','ok'));
+  }
 
   const mine=myCompanyEntry();
   if(!mine){
