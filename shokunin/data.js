@@ -38,7 +38,8 @@
   //  Firebase モード
   // =========================================================
   if (DB.mode === "firebase") {
-    firebase.initializeApp(CFG.firebase);
+    // 二重初期化（app/duplicate-app）でアプリ全体が落ちるのを防ぐ
+    if (!(firebase.apps && firebase.apps.length)) { firebase.initializeApp(CFG.firebase); }
     const fdb = firebase.database();
     const ref = (p) => fdb.ref(ROOT + (p ? "/" + p : ""));
 

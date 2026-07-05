@@ -6,6 +6,25 @@
 self.addEventListener('install', function () { self.skipWaiting(); });
 self.addEventListener('activate', function (e) { e.waitUntil(self.clients.claim()); });
 
+// アプリ本体ファイル（HTML/JS/CSS/JSON/manifest）は常にネットワークから最新を取得する。
+// iOS のホーム画面PWAは古いファイルをしつこくキャッシュしがちで、古い版と新しい版が
+// 混在すると「複数のエラーが発生しています」となりアプリが開けなくなる。それを防ぐため
+// 同一オリジンの本体ファイルは cache:'reload' で必ず最新を取りに行く（画像・mp4は既定動作）。
+self.addEventListener('fetch', function (e) {
+  var req = e.request;
+  if (req.method !== 'GET') return;
+  var url;
+  try { url = new URL(req.url); } catch (_) { return; }
+  if (url.origin !== self.location.origin) return;               // 外部(Firebase等)はそのまま
+  if (/\.(html|js|css|json|webmanifest)$/.test(url.pathname) || url.pathname === '/' || /\/$/.test(url.pathname)) {
+    e.respondWith(
+      fetch(req, { cache: 'reload' }).catch(function () {
+        return fetch(req).catch(function () { return new Response('', { status: 504 }); });
+      })
+    );
+  }
+});
+
 // 通知をクリックしたらアプリを前面に（既存タブがあれば再利用、なければ開く）
 self.addEventListener('notificationclick', function (e) {
   e.notification.close();

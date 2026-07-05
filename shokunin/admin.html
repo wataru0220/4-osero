@@ -17,7 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-<script src="config.js"></script>
+<script src="config.js?v=20260629f"></script>
+<script src="security-news.js"></script>
 <style>
   :root{
     --bg:#f5f6f8; --card:#fff; --line:#e4e8ee; --ink:#1b2430; --sub:#5d6b7c;
@@ -160,6 +161,7 @@
 
 <div id="app" class="wrap" style="display:none">
   <div id="modebar"></div>
+  <div id="securityNotice"></div>
   <div id="approvalNotice"></div>
   <div class="tabs">
     <button class="on" data-page="co">🏢 工務店</button>
@@ -213,9 +215,9 @@
   </section>
 </div>
 
-<script src="data.js"></script>
-<script src="common.js"></script>
-<script src="qrcode.min.js"></script>
+<script src="data.js?v=20260629f"></script>
+<script src="common.js?v=20260629f"></script>
+<script src="qrcode.min.js?v=20260629f"></script>
 <script>
 let companies={}, craftsmen={}, reviews={}, approvals={}, requests={};
 let deletedCompanies={}; // 退会（ソフト削除）した工務店の保管。1か月以内は呼び戻し可
@@ -255,7 +257,26 @@ function anyAdmin(){ return Object.keys(admins).length>0; }
 function startApp(){
   document.getElementById('gate').style.display='none';
   document.getElementById('app').style.display='block';
+  renderSecurityNotice();
   if(!booted){ booted=true; boot(); }
+}
+// セキュリティ更新のお知らせバナー（security-news.js を読む）。既読は端末に保存し、
+// news.date が新しくなると再表示される。全フィールドは H.esc で出力（多層防御）。
+function renderSecurityNotice(){
+  const el=document.getElementById('securityNotice'); if(!el) return;
+  const news=window.SHOKUNIN_SECURITY_NEWS;
+  if(!news || !news.date){ el.innerHTML=''; return; }
+  let seen=''; try{ seen=localStorage.getItem('shokunin_secnews_seen')||''; }catch(_){}
+  if(seen===news.date){ el.innerHTML=''; return; }
+  const items=(news.items||[]).map(t=>'<li>'+H.esc(t)+'</li>').join('');
+  el.innerHTML='<div class="modebar" style="background:#eafaf0;color:#1a7a45;border:1px solid #b6e6c8">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'
+    +'<div><b>🔒 セキュリティ更新のお知らせ（'+H.esc(news.date)+'）</b>'
+    +(news.summary?'<div style="margin-top:3px">'+H.esc(news.summary)+'</div>':'')
+    +(items?'<ul style="margin:6px 0 0;padding-left:18px">'+items+'</ul>':'')+'</div>'
+    +'<button class="btn sm" id="secNewsSeen" style="flex:none">確認しました</button></div></div>';
+  const b=document.getElementById('secNewsSeen');
+  if(b) b.onclick=()=>{ try{ localStorage.setItem('shokunin_secnews_seen', news.date); }catch(_){} el.innerHTML=''; };
 }
 function route(){
   if(DB.mode==='local'){ startApp(); return; }            // 端末内お試しは無条件で開く
@@ -430,10 +451,12 @@ function renderDeletedCompanies(){
         <div class="meta">退会日：${H.fmtDate(a.deletedAt)}　所属大工 ${cn}名</div>
         <div class="meta" style="color:var(--warn);font-weight:800">あと ${left} 日で完全に削除されます</div></div></div>
       <div class="acts">
-        <button class="btn sm" onclick="restoreCompany('${a._key}')">↩ 呼び戻す</button>
-        <button class="btn danger sm" onclick="purgeCompany('${a._key}')">完全削除</button>
+        <button class="btn sm co-restore" data-key="${H.esc(a._key)}">↩ 呼び戻す</button>
+        <button class="btn danger sm co-purge" data-key="${H.esc(a._key)}">完全削除</button>
       </div></div>`;
   }).join('');
+  box.querySelectorAll('.co-restore').forEach(b=>b.onclick=()=>restoreCompany(b.dataset.key));
+  box.querySelectorAll('.co-purge').forEach(b=>b.onclick=()=>purgeCompany(b.dataset.key));
 }
 // サンプルデータ（example.com のオーナー）を見つける
 function sampleCompanies(){ return H.toArr(companies).filter(c=>String(c.ownerEmail||'').toLowerCase().endsWith('@example.com')); }
@@ -481,9 +504,10 @@ function renderCoList(){
       </div>
       ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
       <div class="acts">
-        <button class="btn danger sm" onclick="delCompany('${c._key}')">削除</button>
+        <button class="btn danger sm co-del" data-key="${H.esc(c._key)}">削除</button>
       </div></div>`;
   }).join('');
+  list.querySelectorAll('.co-del').forEach(b=>b.onclick=()=>delCompany(b.dataset.key));
 }
 
 // ===== 大工 =====
@@ -510,9 +534,9 @@ function kItemHTML(k){
     ${(k.quals&&k.quals.length)?`<div>${H.chips(k.quals)}</div>`:''}
     <div class="acts">
       ${ok
-        ? `<button class="btn ghost sm" onclick="unapproveCraftsman('${k._key}')">認証を取消</button>`
-        : `<button class="btn sm" onclick="approveCraftsman('${k._key}')">✓ 認証する</button>`}
-      <button class="btn danger sm" onclick="delCraftsman('${k._key}')">削除</button>
+        ? `<button class="btn ghost sm k-unapprove" data-key="${H.esc(k._key)}">認証を取消</button>`
+        : `<button class="btn sm k-approve" data-key="${H.esc(k._key)}">✓ 認証する</button>`}
+      <button class="btn danger sm k-del" data-key="${H.esc(k._key)}">削除</button>
     </div></div>`;
 }
 // 手動更新（ヘッダーの🔄ボタン）：最新データを取り直して全画面を再描画
@@ -568,6 +592,9 @@ function renderKList(){
   const orphans=all.filter(k=>!used[k._key]);
   if(orphans.length){ html+='<h2 class="sec" style="margin-top:14px">🏢 未所属</h2>'+orphans.sort(byAppr).map(kItemHTML).join(''); }
   list.innerHTML=html;
+  list.querySelectorAll('.k-approve').forEach(b=>b.onclick=()=>approveCraftsman(b.dataset.key));
+  list.querySelectorAll('.k-unapprove').forEach(b=>b.onclick=()=>unapproveCraftsman(b.dataset.key));
+  list.querySelectorAll('.k-del').forEach(b=>b.onclick=()=>delCraftsman(b.dataset.key));
 }
 
 // ===== 評価履歴 =====
@@ -581,11 +608,12 @@ function renderHist(){
       <span>${H.fmtDate(r.at)}</span>
     </div>
     <div style="margin-top:4px;display:flex;justify-content:space-between;align-items:center;gap:8px">
-      <span><span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
+      <span><span class="stars">${(rr=>'★'.repeat(rr)+'☆'.repeat(5-rr))(Math.max(0,Math.min(5,Math.round(Number(r.rating)||0))))}</span>
         ${r.byCompany?`<span class="meta" style="font-size:12px;color:var(--sub)"> by ${H.esc(r.byCompany)}</span>`:''}</span>
-      <button class="btn danger sm" onclick="delReview('${r._key}')">削除</button>
+      <button class="btn danger sm rev-del" data-rid="${H.esc(r._key)}">削除</button>
     </div>
   </div>`).join('');
+  list.querySelectorAll('.rev-del').forEach(b=>b.onclick=()=>delReview(b.dataset.rid));
 }
 
 // ---- 利用者アプリのURLをLINEで共有（運営が参加工務店へ配布） ----
@@ -656,15 +684,16 @@ function renderReqList(){
     </div>
     ${r.work?`<div class="meta">🛠 ${H.esc(r.work)}</div>`:''}
     <div class="meta">${H.fmtDate(r.createdAt)}</div>
-    <div class="acts"><button class="btn danger sm" onclick="delRequest('${r._key}','${r.fromCompanyKey}','${r.toCompanyKey}')">削除</button></div>
+    <div class="acts"><button class="btn danger sm req-del" data-rid="${H.esc(r._key)}" data-from="${H.esc(r.fromCompanyKey||'')}" data-to="${H.esc(r.toCompanyKey||'')}">削除</button></div>
   </div>`).join('');
+  list.querySelectorAll('.req-del').forEach(b=>b.onclick=()=>delRequest(b.dataset.rid, b.dataset.from, b.dataset.to));
 }
 
 // ===== 工務店連絡チャット（管理者⇔工務店） =====
 function fillContactCompanies(){
   const sel=document.getElementById('ctCompany'); if(!sel) return;
   const cur=sel.value;
-  sel.innerHTML='<option value="">— 選択 —</option>'+H.toArr(companies).map(c=>`<option value="${c._key}">${H.esc(c.name)}</option>`).join('');
+  sel.innerHTML='<option value="">— 選択 —</option>'+H.toArr(companies).map(c=>`<option value="${H.esc(c._key)}">${H.esc(c.name)}</option>`).join('');
   sel.value=cur;
 }
 // 全工務店の連絡を購読して、新着検知と一覧に使う
@@ -686,7 +715,7 @@ function renderCtOverview(){
   box.innerHTML='<div class="count" style="margin-bottom:6px">連絡のある工務店（新着順）</div>'+rows.map(r=>{
     const body=r.last.text||(r.last.fileUrl?'📎 '+(r.last.fileName||'ファイル'):'');
     const prev=H.esc(((r.last.byAdmin?'自分: ':'')+body).slice(0,40));
-    return `<button class="btn ghost sm ct-open" data-key="${r.c._key}" style="width:100%;text-align:left;margin-bottom:6px;${r.unread?'border-color:var(--warn)':''}">${r.unread?'🔴 ':''}<b>${H.esc(r.c.name)}</b>${r.unread?'（新着'+r.unread+'）':''}<div class="meta" style="margin-top:2px">${prev}・${H.fmtDate(r.last.at)}</div></button>`;
+    return `<button class="btn ghost sm ct-open" data-key="${H.esc(r.c._key)}" style="width:100%;text-align:left;margin-bottom:6px;${r.unread?'border-color:var(--warn)':''}">${r.unread?'🔴 ':''}<b>${H.esc(r.c.name)}</b>${r.unread?'（新着'+r.unread+'）':''}<div class="meta" style="margin-top:2px">${prev}・${H.fmtDate(r.last.at)}</div></button>`;
   }).join('');
   box.querySelectorAll('.ct-open').forEach(b=>b.onclick=()=>{ const sel=document.getElementById('ctCompany'); if(sel) sel.value=b.dataset.key; openContact(b.dataset.key); });
 }
@@ -704,7 +733,7 @@ function renderContactAdmin(){
   h+= ctMsgs.length
     ? ctMsgs.map(m=>{
         const mine=m.byAdmin&&m.byUid===uid;
-        return `<div class="bubble ${mine?'mine':'them'}"><div class="who">${m.byAdmin?'🛠 管理者':H.esc(m.byName||'工務店')}</div>${attachHTML(m)}${m.text?`<div class="bx">${H.linkify(m.text)}</div>`:''}<div class="bt">${H.fmtDate(m.at)}${mine?` ・<a class="ctlink ctEdit" data-mid="${m._key}" style="cursor:pointer;text-decoration:underline">編集</a> ・<a class="ctlink ctDel" data-mid="${m._key}" style="cursor:pointer;text-decoration:underline">削除</a>`:''}</div></div>`;
+        return `<div class="bubble ${mine?'mine':'them'}"><div class="who">${m.byAdmin?'🛠 管理者':H.esc(m.byName||'工務店')}</div>${attachHTML(m)}${m.text?`<div class="bx">${H.linkify(m.text)}</div>`:''}<div class="bt">${H.fmtDate(m.at)}${mine?` ・<a class="ctlink ctEdit" data-mid="${H.esc(m._key)}" style="cursor:pointer;text-decoration:underline">編集</a> ・<a class="ctlink ctDel" data-mid="${H.esc(m._key)}" style="cursor:pointer;text-decoration:underline">削除</a>`:''}</div></div>`;
       }).join('')
     : '<div class="empty">まだやり取りはありません。下から連絡できます。</div>';
   h+='</div>';
@@ -729,8 +758,9 @@ function sendContactAdmin(){
 function attachHTML(m){
   if(!m||!m.fileUrl) return '';
   const isImg=(m.fileType||'').indexOf('image')===0 || /\.(png|jpe?g|gif|webp)$/i.test(m.fileName||'');
-  if(isImg) return `<a href="${m.fileUrl}" target="_blank" rel="noopener"><img class="chatimg" src="${m.fileUrl}" alt="${H.esc(m.fileName||'画像')}"></a>`;
-  return `<a class="chatfile" href="${m.fileUrl}" target="_blank" rel="noopener" download="${H.esc(m.fileName||'file')}">📄 ${H.esc(m.fileName||'ファイル')}</a>`;
+  const safe=H.safeUrl(m.fileUrl); if(!safe) return ''; // 危険スキームの添付は表示しない
+  if(isImg) return `<a href="${safe}" target="_blank" rel="noopener"><img class="chatimg" src="${safe}" alt="${H.esc(m.fileName||'画像')}"></a>`;
+  return `<a class="chatfile" href="${safe}" target="_blank" rel="noopener" download="${H.esc(m.fileName||'file')}">📄 ${H.esc(m.fileName||'ファイル')}</a>`;
 }
 function sendContactAdminFile(file){
   if(!ctCompanyKey){ H.toast('工務店を選んでください','err'); return; }
