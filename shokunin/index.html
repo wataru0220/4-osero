@@ -319,7 +319,7 @@
       <div class="field"><label>性別</label>
         <select id="ceGender"><option value="">—</option><option>男</option><option>女</option><option>その他</option></select></div>
     </div>
-    <div class="field"><label>単価（日給）</label><input type="number" id="cePrice" min="0" placeholder="例）22000（円/日）"></div>
+    <div class="field"><label>日給（税込）</label><input type="number" id="cePrice" min="0" placeholder="例）22000（円/日・税込）"></div>
     <div class="field"><label>得意作業</label><div class="checkgrid" id="ceGood"></div>
       <div class="row" style="margin-top:8px">
         <input type="text" id="ceGoodOther" placeholder="その他の得意作業（自由入力）">
@@ -366,7 +366,7 @@
     <div id="coFirstCraft">
       <div class="firstcraft-head">最初の自社大工（1名以上の登録が必須です）</div>
       <div class="field"><label class="req">大工の氏名</label><input type="text" id="coCkName" placeholder="例）田中 一郎"></div>
-      <div class="field"><label>単価（日給）</label><input type="number" id="coCkPrice" min="0" placeholder="例）22000（円/日）"></div>
+      <div class="field"><label>日給（税込）</label><input type="number" id="coCkPrice" min="0" placeholder="例）22000（円/日・税込）"></div>
       <div class="field"><label>得意作業</label><div class="checkgrid" id="coCkGood"></div>
         <div class="row" style="margin-top:8px">
           <input type="text" id="coCkGoodOther" placeholder="その他の得意作業（自由入力）">
@@ -525,7 +525,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-06-29f'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-29g'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-05'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -1868,7 +1868,7 @@ document.getElementById('inboxOv').onclick=e=>{ if(e.target.id==='inboxOv') e.cu
 const HELP_TOPICS=[
   { t:'ログイン・新規登録', k:'ログイン 新規登録 メール パスワード アカウント', a:'「自社の大工」タブでメールアドレスとパスワードでログインします（初めての方は「新規登録」）。大工をさがす・工務店の閲覧はログイン不要ですが、登録・応援要請・評価にはログインが必要です。' },
   { t:'工務店を登録する', k:'工務店 会社 登録 自社', a:'「自社の大工」タブでログイン後、「＋工務店を登録」から自社を登録します。登録時に最初の大工を1名以上登録します（ふりがなを入れるとあいうえお順で正しく並びます）。' },
-  { t:'大工を登録・編集する', k:'大工 職人 登録 編集 追加 下書き', a:'「自社の大工」タブ→「＋大工を登録」。氏名・単価（日給）・得意作業・NG作業・資格などを入力します。入力中の内容は自動保存され、途中で閉じても消えません（「下書きあり」と表示）。' },
+  { t:'大工を登録・編集する', k:'大工 職人 登録 編集 追加 下書き', a:'「自社の大工」タブ→「＋大工を登録」。氏名・日給（税込）・得意作業・NG作業・資格などを入力します。入力中の内容は自動保存され、途中で閉じても消えません（「下書きあり」と表示）。' },
   { t:'空き予定を登録する', k:'空き 空き予定 カレンダー 稼働 日程', a:'「自社の大工」タブで各大工の「📅空き予定（3ヶ月）」を開き、空いている日をタップして登録します。登録した空き日は他社の検索に反映されます。' },
   { t:'大工をさがす', k:'さがす 検索 大工 絞り込み 得意 資格 お気に入り', a:'「大工をさがす」タブで、名前・工務店・得意作業・資格で検索できます。「空き予定のみ」「★お気に入りのみ」で絞り込みも可能です。技術力の★は利用者全員の平均です。' },
   { t:'工務店から大工をさがす', k:'工務店 会社 所属 大工 応援要請', a:'「工務店」タブで会社を選び「👷所属大工を見る・応援要請」を開くと、その会社の大工が表示され、そのまま応援要請できます。' },

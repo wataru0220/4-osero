@@ -31,6 +31,20 @@
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
     );
 
+  // 添付ファイル等のURLを src/href 属性に埋め込む前の安全化。
+  // ・許可スキームのみ通す：http(s) と、正規の添付が生成する data:image/… data:application/…
+  // ・javascript: や data:text/html など、クリックや読み込みでスクリプト実行につながるものは
+  //   空文字にして無効化する（=リンク切れになるだけで安全）。
+  // ・通した値も属性値としてエスケープする。
+  // 注意：チャットの fileUrl は取引相手や工務店クライアントが Firebase に直接書ける値のため、
+  //   アプリ経由の生成値だけとは限らない（保存型XSS対策として必ずこれを通すこと）。
+  H.safeUrl = function (u) {
+    u = String(u == null ? "" : u).trim();
+    if (/^https?:\/\//i.test(u)) return H.esc(u);
+    if (/^data:(image\/|application\/(pdf|octet-stream|zip|msword|vnd\.))/i.test(u)) return H.esc(u);
+    return "";
+  };
+
   // 評価は reviews コレクションから都度算出する（集計値はレコードに持たない）。
   // type: "craftsman" | "company", targetKey: 対象のキー
   // excludeEmail: 自己評価を除外するメール（対象のオーナーメール）。他人の評価のみ反映。
@@ -80,10 +94,10 @@
   H.chips = (arr, cls) =>
     (arr || []).map((x) => `<span class="chip ${cls || ""}">${H.esc(x)}</span>`).join("");
 
-  // 単価は日給のみ（常に「/日」）
+  // 単価は日給のみ（常に「/日」）。金額はすべて税込表示に統一する。
   H.fmtPrice = (price) => {
     if (!price && price !== 0) return "—";
-    return "¥" + Number(price).toLocaleString() + "/日";
+    return "¥" + Number(price).toLocaleString() + "/日（税込）";
   };
 
   // 空き予定（カレンダー avail）から、今日以降の「空き」日付を昇順で返す
