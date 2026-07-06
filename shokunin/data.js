@@ -73,12 +73,15 @@
     });
 
     // すべての操作をサインイン完了後に実行する（最初の読み込みが権限拒否になるのを防ぐ）
-    DB.on = (path, cb) => {
+    // errCb（省略可）：ルール権限拒否などで購読が失敗した際に呼ばれる。指定しないと
+    // これまで通り黙って何も起きない＝呼び出し側が無反応（画面が固まる）ことがあるため、
+    // 会員判定など重要な購読には必ず errCb を渡すこと。
+    DB.on = (path, cb, errCb) => {
       let off = function () {}, active = true;
       DB.ready.then(function () {
         if (!active) return;
         const r = ref(path);
-        const handler = r.on("value", (snap) => cb(snap.val()));
+        const handler = r.on("value", (snap) => cb(snap.val()), (err) => { if (errCb) errCb(err); });
         off = function () { r.off("value", handler); };
       });
       return function () { active = false; off(); };

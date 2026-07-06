@@ -418,8 +418,10 @@ function boot(){
   DB.on('approvals', v=>{ approvals=v||{}; renderKList(); });
   DB.on('requests', v=>{ requests=v||{}; renderReqList(); });
   DB.on('deletedCompanies', v=>{ deletedCompanies=v||{}; purgeExpiredDeleted(); renderDeletedCompanies(); });
-  DB.on('members', v=>{ members=v||{}; renderMembers(); });
-  DB.on('memberApplications', v=>{ memberApps=v||{}; renderMemberApps(); updateAdminBadge(); });
+  DB.on('members', v=>{ members=v||{}; renderMembers(); },
+    e=>{ const box=document.getElementById('memberList'); if(box) box.innerHTML='<div class="empty" style="padding:12px;color:var(--warn)">会員一覧を読み込めませんでした（Firebaseのルールが最新か確認してください）：'+H.esc((e&&e.message)||e)+'</div>'; });
+  DB.on('memberApplications', v=>{ memberApps=v||{}; renderMemberApps(); updateAdminBadge(); },
+    e=>{ const box=document.getElementById('appList'); if(box) box.innerHTML='<div class="empty" style="padding:12px;color:var(--warn)">入会申請を読み込めませんでした（Firebaseのルールが最新か確認してください）：'+H.esc((e&&e.message)||e)+'</div>'; });
   document.getElementById('mSearch').oninput=()=>renderMembers();
   document.getElementById('isGen').onclick=()=>{ document.getElementById('isPass').value=genPassword(); };
   document.getElementById('isIssue').onclick=issueMemberAccount;
