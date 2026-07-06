@@ -211,9 +211,21 @@
   .checkgrid label{display:inline-flex; align-items:center; gap:5px; background:#f4f6f8; border:1.5px solid var(--line); border-radius:18px; padding:6px 11px; font-size:13px; font-weight:700; color:var(--ink); cursor:pointer; margin:0}
   .checkgrid input{width:auto; accent-color:var(--brand)}
   .checkgrid label.on{background:var(--chip); border-color:var(--brand); color:var(--brand-dark)}
+  /* 会員制ログインの門番：会員以外は中身（マッチング画面）を出さない */
+  body.gated > header, body.gated > .wrap, body.gated > .tabbar{ display:none !important; }
+  #memberGate{ display:none; }
+  body.gated #memberGate{ display:flex; }
+  #memberGate{ position:fixed; inset:0; z-index:9998; background:#f5f6f8; align-items:flex-start; justify-content:center; overflow:auto; padding:26px 14px; }
+  #memberGate .gcard{ width:100%; max-width:420px; background:#fff; border:1px solid var(--line); border-radius:16px; padding:22px 20px; box-shadow:0 8px 30px rgba(0,0,0,.08); }
+  #memberGate h2{ margin:0 0 4px; font-size:20px }
+  #memberGate .gsub{ color:var(--sub); font-size:13px; line-height:1.6; margin-bottom:14px }
+  #memberGate .gerr{ display:none; margin-top:10px; color:#b3261e; font-weight:700; font-size:13px }
+  #memberGate .glogo{ text-align:center; font-size:26px; font-weight:800; color:var(--brand-dark); margin-bottom:2px }
 </style>
 </head>
 <body>
+<!-- 会員制ログイン門番（会員以外は中身を見られない）。route/applyGate が制御 -->
+<div id="memberGate"><div class="gcard" id="memberGateBody"></div></div>
 <header>
   <div class="hrow">
     <div>
@@ -525,7 +537,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-06-29g'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-30a'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-05'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -702,12 +714,114 @@ document.getElementById('coSearch').oninput = ()=>renderCompanies();
 
 // ===== 認証状態（ログイン中の工務店） =====
 let _loginRefreshed=null;
+// 会員制の門番の状態（購読が同期発火するため onChange より前に宣言してTDZ回避）
+let amMember=false, membersChecked=false, myApplication=null, _memberUnsub=null, _appUnsub=null;
 DB.auth.onChange(u=>{
   myUser=u; renderMyArea(); renderFind(); renderCompanies();
+  resubMembership(u);   // 会員判定の購読を張り替える
+  applyGate();          // 会員制の門番を反映
   // ログイン直後はリアルタイム購読の再評価を待たず、その場で最新データを取得して即反映（体感を速く）
   if(u && u.email && _loginRefreshed!==u.uid){ _loginRefreshed=u.uid; refreshCoreData(); }
   if(u && u.email && typeof maybePromptTerms==='function') setTimeout(maybePromptTerms, 900); // 初回ログイン時に規約同意を求める
 });
+
+// ===== 会員制ログインの門番（事務局が発行/承認した会員だけが中身を見られる） =====
+// members/{uid} に登録された会員のみ。体験モード(?demo=1)・端末内お試し(local)は門番なし。
+function gateExempt(){ return DB.demo || DB.mode!=='firebase'; }   // 体験・ローカルは門番なし
+function resubMembership(u){
+  if(_memberUnsub){ _memberUnsub(); _memberUnsub=null; }
+  if(_appUnsub){ _appUnsub(); _appUnsub=null; }
+  amMember=false; membersChecked=false; myApplication=null;
+  if(gateExempt() || !u || !u.email){ membersChecked=true; return; }
+  _memberUnsub=DB.on('members/'+u.uid, v=>{ amMember=!!v; membersChecked=true; applyGate(); });
+  _appUnsub=DB.on('memberApplications/'+u.uid, v=>{ myApplication=v||null; applyGate(); });
+}
+function applyGate(){
+  const gate=document.getElementById('memberGate'); if(!gate) return;
+  if(gateExempt()){ document.body.classList.remove('gated'); return; }   // 体験/ローカルは常に開放
+  const u=DB.auth.user;
+  if(!u || !u.email){ showGate('login'); return; }
+  if(!membersChecked){ showGate('loading'); return; }
+  if(amMember){ document.body.classList.remove('gated'); return; }        // 会員→アプリ表示
+  showGate(myApplication ? 'pending' : 'apply');                          // 未会員→申請状況で分岐
+}
+function gateEsc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function showGate(mode){
+  document.body.classList.add('gated');
+  const b=document.getElementById('memberGateBody'); if(!b) return;
+  const u=DB.auth.user;
+  const head='<div class="glogo">🪚 大工シェア ネットワーク</div>';
+  if(mode==='loading'){ b.innerHTML=head+'<div class="gsub" style="text-align:center">確認中…</div>'; return; }
+  if(mode==='login'){
+    b.innerHTML=head+`
+      <h2>🔒 会員ログイン</h2>
+      <div class="gsub">ご利用には<b>事務局が発行した会員アカウント</b>（メール・パスワード）が必要です。審査を通過した会員のみマッチング画面をご利用いただけます。</div>
+      <div class="field"><label>メールアドレス</label><input type="email" id="gEmail" autocomplete="username" placeholder="you@example.com"></div>
+      <div class="field"><label>パスワード</label><input type="password" id="gPass" autocomplete="current-password" placeholder="パスワード"></div>
+      <div class="row"><button class="btn full" id="gLoginBtn">ログイン</button></div>
+      <div class="gerr" id="gErr"></div>
+      <div style="margin-top:12px"><a class="deallink" id="gReset" style="cursor:pointer">🔑 パスワードを忘れた方はこちら</a></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+      <div class="gsub" style="margin:0 0 8px">まだ会員でない方（工務店）は、入会をご申請ください。事務局の審査後にご利用いただけます。</div>
+      <button class="btn ghost full" id="gToApply">✍️ 入会を申請する（新規）</button>`;
+    document.getElementById('gLoginBtn').onclick=gateLogin;
+    document.getElementById('gPass').addEventListener('keydown',e=>{ if(e.key==='Enter') gateLogin(); });
+    document.getElementById('gReset').onclick=gateReset;
+    document.getElementById('gToApply').onclick=()=>showGate('apply');
+    return;
+  }
+  if(mode==='apply'){
+    b.innerHTML=head+`
+      <h2>✍️ 入会を申請</h2>
+      <div class="gsub">工務店の情報を入力して申請してください。<b>事務局の審査</b>を通過するとログインしてご利用いただけます（審査結果はメール等で事務局よりご連絡します）。</div>
+      <div class="field"><label>メールアドレス（ログインID）</label><input type="email" id="aEmail" autocomplete="username" placeholder="you@example.com"></div>
+      <div class="field"><label>パスワード（6文字以上）</label><input type="password" id="aPass" autocomplete="new-password" placeholder="ログイン用パスワード"></div>
+      <div class="field"><label>工務店名</label><input type="text" id="aCompany" placeholder="例）山田工務店"></div>
+      <div class="field"><label>ご担当者名</label><input type="text" id="aContact" placeholder="例）山田 太郎"></div>
+      <div class="field"><label>電話番号</label><input type="tel" id="aTel" placeholder="例）022-000-0000"></div>
+      <div class="row"><button class="btn full" id="aSubmit">この内容で入会を申請する</button></div>
+      <div class="gerr" id="gErr"></div>
+      <div style="margin-top:12px"><a class="deallink" id="aBack" style="cursor:pointer">← ログインに戻る</a></div>`;
+    document.getElementById('aSubmit').onclick=gateApply;
+    document.getElementById('aBack').onclick=()=>showGate('login');
+    return;
+  }
+  // pending（申請済み・審査待ち）
+  b.innerHTML=head+`
+    <h2>⏳ 審査中です</h2>
+    <div class="gsub">入会申請を受け付けました。<b>事務局の承認をお待ちください。</b>承認されると、このアカウントでマッチング画面をご利用いただけます。<br><br>ログイン中：<b>${gateEsc(u&&u.email)}</b></div>
+    <button class="btn ghost full" id="gLogout2">ログアウト</button>`;
+  document.getElementById('gLogout2').onclick=()=>DB.auth.signOut();
+}
+function gateErr(msg){ const el=document.getElementById('gErr'); if(el){ el.textContent='⚠️ '+msg; el.style.display='block'; } }
+function gateLogin(){
+  const email=(document.getElementById('gEmail').value||'').trim(), pass=(document.getElementById('gPass').value||'');
+  if(!email||!pass){ gateErr('メールアドレスとパスワードを入力してください'); return; }
+  DB.auth.signIn(email,pass).catch(e=>gateErr(H.authErrMsg?H.authErrMsg(e):((e&&e.message)||String(e))));
+}
+function gateReset(){
+  const email=(document.getElementById('gEmail').value||'').trim();
+  if(!email){ gateErr('メールアドレスを入力してから押してください'); return; }
+  DB.auth.resetPassword(email).then(()=>H.toast('パスワード再設定メールを送信しました','ok')).catch(e=>gateErr((e&&e.message)||String(e)));
+}
+function gateApply(){
+  const email=(document.getElementById('aEmail').value||'').trim();
+  const pass=(document.getElementById('aPass').value||'');
+  const company=(document.getElementById('aCompany').value||'').trim();
+  const contact=(document.getElementById('aContact').value||'').trim();
+  const tel=(document.getElementById('aTel').value||'').trim();
+  if(!email||pass.length<6){ gateErr('メールと6文字以上のパスワードを入力してください'); return; }
+  if(!company){ gateErr('工務店名を入力してください'); return; }
+  const btn=document.getElementById('aSubmit'); if(btn){ btn.disabled=true; }
+  // アカウント作成→そのユーザーで入会申請を書き込む（承認されるまで会員ではない）
+  DB.auth.signUp(email,pass).then(()=>{
+    const u=DB.auth.user;
+    return DB.set('memberApplications/'+u.uid, { email:email, company:company, contact:contact, tel:tel, at:Date.now() });
+  }).then(()=>{
+    H.toast('入会申請を送信しました。事務局の審査をお待ちください','ok');
+    applyGate();
+  }).catch(e=>{ if(btn) btn.disabled=false; gateErr(H.authErrMsg?H.authErrMsg(e):((e&&e.message)||String(e))); });
+}
 // ログイン直後などに、主要データを一括取得して即座に反映する
 function refreshCoreData(){
   return Promise.all([DB.get('companies'),DB.get('craftsmen'),DB.get('reviews'),DB.get('approvals')])

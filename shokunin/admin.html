@@ -166,10 +166,35 @@
   <div class="tabs">
     <button class="on" data-page="co">🏢 工務店</button>
     <button data-page="ki" style="position:relative">🪚 大工<span class="tabbadge" id="kBadge" style="display:none">0</span></button>
+    <button data-page="member" style="position:relative">🎫 会員<span class="tabbadge" id="mBadge" style="display:none">0</span></button>
     <button data-page="hist">📜 評価履歴</button>
     <button data-page="req">🤝 応援要請</button>
     <button data-page="contact" style="position:relative">📨 工務店連絡<span class="tabbadge" id="ctBadge" style="display:none">0</span></button>
   </div>
+
+  <!-- ========== 会員（審査・発行・停止） ========== -->
+  <section class="page" id="page-member">
+    <div class="modebar" style="background:#eef3fb;color:#1759c4;border:1px solid #c7dbff">会員制のログイン管理です。<b>審査を通過した会員だけ</b>が利用者アプリのマッチング画面を使えます。</div>
+
+    <h2 class="sec">🆕 会員アカウントを発行する</h2>
+    <div class="count" style="margin:-4px 2px 8px">審査を通過した工務店に、ここでアカウントを発行します。発行後に表示されるメール・パスワードを相手へお渡しください。</div>
+    <div class="card" style="padding:12px 14px">
+      <div class="field"><label>メールアドレス（ログインID）</label><input type="email" id="isEmail" placeholder="company@example.com"></div>
+      <div class="field"><label>初期パスワード（6文字以上）</label>
+        <div class="row"><input type="text" id="isPass" placeholder="仮パスワード"><button class="btn ghost" id="isGen" style="flex:none">自動生成</button></div>
+      </div>
+      <div class="field"><label>工務店名（メモ）</label><input type="text" id="isCompany" placeholder="例）山田工務店"></div>
+      <div class="row"><button class="btn" id="isIssue">このアカウントを発行する</button></div>
+      <div id="isResult" style="margin-top:8px"></div>
+    </div>
+
+    <h2 class="sec" style="margin-top:18px">📝 入会申請（審査待ち）<span id="appCount" class="count" style="display:inline"></span></h2>
+    <div id="appList"></div>
+
+    <h2 class="sec" style="margin-top:18px">✅ 会員一覧</h2>
+    <input type="text" id="mSearch" placeholder="🔍 メール・工務店名で検索" style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:10px">
+    <div id="memberList"></div>
+  </section>
 
   <!-- ========== 工務店 ========== -->
   <section class="page on" id="page-co">
@@ -220,6 +245,7 @@
 <script src="qrcode.min.js?v=20260629f"></script>
 <script>
 let companies={}, craftsmen={}, reviews={}, approvals={}, requests={};
+let members={}, memberApps={}; // 会員一覧 / 入会申請（審査待ち）
 let deletedCompanies={}; // 退会（ソフト削除）した工務店の保管。1か月以内は呼び戻し可
 const DELETED_KEEP_DAYS=30; // 退会後この日数だけ保管（呼び戻し可能）。購読の同期発火より前に宣言（TDZ回避）
 let ctCompanyKey=null, ctMsgs=[], ctUnsub=null; // 工務店連絡チャット（選択中）
@@ -392,6 +418,11 @@ function boot(){
   DB.on('approvals', v=>{ approvals=v||{}; renderKList(); });
   DB.on('requests', v=>{ requests=v||{}; renderReqList(); });
   DB.on('deletedCompanies', v=>{ deletedCompanies=v||{}; purgeExpiredDeleted(); renderDeletedCompanies(); });
+  DB.on('members', v=>{ members=v||{}; renderMembers(); });
+  DB.on('memberApplications', v=>{ memberApps=v||{}; renderMemberApps(); updateAdminBadge(); });
+  document.getElementById('mSearch').oninput=()=>renderMembers();
+  document.getElementById('isGen').onclick=()=>{ document.getElementById('isPass').value=genPassword(); };
+  document.getElementById('isIssue').onclick=issueMemberAccount;
 }
 
 // ===== 工務店 =====
@@ -543,9 +574,9 @@ function kItemHTML(k){
 function adminRefresh(){
   const btn=document.getElementById('refreshBtn'); const ic=btn&&btn.querySelector('.ic');
   if(btn) btn.disabled=true; if(ic) ic.textContent='⏳';
-  Promise.all([DB.get('companies'),DB.get('craftsmen'),DB.get('reviews'),DB.get('approvals'),DB.get('requests'),DB.get('deletedCompanies')])
-    .then(([co,cr,rv,ap,rq,dc])=>{ companies=co||{}; craftsmen=cr||{}; reviews=rv||{}; approvals=ap||{}; requests=rq||{}; deletedCompanies=dc||{};
-      renderCoList(); renderKList(); renderHist(); renderReqList(); fillContactCompanies(); subscribeAllChats(); renderCtOverview(); purgeExpiredDeleted(); renderDeletedCompanies(); })
+  Promise.all([DB.get('companies'),DB.get('craftsmen'),DB.get('reviews'),DB.get('approvals'),DB.get('requests'),DB.get('deletedCompanies'),DB.get('members'),DB.get('memberApplications')])
+    .then(([co,cr,rv,ap,rq,dc,mb,ma])=>{ companies=co||{}; craftsmen=cr||{}; reviews=rv||{}; approvals=ap||{}; requests=rq||{}; deletedCompanies=dc||{}; members=mb||{}; memberApps=ma||{};
+      renderCoList(); renderKList(); renderHist(); renderReqList(); fillContactCompanies(); subscribeAllChats(); renderCtOverview(); purgeExpiredDeleted(); renderDeletedCompanies(); renderMembers(); renderMemberApps(); updateAdminBadge(); })
     .catch(()=>{})
     .finally(()=>{ if(ic) ic.textContent='🔄'; if(btn) btn.disabled=false; H.toast('最新の情報に更新しました','ok'); });
 }
@@ -559,7 +590,11 @@ function updateAdminBadge(){
   const cu=(typeof ctUnreadCompanies==='function')?ctUnreadCompanies():0;
   const cbt=document.getElementById('ctBadge');
   if(cbt){ if(cu>0){ cbt.textContent=cu>99?'99+':cu; cbt.style.display='flex'; } else cbt.style.display='none'; }
-  setIconBadge(pending+cu);
+  // 入会申請（審査待ち）の件数
+  const mp=Object.keys(memberApps||{}).length;
+  const mb=document.getElementById('mBadge');
+  if(mb){ if(mp>0){ mb.textContent=mp>99?'99+':mp; mb.style.display='flex'; } else mb.style.display='none'; }
+  setIconBadge(pending+cu+mp);
   // アプリを開いたときに「アイコンの数字＝承認待ち」がすぐ分かる常設バナー
   const nt=document.getElementById('approvalNotice');
   if(nt){
@@ -798,11 +833,91 @@ function delRequest(rid, fromCk, toCk){
   ]).then(()=>H.toast('削除しました','ok'));
 }
 
+// ===== 会員管理（審査・発行・停止） =====
+function genPassword(){ const c='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<10;i++) s+=c[Math.floor(Math.random()*c.length)]; return s; }
+function renderMemberApps(){
+  const box=document.getElementById('appList'); if(!box) return;
+  const arr=H.toArr(memberApps).sort((a,b)=>(b.at||0)-(a.at||0));
+  const cnt=document.getElementById('appCount'); if(cnt) cnt.textContent=arr.length?('（'+arr.length+'件）'):'（なし）';
+  if(!arr.length){ box.innerHTML='<div class="empty" style="padding:12px">審査待ちの申請はありません。</div>'; return; }
+  box.innerHTML=arr.map(a=>`<div class="item">
+    <div class="top"><div><div class="nm">${H.esc(a.company||'(工務店名なし)')}</div>
+      <div class="meta">👤${H.esc(a.contact||'—')}　📞${H.esc(a.tel||'—')}</div>
+      <div class="meta">🔑${H.esc(a.email||'—')}　申請：${H.fmtDate(a.at)}</div></div></div>
+    <div class="acts">
+      <button class="btn sm" onclick="approveMember('${a._key}')">✅ 承認して会員にする</button>
+      <button class="btn danger sm" onclick="rejectMember('${a._key}')">却下</button>
+    </div></div>`).join('');
+}
+function approveMember(uid){
+  const a=memberApps[uid]; if(!a) return;
+  if(!confirm('「'+(a.company||'')+'」を会員として承認しますか？')) return;
+  const me=DB.auth.user&&DB.auth.user.email;
+  DB.set('members/'+uid, { email:a.email||'', company:a.company||'', contact:a.contact||'', tel:a.tel||'', approvedAt:Date.now(), approvedBy:me, via:'application' })
+    .then(()=>DB.remove('memberApplications/'+uid))
+    .then(()=>H.toast('会員として承認しました','ok'))
+    .catch(e=>H.toast('承認できませんでした：'+((e&&e.message)||e),'err'));
+}
+function rejectMember(uid){
+  const a=memberApps[uid]||{};
+  if(!confirm('「'+(a.company||'')+'」の入会申請を却下しますか？\n（申請は削除されます。相手のログインアカウント自体はFirebaseに残るため、必要ならコンソールで削除してください）')) return;
+  DB.remove('memberApplications/'+uid).then(()=>H.toast('申請を却下しました','ok'));
+}
+function renderMembers(){
+  const box=document.getElementById('memberList'); if(!box) return;
+  const q=(document.getElementById('mSearch').value||'').trim().toLowerCase();
+  let arr=H.toArr(members).sort((a,b)=>(b.approvedAt||0)-(a.approvedAt||0));
+  if(q) arr=arr.filter(m=>((m.company||'')+' '+(m.email||'')).toLowerCase().includes(q));
+  if(!arr.length){ box.innerHTML='<div class="empty" style="padding:12px">会員はまだいません。上の「会員アカウントを発行する」または申請の承認で追加されます。</div>'; return; }
+  box.innerHTML=arr.map(m=>`<div class="item">
+    <div class="top"><div><div class="nm">${H.esc(m.company||'(工務店名なし)')}</div>
+      <div class="meta">🔑${H.esc(m.email||'—')}　${m.via==='issued'?'発行':'承認'}：${H.fmtDate(m.approvedAt)}</div></div></div>
+    <div class="acts"><button class="btn danger sm" onclick="revokeMember('${m._key}')">🚫 利用停止（会員から外す）</button></div>
+  </div>`).join('');
+}
+function revokeMember(uid){
+  const m=members[uid]||{};
+  if(!confirm('「'+(m.company||m.email||'')+'」を利用停止（会員リストから外す）しますか？\nこの会員はマッチング画面を開けなくなります。\n（ログインアカウント自体を無効化するにはFirebaseコンソールで停止/削除してください）')) return;
+  DB.remove('members/'+uid).then(()=>H.toast('利用停止にしました','ok'));
+}
+// 事務局によるアカウント発行（副アプリで作成し、管理者のログインは維持したまま members に登録）
+function issueMemberAccount(){
+  const email=(document.getElementById('isEmail').value||'').trim();
+  const pass=(document.getElementById('isPass').value||'').trim();
+  const company=(document.getElementById('isCompany').value||'').trim();
+  const res=document.getElementById('isResult');
+  if(!email||pass.length<6){ res.innerHTML='<div class="count" style="color:var(--warn)">メールと6文字以上のパスワードを入力してください。</div>'; return; }
+  const cfg=(window.SHOKUNIN_CONFIG&&window.SHOKUNIN_CONFIG.firebase)||null;
+  if(!cfg){ res.innerHTML='<div class="count" style="color:var(--warn)">Firebase未設定のため発行できません。</div>'; return; }
+  const btn=document.getElementById('isIssue'); btn.disabled=true; res.innerHTML='<div class="count">発行中…</div>';
+  let sec;
+  try{ sec=firebase.apps.find(a=>a.name==='issuer')||firebase.initializeApp(cfg,'issuer'); }
+  catch(e){ btn.disabled=false; res.innerHTML='<div class="count" style="color:var(--warn)">発行の初期化に失敗：'+H.esc((e&&e.message)||e)+'</div>'; return; }
+  const me=DB.auth.user&&DB.auth.user.email;
+  sec.auth().createUserWithEmailAndPassword(email,pass).then(cred=>{
+    const uid=cred.user.uid;
+    return DB.set('members/'+uid, { email:email, company:company, approvedAt:Date.now(), approvedBy:me, via:'issued' })
+      .then(()=>sec.auth().signOut());
+  }).then(()=>{
+    btn.disabled=false;
+    res.innerHTML='<div class="card" style="padding:10px 12px;background:#f0f9f2;border:1px solid #b7e4c7">'
+      +'<b>発行しました。</b>下記を審査通過した工務店へお渡しください（パスワードは初回にご本人で変更いただくと安全です）。<br>'
+      +'📧 メール：<b>'+H.esc(email)+'</b><br>🔑 パスワード：<b>'+H.esc(pass)+'</b></div>';
+    document.getElementById('isEmail').value=''; document.getElementById('isPass').value=''; document.getElementById('isCompany').value='';
+    H.toast('会員アカウントを発行しました','ok');
+  }).catch(e=>{
+    btn.disabled=false;
+    try{ sec&&sec.auth().signOut(); }catch(_){}
+    res.innerHTML='<div class="count" style="color:var(--warn)">発行できませんでした：'+H.esc(H.authErrMsg?H.authErrMsg(e):((e&&e.message)||e))+'</div>';
+  });
+}
+
 // グローバル公開（onclick用）
 window.delCompany=delCompany; window.delCraftsman=delCraftsman;
 window.restoreCompany=restoreCompany; window.purgeCompany=purgeCompany;
 window.approveCraftsman=approveCraftsman; window.unapproveCraftsman=unapproveCraftsman;
 window.delReview=delReview; window.delRequest=delRequest;
+window.approveMember=approveMember; window.rejectMember=rejectMember; window.revokeMember=revokeMember;
 </script>
 </body>
 </html>

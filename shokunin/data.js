@@ -43,10 +43,10 @@
     const fdb = firebase.database();
     const ref = (p) => fdb.ref(ROOT + (p ? "/" + p : ""));
 
-    // ---- 認証（メール/パスワード＋既定で匿名） ----
-    // ・閲覧・評価は匿名サインインで可能（ルール auth != null を満たす）。
-    // ・工務店は signIn/signUp でメールログインし、自社の大工だけ編集できる（ルールで強制）。
-    // ・Firebaseコンソールで「メール/パスワード」と「匿名」の両方を有効化しておくこと。
+    // ---- 認証（会員制：メール/パスワードのみ。匿名サインインは廃止） ----
+    // ・会員制のため匿名閲覧は不可。ログインした会員（members に登録）だけが中身を見られる（ルールで強制）。
+    // ・アカウントは事務局が発行、または利用者が入会申請→事務局が承認（admin.html）。
+    // ・Firebaseコンソールで「メール/パスワード」を有効化（「匿名」は無効でよい）。
     var fauth = firebase.auth ? firebase.auth() : null;
     // パスワード再設定メール・再設定画面などを日本語で表示する
     if (fauth) { try { fauth.languageCode = "ja"; } catch (_) {} }
@@ -59,8 +59,7 @@
       signUp: function (email, pass) { return fauth.createUserWithEmailAndPassword(email, pass); },
       // パスワード再設定メールを送信（救済措置）
       resetPassword: function (email) { return fauth.sendPasswordResetEmail(email); },
-      // ログアウト後は匿名に戻し、閲覧・評価を継続できるようにする
-      signOut: function () { return fauth.signOut().then(function () { return fauth.signInAnonymously().catch(function(){}); }); }
+      signOut: function () { return fauth.signOut(); }
     };
     DB.ready = new Promise(function (resolve) {
       if (!fauth) { resolve(); return; }
@@ -68,14 +67,8 @@
       fauth.onAuthStateChanged(function (u) {
         DB.auth.user = u ? { uid: u.uid, email: u.email || null, isAnonymous: !!u.isAnonymous } : null;
         DB.auth._emit();
-        if (u) finish(); // ログイン（匿名含む）が確立したら準備完了
+        finish(); // ログイン状態が判明したら（未ログイン=null でも）準備完了。門番はアプリ側で判定
       });
-      if (!fauth.currentUser) {
-        fauth.signInAnonymously().catch(function (e) {
-          console.warn("匿名サインインに失敗しました（Anonymousプロバイダが未有効の可能性）:", e && e.message);
-          finish();
-        });
-      }
       setTimeout(finish, 4000); // 保険：認証応答が遅くても4秒で先へ進む
     });
 

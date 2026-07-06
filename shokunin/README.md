@@ -83,24 +83,38 @@
           ".write": "auth != null && auth.uid === $uid && (!root.child('shokunin/admins').exists() || root.child('shokunin/admins').child(auth.uid).val() === true)"
         }
       },
+      "members": {
+        ".read": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true",
+        "$uid": {
+          ".read": "auth != null && ( auth.uid === $uid || root.child('shokunin/admins').child(auth.uid).val() === true )",
+          ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
+        }
+      },
+      "memberApplications": {
+        ".read": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true",
+        "$uid": {
+          ".read": "auth != null && ( auth.uid === $uid || root.child('shokunin/admins').child(auth.uid).val() === true )",
+          ".write": "auth != null && ( auth.uid === $uid || root.child('shokunin/admins').child(auth.uid).val() === true )"
+        }
+      },
       "companies": {
-        ".read": "auth != null",
+        ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
         "$cid": {
-          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( (!data.exists() || data.child('ownerEmail').val() === auth.token.email) && (!newData.exists() || newData.child('ownerEmail').val() === auth.token.email) ) )"
+          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( ( root.child('shokunin/members').child(auth.uid).exists() ) && (!data.exists() || data.child('ownerEmail').val() === auth.token.email) && (!newData.exists() || newData.child('ownerEmail').val() === auth.token.email) ) )"
         }
       },
       "craftsmen": {
-        ".read": "auth != null",
+        ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
         "$kid": {
           ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( (!data.exists() || root.child('shokunin/companies').child(data.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) && (!newData.exists() || root.child('shokunin/companies').child(newData.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) ) )"
         }
       },
       "reviews": {
-        ".read": "auth != null",
+        ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
         "$rid": { ".write": "auth != null && ( (!data.exists() && newData.child('byUid').val() === auth.uid) || (data.exists() && (data.child('byUid').val() === auth.uid || root.child('shokunin/admins').child(auth.uid).val() === true)) )" }
       },
       "approvals": {
-        ".read": "auth != null",
+        ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
         ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
       },
       "reqIndex": {
@@ -134,9 +148,12 @@
   }
 }
 ```
+- **会員制**：`companies`/`craftsmen`/`reviews`/`approvals` の閲覧は「**`members` に登録された会員**または管理者」だけに限定されます。会員でないログインユーザーはマッチング画面を一切読めません（アプリ側でも門番が表示されます）。
+- `members`（会員）と `memberApplications`（入会申請）を追加。会員登録は**管理者のみ**が書き込めます。入会申請は本人が作成でき、管理者が承認（`members` に登録）または却下します。会員アカウントの発行・審査は **admin.html の「🎫会員」タブ**から行います。
+- **認証プロバイダ**：Firebaseコンソールで「**メール/パスワード**」を有効化。会員制のため「**匿名**」は不要（無効のままでOK。有効でも会員以外は読めません）。
 - `admins` は「最初の1人だけ自分を登録でき、その後は既存管理者しか追加できない」ルール。**運営が最初に admin.html で登録**してください。
 - `deals`（条件のやり取り）は当事者2社だけが読み書き可。**管理者は対象外**＝取引内容は見られません。
-- 旧バージョンから更新する場合は、`shokunin` 直下の `".read": "auth != null"` を**消して**上記の各コレクションごとの `.read` に置き換えてください（応援要請を当事者限定にするため）。
+- 旧バージョンから更新する場合は、`shokunin` 直下の `".read": "auth != null"` を**消して**上記の各コレクションごとの `.read` に置き換えてください（会員制・当事者限定にするため）。
 - ルール公開後、反映まで数十秒かかることがあります。
 - **退会した工務店の保管（呼び戻し用）** を使う場合、`shokunin` の中に下記の `deletedCompanies`（管理者のみ読み書き）を追加してください。簡易ルール（`shokunin: { ".read": "auth != null", ".write": "auth != null" }`）のままなら追加不要で動作します。
 ```json
@@ -210,3 +227,40 @@ service firebase.storage {
 - `config.js` の値はクライアントに公開される前提の識別子です。**機密保護は Firebase のセキュリティルールで担保**してください。
 - 工務店ごとの編集制限・管理者権限・応援要請の当事者限定・条件のやり取りの非公開は、すべて上記ルールで強制されます。
 - 単価・評価・連絡先など取り扱いに配慮が必要な情報を含みます。公開範囲（URLの配布先）に注意してください。
+
+## 法人サービスとして提供する前のセキュリティ確認事項
+
+無料の社内利用から「法人向け有料サービス」へ移行する場合、下記を**必ず**実施してください。上のコピペ用ルールは動作重視の最小構成で、以下の観点が不足しています。
+
+### 🔴 最優先（データ流出・乗っ取りに直結）
+1. **`kintai` パスの全開放を閉じる**
+   上のマージ用ルールに含まれる `"kintai": { ".read": true, ".write": true }` は、**データベースURLを知る誰でも勤怠・給与データを読み書きできる**状態です（`databaseURL` は `config.js` に公開されています）。勤怠アプリ側の適切なルール（認証必須・会社単位の制限）へ必ず差し替えてください。大工シェアと Firebase プロジェクトを共有している以上、片方の穴は全体の穴になります。
+2. **匿名ユーザーへの個人情報の全開放を見直す**
+   現在は `companies`/`craftsmen` が `".read": "auth != null"` で、**匿名サインインした誰でも全工務店の電話番号・担当者名・メール（`ownerEmail`）・単価・大工名簿を丸ごと取得**できます。同業者や無関係の第三者による名簿・連絡先・価格の一括スクレイピングが可能です。法人提供では次のいずれかを推奨：
+   - 閲覧も**本登録アカウント（匿名不可）**に限定する（`auth.token.firebase.sign_in_provider != 'anonymous'` を条件に加える）。
+   - 電話・メール等の連絡先は当事者間（応援要請成立後）でのみ開示し、一覧では非表示にする。
+3. **メール確認（本人性）を必須化する**
+   メール/パスワード登録は所有権を確認しないため、他人のメールを `ownerEmail` として先取り登録できます。`sendEmailVerification()` を導入し、ルールで `auth.token.email_verified === true` を書き込み条件に加えてください。
+
+### 🟡 重要（不正・改ざん・濫用対策）
+4. **`.validate` によるデータ検証を追加**（現在は型・長さ・値域の検証がなく、任意の巨大データ・不正な型を書き込める）。例：
+   ```json
+   "reviews": {
+     "$rid": {
+       ".validate": "newData.hasChildren(['type','targetKey','rating','byUid']) && newData.child('rating').isNumber() && newData.child('rating').val() >= 1 && newData.child('rating').val() <= 5 && newData.child('byUid').val() === auth.uid"
+     }
+   }
+   ```
+   氏名・メモ・メッセージ等の文字列にも `.val().length < 2000` 等の上限を付けてください。
+5. **`reqIndex` の書き込みを当事者に限定**（現在 `".write": "auth != null"` で誰でも任意社の索引に書き込め、スパム・汚染が可能）。索引先の要請の当事者メールと一致する場合のみ許可する条件に変更。
+6. **Firebase App Check を有効化**（reCAPTCHA / App Attest）。正規アプリ以外からの API 直叩き（自動スクレイピング・書き込み濫用）を大幅に抑止できます。法人提供では実質必須。
+7. **添付ファイルの取り扱い**：チャットの `fileUrl` は相手クライアントが直接書ける値のため、表示側で許可スキーム（`http(s)` / `data:image` / `data:application`）のみ通すよう対策済み（`common.js` の `H.safeUrl`）。Storage を使う場合はサイズ・拡張子・Content-Type をルールで制限してください。
+
+### 🟢 運用・コンプライアンス
+8. **利用規約・プライバシーポリシー・特定商取引法表記**（有料サービスなら必須）。個人情報（氏名・連絡先）を取り扱うため、個人情報保護法に基づく取得目的の明示・第三者提供の同意を規約に反映。
+9. **バックアップと復旧**：Realtime Database の定期エクスポート（自動バックアップ）を設定。
+10. **監査ログ・不正検知**：Firebase の使用量アラート、認証の異常（大量登録・大量読み取り）の監視。
+11. **管理者アカウントの保護**：管理者は必ず強固なパスワード＋可能なら多要素認証（MFA）。`admins` に載る UID の棚卸しを定期実施。
+12. **コード側の対策状況**（このリポジトリで対応済み）：チャット添付の格納型XSS、`data-*` 属性へのキー埋め込みによる属性ブレイクアウト、管理画面の `onclick` インジェクション、評価★の範囲外描画クラッシュを修正済み。今後 `innerHTML` に外部データを差し込む際は必ず `H.esc()`（本文は `H.linkify()`、URL属性は `H.safeUrl()`）を通すこと。
+
+> クライアント側の権限判定（`H.isAdmin` / `canEditCompany` / `canEvaluate` 等）は**UIの利便性のためのガードにすぎず**、実効的な保護にはなりません。上記 Realtime Database ルールでのサーバー側強制が唯一の防御線です。
