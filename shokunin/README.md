@@ -264,3 +264,4 @@ service firebase.storage {
 12. **コード側の対策状況**（このリポジトリで対応済み）：チャット添付の格納型XSS、`data-*` 属性へのキー埋め込みによる属性ブレイクアウト、管理画面の `onclick` インジェクション、評価★の範囲外描画クラッシュを修正済み。今後 `innerHTML` に外部データを差し込む際は必ず `H.esc()`（本文は `H.linkify()`、URL属性は `H.safeUrl()`）を通すこと。
 
 > クライアント側の権限判定（`H.isAdmin` / `canEditCompany` / `canEvaluate` 等）は**UIの利便性のためのガードにすぎず**、実効的な保護にはなりません。上記 Realtime Database ルールでのサーバー側強制が唯一の防御線です。
+
