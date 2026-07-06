@@ -537,7 +537,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-06-30b'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-30c'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-05'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -1985,7 +1985,7 @@ function inboxItems(){
     const crToMe = r.changeReq && r.changeReq.byUid && r.changeReq.byUid!==myUid;
     if(crToMe)
       items.push({key:'chg:'+r._key+':'+(r.changeReq.at||0),ic:'📅',t:'日程変更の依頼',d:`大工 ${r.craftsmanName||''}：新しい日程 ${r.changeReq.dateText||''}（${r.changeReq.byName||''}より）`,go:'req',at:r.changeReq.at||0});
-    const cancelledByOther = r.status==='cancelled' && r.cancelledByUid && r.cancelledByUid!==myUid;
+    const cancelledByOther = r.status==='cancelled' && r.cancelledByUid && r.cancelledByUid!==myUid && (r.cancelledAt||0)>seenAt(r._key);
     if(cancelledByOther)
       items.push({key:'cancel:'+r._key+':'+(r.cancelledAt||0),ic:'🚫',t:'取引が解除されました',d:`大工 ${r.craftsmanName||''}${r.cancelledReason?'（理由：'+r.cancelledReason+'）':''}`,go:'req',at:r.cancelledAt||0});
     if(r.lastMsgAt && r.lastMsgByUid && r.lastMsgByUid!==myUid && r.lastMsgAt>seenAt(r._key) && !crToMe && !cancelledByOther){
@@ -2017,9 +2017,25 @@ function renderInbox(){
   if(!myCompanyEntry()){ list.innerHTML=head+'<div class="empty" style="padding:18px">ログインすると、応援要請・日程変更・評価・連絡などのお知らせが表示されます。</div>'; bindNotifBtn(); return; }
   const items=inboxItems();
   if(!items.length){ list.innerHTML=head+'<div class="empty" style="padding:18px">未対応のお知らせはありません。</div>'; bindNotifBtn(); return; }
-  list.innerHTML=head+items.map(it=>`<div class="inboxitem" data-go="${it.go}"><div class="ii-ic">${it.ic}</div><div><div class="ii-t">${H.esc(it.t)}</div><div class="ii-d">${H.esc(it.d)}</div></div></div>`).join('');
+  list.innerHTML=head+items.map(it=>`<div class="inboxitem" data-go="${it.go}" data-key="${H.esc(it.key)}"><div class="ii-ic">${it.ic}</div><div><div class="ii-t">${H.esc(it.t)}</div><div class="ii-d">${H.esc(it.d)}</div></div></div>`).join('');
   bindNotifBtn();
-  list.querySelectorAll('.inboxitem').forEach(el=>el.onclick=()=>{ document.getElementById('inboxOv').classList.remove('on'); goTab(el.dataset.go); });
+  list.querySelectorAll('.inboxitem').forEach(el=>el.onclick=()=>{
+    markInboxItemSeen(el.dataset.key);
+    document.getElementById('inboxOv').classList.remove('on');
+    goTab(el.dataset.go);
+  });
+}
+// お知らせをタップして確認したら消えるようにする。
+// ただし「受信中の応援要請」「変更依頼への返答」「評価必須」は見ただけでは解決しない
+// to-do（実際に承認・返答・評価するまで残す）なので対象外。
+function markInboxItemSeen(key){
+  if(!key) return;
+  const parts=key.split(':');
+  const type=parts[0];
+  if(type==='contact'){ markContactSeen(); return; }
+  if(type==='decided' || type==='cancel' || type==='msg'){
+    const rid=parts[1]; if(rid) markSeen(rid);
+  }
 }
 function openInbox(){ renderInbox(); document.getElementById('inboxOv').classList.add('on'); }
 document.getElementById('inboxBtn').onclick=openInbox;
