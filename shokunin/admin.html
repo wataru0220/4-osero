@@ -553,9 +553,11 @@ function delCraftsman(key){
 function kItemHTML(k){
   const r=H.ratingFor(reviews,'craftsman',k._key, (companies[k.companyKey]||{}).ownerEmail);
   const ok=H.isApproved(approvals,k._key);
-  const free=H.upcomingFreeDates(k.avail);
+  const free=H.upcomingFreeDates(k.avail), maybe=H.upcomingMaybeDates(k.avail);
   const availPill = free.length
     ? `<span class="pill" style="background:#1aa260;color:#fff">空きあり ${H.mdFromYmd(free[0])}〜</span>`
+    : maybe.length
+    ? `<span class="pill" style="background:#e0a200;color:#fff">応相談 ${H.mdFromYmd(maybe[0])}〜</span>`
     : `<span class="pill" style="background:#9aa7b5;color:#fff">空き予定なし</span>`;
   return `<div class="item">
     <div class="top">

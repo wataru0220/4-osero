@@ -111,6 +111,13 @@
       .filter((d) => avail[d] === "free" && d >= t)
       .sort();
   };
+  // 応相談（条件次第で応援できる可能性がある日）
+  H.upcomingMaybeDates = (avail) => {
+    const t = H.todayStr();
+    return Object.keys(avail || {})
+      .filter((d) => avail[d] === "maybe" && d >= t)
+      .sort();
+  };
   // "M/D" 表記
   H.mdFromYmd = (s) => { const p = String(s).split("-"); return (+p[1]) + "/" + (+p[2]); };
 

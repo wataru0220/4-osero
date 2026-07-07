@@ -176,6 +176,8 @@
   .reqdates{display:flex; flex-wrap:wrap; gap:7px; max-height:180px; overflow:auto}
   .daychip{border:1.5px solid var(--line); background:#fff; color:var(--ink); border-radius:18px; padding:7px 12px; font-size:13px; font-weight:700; cursor:pointer}
   .daychip.on{background:var(--accent); color:#fff; border-color:var(--accent)}
+  .daychip.maybe{border-color:#e0a200; color:#b5790a}
+  .daychip.maybe.on{background:#e0a200; color:#fff; border-color:#e0a200}
   .cal-req{font-size:9px; line-height:1.1; margin-top:1px; background:#fff; color:var(--accent); border-radius:4px; padding:0 2px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .cal-cell.has-req{box-shadow:0 0 0 2px var(--accent) inset}
   .cqx{cursor:pointer; color:var(--warn); font-weight:800; margin-left:2px}
@@ -400,7 +402,8 @@
 <div class="ov" id="availOv">
   <div class="sheet">
     <h3 id="availTitle">空き予定（3ヶ月）</h3>
-    <div class="count" style="margin-bottom:8px">日付をタップで「空き ⇔ 未設定」を切替。<b>横にスワイプ（指でなぞる）すると連続でまとめて入力</b>できます。今日〜3か月後まで登録できます。</div>
+    <div class="count" style="margin-bottom:8px">入力モードを選んでから、日付をタップで切替。<b>横にスワイプ（指でなぞる）すると連続でまとめて入力</b>できます。今日〜3か月後まで登録できます。</div>
+    <div class="row" id="availModeRow" style="margin-bottom:8px"></div>
     <div id="availCal"></div>
     <div class="row" style="margin-top:10px">
       <button class="btn ghost" id="availCancel">閉じる</button>
@@ -537,7 +540,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-06-30c'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-30d'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-05'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -926,9 +929,11 @@ function renderFind(){
   const arr=H.toArr(craftsmen).filter(k=>H.isApproved(approvals,k._key)).filter(matchFilter)
     .sort((a,b)=>{
       const ea=H.upcomingFreeDates(a.avail), eb=H.upcomingFreeDates(b.avail);
-      const ha=ea.length?1:0, hb=eb.length?1:0;
-      if(hb!==ha) return hb-ha;                         // ①空きがある大工を上に
-      if(ha&&hb && ea[0]!==eb[0]) return ea[0]<eb[0]?-1:1; // 早い空き日順
+      const ma=H.upcomingMaybeDates(a.avail), mb=H.upcomingMaybeDates(b.avail);
+      const ta=ea.length?2:(ma.length?1:0), tb=eb.length?2:(mb.length?1:0); // ①空き→②応相談→③予定なし の順
+      if(tb!==ta) return tb-ta;
+      if(ta===2 && ea[0]!==eb[0]) return ea[0]<eb[0]?-1:1;                 // 空き同士は早い日順
+      if(ta===1 && ma[0]!==mb[0]) return ma[0]<mb[0]?-1:1;                 // 応相談同士も早い日順
       const fa=favCraft.has(a._key)?1:0, fb=favCraft.has(b._key)?1:0;
       return fb-fa;                                     // 同条件ならお気に入りを上に
     });
@@ -943,9 +948,11 @@ function kCardHTML(k){
   const ownerEmail=(companies[k.companyKey]||{}).ownerEmail;
   const r=H.ratingFor(reviews,'craftsman',k._key, ownerEmail);
   const isOwn=(myCompanyEntry()||{})._key===k.companyKey;
-  const free=H.upcomingFreeDates(k.avail);
+  const free=H.upcomingFreeDates(k.avail), maybe=H.upcomingMaybeDates(k.avail);
   const badge = free.length
     ? `<span class="badge" style="background:#1aa260"><span class="dot"></span>空きあり ${H.mdFromYmd(free[0])}〜</span>`
+    : maybe.length
+    ? `<span class="badge" style="background:#e0a200"><span class="dot"></span>応相談 ${H.mdFromYmd(maybe[0])}〜</span>`
     : `<span class="badge" style="background:#9aa7b5"><span class="dot"></span>空き予定なし</span>`;
   const fav=favCraft.has(k._key);
   return `<div class="kcard">
@@ -962,6 +969,7 @@ function kCardHTML(k){
     <div class="meta">${(()=>{const a=H.craftAge(k);return a?a+'歳・':'';})()}${H.esc(k.gender||'')} ｜ 技術力: ${H.stars(r.avg)}${r.count?`（${r.count}件・利用者全員の平均）`:''}</div>
     <div style="margin-top:6px"><span class="price">${H.fmtPrice(k.price)}</span></div>
     ${free.length?`<div class="availmemo">📅 直近の空き：${free.slice(0,6).map(H.mdFromYmd).join('、')}${free.length>6?' …':''}</div>`:''}
+    ${maybe.length?`<div class="availmemo" style="color:#b5790a">🤔 応相談（条件次第で対応可）：${maybe.slice(0,6).map(H.mdFromYmd).join('、')}${maybe.length>6?' …':''}</div>`:''}
     ${k.availMemo?`<div class="availmemo">🗓 ${H.esc(k.availMemo)}</div>`:''}
     ${(k.good&&k.good.length)?`<div class="seclabel">得意作業</div>${H.chips(k.good)}`:''}
     ${(k.ng&&k.ng.length)?`<div class="seclabel">NG作業</div>${H.chips(k.ng,'ng')}`:''}
@@ -1148,13 +1156,13 @@ function renderOwnArea(mine){
     html+='<div class="empty">自社の大工がまだ登録されていません。上の「＋ 大工を登録」から追加してください。</div>';
   }else{
     html+='<div class="card">'+arr.map(k=>{
-      const free=H.upcomingFreeDates(k.avail);
+      const free=H.upcomingFreeDates(k.avail), maybe=H.upcomingMaybeDates(k.avail);
       return `
       <div class="upd-row">
         <div class="nm">${H.esc(k.name)} ${H.isApproved(approvals,k._key)?'<span class="okbadge">認証済✓</span>':'<span class="waitbadge">認証待ち</span>'}</div>
-        ${free.length?`<span class="okbadge">空き ${free.length}日</span>`:'<span class="waitbadge">空き予定なし</span>'}
+        ${free.length?`<span class="okbadge">空き ${free.length}日</span>`:''}${maybe.length?`<span class="okbadge" style="background:#e0a200">応相談 ${maybe.length}日</span>`:''}${(!free.length&&!maybe.length)?'<span class="waitbadge">空き予定なし</span>':''}
       </div>
-      <div class="count" style="margin:-2px 0 6px">${free.length?'直近：'+free.slice(0,6).map(H.mdFromYmd).join('、'):'「空き予定」から空き日を登録してください'}</div>
+      <div class="count" style="margin:-2px 0 6px">${free.length?'直近の空き：'+free.slice(0,6).map(H.mdFromYmd).join('、'):''}${maybe.length?(free.length?'／':'')+'応相談：'+maybe.slice(0,6).map(H.mdFromYmd).join('、'):''}${(!free.length&&!maybe.length)?'「空き予定」から空き日・応相談を登録してください':''}</div>
       <button class="btn ghost sm ce-avail" data-key="${H.esc(k._key)}" style="width:100%;margin-bottom:6px">📅 空き予定（3ヶ月）を編集</button>
       <div class="field" style="margin:0 0 8px">
         <input type="text" class="updMemo" data-key="${H.esc(k._key)}" value="${H.esc(k.availMemo||'')}" placeholder="補足メモ（任意）">
@@ -1397,6 +1405,7 @@ document.getElementById('ceSave').onclick=()=>{
 
 // ===== 空き予定カレンダー（3ヶ月） =====
 let availDraft={}, availCraftKey=null;  // 自社の編集用
+let availMode='free';  // 入力モード（'free'=空き／'maybe'=応相談）。タップ・スワイプの入力先を切り替える
 let avDrag={started:false, active:false, paint:'', startX:0, startY:0, startCell:null, justDragged:false}; // スワイプ連続入力
 function calToday(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 // 今日から3か月後（同日）の日付文字列。表示はこの「現在〜3か月後」を日割りで行う
@@ -1429,7 +1438,8 @@ function monthGridHTML(monthDate, availMap, editable, reqMap, endS){
 }
 function calHTML(availMap, editable, reqMap){
   const endS=calEnd3();
-  return '<div class="cal-legend"><span class="lg" style="background:#1aa260"></span>空き（タップで切替・一日単位）／表示は今日〜3か月後まで'
+  const legend=H.statuses.map(s=>`<span class="lg" style="background:${s.color}"></span>${H.esc(s.label)}`).join('　');
+  return '<div class="cal-legend">'+legend+(editable?'（タップで切替・一日単位）':'')+'／表示は今日〜3か月後まで'
     + (reqMap&&Object.keys(reqMap).length?'　<span style="color:var(--accent);font-weight:800">🤝＝応援要請が入っている日（要請元の工務店名）</span>':'')+'</div>'
     + calMonthsRange().map(md=>monthGridHTML(md, availMap||{}, editable, reqMap, endS)).join('');
 }
@@ -1447,19 +1457,26 @@ function reqMapForCraft(kid){
 }
 function openAvailEditor(key){
   const k=craftsmen[key]; if(!k) return;
-  availCraftKey=key; availDraft=Object.assign({}, k.avail||{});
+  availCraftKey=key; availDraft=Object.assign({}, k.avail||{}); availMode='free';
   document.getElementById('availTitle').textContent='空き予定（3ヶ月）：'+k.name;
+  renderAvailModeRow();
   renderAvailEditor();
   document.getElementById('availOv').classList.add('on');
+}
+// 入力モード（空き／応相談）の切替ボタン
+function renderAvailModeRow(){
+  const row=document.getElementById('availModeRow'); if(!row) return;
+  row.innerHTML=H.statuses.map(s=>`<button type="button" class="btn ${availMode===s.key?'':'ghost'} sm" data-mode="${s.key}" style="${availMode===s.key?`background:${s.color};border-color:${s.color}`:''}">${H.esc(s.label)}</button>`).join('');
+  row.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ availMode=b.dataset.mode; renderAvailModeRow(); });
 }
 function renderAvailEditor(){
   const box=document.getElementById('availCal');
   box.innerHTML=calHTML(availDraft, true, reqMapForCraft(availCraftKey));
-  // タップ＝1日トグル（ドラッグ後のクリックは無視）
+  // タップ＝現在の入力モードでトグル（同じ状態なら解除／それ以外なら上書き）。ドラッグ後のクリックは無視
   box.querySelectorAll('.cal-cell.edit').forEach(c=>c.onclick=()=>{
     if(avDrag.justDragged){ avDrag.justDragged=false; return; }
     const ds=c.dataset.date;
-    if(availDraft[ds]) delete availDraft[ds]; else availDraft[ds]='free';
+    if(availDraft[ds]===availMode) delete availDraft[ds]; else availDraft[ds]=availMode;
     renderAvailEditor();
   });
   bindAvailDrag(box);
@@ -1468,8 +1485,8 @@ function renderAvailEditor(){
 function paintAvailCell(cell){
   if(!cell||!cell.dataset||!cell.dataset.date) return;
   const ds=cell.dataset.date;
-  if(avDrag.paint==='free') availDraft[ds]='free'; else delete availDraft[ds];
-  const color = avDrag.paint==='free' ? H.statusOf('free').color : '';
+  if(avDrag.paint==='erase') delete availDraft[ds]; else availDraft[ds]=avDrag.paint;
+  const color = avDrag.paint!=='erase' ? H.statusOf(avDrag.paint).color : '';
   cell.style.background=color||''; cell.style.color=color?'#fff':''; cell.style.borderColor=color||'';
 }
 // カレンダーを横スワイプ（ドラッグ）して連続入力。縦方向はスクロール優先。
@@ -1478,7 +1495,7 @@ function bindAvailDrag(box){
     const cell=e.target&&e.target.closest?e.target.closest('.cal-cell.edit'):null;
     if(!cell||!cell.dataset.date) return;
     avDrag.started=true; avDrag.active=false; avDrag.startX=e.clientX; avDrag.startY=e.clientY; avDrag.startCell=cell;
-    avDrag.paint = availDraft[cell.dataset.date] ? 'erase' : 'free'; // 空きなら消す／空なら空きにする
+    avDrag.paint = availDraft[cell.dataset.date]===availMode ? 'erase' : availMode; // 現在の入力モードと同じなら消す／それ以外なら入力モードで塗る
     try{ box.setPointerCapture(e.pointerId); }catch(_){}
   };
   box.onpointermove=e=>{
@@ -1514,9 +1531,13 @@ document.getElementById('availSave').onclick=()=>{
 // ===== 自社の大工 全員の空き予定をまとめて表示（読み取り専用） =====
 function teamAvailMap(){
   const mine=myCompanyEntry(); if(!mine) return {};
-  const map={}; // 日付 -> [大工名]
+  const map={}; // 日付 -> { free:[大工名], maybe:[大工名] }
   H.toArr(craftsmen).filter(k=>k.companyKey===mine._key).forEach(k=>{
-    Object.keys(k.avail||{}).forEach(d=>{ if(k.avail[d]==='free') (map[d]=map[d]||[]).push(k.name||'(無名)'); });
+    Object.keys(k.avail||{}).forEach(d=>{
+      const st=k.avail[d]; if(st!=='free' && st!=='maybe') return;
+      const e=map[d]=map[d]||{free:[],maybe:[]};
+      e[st].push(k.name||'(無名)');
+    });
   });
   return map;
 }
@@ -1528,8 +1549,9 @@ function teamMonthGridHTML(monthDate, map, endS){
   for(let d=1;d<=days;d++){
     const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     if(ds<todayS || ds>endS){ cells+='<div class="cal-cell empty"></div>'; continue; }
-    const cnt=(map[ds]||[]).length;
-    cells+=`<div class="cal-cell team" data-date="${ds}" style="${cnt>0?'background:#1aa260;color:#fff;border-color:#1aa260':''}">${d}${cnt>0?`<div class="cal-cnt">${cnt}</div>`:''}</div>`;
+    const e=map[ds]||{free:[],maybe:[]}, cnt=e.free.length+e.maybe.length;
+    const color = e.free.length ? H.statusOf('free').color : (e.maybe.length ? H.statusOf('maybe').color : '');
+    cells+=`<div class="cal-cell team" data-date="${ds}" style="${color?`background:${color};color:#fff;border-color:${color}`:''}">${d}${cnt>0?`<div class="cal-cnt">${cnt}</div>`:''}</div>`;
   }
   return `<div class="cal-month"><div class="cal-title">${y}年${m+1}月</div><div class="cal-grid">`
     +['日','月','火','水','木','金','土'].map(w=>`<div class="cal-wd">${w}</div>`).join('')+cells+`</div></div>`;
@@ -1537,7 +1559,8 @@ function teamMonthGridHTML(monthDate, map, endS){
 function renderTeamAvail(){
   const map=teamAvailMap();
   const box=document.getElementById('teamAvailCal'); if(!box) return;
-  box.innerHTML='<div class="cal-legend"><span class="lg" style="background:#1aa260"></span>緑＝空きの大工がいる日（数字＝人数）。日付をタップで名前を表示／今日〜3か月後</div>'
+  const legend=H.statuses.map(s=>`<span class="lg" style="background:${s.color}"></span>${H.esc(s.label)}`).join('　');
+  box.innerHTML='<div class="cal-legend">'+legend+'の大工がいる日（数字＝人数）。日付をタップで名前を表示／今日〜3か月後</div>'
     + calMonthsRange().map(md=>teamMonthGridHTML(md, map, calEnd3())).join('');
   box.querySelectorAll('.cal-cell.team[data-date]').forEach(c=>c.onclick=()=>{
     box.querySelectorAll('.cal-cell.team.sel').forEach(x=>x.classList.remove('sel'));
@@ -1548,11 +1571,12 @@ function renderTeamAvail(){
 }
 function showTeamDay(ds, map){
   const el=document.getElementById('teamAvailDetail'); if(!el) return;
-  const names=map[ds]||[];
+  const e=map[ds]||{free:[],maybe:[]};
   const wd=['日','月','火','水','木','金','土'][new Date(ds).getDay()];
-  el.innerHTML=`<div class="teamday"><div class="d">📅 ${H.esc(H.mdFromYmd(ds))}（${wd}）</div>${names.length
-    ? '空いている大工（'+names.length+'名）：<span class="nm">'+names.map(H.esc).join('、')+'</span>'
-    : '<span style="color:var(--sub)">この日に空きの大工はいません</span>'}</div>`;
+  const lines=[];
+  if(e.free.length) lines.push('空き（'+e.free.length+'名）：<span class="nm">'+e.free.map(H.esc).join('、')+'</span>');
+  if(e.maybe.length) lines.push('応相談（'+e.maybe.length+'名）：<span class="nm" style="color:#b5790a">'+e.maybe.map(H.esc).join('、')+'</span>');
+  el.innerHTML=`<div class="teamday"><div class="d">📅 ${H.esc(H.mdFromYmd(ds))}（${wd}）</div>${lines.length ? lines.join('<br>') : '<span style="color:var(--sub)">この日に空き・応相談の大工はいません</span>'}</div>`;
 }
 function openTeamAvail(){ if(!myCompanyEntry()) return; renderTeamAvail(); document.getElementById('teamAvailOv').classList.add('on'); }
 document.getElementById('teamAvailClose').onclick=()=>document.getElementById('teamAvailOv').classList.remove('on');
@@ -1695,8 +1719,8 @@ function openRequestForm(kid){
   if(reviewNeededCount()>0){ H.toast('活用後の評価が未入力です。先に「応援」タブで評価してください','err'); goTab('req'); return; }
   const k=craftsmen[kid]; if(!k) return;
   if(k.companyKey===mine._key){ H.toast('自社の大工です','err'); return; }
-  const free=H.upcomingFreeDates(k.avail||{});
-  if(!free.length){ H.toast('この大工は現在「空き」の日がありません。応援要請できません','err'); return; }
+  const free=H.upcomingFreeDates(k.avail||{}), maybe=H.upcomingMaybeDates(k.avail||{});
+  if(!free.length && !maybe.length){ H.toast('この大工は現在「空き」「応相談」の日がありません。応援要請できません','err'); return; }
   editReqKey=null;
   reqTargetCraft=Object.assign({_key:kid},k);
   document.getElementById('reqTitle').textContent='応援要請：'+k.name;
@@ -1713,12 +1737,17 @@ let reqSelDates=new Set();
 function renderReqDates(craft, preselected){
   reqSelDates=new Set(preselected||[]);
   const box=document.getElementById('reqDates'); if(!box) return;
-  let free=H.upcomingFreeDates((craft&&craft.avail)||{});
-  (preselected||[]).forEach(d=>{ if(free.indexOf(d)<0) free.push(d); }); // 編集時：既存の選択日も残す
-  free=[...new Set(free)].sort();
-  if(!free.length){ box.innerHTML='<div class="count" style="color:var(--warn)">この大工は現在「空き」の日がありません。要請できません。</div>'; return; }
+  const free=H.upcomingFreeDates((craft&&craft.avail)||{});
+  const maybe=H.upcomingMaybeDates((craft&&craft.avail)||{});
+  const typeOf={}; free.forEach(d=>typeOf[d]='free'); maybe.forEach(d=>typeOf[d]='maybe');
+  (preselected||[]).forEach(d=>{ if(!typeOf[d]) typeOf[d]='free'; }); // 編集時：既存の選択日も残す
+  const all=Object.keys(typeOf).sort();
+  if(!all.length){ box.innerHTML='<div class="count" style="color:var(--warn)">この大工は現在「空き」「応相談」の日がありません。要請できません。</div>'; return; }
   const wd=['日','月','火','水','木','金','土'];
-  box.innerHTML=free.map(d=>`<button type="button" class="daychip${reqSelDates.has(d)?' on':''}" data-d="${d}">${H.mdFromYmd(d)}（${wd[new Date(d).getDay()]}）</button>`).join('');
+  box.innerHTML=all.map(d=>{ const isMaybe=typeOf[d]==='maybe';
+    return `<button type="button" class="daychip${isMaybe?' maybe':''}${reqSelDates.has(d)?' on':''}" data-d="${d}">${H.mdFromYmd(d)}（${wd[new Date(d).getDay()]}）${isMaybe?'・応相談':''}</button>`;
+  }).join('')
+  + (maybe.length?'<div class="count" style="width:100%;margin-top:6px">🤔 応相談の日は確定ではありません。メッセージ欄で条件をご相談ください。</div>':'');
   box.querySelectorAll('.daychip').forEach(b=>b.onclick=()=>{ const d=b.dataset.d; if(reqSelDates.has(d)){ reqSelDates.delete(d); b.classList.remove('on'); } else { reqSelDates.add(d); b.classList.add('on'); } });
 }
 function openRequestEdit(rid){
@@ -2047,7 +2076,7 @@ const HELP_TOPICS=[
   { t:'ログイン・新規登録', k:'ログイン 新規登録 メール パスワード アカウント', a:'「自社の大工」タブでメールアドレスとパスワードでログインします（初めての方は「新規登録」）。大工をさがす・工務店の閲覧はログイン不要ですが、登録・応援要請・評価にはログインが必要です。' },
   { t:'工務店を登録する', k:'工務店 会社 登録 自社', a:'「自社の大工」タブでログイン後、「＋工務店を登録」から自社を登録します。登録時に最初の大工を1名以上登録します（ふりがなを入れるとあいうえお順で正しく並びます）。' },
   { t:'大工を登録・編集する', k:'大工 職人 登録 編集 追加 下書き', a:'「自社の大工」タブ→「＋大工を登録」。氏名・日給（税込）・得意作業・NG作業・資格などを入力します。入力中の内容は自動保存され、途中で閉じても消えません（「下書きあり」と表示）。' },
-  { t:'空き予定を登録する', k:'空き 空き予定 カレンダー 稼働 日程', a:'「自社の大工」タブで各大工の「📅空き予定（3ヶ月）」を開き、空いている日をタップして登録します。登録した空き日は他社の検索に反映されます。' },
+  { t:'空き予定を登録する', k:'空き 空き予定 カレンダー 稼働 日程 応相談', a:'「自社の大工」タブで各大工の「📅空き予定（3ヶ月）」を開き、入力モード（空き／応相談）を選んでから日付をタップして登録します。「応相談」は条件次第で対応できる可能性がある日で、確定の「空き」とは別に色分けして表示されます。登録内容は他社の検索に反映されます。' },
   { t:'大工をさがす', k:'さがす 検索 大工 絞り込み 得意 資格 お気に入り', a:'「大工をさがす」タブで、名前・工務店・得意作業・資格で検索できます。「空き予定のみ」「★お気に入りのみ」で絞り込みも可能です。技術力の★は利用者全員の平均です。' },
   { t:'工務店から大工をさがす', k:'工務店 会社 所属 大工 応援要請', a:'「工務店」タブで会社を選び「👷所属大工を見る・応援要請」を開くと、その会社の大工が表示され、そのまま応援要請できます。' },
   { t:'応援要請を送る', k:'応援要請 依頼 借りる お願い 送る', a:'大工カードの「🤝この大工に応援要請」から、工事場所（県・市・区）、作業期間、連絡先などを入力して送信します。番地など詳しい住所は送信後の「条件のやり取り」で当事者間で伝えます。' },
