@@ -540,7 +540,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-06-30e'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-30f'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-05'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -798,9 +798,10 @@ function showGate(mode){
   if(mode==='apply'){
     b.innerHTML=head+`
       <h2>✍️ 入会を申請</h2>
-      <div class="gsub">工務店の情報を入力して申請してください。<b>事務局の審査</b>を通過するとログインしてご利用いただけます（審査結果はメール等で事務局よりご連絡します）。</div>
+      <div class="gsub">初めての方は下記に工務店の情報を入力して申請してください。<b>すでにログインアカウントをお持ちの方（以前ご利用中に会員権限が外れた方など）は、いつものメール・パスワードだけ入力すれば申請できます。会社情報の入力は不要です（登録済みのデータがそのまま残ります）。</b>事務局の審査を通過するとログインしてご利用いただけます。</div>
       <div class="field"><label>メールアドレス（ログインID）</label><input type="email" id="aEmail" autocomplete="username" placeholder="you@example.com"></div>
-      <div class="field"><label>パスワード（6文字以上）</label><input type="password" id="aPass" autocomplete="new-password" placeholder="ログイン用パスワード"></div>
+      <div class="field"><label>パスワード</label><input type="password" id="aPass" autocomplete="new-password" placeholder="ログイン用パスワード（新規の方は6文字以上で決めてください）"></div>
+      <div class="gsub" style="margin:10px 0 4px">↓ <b>初めて申請する方のみ</b>入力してください（登録済みの方は空欄でOK）</div>
       <div class="field"><label>工務店名</label><input type="text" id="aCompany" placeholder="例）山田工務店"></div>
       <div class="field"><label>ご担当者名</label><input type="text" id="aContact" placeholder="例）山田 太郎"></div>
       <div class="field"><label>電話番号</label><input type="tel" id="aTel" placeholder="例）022-000-0000"></div>
@@ -862,15 +863,14 @@ function gateApply(){
   const contact=(document.getElementById('aContact').value||'').trim();
   const tel=(document.getElementById('aTel').value||'').trim();
   if(!email||pass.length<6){ gateErr('メールと6文字以上のパスワードを入力してください'); return; }
-  if(!company){ gateErr('工務店名を入力してください'); return; }
   const btn=document.getElementById('aSubmit'); if(btn){ btn.disabled=true; }
-  // 新規アカウント作成→そのユーザーで入会申請を書き込む（承認されるまで会員ではない）。
-  // 過去に退会等で会員だけ取り消された等、既にログインアカウントが存在する場合は
-  // signUpが失敗する（auth/email-already-in-use）ため、そのパスワードでサインインして
-  // 同じアカウントのまま再申請できるようにする。
-  DB.auth.signUp(email,pass).catch(e=>{
-    if(e && e.code==='auth/email-already-in-use') return DB.auth.signIn(email,pass);
-    throw e;
+  // まず「既にログインアカウントを持っている」前提でサインインを試す（退会・呼び戻し等で
+  // 会員権限だけが外れた方の再申請）。成功すれば工務店名などの入力は不要＝登録済みの
+  // 会社データ（companies）がそのまま残る。サインインに失敗した場合だけ、真の新規登録
+  // とみなして signUp に進む（この場合のみ工務店名が必須）。
+  DB.auth.signIn(email,pass).catch(()=>{
+    if(!company){ return Promise.reject({code:'need-company'}); }
+    return DB.auth.signUp(email,pass);
   }).then(()=>{
     const u=DB.auth.user;
     return DB.set('memberApplications/'+u.uid, { email:email, company:company, contact:contact, tel:tel, at:Date.now() });
@@ -879,9 +879,10 @@ function gateApply(){
     applyGate();
   }).catch(e=>{
     if(btn) btn.disabled=false;
-    const msg=(e&&e.code==='auth/wrong-password')
-      ? 'このメールは既に登録されています。パスワードが違うようです。ログイン画面の「パスワードを忘れた方はこちら」からリセットしてください。'
-      : (H.authErrMsg?H.authErrMsg(e):((e&&e.message)||String(e)));
+    let msg;
+    if(e && e.code==='need-company') msg='ログインできませんでした。初めて申請する方は工務店名を入力してください。既にアカウントをお持ちの方はパスワードをご確認ください（お忘れの場合は「パスワードを忘れた方はこちら」）。';
+    else if(e && e.code==='auth/email-already-in-use') msg='このメールは既に登録されています。パスワードが違うようです。ログイン画面の「パスワードを忘れた方はこちら」からリセットしてください。';
+    else msg=(H.authErrMsg?H.authErrMsg(e):((e&&e.message)||String(e)));
     gateErr(msg);
   });
 }

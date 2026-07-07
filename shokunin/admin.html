@@ -857,20 +857,31 @@ function renderMemberApps(){
   const arr=H.toArr(memberApps).sort((a,b)=>(b.at||0)-(a.at||0));
   const cnt=document.getElementById('appCount'); if(cnt) cnt.textContent=arr.length?('（'+arr.length+'件）'):'（なし）';
   if(!arr.length){ box.innerHTML='<div class="empty" style="padding:12px">審査待ちの申請はありません。</div>'; return; }
-  box.innerHTML=arr.map(a=>`<div class="item">
-    <div class="top"><div><div class="nm">${H.esc(a.company||'(工務店名なし)')}</div>
-      <div class="meta">👤${H.esc(a.contact||'—')}　📞${H.esc(a.tel||'—')}</div>
+  box.innerHTML=arr.map(a=>{
+    // 会社名が未入力の申請（既存アカウントでの再申請）は、登録済みの会社データを
+    // メールで照合して表示する（削除・呼び戻しで会員権限だけ外れた方など）。
+    const existing=!a.company && a.email ? H.toArr(companies).find(c=>c.ownerEmail===a.email) : null;
+    const nameHtml = a.company ? H.esc(a.company)
+      : existing ? H.esc(existing.name)+'<span class="waitbadge" style="margin-left:6px">既存アカウントの再申請</span>'
+      : '(工務店名なし・新規申請)';
+    return `<div class="item">
+    <div class="top"><div><div class="nm">${nameHtml}</div>
+      <div class="meta">👤${H.esc(a.contact||(existing&&existing.contact)||'—')}　📞${H.esc(a.tel||(existing&&existing.tel)||'—')}</div>
       <div class="meta">🔑${H.esc(a.email||'—')}　申請：${H.fmtDate(a.at)}</div></div></div>
     <div class="acts">
       <button class="btn sm" onclick="approveMember('${a._key}')">✅ 承認して会員にする</button>
       <button class="btn danger sm" onclick="rejectMember('${a._key}')">却下</button>
-    </div></div>`).join('');
+    </div></div>`;
+  }).join('');
 }
 function approveMember(uid){
   const a=memberApps[uid]; if(!a) return;
-  if(!confirm('「'+(a.company||'')+'」を会員として承認しますか？')) return;
+  // 会社名が未入力（既存アカウントの再申請）なら、登録済みの会社データから補う
+  const existing=!a.company && a.email ? H.toArr(companies).find(c=>c.ownerEmail===a.email) : null;
+  const company=a.company||(existing&&existing.name)||'', contact=a.contact||(existing&&existing.contact)||'', tel=a.tel||(existing&&existing.tel)||'';
+  if(!confirm('「'+(company||a.email||'')+'」を会員として承認しますか？')) return;
   const me=DB.auth.user&&DB.auth.user.email;
-  DB.set('members/'+uid, { email:a.email||'', company:a.company||'', contact:a.contact||'', tel:a.tel||'', approvedAt:Date.now(), approvedBy:me, via:'application' })
+  DB.set('members/'+uid, { email:a.email||'', company:company, contact:contact, tel:tel, approvedAt:Date.now(), approvedBy:me, via:'application' })
     .then(()=>DB.remove('memberApplications/'+uid))
     .then(()=>H.toast('会員として承認しました','ok'))
     .catch(e=>H.toast('承認できませんでした：'+((e&&e.message)||e),'err'));
