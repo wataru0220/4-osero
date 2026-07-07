@@ -542,7 +542,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-06-30h'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-30i'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-05'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -1596,15 +1596,30 @@ document.getElementById('availSave').onclick=()=>{
 };
 
 // ===== 自社の大工 全員の空き予定をまとめて表示（読み取り専用） =====
+// 空き・応相談の入力に加えて、自社が関わる応援（自社の大工を貸し出し／他社の大工を借り受け）の
+// 日程も重ねて表示し、実際の稼働状況が一目で分かるようにする。
 function teamAvailMap(){
   const mine=myCompanyEntry(); if(!mine) return {};
-  const map={}; // 日付 -> { free:[大工名], maybe:[大工名] }
+  const map={}; // 日付 -> { free:[大工名], maybe:[大工名], deals:[{type,partner,craftsmanName,status}] }
+  const ensure=(d)=>map[d]=map[d]||{free:[],maybe:[],deals:[]};
   H.toArr(craftsmen).filter(k=>k.companyKey===mine._key).forEach(k=>{
     Object.keys(k.avail||{}).forEach(d=>{
       const st=k.avail[d]; if(st!=='free' && st!=='maybe') return;
-      const e=map[d]=map[d]||{free:[],maybe:[]};
-      e[st].push(k.name||'(無名)');
+      ensure(d)[st].push(k.name||'(無名)');
     });
+  });
+  H.toArr(reqByMe).forEach(r=>{
+    if(r.status!=='pending' && r.status!=='accepted') return;
+    const lend = r.toCompanyKey===mine._key;     // 自社の大工を貸し出す（応援に出す）
+    const borrow = r.fromCompanyKey===mine._key; // 他社の大工を借り受ける（応援を頼む）
+    if(!lend && !borrow) return;
+    const days=(r.dates&&r.dates.length)?r.dates:rangeDays(r.dateFrom,r.dateTo);
+    days.forEach(d=>ensure(d).deals.push({
+      type: lend?'lend':'borrow',
+      partner: lend?(r.fromCompanyName||'?'):(r.toCompanyName||'?'),
+      craftsmanName: r.craftsmanName||'',
+      status: r.status
+    }));
   });
   return map;
 }
@@ -1616,9 +1631,10 @@ function teamMonthGridHTML(monthDate, map, endS){
   for(let d=1;d<=days;d++){
     const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     if(ds<todayS || ds>endS){ cells+='<div class="cal-cell empty"></div>'; continue; }
-    const e=map[ds]||{free:[],maybe:[]}, cnt=e.free.length+e.maybe.length;
+    const e=map[ds]||{free:[],maybe:[],deals:[]}, cnt=e.free.length+e.maybe.length;
     const color = e.free.length ? H.statusOf('free').color : (e.maybe.length ? H.statusOf('maybe').color : '');
-    cells+=`<div class="cal-cell team" data-date="${ds}" style="${color?`background:${color};color:#fff;border-color:${color}`:''}">${d}${cnt>0?`<div class="cal-cnt">${cnt}</div>`:''}</div>`;
+    const dealTag = e.deals.length ? `<div class="cal-req" title="${H.esc(e.deals.map(x=>(x.type==='lend'?'貸出':'借受')+'：'+x.partner).join('、'))}">🤝${e.deals.length>1?e.deals.length:''}</div>` : '';
+    cells+=`<div class="cal-cell team${e.deals.length?' has-req':''}" data-date="${ds}" style="${color?`background:${color};color:#fff;border-color:${color}`:''}">${d}${cnt>0?`<div class="cal-cnt">${cnt}</div>`:''}${dealTag}</div>`;
   }
   return `<div class="cal-month"><div class="cal-title">${y}年${m+1}月</div><div class="cal-grid">`
     +['日','月','火','水','木','金','土'].map(w=>`<div class="cal-wd">${w}</div>`).join('')+cells+`</div></div>`;
@@ -1627,7 +1643,7 @@ function renderTeamAvail(){
   const map=teamAvailMap();
   const box=document.getElementById('teamAvailCal'); if(!box) return;
   const legend=H.statuses.map(s=>`<span class="lg" style="background:${s.color}"></span>${H.esc(s.label)}`).join('　');
-  box.innerHTML='<div class="cal-legend">'+legend+'の大工がいる日（数字＝人数）。日付をタップで名前を表示／今日〜3か月後</div>'
+  box.innerHTML='<div class="cal-legend">'+legend+'の大工がいる日（数字＝人数）／🤝＝自社が関わる応援（貸出・借受）がある日。日付をタップで詳細を表示／今日〜3か月後</div>'
     + calMonthsRange().map(md=>teamMonthGridHTML(md, map, calEnd3())).join('');
   box.querySelectorAll('.cal-cell.team[data-date]').forEach(c=>c.onclick=()=>{
     box.querySelectorAll('.cal-cell.team.sel').forEach(x=>x.classList.remove('sel'));
@@ -1638,12 +1654,17 @@ function renderTeamAvail(){
 }
 function showTeamDay(ds, map){
   const el=document.getElementById('teamAvailDetail'); if(!el) return;
-  const e=map[ds]||{free:[],maybe:[]};
+  const e=map[ds]||{free:[],maybe:[],deals:[]};
   const wd=['日','月','火','水','木','金','土'][new Date(ds).getDay()];
   const lines=[];
   if(e.free.length) lines.push('空き（'+e.free.length+'名）：<span class="nm">'+e.free.map(H.esc).join('、')+'</span>');
   if(e.maybe.length) lines.push('応相談（'+e.maybe.length+'名）：<span class="nm" style="color:#b5790a">'+e.maybe.map(H.esc).join('、')+'</span>');
-  el.innerHTML=`<div class="teamday"><div class="d">📅 ${H.esc(H.mdFromYmd(ds))}（${wd}）</div>${lines.length ? lines.join('<br>') : '<span style="color:var(--sub)">この日に空き・応相談の大工はいません</span>'}</div>`;
+  (e.deals||[]).forEach(x=>{
+    const label = x.type==='lend' ? '🤝 貸出中' : '🤝 借受中';
+    const statusTag = x.status==='pending' ? '（申請中）' : '';
+    lines.push(`${label}${statusTag}：<span class="nm" style="color:var(--accent)">${H.esc(x.partner)}</span>${x.craftsmanName?'・大工 '+H.esc(x.craftsmanName):''}`);
+  });
+  el.innerHTML=`<div class="teamday"><div class="d">📅 ${H.esc(H.mdFromYmd(ds))}（${wd}）</div>${lines.length ? lines.join('<br>') : '<span style="color:var(--sub)">この日に空き・応相談・応援の予定はありません</span>'}</div>`;
 }
 function openTeamAvail(){ if(!myCompanyEntry()) return; renderTeamAvail(); document.getElementById('teamAvailOv').classList.add('on'); }
 document.getElementById('teamAvailClose').onclick=()=>document.getElementById('teamAvailOv').classList.remove('on');
