@@ -542,7 +542,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-06-30g'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-30h'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-05'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -1466,7 +1466,7 @@ document.getElementById('ceSave').onclick=()=>{
 // ===== 空き予定カレンダー（3ヶ月） =====
 let availDraft={}, availCraftKey=null;  // 自社の編集用
 let availMode='free';  // 入力モード（'free'=空き／'maybe'=応相談）。タップ・スワイプの入力先を切り替える
-let avDrag={started:false, active:false, paint:'', startX:0, startY:0, startCell:null, justDragged:false}; // スワイプ連続入力
+let avDrag={started:false, active:false, paint:'', startX:0, startY:0, startCell:null}; // スワイプ連続入力
 function calToday(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 // 今日から3か月後（同日）の日付文字列。表示はこの「現在〜3か月後」を日割りで行う
 function calEnd3(){ const d=new Date(); d.setMonth(d.getMonth()+3); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -1532,14 +1532,14 @@ function renderAvailModeRow(){
 function renderAvailEditor(){
   const box=document.getElementById('availCal');
   box.innerHTML=calHTML(availDraft, true, reqMapForCraft(availCraftKey));
-  // タップ＝現在の入力モードでトグル（同じ状態なら解除／それ以外なら上書き）。ドラッグ後のクリックは無視
-  box.querySelectorAll('.cal-cell.edit').forEach(c=>c.onclick=()=>{
-    if(avDrag.justDragged){ avDrag.justDragged=false; return; }
-    const ds=c.dataset.date;
-    if(availDraft[ds]===availMode) delete availDraft[ds]; else availDraft[ds]=availMode;
-    renderAvailEditor();
-  });
+  // タップとスワイプはどちらもポインターイベント（pointerup）内で確定させる。
+  // ネイティブの click イベントには頼らない（setPointerCapture と click の相性問題が
+  // 一部ブラウザ・端末にあり、タップが効かないことがあるための対策）。
   bindAvailDrag(box);
+}
+// 1日ぶんを現在の入力モードでトグル（同じ状態なら解除／それ以外なら上書き）
+function toggleAvailCell(ds){
+  if(availDraft[ds]===availMode) delete availDraft[ds]; else availDraft[ds]=availMode;
 }
 // 1セルを現在の塗りモードで反映（再描画せず見た目も更新）
 function paintAvailCell(cell){
@@ -1549,7 +1549,8 @@ function paintAvailCell(cell){
   const color = avDrag.paint!=='erase' ? H.statusOf(avDrag.paint).color : '';
   cell.style.background=color||''; cell.style.color=color?'#fff':''; cell.style.borderColor=color||'';
 }
-// カレンダーを横スワイプ（ドラッグ）して連続入力。縦方向はスクロール優先。
+// カレンダーをタップ（1日トグル）または横スワイプ（ドラッグで連続入力）できるようにする。
+// 縦方向の動きはスクロール優先。判定・確定はすべて pointer イベントで行う。
 function bindAvailDrag(box){
   box.onpointerdown=e=>{
     const cell=e.target&&e.target.closest?e.target.closest('.cal-cell.edit'):null;
@@ -1570,10 +1571,16 @@ function bindAvailDrag(box){
     const cell=el&&el.closest?el.closest('.cal-cell.edit'):null;
     if(cell) paintAvailCell(cell);
   };
-  box.onpointerup=box.onpointercancel=()=>{
-    if(avDrag.active){ avDrag.justDragged=true; renderAvailEditor(); }
+  box.onpointerup=e=>{
+    if(avDrag.active){
+      renderAvailEditor(); // ドラッグで入力が確定：凡例・見た目を最新化
+    } else if(avDrag.started && avDrag.startCell && avDrag.startCell.dataset && avDrag.startCell.dataset.date){
+      toggleAvailCell(avDrag.startCell.dataset.date); // 動きのないタップ＝1日トグル
+      renderAvailEditor();
+    }
     avDrag.started=false; avDrag.active=false;
   };
+  box.onpointercancel=()=>{ avDrag.started=false; avDrag.active=false; };
 }
 document.getElementById('availCancel').onclick=()=>document.getElementById('availOv').classList.remove('on');
 document.getElementById('availOv').onclick=e=>{ if(e.target.id==='availOv') e.currentTarget.classList.remove('on'); };
