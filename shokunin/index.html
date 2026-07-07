@@ -125,6 +125,8 @@
   .waitbadge{display:inline-block; font-size:11px; font-weight:800; color:#8a5a00; background:#fff7e8; border:1px solid #ffe1a8; border-radius:6px; padding:1px 6px; vertical-align:middle}
   .reqsec{font-size:13px; color:var(--sub); font-weight:800; margin:14px 4px 8px}
   .reqcard{border:1px solid var(--line); border-radius:13px; padding:13px; margin-bottom:11px; background:#fff}
+  .reqcard.flash-highlight{animation:reqFlash 2.2s ease-out}
+  @keyframes reqFlash{ 0%{box-shadow:0 0 0 4px rgba(234,88,12,.55); background:#fff3ea} 100%{box-shadow:0 0 0 0 rgba(234,88,12,0); background:#fff} }
   .newtag{display:inline-block; background:var(--warn); color:#fff; font-size:10px; font-weight:800; border-radius:5px; padding:1px 6px; vertical-align:middle}
   .favbtn{flex:none; border:1.5px solid var(--line); background:#fff; border-radius:9px; padding:6px 10px; font-size:15px; cursor:pointer; line-height:1}
   .favbtn.on{color:#f5a623; border-color:#f5d28a; background:#fff9ec}
@@ -540,7 +542,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-06-30f'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-30g'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-05'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -787,21 +789,23 @@ function showGate(mode){
       <div class="gerr" id="gErr"></div>
       <div style="margin-top:12px"><a class="deallink" id="gReset" style="cursor:pointer">🔑 パスワードを忘れた方はこちら</a></div>
       <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
-      <div class="gsub" style="margin:0 0 8px">まだ会員でない方（工務店）は、入会をご申請ください。事務局の審査後にご利用いただけます。</div>
-      <button class="btn ghost full" id="gToApply">✍️ 入会を申請する（新規）</button>`;
+      <div class="gsub" style="margin:0 0 8px">以前ご利用いただいていた方（退会・利用停止等で会員権限が外れた方）はこちら。</div>
+      <button class="btn full" id="gToRejoin" style="margin-bottom:10px">🔁 再入会する（以前ご利用の方）</button>
+      <div class="gsub" style="margin:0 0 8px">まだ一度もご利用でない方（工務店）は、入会をご申請ください。事務局の審査後にご利用いただけます。</div>
+      <button class="btn ghost full" id="gToApply">✍️ 新規に入会を申請する</button>`;
     document.getElementById('gLoginBtn').onclick=gateLogin;
     document.getElementById('gPass').addEventListener('keydown',e=>{ if(e.key==='Enter') gateLogin(); });
     document.getElementById('gReset').onclick=gateReset;
+    document.getElementById('gToRejoin').onclick=()=>showGate('rejoin');
     document.getElementById('gToApply').onclick=()=>showGate('apply');
     return;
   }
   if(mode==='apply'){
     b.innerHTML=head+`
-      <h2>✍️ 入会を申請</h2>
-      <div class="gsub">初めての方は下記に工務店の情報を入力して申請してください。<b>すでにログインアカウントをお持ちの方（以前ご利用中に会員権限が外れた方など）は、いつものメール・パスワードだけ入力すれば申請できます。会社情報の入力は不要です（登録済みのデータがそのまま残ります）。</b>事務局の審査を通過するとログインしてご利用いただけます。</div>
+      <h2>✍️ 新規に入会を申請</h2>
+      <div class="gsub">初めてご利用の工務店様向けです。下記に情報を入力して申請してください。事務局の審査を通過するとログインしてご利用いただけます。<br>※以前ご利用中に会員権限が外れた方は、<a class="deallink" id="aToRejoin" style="cursor:pointer">こちら（再入会）</a>の方が簡単です。</div>
       <div class="field"><label>メールアドレス（ログインID）</label><input type="email" id="aEmail" autocomplete="username" placeholder="you@example.com"></div>
-      <div class="field"><label>パスワード</label><input type="password" id="aPass" autocomplete="new-password" placeholder="ログイン用パスワード（新規の方は6文字以上で決めてください）"></div>
-      <div class="gsub" style="margin:10px 0 4px">↓ <b>初めて申請する方のみ</b>入力してください（登録済みの方は空欄でOK）</div>
+      <div class="field"><label>パスワード（6文字以上）</label><input type="password" id="aPass" autocomplete="new-password" placeholder="ログイン用パスワードを決めてください"></div>
       <div class="field"><label>工務店名</label><input type="text" id="aCompany" placeholder="例）山田工務店"></div>
       <div class="field"><label>ご担当者名</label><input type="text" id="aContact" placeholder="例）山田 太郎"></div>
       <div class="field"><label>電話番号</label><input type="tel" id="aTel" placeholder="例）022-000-0000"></div>
@@ -810,6 +814,27 @@ function showGate(mode){
       <div style="margin-top:12px"><a class="deallink" id="aBack" style="cursor:pointer">← ログインに戻る</a></div>`;
     document.getElementById('aSubmit').onclick=gateApply;
     document.getElementById('aBack').onclick=()=>showGate('login');
+    document.getElementById('aToRejoin').onclick=()=>showGate('rejoin');
+    return;
+  }
+  if(mode==='rejoin'){
+    b.innerHTML=head+`
+      <h2>🔁 再入会する</h2>
+      <div class="gsub">以前ご利用いただいていた方向けです。<b>いつものメールアドレス・パスワードを入力するだけ</b>で申請できます。会社情報の入力は不要です（登録済みのデータがそのまま残ります）。事務局の承認後にご利用いただけます。</div>
+      <div class="field"><label>メールアドレス</label><input type="email" id="rEmail" autocomplete="username" placeholder="you@example.com"></div>
+      <div class="field"><label>パスワード</label><input type="password" id="rPass" autocomplete="current-password" placeholder="以前設定したパスワード"></div>
+      <div class="row"><button class="btn full" id="rSubmit">再入会を申請する</button></div>
+      <div class="gerr" id="gErr"></div>
+      <div style="margin-top:12px"><a class="deallink" id="rReset" style="cursor:pointer">🔑 パスワードを忘れた方はこちら</a></div>
+      <div style="margin-top:8px"><a class="deallink" id="rBack" style="cursor:pointer">← ログインに戻る</a></div>`;
+    document.getElementById('rSubmit').onclick=gateRejoin;
+    document.getElementById('rPass').addEventListener('keydown',e=>{ if(e.key==='Enter') gateRejoin(); });
+    document.getElementById('rReset').onclick=()=>{
+      const email=(document.getElementById('rEmail').value||'').trim();
+      if(!email){ gateErr('メールアドレスを入力してから押してください'); return; }
+      DB.auth.resetPassword(email).then(()=>H.toast('パスワード再設定メールを送信しました','ok')).catch(e=>gateErr((e&&e.message)||String(e)));
+    };
+    document.getElementById('rBack').onclick=()=>showGate('login');
     return;
   }
   if(mode==='adminBootstrap'){
@@ -883,6 +908,28 @@ function gateApply(){
     if(e && e.code==='need-company') msg='ログインできませんでした。初めて申請する方は工務店名を入力してください。既にアカウントをお持ちの方はパスワードをご確認ください（お忘れの場合は「パスワードを忘れた方はこちら」）。';
     else if(e && e.code==='auth/email-already-in-use') msg='このメールは既に登録されています。パスワードが違うようです。ログイン画面の「パスワードを忘れた方はこちら」からリセットしてください。';
     else msg=(H.authErrMsg?H.authErrMsg(e):((e&&e.message)||String(e)));
+    gateErr(msg);
+  });
+}
+// 再入会：既存アカウントへのサインインのみを行う（新規登録はしない）。
+// 会社情報は登録済みのデータがそのまま残るため、入力を求めない。
+function gateRejoin(){
+  const email=(document.getElementById('rEmail').value||'').trim();
+  const pass=(document.getElementById('rPass').value||'');
+  if(!email||!pass){ gateErr('メールアドレスとパスワードを入力してください'); return; }
+  const btn=document.getElementById('rSubmit'); if(btn){ btn.disabled=true; }
+  DB.auth.signIn(email,pass).then(()=>{
+    const u=DB.auth.user;
+    return DB.set('memberApplications/'+u.uid, { email:email, company:'', contact:'', tel:'', at:Date.now(), rejoin:true });
+  }).then(()=>{
+    H.toast('再入会を申請しました。事務局の承認をお待ちください','ok');
+    applyGate();
+  }).catch(e=>{
+    if(btn) btn.disabled=false;
+    const notFound = e && (e.code==='auth/user-not-found' || e.code==='auth/wrong-password' || e.code==='auth/invalid-credential' || e.code==='auth/invalid-login-credentials');
+    const msg = notFound
+      ? 'ログインできませんでした。メールアドレス・パスワードをご確認ください（お忘れの場合は下の「パスワードを忘れた方はこちら」）。初めてご利用の場合は「新規に入会を申請」をご利用ください。'
+      : (H.authErrMsg?H.authErrMsg(e):((e&&e.message)||String(e)));
     gateErr(msg);
   });
 }
@@ -2029,10 +2076,10 @@ function inboxItems(){
       items.push({key:'chg:'+r._key+':'+(r.changeReq.at||0),ic:'📅',t:'日程変更の依頼',d:`大工 ${r.craftsmanName||''}：新しい日程 ${r.changeReq.dateText||''}（${r.changeReq.byName||''}より）`,go:'req',at:r.changeReq.at||0});
     const cancelledByOther = r.status==='cancelled' && r.cancelledByUid && r.cancelledByUid!==myUid && (r.cancelledAt||0)>seenAt(r._key);
     if(cancelledByOther)
-      items.push({key:'cancel:'+r._key+':'+(r.cancelledAt||0),ic:'🚫',t:'取引が解除されました',d:`大工 ${r.craftsmanName||''}${r.cancelledReason?'（理由：'+r.cancelledReason+'）':''}`,go:'req',at:r.cancelledAt||0});
+      items.push({key:'cancel:'+r._key+':'+(r.cancelledAt||0),ic:'🚫',t:'取引が解除されました',d:`大工 ${r.craftsmanName||''}（${r.dateText||'日程不明'}の予定）${r.cancelledReason?'・理由：'+r.cancelledReason:''}`,go:'req',at:r.cancelledAt||0});
     if(r.lastMsgAt && r.lastMsgByUid && r.lastMsgByUid!==myUid && r.lastMsgAt>seenAt(r._key) && !crToMe && !cancelledByOther){
       const other = r.toCompanyKey===mine._key ? r.fromCompanyName : r.toCompanyName;
-      items.push({key:'msg:'+r._key+':'+r.lastMsgAt,ic:'💴',t:'条件のやり取りに新着',d:`${other||''}・大工 ${r.craftsmanName||''}`,go:'req',at:r.lastMsgAt});
+      items.push({key:'msg:'+r._key+':'+r.lastMsgAt,ic:'💴',t:'条件のやり取りに新着',d:`${other||''}・大工 ${r.craftsmanName||''}（${r.dateText||'日程不明'}）`,go:'req',at:r.lastMsgAt});
     }
     if(needsMyReview(r))
       items.push({key:'rev:'+r._key,ic:'⭐',t:'活用後の評価が必須です',d:`大工 ${r.craftsmanName||''}（${r.dateText||''}）`,go:'req',at:(r.dateTo?Date.parse(r.dateTo):0)});
@@ -2062,22 +2109,37 @@ function renderInbox(){
   list.innerHTML=head+items.map(it=>`<div class="inboxitem" data-go="${it.go}" data-key="${H.esc(it.key)}"><div class="ii-ic">${it.ic}</div><div><div class="ii-t">${H.esc(it.t)}</div><div class="ii-d">${H.esc(it.d)}</div></div></div>`).join('');
   bindNotifBtn();
   list.querySelectorAll('.inboxitem').forEach(el=>el.onclick=()=>{
-    markInboxItemSeen(el.dataset.key);
+    const key=el.dataset.key, go=el.dataset.go, rid=extractRid(key);
+    markInboxItemSeen(key);
     document.getElementById('inboxOv').classList.remove('on');
-    goTab(el.dataset.go);
+    goTab(go);
+    if(go==='req' && rid) focusRequestCard(rid); // 過去の取引でも埋もれず見つけられるよう、該当カードまでスクロール＆ハイライト
   });
 }
 // お知らせをタップして確認したら消えるようにする。
 // ただし「受信中の応援要請」「変更依頼への返答」「評価必須」は見ただけでは解決しない
 // to-do（実際に承認・返答・評価するまで残す）なので対象外。
+function extractRid(key){ if(!key) return null; const parts=key.split(':'); return (parts[0]==='contact')?null:(parts[1]||null); }
 function markInboxItemSeen(key){
   if(!key) return;
-  const parts=key.split(':');
-  const type=parts[0];
+  const type=(key.split(':'))[0];
   if(type==='contact'){ markContactSeen(); return; }
   if(type==='decided' || type==='cancel' || type==='msg'){
-    const rid=parts[1]; if(rid) markSeen(rid);
+    const rid=extractRid(key); if(rid) markSeen(rid);
   }
+}
+// 応援タブ内の該当カードまでスクロールして一時的にハイライトする（過去の取引フォルダに
+// 入っている場合は自動で開く）。完了・解除済みの取引はカードが多い中で埋もれやすいため。
+function focusRequestCard(rid){
+  const r=reqByMe[rid]; if(!r) return;
+  if(isPastReq(r) && !pastReqOpen){ pastReqOpen=true; renderRequests(); }
+  setTimeout(()=>{
+    const card=document.querySelector('.reqcard[data-rid="'+CSS.escape(rid)+'"]');
+    if(!card) return;
+    card.scrollIntoView({behavior:'smooth', block:'center'});
+    card.classList.add('flash-highlight');
+    setTimeout(()=>card.classList.remove('flash-highlight'), 2200);
+  }, 150);
 }
 function openInbox(){ renderInbox(); document.getElementById('inboxOv').classList.add('on'); }
 document.getElementById('inboxBtn').onclick=openInbox;
@@ -2358,7 +2420,7 @@ function reqCardHTML(r,kind){
       : ''}
       <button class="btn ghost sm rv-co" data-cokey="${H.esc(partnerKey)}" data-coname="${H.esc(partnerName)}" style="width:100%;margin-top:6px">⭐ 工務店「${H.esc(partnerName)}」を評価</button>
     </div>` : '';
-  return `<div class="reqcard"${(isNew||needReview)?' style="border-color:var(--warn);box-shadow:0 0 0 1px var(--warn) inset"':''}>
+  return `<div class="reqcard" data-rid="${H.esc(r._key)}"${(isNew||needReview)?' style="border-color:var(--warn);box-shadow:0 0 0 1px var(--warn) inset"':''}>
     <div style="display:flex;justify-content:space-between;gap:8px">
       <div>${isNew?'<span class="newtag">NEW</span> ':''}<b>${H.esc(r.craftsmanName)}</b> <span class="count" style="display:inline">${kind==='recv'?'← '+H.esc(r.fromCompanyName):'→ '+H.esc(r.toCompanyName)}</span></div>
       <div>${reqStatusLabel(r.status)}</div>
