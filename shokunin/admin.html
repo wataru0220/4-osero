@@ -431,15 +431,18 @@ function boot(){
 // ===== 工務店 =====
 // 登録・編集は利用者アプリで行う。管理者は一覧確認・削除のみ。
 function stripKey(o){ const x=Object.assign({},o); delete x._key; return x; }
-// 退会（ソフト削除）：所属大工・認証・評価ごと deletedCompanies に退避し、現役から外す
+// 退会（ソフト削除）：所属大工・認証・評価・会員（ログイン）権限ごと deletedCompanies に退避し、現役から外す
 function delCompany(key){
   const c=companies[key]||{};
   const crafts=H.toArr(craftsmen).filter(k=>k.companyKey===key);
-  if(!confirm('「'+(c.name||'')+'」を退会（削除）しますか？'+(crafts.length?'\n所属の大工 '+crafts.length+' 名も対象です。':'')+'\n※1か月以内なら管理アプリから呼び戻せます。')) return;
+  // この工務店のログイン担当者（会員）を、メールが一致するもので特定する
+  const memberEntry=H.toArr(members).find(m=>m.email && c.ownerEmail && m.email===c.ownerEmail);
+  if(!confirm('「'+(c.name||'')+'」を退会（削除）しますか？'+(crafts.length?'\n所属の大工 '+crafts.length+' 名も対象です。':'')+(memberEntry?'\n担当者のログイン（会員）権限も一時停止されます。':'')+'\n※1か月以内なら管理アプリから呼び戻せます。')) return;
   const craftKeys=new Set(crafts.map(k=>k._key));
   const archive={ deletedAt:Date.now(), name:c.name||'', company:stripKey(c), craftsmen:{}, approvals:{}, reviews:{} };
   crafts.forEach(k=>{ archive.craftsmen[k._key]=stripKey(k); if(H.isApproved(approvals,k._key)) archive.approvals[k._key]=true; });
   H.toArr(reviews).forEach(r=>{ if((r.type==='company'&&r.targetKey===key)||(r.type==='craftsman'&&craftKeys.has(r.targetKey))) archive.reviews[r._key]=stripKey(r); });
+  if(memberEntry) archive.member={ uid:memberEntry._key, data:stripKey(memberEntry) };
   // 退避（バックアップ）の保存が確実に成功したことを確認してから、実データを削除する。
   // 先に削除すると、退避の書き込みが失敗（Firebaseルール未設定等）した場合に
   // バックアップが残らないまま元データが消えてしまうため、必ずこの順序で行う。
@@ -447,20 +450,22 @@ function delCompany(key){
     const ops=[];
     crafts.forEach(k=>{ ops.push(DB.remove('craftsmen/'+k._key)); ops.push(DB.remove('approvals/craftsman/'+k._key)); });
     Object.keys(archive.reviews).forEach(rid=>ops.push(DB.remove('reviews/'+rid)));
+    if(memberEntry) ops.push(DB.remove('members/'+memberEntry._key)); // ログイン（会員）権限も一時停止
     ops.push(DB.remove('companies/'+key));
     return Promise.all(ops);
   }).then(()=>H.toast('退会にしました（1か月以内なら呼び戻せます）','ok'))
     .catch(e=>H.toast('退会処理を中断しました（データは削除していません）：'+((e&&e.message)||e),'err'));
 }
-// 呼び戻し：退避データを現役に書き戻す
+// 呼び戻し：退避データ（会員＝ログイン権限を含む）を現役に書き戻す
 function restoreCompany(key){
   const a=deletedCompanies[key]; if(!a) return;
-  if(!confirm('「'+(a.name||'')+'」を呼び戻しますか？（所属の大工も復元されます）')) return;
+  if(!confirm('「'+(a.name||'')+'」を呼び戻しますか？（所属の大工・担当者のログイン権限も復元されます）')) return;
   const ops=[];
   if(a.company) ops.push(DB.set('companies/'+key, a.company));
   Object.keys(a.craftsmen||{}).forEach(kid=>ops.push(DB.set('craftsmen/'+kid, a.craftsmen[kid])));
   Object.keys(a.approvals||{}).forEach(kid=>ops.push(DB.set('approvals/craftsman/'+kid, true)));
   Object.keys(a.reviews||{}).forEach(rid=>ops.push(DB.set('reviews/'+rid, a.reviews[rid])));
+  if(a.member && a.member.uid) ops.push(DB.set('members/'+a.member.uid, a.member.data));
   ops.push(DB.remove('deletedCompanies/'+key));
   Promise.all(ops)
     .then(()=>H.toast('呼び戻しました','ok'))
@@ -532,15 +537,18 @@ function renderCoList(){
   list.innerHTML=arr.map(c=>{
     const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===c._key).length;
     const r=H.ratingFor(reviews,'company',c._key, c.ownerEmail);
+    const isMember=c.ownerEmail && H.toArr(members).some(m=>m.email===c.ownerEmail);
     return `<div class="item">
       <div class="top">
         <div><div class="nm">${H.esc(c.name)}</div>
         <div class="meta">📍${H.esc(c.area||'—')}　👤${H.esc(c.contact||'—')}　📞${H.esc(c.tel||'—')}</div>
         <div class="meta">🔑${H.esc(c.ownerEmail||'（ログインメール未設定）')}</div>
         <div class="meta">所属大工 ${cnt}名　評価 ${H.stars(r.avg)}（${r.count}件）</div>
-        <div class="meta">📜 規約同意：${c.termsAgreed?('<span style="color:#1a7a45;font-weight:800">済</span>（版'+H.esc(c.termsAgreed)+(c.termsAgreedAt?'・'+H.fmtDate(c.termsAgreedAt):'')+'）'):'<span style="color:var(--warn);font-weight:800">未</span>'}</div></div>
+        <div class="meta">📜 規約同意：${c.termsAgreed?('<span style="color:#1a7a45;font-weight:800">済</span>（版'+H.esc(c.termsAgreed)+(c.termsAgreedAt?'・'+H.fmtDate(c.termsAgreedAt):'')+'）'):'<span style="color:var(--warn);font-weight:800">未</span>'}</div>
+        <div class="meta">🎫 会員（ログイン許可）：${c.ownerEmail?(isMember?'<span style="color:#1a7a45;font-weight:800">済</span>':'<span style="color:var(--warn);font-weight:800">未登録・ログイン不可</span>'):'—'}</div></div>
       </div>
       ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
+      ${(!isMember&&c.ownerEmail)?'<div class="note" style="background:#fff7e8;color:#8a5a00">⚠️ この工務店の担当者はまだ会員登録されていないため、ログインできません。ご本人にログイン画面から「入会を申請」してもらい、下の「🎫会員」タブで承認してください。</div>':''}
       <div class="acts">
         <button class="btn danger sm co-del" data-key="${H.esc(c._key)}">削除</button>
       </div></div>`;

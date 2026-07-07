@@ -540,7 +540,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-06-30d'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-06-30e'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-05'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -864,14 +864,26 @@ function gateApply(){
   if(!email||pass.length<6){ gateErr('メールと6文字以上のパスワードを入力してください'); return; }
   if(!company){ gateErr('工務店名を入力してください'); return; }
   const btn=document.getElementById('aSubmit'); if(btn){ btn.disabled=true; }
-  // アカウント作成→そのユーザーで入会申請を書き込む（承認されるまで会員ではない）
-  DB.auth.signUp(email,pass).then(()=>{
+  // 新規アカウント作成→そのユーザーで入会申請を書き込む（承認されるまで会員ではない）。
+  // 過去に退会等で会員だけ取り消された等、既にログインアカウントが存在する場合は
+  // signUpが失敗する（auth/email-already-in-use）ため、そのパスワードでサインインして
+  // 同じアカウントのまま再申請できるようにする。
+  DB.auth.signUp(email,pass).catch(e=>{
+    if(e && e.code==='auth/email-already-in-use') return DB.auth.signIn(email,pass);
+    throw e;
+  }).then(()=>{
     const u=DB.auth.user;
     return DB.set('memberApplications/'+u.uid, { email:email, company:company, contact:contact, tel:tel, at:Date.now() });
   }).then(()=>{
     H.toast('入会申請を送信しました。事務局の審査をお待ちください','ok');
     applyGate();
-  }).catch(e=>{ if(btn) btn.disabled=false; gateErr(H.authErrMsg?H.authErrMsg(e):((e&&e.message)||String(e))); });
+  }).catch(e=>{
+    if(btn) btn.disabled=false;
+    const msg=(e&&e.code==='auth/wrong-password')
+      ? 'このメールは既に登録されています。パスワードが違うようです。ログイン画面の「パスワードを忘れた方はこちら」からリセットしてください。'
+      : (H.authErrMsg?H.authErrMsg(e):((e&&e.message)||String(e)));
+    gateErr(msg);
+  });
 }
 // ログイン直後などに、主要データを一括取得して即座に反映する
 function refreshCoreData(){
