@@ -143,11 +143,16 @@
           ".read": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || root.child('shokunin/companies').child($ck).child('ownerEmail').val() === auth.token.email )",
           ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || root.child('shokunin/companies').child($ck).child('ownerEmail').val() === auth.token.email )"
         }
+      },
+      "deletedCompanies": {
+        ".read": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true",
+        ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
       }
     }
   }
 }
 ```
+- **退会した工務店の呼び戻し**：`deletedCompanies` は管理者のみ読み書きできます（上記ルールに含まれています。別途追加は不要）。管理者が工務店を削除すると、まずここに元データが退避され、退避の保存が確認できてから実データが削除されます。1か月以内なら管理アプリの「🗑退会した工務店」から**管理者の操作だけで元データのまま復元**できます。もし退会・呼び戻しが失敗する場合は、上記ルールに `deletedCompanies` が含まれているか（特に以前このルールを個別に追加していた場合、上記の統合版に更新されているか）をご確認ください。
 - **会員制**：`companies`/`craftsmen`/`reviews`/`approvals` の閲覧は「**`members` に登録された会員**または管理者」だけに限定されます。会員でないログインユーザーはマッチング画面を一切読めません（アプリ側でも門番が表示されます）。
 - `members`（会員）と `memberApplications`（入会申請）を追加。会員登録は**管理者のみ**が書き込めます。入会申請は本人が作成でき、管理者が承認（`members` に登録）または却下します。会員アカウントの発行・審査は **admin.html の「🎫会員」タブ**から行います。
 - **認証プロバイダ**：Firebaseコンソールで「**メール/パスワード**」を有効化。会員制のため「**匿名**」は不要（無効のままでOK。有効でも会員以外は読めません）。
@@ -155,15 +160,8 @@
 - `deals`（条件のやり取り）は当事者2社だけが読み書き可。**管理者は対象外**＝取引内容は見られません。
 - 旧バージョンから更新する場合は、`shokunin` 直下の `".read": "auth != null"` を**消して**上記の各コレクションごとの `.read` に置き換えてください（会員制・当事者限定にするため）。
 - ルール公開後、反映まで数十秒かかることがあります。
-- **退会した工務店の保管（呼び戻し用）** を使う場合、`shokunin` の中に下記の `deletedCompanies`（管理者のみ読み書き）を追加してください。簡易ルール（`shokunin: { ".read": "auth != null", ".write": "auth != null" }`）のままなら追加不要で動作します。
-```json
-"deletedCompanies": {
-  ".read": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true",
-  ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
-}
-```
 
-> 段階的に始めたい場合は、まず `"shokunin": { ".read": true, ".write": true }` で動作確認してから上記の厳格ルールへ移行すると安全です。
+> 段階的に始めたい場合は、まず `"shokunin": { ".read": true, ".write": true }` で動作確認してから上記の厳格ルールへ移行すると安全です（この簡易ルールなら `deletedCompanies` を含め追加設定は不要です）。
 
 **(3) 写真・小さいPDFは設定不要**
 連絡・条件のやり取りの📎で、**写真は自動で圧縮**してそのまま送れます（Storage設定は不要）。小さいPDF（約800KBまで）も送れます。

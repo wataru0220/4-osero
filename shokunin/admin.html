@@ -417,7 +417,8 @@ function boot(){
   DB.on('reviews', v=>{ reviews=v||{}; renderHist(); renderCoList(); renderKList(); });
   DB.on('approvals', v=>{ approvals=v||{}; renderKList(); });
   DB.on('requests', v=>{ requests=v||{}; renderReqList(); });
-  DB.on('deletedCompanies', v=>{ deletedCompanies=v||{}; purgeExpiredDeleted(); renderDeletedCompanies(); });
+  DB.on('deletedCompanies', v=>{ deletedCompanies=v||{}; purgeExpiredDeleted(); renderDeletedCompanies(); },
+    e=>{ const box=document.getElementById('deletedCoBox'); if(box) box.innerHTML='<div class="empty" style="padding:12px;color:var(--warn)">退会した工務店の一覧を読み込めませんでした（Firebaseのルールに deletedCompanies の設定が必要です。READMEをご確認ください）：'+H.esc((e&&e.message)||e)+'</div>'; });
   DB.on('members', v=>{ members=v||{}; renderMembers(); },
     e=>{ const box=document.getElementById('memberList'); if(box) box.innerHTML='<div class="empty" style="padding:12px;color:var(--warn)">会員一覧を読み込めませんでした（Firebaseのルールが最新か確認してください）：'+H.esc((e&&e.message)||e)+'</div>'; });
   DB.on('memberApplications', v=>{ memberApps=v||{}; renderMemberApps(); updateAdminBadge(); },
@@ -439,13 +440,17 @@ function delCompany(key){
   const archive={ deletedAt:Date.now(), name:c.name||'', company:stripKey(c), craftsmen:{}, approvals:{}, reviews:{} };
   crafts.forEach(k=>{ archive.craftsmen[k._key]=stripKey(k); if(H.isApproved(approvals,k._key)) archive.approvals[k._key]=true; });
   H.toArr(reviews).forEach(r=>{ if((r.type==='company'&&r.targetKey===key)||(r.type==='craftsman'&&craftKeys.has(r.targetKey))) archive.reviews[r._key]=stripKey(r); });
-  const ops=[ DB.set('deletedCompanies/'+key, archive) ];
-  crafts.forEach(k=>{ ops.push(DB.remove('craftsmen/'+k._key)); ops.push(DB.remove('approvals/craftsman/'+k._key)); });
-  Object.keys(archive.reviews).forEach(rid=>ops.push(DB.remove('reviews/'+rid)));
-  ops.push(DB.remove('companies/'+key));
-  Promise.all(ops)
-    .then(()=>H.toast('退会にしました（1か月以内なら呼び戻せます）','ok'))
-    .catch(e=>H.toast('処理できませんでした：'+((e&&e.message)||e),'err'));
+  // 退避（バックアップ）の保存が確実に成功したことを確認してから、実データを削除する。
+  // 先に削除すると、退避の書き込みが失敗（Firebaseルール未設定等）した場合に
+  // バックアップが残らないまま元データが消えてしまうため、必ずこの順序で行う。
+  DB.set('deletedCompanies/'+key, archive).then(()=>{
+    const ops=[];
+    crafts.forEach(k=>{ ops.push(DB.remove('craftsmen/'+k._key)); ops.push(DB.remove('approvals/craftsman/'+k._key)); });
+    Object.keys(archive.reviews).forEach(rid=>ops.push(DB.remove('reviews/'+rid)));
+    ops.push(DB.remove('companies/'+key));
+    return Promise.all(ops);
+  }).then(()=>H.toast('退会にしました（1か月以内なら呼び戻せます）','ok'))
+    .catch(e=>H.toast('退会処理を中断しました（データは削除していません）：'+((e&&e.message)||e),'err'));
 }
 // 呼び戻し：退避データを現役に書き戻す
 function restoreCompany(key){
