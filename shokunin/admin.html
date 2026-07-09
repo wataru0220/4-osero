@@ -864,10 +864,15 @@ function renderMemberApps(){
     const nameHtml = a.company ? H.esc(a.company)
       : existing ? H.esc(existing.name)+'<span class="waitbadge" style="margin-left:6px">既存アカウントの再申請</span>'
       : '(工務店名なし・新規申請)';
+    // 新規申請（既存の会社データが無く、最初の大工の情報が含まれる）は、承認と同時に
+    // 工務店・大工も自動登録される旨を表示する（会員登録と利用者登録を1回に集約）。
+    const willCreateCompany = !existing && a.craftsman && a.craftsman.name;
+    const craftsmanLine = willCreateCompany ? `<div class="meta">🪚 最初の大工：${H.esc(a.craftsman.name)}${a.craftsman.price?'（日給'+Number(a.craftsman.price).toLocaleString()+'円）':''}<span class="waitbadge" style="margin-left:6px">承認で工務店・大工を自動登録</span></div>` : '';
     return `<div class="item">
     <div class="top"><div><div class="nm">${nameHtml}</div>
-      <div class="meta">👤${H.esc(a.contact||(existing&&existing.contact)||'—')}　📞${H.esc(a.tel||(existing&&existing.tel)||'—')}</div>
-      <div class="meta">🔑${H.esc(a.email||'—')}　申請：${H.fmtDate(a.at)}</div></div></div>
+      <div class="meta">👤${H.esc(a.contact||(existing&&existing.contact)||'—')}　📞${H.esc(a.tel||(existing&&existing.tel)||'—')}${a.area?'　📍'+H.esc(a.area):''}</div>
+      <div class="meta">🔑${H.esc(a.email||'—')}　申請：${H.fmtDate(a.at)}</div>
+      ${craftsmanLine}</div></div>
     <div class="acts">
       <button class="btn sm" onclick="approveMember('${a._key}')">✅ 承認して会員にする</button>
       <button class="btn danger sm" onclick="rejectMember('${a._key}')">却下</button>
@@ -879,11 +884,23 @@ function approveMember(uid){
   // 会社名が未入力（既存アカウントの再申請）なら、登録済みの会社データから補う
   const existing=!a.company && a.email ? H.toArr(companies).find(c=>c.ownerEmail===a.email) : null;
   const company=a.company||(existing&&existing.name)||'', contact=a.contact||(existing&&existing.contact)||'', tel=a.tel||(existing&&existing.tel)||'';
-  if(!confirm('「'+(company||a.email||'')+'」を会員として承認しますか？')) return;
+  // 新規申請（会員登録と同時に応募内容から工務店・最初の大工を自動登録する＝1回で完結）
+  const willCreateCompany = !existing && a.craftsman && a.craftsman.name;
+  const confirmMsg = willCreateCompany
+    ? '「'+(company||a.email||'')+'」を会員として承認し、工務店と最初の大工「'+a.craftsman.name+'」も登録しますか？'
+    : '「'+(company||a.email||'')+'」を会員として承認しますか？';
+  if(!confirm(confirmMsg)) return;
   const me=DB.auth.user&&DB.auth.user.email;
-  DB.set('members/'+uid, { email:a.email||'', company:company, contact:contact, tel:tel, approvedAt:Date.now(), approvedBy:me, via:'application' })
+  const ops=[ DB.set('members/'+uid, { email:a.email||'', company:company, contact:contact, tel:tel, approvedAt:Date.now(), approvedBy:me, via:'application' }) ];
+  if(willCreateCompany){
+    ops.push(
+      DB.push('companies', { name:company, nameKana:a.nameKana||'', contact:contact, tel:tel, area:a.area||'', notes:'', ownerEmail:a.email, createdAt:Date.now() })
+        .then(newKey=>DB.push('craftsmen', { companyKey:newKey, companyName:company, name:a.craftsman.name, price:a.craftsman.price||null, unit:'day', age:null, gender:'', good:[], ng:[], quals:[], availMemo:'', avail:{}, createdAt:Date.now(), updatedAt:Date.now() }))
+    );
+  }
+  Promise.all(ops)
     .then(()=>DB.remove('memberApplications/'+uid))
-    .then(()=>H.toast('会員として承認しました','ok'))
+    .then(()=>H.toast(willCreateCompany?'会員として承認し、工務店・大工を登録しました':'会員として承認しました','ok'))
     .catch(e=>H.toast('承認できませんでした：'+((e&&e.message)||e),'err'));
 }
 function rejectMember(uid){

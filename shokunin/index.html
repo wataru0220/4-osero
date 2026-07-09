@@ -542,7 +542,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-07-08a'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-07-08b'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-08'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -803,12 +803,18 @@ function showGate(mode){
   if(mode==='apply'){
     b.innerHTML=head+`
       <h2>✍️ 新規に入会を申請</h2>
-      <div class="gsub">初めてご利用の工務店様向けです。下記に情報を入力して申請してください。事務局の審査を通過するとログインしてご利用いただけます。<br>※以前ご利用中に会員権限が外れた方は、<a class="deallink" id="aToRejoin" style="cursor:pointer">こちら（再入会）</a>の方が簡単です。</div>
+      <div class="gsub">初めてご利用の工務店様向けです。<b>この1回の入力で、会員登録と工務店（会社・最初の大工）の登録がまとめて完了</b>します。事務局の承認後、そのままログインしてご利用いただけます。<br>※以前ご利用中に会員権限が外れた方は、<a class="deallink" id="aToRejoin" style="cursor:pointer">こちら（再入会）</a>の方が簡単です。</div>
       <div class="field"><label>メールアドレス（ログインID）</label><input type="email" id="aEmail" autocomplete="username" placeholder="you@example.com"></div>
       <div class="field"><label>パスワード（6文字以上）</label><input type="password" id="aPass" autocomplete="new-password" placeholder="ログイン用パスワードを決めてください"></div>
-      <div class="field"><label>工務店名</label><input type="text" id="aCompany" placeholder="例）山田工務店"></div>
+      <div class="field"><label class="req">工務店名</label><input type="text" id="aCompany" placeholder="例）山田工務店"></div>
+      <div class="field"><label>ふりがな</label><input type="text" id="aNameKana" placeholder="例）やまだこうむてん"></div>
       <div class="field"><label>ご担当者名</label><input type="text" id="aContact" placeholder="例）山田 太郎"></div>
       <div class="field"><label>電話番号</label><input type="tel" id="aTel" placeholder="例）022-000-0000"></div>
+      <div class="field"><label>対応エリア</label><input type="text" id="aArea" placeholder="例）宮城県／仙台市"></div>
+      <div class="firstcraft-head">最初の自社大工（1名以上の登録が必須です）</div>
+      <div class="field"><label class="req">大工の氏名</label><input type="text" id="aCkName" placeholder="例）田中 一郎"></div>
+      <div class="field"><label>日給（税込）</label><input type="number" id="aCkPrice" min="0" placeholder="例）22000（円/日・税込）"></div>
+      <div class="count">※ 得意作業・年齢・性別・資格などの詳細は、承認後ログインしてから「✏️情報を編集」で追加できます。</div>
       <div class="row"><button class="btn full" id="aSubmit">この内容で入会を申請する</button></div>
       <div class="gerr" id="gErr"></div>
       <div style="margin-top:12px"><a class="deallink" id="aBack" style="cursor:pointer">← ログインに戻る</a></div>`;
@@ -885,27 +891,38 @@ function gateApply(){
   const email=(document.getElementById('aEmail').value||'').trim();
   const pass=(document.getElementById('aPass').value||'');
   const company=(document.getElementById('aCompany').value||'').trim();
+  const nameKana=(document.getElementById('aNameKana').value||'').trim();
   const contact=(document.getElementById('aContact').value||'').trim();
   const tel=(document.getElementById('aTel').value||'').trim();
+  const area=(document.getElementById('aArea').value||'').trim();
+  const ckName=(document.getElementById('aCkName').value||'').trim();
+  const ckPrice=+document.getElementById('aCkPrice').value||null;
   if(!email||pass.length<6){ gateErr('メールと6文字以上のパスワードを入力してください'); return; }
   const btn=document.getElementById('aSubmit'); if(btn){ btn.disabled=true; }
   // まず「既にログインアカウントを持っている」前提でサインインを試す（退会・呼び戻し等で
   // 会員権限だけが外れた方の再申請）。成功すれば工務店名などの入力は不要＝登録済みの
   // 会社データ（companies）がそのまま残る。サインインに失敗した場合だけ、真の新規登録
-  // とみなして signUp に進む（この場合のみ工務店名が必須）。
+  // とみなして signUp に進む（この場合のみ工務店名・最初の大工の氏名が必須＝
+  // 会員登録と工務店登録を1回の申請に集約している）。
   DB.auth.signIn(email,pass).catch(()=>{
     if(!company){ return Promise.reject({code:'need-company'}); }
+    if(!ckName){ return Promise.reject({code:'need-craftsman'}); }
     return DB.auth.signUp(email,pass);
   }).then(()=>{
     const u=DB.auth.user;
-    return DB.set('memberApplications/'+u.uid, { email:email, company:company, contact:contact, tel:tel, at:Date.now() });
+    const app={ email:email, company:company, contact:contact, tel:tel, at:Date.now() };
+    if(nameKana) app.nameKana=nameKana;
+    if(area) app.area=area;
+    if(ckName) app.craftsman={ name:ckName, price:ckPrice };
+    return DB.set('memberApplications/'+u.uid, app);
   }).then(()=>{
-    H.toast('入会申請を送信しました。事務局の審査をお待ちください','ok');
+    H.toast('入会申請を送信しました。事務局の審査をお待ちください（承認されると工務店・大工の登録も完了した状態でご利用いただけます）','ok');
     applyGate();
   }).catch(e=>{
     if(btn) btn.disabled=false;
     let msg;
     if(e && e.code==='need-company') msg='ログインできませんでした。初めて申請する方は工務店名を入力してください。既にアカウントをお持ちの方はパスワードをご確認ください（お忘れの場合は「パスワードを忘れた方はこちら」）。';
+    else if(e && e.code==='need-craftsman') msg='最初の自社大工の氏名を入力してください（工務店登録には大工が1名以上必要です）。';
     else if(e && e.code==='auth/email-already-in-use') msg='このメールは既に登録されています。パスワードが違うようです。ログイン画面の「パスワードを忘れた方はこちら」からリセットしてください。';
     else msg=(H.authErrMsg?H.authErrMsg(e):((e&&e.message)||String(e)));
     gateErr(msg);
