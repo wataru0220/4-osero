@@ -170,6 +170,7 @@
     <button data-page="hist">📜 評価履歴</button>
     <button data-page="req">🤝 応援要請</button>
     <button data-page="contact" style="position:relative">📨 工務店連絡<span class="tabbadge" id="ctBadge" style="display:none">0</span></button>
+    <button data-page="announce">📢 一斉配信</button>
   </div>
 
   <!-- ========== 会員（審査・発行・停止） ========== -->
@@ -238,6 +239,30 @@
     </div>
     <div id="ctBox"></div>
   </section>
+
+  <!-- ========== 一斉配信（全会員の利用者アプリへお知らせ配信） ========== -->
+  <section class="page" id="page-announce">
+    <h2 class="sec">📢 利用者アプリへ一斉配信</h2>
+    <div class="modebar" style="background:#eef3fb;color:#1759c4;border:1px solid #c7dbff">全会員の「お知らせ」に配信されます。<b>誤発信防止のため、内容確認→最終確認の2段階</b>を経てから配信されます。</div>
+    <div class="card" id="annComposeBox">
+      <div class="field"><label>タイトル</label><input type="text" id="annTitle" placeholder="例）メンテナンスのお知らせ"></div>
+      <div class="field"><label>本文</label><textarea id="annBody" rows="5" placeholder="配信する内容を入力してください"></textarea></div>
+      <button class="btn full" id="annReviewBtn">内容を確認する</button>
+    </div>
+    <div class="card" id="annConfirmBox" style="display:none">
+      <div class="modebar" style="background:#fff7e8;color:#8a5a00;border:1px solid #ffe1a8">⚠️ 以下の内容で、<b>全会員に一斉配信</b>されます。よろしければ「この内容で配信する」を押してください。</div>
+      <div class="note" style="margin-top:10px">
+        <div style="font-weight:800;font-size:15px" id="annPreviewTitle"></div>
+        <div style="white-space:pre-wrap;margin-top:6px" id="annPreviewBody"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn ghost" id="annBackBtn">← 内容を修正する</button>
+        <button class="btn" id="annSendBtn">✅ この内容で配信する（最終確認）</button>
+      </div>
+    </div>
+    <h2 class="sec" style="margin-top:18px">配信履歴（新しい順）</h2>
+    <div id="annHistList"></div>
+  </section>
 </div>
 
 <script src="data.js?v=20260629f"></script>
@@ -246,6 +271,7 @@
 <script>
 let companies={}, craftsmen={}, reviews={}, approvals={}, requests={};
 let members={}, memberApps={}; // 会員一覧 / 入会申請（審査待ち）
+let announcements={}; // 一斉配信（お知らせ）履歴
 let deletedCompanies={}; // 退会（ソフト削除）した工務店の保管。1か月以内は呼び戻し可
 const DELETED_KEEP_DAYS=30; // 退会後この日数だけ保管（呼び戻し可能）。購読の同期発火より前に宣言（TDZ回避）
 let ctCompanyKey=null, ctMsgs=[], ctUnsub=null; // 工務店連絡チャット（選択中）
@@ -426,6 +452,9 @@ function boot(){
   document.getElementById('mSearch').oninput=()=>renderMembers();
   document.getElementById('isGen').onclick=()=>{ document.getElementById('isPass').value=genPassword(); };
   document.getElementById('isIssue').onclick=issueMemberAccount;
+  DB.on('announcements', v=>{ announcements=v||{}; renderAnnHist(); },
+    e=>{ const box=document.getElementById('annHistList'); if(box) box.innerHTML='<div class="empty" style="padding:12px;color:var(--warn)">配信履歴を読み込めませんでした（Firebaseのルールが最新か確認してください）：'+H.esc((e&&e.message)||e)+'</div>'; });
+  bindAnnounceForm();
 }
 
 // ===== 工務店 =====
@@ -591,9 +620,9 @@ function kItemHTML(k){
 function adminRefresh(){
   const btn=document.getElementById('refreshBtn'); const ic=btn&&btn.querySelector('.ic');
   if(btn) btn.disabled=true; if(ic) ic.textContent='⏳';
-  Promise.all([DB.get('companies'),DB.get('craftsmen'),DB.get('reviews'),DB.get('approvals'),DB.get('requests'),DB.get('deletedCompanies'),DB.get('members'),DB.get('memberApplications')])
-    .then(([co,cr,rv,ap,rq,dc,mb,ma])=>{ companies=co||{}; craftsmen=cr||{}; reviews=rv||{}; approvals=ap||{}; requests=rq||{}; deletedCompanies=dc||{}; members=mb||{}; memberApps=ma||{};
-      renderCoList(); renderKList(); renderHist(); renderReqList(); fillContactCompanies(); subscribeAllChats(); renderCtOverview(); purgeExpiredDeleted(); renderDeletedCompanies(); renderMembers(); renderMemberApps(); updateAdminBadge(); })
+  Promise.all([DB.get('companies'),DB.get('craftsmen'),DB.get('reviews'),DB.get('approvals'),DB.get('requests'),DB.get('deletedCompanies'),DB.get('members'),DB.get('memberApplications'),DB.get('announcements')])
+    .then(([co,cr,rv,ap,rq,dc,mb,ma,an])=>{ companies=co||{}; craftsmen=cr||{}; reviews=rv||{}; approvals=ap||{}; requests=rq||{}; deletedCompanies=dc||{}; members=mb||{}; memberApps=ma||{}; announcements=an||{};
+      renderCoList(); renderKList(); renderHist(); renderReqList(); fillContactCompanies(); subscribeAllChats(); renderCtOverview(); purgeExpiredDeleted(); renderDeletedCompanies(); renderMembers(); renderMemberApps(); renderAnnHist(); updateAdminBadge(); })
     .catch(()=>{})
     .finally(()=>{ if(ic) ic.textContent='🔄'; if(btn) btn.disabled=false; H.toast('最新の情報に更新しました','ok'); });
 }
@@ -957,12 +986,66 @@ function issueMemberAccount(){
   });
 }
 
+// ===== 一斉配信（お知らせ）：誤発信防止のため「内容確認」→「最終確認」の2段階を経て配信する =====
+function bindAnnounceForm(){
+  const reviewBtn=document.getElementById('annReviewBtn');
+  const backBtn=document.getElementById('annBackBtn');
+  const sendBtn=document.getElementById('annSendBtn');
+  if(!reviewBtn) return;
+  reviewBtn.onclick=()=>{
+    const title=(document.getElementById('annTitle').value||'').trim();
+    const body=(document.getElementById('annBody').value||'').trim();
+    if(!title){ H.toast('タイトルを入力してください','err'); return; }
+    if(!body){ H.toast('本文を入力してください','err'); return; }
+    document.getElementById('annPreviewTitle').textContent=title;
+    document.getElementById('annPreviewBody').textContent=body;
+    document.getElementById('annComposeBox').style.display='none';
+    document.getElementById('annConfirmBox').style.display='block';
+  };
+  backBtn.onclick=()=>{
+    document.getElementById('annConfirmBox').style.display='none';
+    document.getElementById('annComposeBox').style.display='block';
+  };
+  sendBtn.onclick=()=>{
+    if(!confirm('本当にこの内容で全会員へ配信しますか？（取り消しはできますが、既に届いた通知は取り消せません）')) return;
+    const title=document.getElementById('annPreviewTitle').textContent;
+    const body=document.getElementById('annPreviewBody').textContent;
+    const me=DB.auth.user&&DB.auth.user.email;
+    sendBtn.disabled=true;
+    DB.push('announcements', { title:title, body:body, at:Date.now(), createdBy:me })
+      .then(()=>{
+        H.toast('配信しました','ok');
+        document.getElementById('annTitle').value=''; document.getElementById('annBody').value='';
+        document.getElementById('annConfirmBox').style.display='none';
+        document.getElementById('annComposeBox').style.display='block';
+      })
+      .catch(e=>H.toast('配信できませんでした：'+((e&&e.message)||e),'err'))
+      .finally(()=>{ sendBtn.disabled=false; });
+  };
+}
+function renderAnnHist(){
+  const box=document.getElementById('annHistList'); if(!box) return;
+  const arr=H.toArr(announcements).sort((a,b)=>(b.at||0)-(a.at||0));
+  if(!arr.length){ box.innerHTML='<div class="empty" style="padding:12px">配信履歴はありません。</div>'; return; }
+  box.innerHTML=arr.map(a=>`<div class="item">
+    <div class="top"><div><div class="nm">${H.esc(a.title||'(無題)')}</div>
+      <div class="meta" style="white-space:pre-wrap">${H.esc(a.body||'')}</div>
+      <div class="meta">配信：${H.fmtDate(a.at)}${a.createdBy?'　by '+H.esc(a.createdBy):''}</div></div></div>
+    <div class="acts"><button class="btn danger sm" onclick="deleteAnnouncement('${a._key}')">🗑 取り消す</button></div>
+  </div>`).join('');
+}
+function deleteAnnouncement(key){
+  if(!confirm('この配信を取り消しますか？（既に届いた通知そのものは取り消せません。以後お知らせ一覧に表示されなくなります）')) return;
+  DB.remove('announcements/'+key).then(()=>H.toast('取り消しました','ok'));
+}
+
 // グローバル公開（onclick用）
 window.delCompany=delCompany; window.delCraftsman=delCraftsman;
 window.restoreCompany=restoreCompany; window.purgeCompany=purgeCompany;
 window.approveCraftsman=approveCraftsman; window.unapproveCraftsman=unapproveCraftsman;
 window.delReview=delReview; window.delRequest=delRequest;
 window.approveMember=approveMember; window.rejectMember=rejectMember; window.revokeMember=revokeMember;
+window.deleteAnnouncement=deleteAnnouncement;
 </script>
 </body>
 </html>

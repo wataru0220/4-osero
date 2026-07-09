@@ -512,6 +512,16 @@
   </div>
 </div>
 
+<!-- 運営からの一斉配信（お知らせ）を全文表示 -->
+<div class="ov" id="annViewOv">
+  <div class="sheet">
+    <h3>📢 <span id="annViewTitle">運営からのお知らせ</span></h3>
+    <div class="count" id="annViewAt" style="margin-bottom:8px"></div>
+    <div class="note" id="annViewBody" style="white-space:pre-wrap"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="annViewClose">とじる</button></div>
+  </div>
+</div>
+
 <div class="ov" id="helpOv">
   <div class="sheet">
     <h3>❓ ヘルプ（使い方・ルール）</h3>
@@ -542,7 +552,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-07-08b'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-07-09a'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-08'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -563,6 +573,7 @@ function toggleFav(kind,id){
 // 応援要請
 let reqByMe = {}, reqUnsub = {}, reqIndexUnsub = null, reqCompanyKey = null, reqTargetCraft = null, editReqKey = null;
 let contactMsgs = [], contactUnsub = null, contactCompanyKey = null; // 管理者との連絡チャット
+let announcements = {}; // 運営からの一斉配信（お知らせ）
 let openDealRid = null, dealUnsub = null, dealMsgs = [];
 let chgRid = null; // 延長・予定変更を依頼中の要請
 // 以下は renderRequests 等が参照する状態。ローカルモードは購読が同期発火するため購読より前に宣言（TDZ回避）
@@ -988,6 +999,7 @@ DB.on('companies', v=>{ companies=v||{}; scheduleRender('co','find','my'); });
 DB.on('craftsmen', v=>{ craftsmen=v||{}; scheduleRender('find','co','my'); });
 DB.on('reviews', v=>{ reviews=v||{}; scheduleRender('find','co'); });
 DB.on('approvals', v=>{ approvals=v||{}; scheduleRender('find','co','my'); });
+DB.on('announcements', v=>{ announcements=v||{}; updateBadges(); }); // updateBadges が開いていればinboxも再描画
 
 // ===== 大工をさがす =====
 function matchFilter(k){
@@ -2022,6 +2034,10 @@ function reviewNeededCount(){
   if(!myCompanyEntry()) return 0;
   return H.toArr(reqByMe).filter(needsMyReview).length;
 }
+function announcementsUnreadCount(){
+  if(!myCompanyEntry()) return 0;
+  return H.toArr(announcements).filter(a=>(a.at||0)>seenAt(a._key)).length;
+}
 function setIconBadge(n){
   try{
     if(navigator.setAppBadge){ n>0 ? navigator.setAppBadge(n).catch(()=>{}) : (navigator.clearAppBadge&&navigator.clearAppBadge().catch(()=>{})); }
@@ -2034,9 +2050,10 @@ function updateBadges(){
   const c=contactUnread();
   const cb=document.getElementById('contactBadge');
   if(cb){ if(c>0){ cb.textContent=c>99?'99+':c; cb.style.display='flex'; } else cb.style.display='none'; }
-  setIconBadge(n+c);
+  const an=announcementsUnreadCount();
+  setIconBadge(n+c+an);
   // ヘッダーの「お知らせ」ベル
-  const ib=document.getElementById('inboxBadge'); const total=n+c;
+  const ib=document.getElementById('inboxBadge'); const total=n+c+an;
   if(ib){ if(total>0){ ib.textContent=total>99?'99+':total; ib.style.display='flex'; } else ib.style.display='none'; }
   const ov=document.getElementById('inboxOv');
   if(ov&&ov.classList.contains('on')) renderInbox();
@@ -2132,6 +2149,12 @@ function inboxItems(){
   const cu=contactUnread();
   if(cu>0)
     items.push({key:'contact:'+cu,ic:'📨',t:'管理者から新着メッセージ',d:'「連絡」タブで確認してください',go:'contact',at:Date.now()});
+  H.toArr(announcements).forEach(a=>{
+    if((a.at||0)>seenAt(a._key)){
+      const body=a.body||'';
+      items.push({key:'ann:'+a._key, ic:'📢', t:a.title||'運営からのお知らせ', d:body.length>60?body.slice(0,60)+'…':body, go:'ann-view', at:a.at||0});
+    }
+  });
   return items.sort((a,b)=>(b.at||0)-(a.at||0));
 }
 function notifHeadHTML(){
@@ -2157,6 +2180,7 @@ function renderInbox(){
     const key=el.dataset.key, go=el.dataset.go, rid=extractRid(key);
     markInboxItemSeen(key);
     document.getElementById('inboxOv').classList.remove('on');
+    if(go==='ann-view'){ showAnnouncement(rid); return; } // 運営からのお知らせは専用モーダルで全文表示
     goTab(go);
     if(go==='req' && rid) focusRequestCard(rid); // 過去の取引でも埋もれず見つけられるよう、該当カードまでスクロール＆ハイライト
   });
@@ -2169,9 +2193,19 @@ function markInboxItemSeen(key){
   if(!key) return;
   const type=(key.split(':'))[0];
   if(type==='contact'){ markContactSeen(); return; }
-  if(type==='decided' || type==='cancel' || type==='msg'){
+  if(type==='decided' || type==='cancel' || type==='msg' || type==='ann'){
     const rid=extractRid(key); if(rid) markSeen(rid);
   }
+}
+// 運営からの一斉配信（お知らせ）を全文表示する
+function showAnnouncement(key){
+  const a=announcements[key]; if(!a) return;
+  markSeen(key);
+  document.getElementById('annViewTitle').textContent=a.title||'運営からのお知らせ';
+  document.getElementById('annViewBody').textContent=a.body||'';
+  document.getElementById('annViewAt').textContent=a.at?H.fmtDate(a.at):'';
+  document.getElementById('annViewOv').classList.add('on');
+  updateBadges();
 }
 // 応援タブ内の該当カードまでスクロールして一時的にハイライトする（過去の取引フォルダに
 // 入っている場合は自動で開く）。完了・解除済みの取引はカードが多い中で埋もれやすいため。
@@ -2206,7 +2240,7 @@ const HELP_TOPICS=[
   { t:'取引を解除する', k:'解除 キャンセル 取消 中止 取引', a:'予定変更で条件が合わなくなった等の場合、承認済みの要請を「🚫取引を解除する」で解除できます。当事者どちらからでも可能です。' },
   { t:'評価のルール', k:'評価 ★ 星 レビュー 5段階 平均 ルール 自己評価', a:'評価は「取引・活用した相手」だけが入力できます（取引のない工務店・活用していない大工は評価不可）。応援画面の承認済み要請から、大工・相手工務店を5段階で評価します。自己評価はできません。平均は利用者全員の値で、大工をさがす／工務店画面に表示されます。' },
   { t:'過去のやり取り履歴', k:'履歴 過去 3か月 やり取り 記録', a:'「応援」タブの「💬当事者どうしのやり取り履歴（過去3か月）を見る」で、相手ごとに過去3か月分のやり取りをまとめて確認できます。' },
-  { t:'お知らせ・通知', k:'お知らせ 通知 ベル 受信箱 新着 プッシュ', a:'ヘッダーの🔔お知らせで、未対応（応援要請・日程変更・新着メッセージ・必須評価・管理者連絡）をまとめて確認できます。「通知をオンにする」と、アプリを開いている間に新着をこの端末へ通知します。' },
+  { t:'お知らせ・通知', k:'お知らせ 通知 ベル 受信箱 新着 プッシュ 一斉配信 運営から', a:'ヘッダーの🔔お知らせで、未対応（応援要請・日程変更・新着メッセージ・必須評価・管理者連絡・運営からの一斉配信）をまとめて確認できます。運営からのお知らせをタップすると全文を確認できます。「通知をオンにする」と、アプリを開いている間に新着をこの端末へ通知します。' },
   { t:'お気に入り', k:'お気に入り ★ ブックマーク 保存', a:'大工・工務店の★を押すとお気に入りに登録できます（この端末内に保存）。検索で「★お気に入りのみ」に絞り込めます。' },
   { t:'最新の情報に更新', k:'更新 リロード 反映 最新', a:'反映が遅いと感じたら、ヘッダーの🔄更新で最新データを取り直せます。' },
   { t:'アプリにする（ホーム画面に追加）', k:'アプリ インストール ホーム画面 PWA', a:'ヘッダーの「⬇️アプリにする」から、スマホのホーム画面に追加するとアイコンから全画面で起動できます。' },
@@ -2242,6 +2276,8 @@ function closeVideo(){
 }
 document.getElementById('videoClose').onclick=closeVideo;
 document.getElementById('videoOv').onclick=e=>{ if(e.target.id==='videoOv') closeVideo(); };
+document.getElementById('annViewClose').onclick=()=>document.getElementById('annViewOv').classList.remove('on');
+document.getElementById('annViewOv').onclick=e=>{ if(e.target.id==='annViewOv') e.currentTarget.classList.remove('on'); };
 function openHelp(){ document.getElementById('helpSearch').value=''; renderHelp(); document.getElementById('helpOv').classList.add('on'); }
 document.getElementById('helpBtn').onclick=openHelp;
 document.getElementById('helpClose').onclick=()=>document.getElementById('helpOv').classList.remove('on');

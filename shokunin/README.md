@@ -147,11 +147,16 @@
       "deletedCompanies": {
         ".read": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true",
         ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
+      },
+      "announcements": {
+        ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
+        ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
       }
     }
   }
 }
 ```
+- **一斉配信（お知らせ）**：`announcements` は全会員が閲覧でき、書き込みは管理者のみ（上記ルールに含まれています）。管理アプリの「📢一斉配信」タブから、内容確認→最終確認の2段階を経て配信します。
 - **退会した工務店の呼び戻し**：`deletedCompanies` は管理者のみ読み書きできます（上記ルールに含まれています。別途追加は不要）。管理者が工務店を削除すると、まずここに元データが退避され、退避の保存が確認できてから実データが削除されます。1か月以内なら管理アプリの「🗑退会した工務店」から**管理者の操作だけで元データのまま復元**できます。もし退会・呼び戻しが失敗する場合は、上記ルールに `deletedCompanies` が含まれているか（特に以前このルールを個別に追加していた場合、上記の統合版に更新されているか）をご確認ください。
 - **会員制**：`companies`/`craftsmen`/`reviews`/`approvals` の閲覧は「**`members` に登録された会員**または管理者」だけに限定されます。会員でないログインユーザーはマッチング画面を一切読めません（アプリ側でも門番が表示されます）。
 - `members`（会員）と `memberApplications`（入会申請）を追加。会員登録は**管理者のみ**が書き込めます。入会申請は本人が作成でき、管理者が承認（`members` に登録）または却下します。会員アカウントの発行・審査は **admin.html の「🎫会員」タブ**から行います。
