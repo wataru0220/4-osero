@@ -133,6 +133,12 @@
   .meta2{font-size:13px; color:var(--ink); margin-top:4px}
   .confirmband{margin-top:6px; font-size:13px; font-weight:700; color:#1a7a45; background:#eafaf0; border:1px solid #b6e6c8; border-radius:8px; padding:6px 9px}
   .cancelband{margin-top:6px; font-size:13px; font-weight:700; color:#5d6b7c; background:#eef1f4; border:1px solid #d6dde4; border-radius:8px; padding:6px 9px}
+  .dealband{margin-top:6px; font-size:13px; font-weight:800; color:#0d5aa7; background:#e7f1fd; border:1px solid #a9cdf5; border-radius:8px; padding:6px 9px}
+  .dealflow{margin-top:8px; display:flex; flex-wrap:wrap; gap:5px; align-items:center}
+  .dealflow .stp{display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:700; line-height:1; padding:4px 8px; border-radius:999px; border:1px solid var(--line); color:var(--sub); background:#fff; white-space:nowrap}
+  .dealflow .stp.done{color:#1a7a45; background:#eafaf0; border-color:#b6e6c8}
+  .dealflow .stp.cur{color:#0d5aa7; background:#e7f1fd; border-color:#a9cdf5; box-shadow:0 0 0 1px #a9cdf5 inset}
+  .dealflow .arw{color:var(--sub); font-size:10px}
   .helpitem{border:1px solid var(--line); border-radius:10px; padding:0; margin-bottom:8px; background:#fff; overflow:hidden}
   .helpitem summary{cursor:pointer; font-weight:800; font-size:14px; padding:11px 12px; list-style:none; color:var(--ink)}
   .helpitem summary::-webkit-details-marker{display:none}
@@ -491,6 +497,46 @@
   </div>
 </div>
 
+<!-- 電子請負契約（承認済みの応援ごとに1件。発注者・受注者の双方が電子署名して締結） -->
+<div class="ov" id="contractOv">
+  <div class="sheet">
+    <h3>📝 電子請負契約</h3>
+    <div class="count" id="ctrSub" style="margin-bottom:8px"></div>
+    <div class="termsbox" id="ctrSignedBand" style="display:none">✅ <b>契約締結済み</b>：発注者・受注者の双方が電子署名し、本契約は成立しています。</div>
+    <div class="field"><label>工事場所・活用日（応援要請の内容から自動反映／変更は「応援」タブの要請編集で）</label>
+      <div class="note" id="ctrBase" style="white-space:pre-wrap"></div>
+    </div>
+    <div class="field"><label class="req">請負内容（作業範囲）</label><textarea id="ctrWork" placeholder="例）木造2階の内装下地・ボード貼り一式"></textarea></div>
+    <div class="row">
+      <div class="field" style="flex:1"><label class="req">請負代金（税込・円）</label><input type="number" id="ctrAmount" min="0" placeholder="例）66000"></div>
+      <div class="field" style="flex:1"><label>算定根拠</label><input type="text" id="ctrAmountNote" placeholder="例）日当22000円×3日分"></div>
+    </div>
+    <div class="field"><label>支払方法・支払期日</label><input type="text" id="ctrPayTerm" placeholder="例）完了確認後、翌月末までに銀行振込"></div>
+    <div class="field"><label class="req">現場責任者（受注者側・職人へ指揮命令を行う担当者）</label><input type="text" id="ctrForeman" placeholder="例）受注者側の現場責任者・氏名"></div>
+    <div class="field"><label>特記事項（任意）</label><textarea id="ctrNotes" placeholder="その他の取り決めがあれば"></textarea></div>
+    <div class="termsbox" style="margin-top:4px">
+      <b>本契約の性質（重要）</b><br>
+      本契約は請負契約（業務委託契約）です。受注者は、応援に従事させる自社の職人に対する労務管理・指揮命令・安全衛生管理・出退勤の管理を自ら行います。発注者は、当該職人に対して直接の作業指示や勤怠管理を行わず、工事内容の調整は受注者があらかじめ指定する上記の現場責任者を通じて行います。天災その他不可抗力による損害の負担、請負代金・工期の変更方法については当事者間で誠実に協議して定めるものとし、協議が調わない場合は運営が定める利用規約の紛争解決条項によります。
+    </div>
+    <div class="field"><label style="display:flex;align-items:flex-start;gap:8px;font-weight:400"><input type="checkbox" id="ctrConsent" style="margin-top:3px"> 上記内容を確認し、電子的方法による本契約の締結に同意します。</label></div>
+    <div class="field"><label>署名者名（ご担当者名）</label><input type="text" id="ctrSignerName" placeholder="例）山田 太郎"></div>
+    <div id="ctrSigns" style="margin:6px 0"></div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost" id="ctrCancel">とじる</button>
+      <button class="btn ghost" id="ctrSave">下書き保存</button>
+      <button class="btn" id="ctrSign">この内容で電子署名する</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost sm" id="ctrEditToggle" style="display:none;width:100%">✏️ 内容を修正する（署名はリセットされます）</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost sm" id="ctrDownload" style="display:none;flex:1">📄 契約書をダウンロード</button>
+      <button class="btn ghost sm" id="ctrPrint" style="display:none;flex:1">🖨 印刷（PDFで保存）</button>
+    </div>
+    <div class="count" style="margin-top:8px">※ 締結後は「📄契約書をダウンロード」または「🖨印刷」で保存し、法令に基づき必要な期間保管してください。本アプリ内のデータが将来にわたって保存され続けることは保証されません。</div>
+  </div>
+</div>
+
 <!-- お知らせ・受信箱 -->
 <div class="ov" id="inboxOv">
   <div class="sheet">
@@ -552,8 +598,8 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-07-09a'; // 画面で最新版か確認するための版番号
-const TERMS_VERSION = '2026-07-08'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
+const APP_VERSION = '2026-07-10a'; // 画面で最新版か確認するための版番号
+const TERMS_VERSION = '2026-07-10'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
 let reviewTarget = null, rvValue = 0;
@@ -572,6 +618,7 @@ function toggleFav(kind,id){
 }
 // 応援要請
 let reqByMe = {}, reqUnsub = {}, reqIndexUnsub = null, reqCompanyKey = null, reqTargetCraft = null, editReqKey = null;
+let contractUnsub = {}, contractsByRid = {}, contractRid = null, contractEditMode = false; // 電子請負契約（承認済みの応援ごとに1件）
 let contactMsgs = [], contactUnsub = null, contactCompanyKey = null; // 管理者との連絡チャット
 let announcements = {}; // 運営からの一斉配信（お知らせ）
 let openDealRid = null, dealUnsub = null, dealMsgs = [];
@@ -1753,8 +1800,16 @@ function ensureReqSubscription(){
           scheduleRender('req'); // 複数の要請が同時に届いても1回だけ再描画
         });
       }
+      if(!contractUnsub[rid]){
+        contractUnsub[rid]=DB.on('contracts/'+rid, c=>{
+          if(c) contractsByRid[rid]=Object.assign({_key:rid},c); else delete contractsByRid[rid];
+          scheduleRender('req');
+          if(contractRid===rid) renderContractModal();
+        });
+      }
     });
     Object.keys(reqUnsub).forEach(rid=>{ if(ids.indexOf(rid)<0){ reqUnsub[rid](); delete reqUnsub[rid]; delete reqByMe[rid]; } });
+    Object.keys(contractUnsub).forEach(rid=>{ if(ids.indexOf(rid)<0){ contractUnsub[rid](); delete contractUnsub[rid]; delete contractsByRid[rid]; } });
     scheduleRender('req');
   });
 }
@@ -1892,7 +1947,8 @@ function deleteRequest(rid){
     DB.remove('requests/'+rid),
     DB.remove('reqIndex/'+r.fromCompanyKey+'/'+rid),
     DB.remove('reqIndex/'+r.toCompanyKey+'/'+rid),
-    DB.remove('deals/'+rid)
+    DB.remove('deals/'+rid),
+    DB.remove('contracts/'+rid)
   ]).then(()=>H.toast('削除しました','ok'));
 }
 document.getElementById('reqCancel').onclick=()=>document.getElementById('reqOv').classList.remove('on');
@@ -1984,6 +2040,256 @@ function cancelDeal(rid){
     lastMsgAt:now, lastMsgByUid:uid })
     .then(()=>{ H.toast('取引を解除しました','ok'); markSeen(rid); });
 }
+
+// ===== 電子請負契約（承認済みの応援ごとに1件。発注者・受注者の双方が電子署名して締結） =====
+function contractRole(r){ // 自社が発注者(from)か受注者(to)かを返す
+  const mine=myCompanyEntry(); if(!mine||!r) return null;
+  if(r.fromCompanyKey===mine._key) return 'from';
+  if(r.toCompanyKey===mine._key) return 'to';
+  return null;
+}
+function contractExists(r){ return !!contractsByRid[r._key]; }
+function contractSigned(r){ const c=contractsByRid[r._key]; return !!(c && c.fromSign && c.toSign); }
+// 取引の進捗（応援申請→承認→取引条件確認→電子請負締結→取引成立）を判定して現在地を返す
+// step: 3=取引条件確認中 / 4=電子請負締結中 / 5=取引成立
+function dealStep(r){
+  if(contractSigned(r)) return 5;
+  if(contractExists(r)) return 4;
+  return 3;
+}
+// 取引の流れをステップ表示（承認済みカードの上部に置く）
+function dealFlowHTML(r){
+  const step=dealStep(r);
+  const items=[
+    {n:'①応援申請', at:2},
+    {n:'②承認',     at:2},
+    {n:'③取引条件確認', at:3},
+    {n:'④電子請負締結', at:4},
+    {n:'⑤取引成立', at:5}
+  ];
+  const cells=items.map((it,i)=>{
+    // ①②は承認済みなので常に済み。現在地より前は済み、現在地は cur（⑤到達時は done）。
+    let cls;
+    if(it.at<=2 || it.at<step) cls='done';
+    else if(it.at===step) cls=(step===5?'done':'cur');
+    else cls='';
+    const arrow = i<items.length-1 ? '<span class="arw">▶</span>' : '';
+    return `<span class="stp ${cls}">${it.n}</span>${arrow}`;
+  }).join('');
+  return `<div class="dealflow">${cells}</div>`;
+}
+// 承認済みカードの「③取引条件確認 → ④電子請負締結 → ⑤取引成立」の操作ブロック
+function dealStageHTML(r, opened){
+  const step=dealStep(r);
+  const signed=contractSigned(r);
+  const exists=contractExists(r);
+  const ctrLabel = signed ? '④ 電子請負契約：締結済み（内容を見る）'
+    : exists ? '④ 電子請負契約：署名待ち（内容を確認して署名）'
+    : '④ 電子請負契約を締結する';
+  const dealBtn = `<button class="btn ${step===3?'':'ghost'} sm deal-toggle" data-rid="${H.esc(r._key)}" style="width:100%;margin-top:8px">${opened?'▲ ③取引条件のやり取りを閉じる':'③ 取引条件を確認・やり取りする（労働条件・支払い条件）'}</button>`;
+  const ctrBtn = `<button class="btn ${step===4?'':'ghost'} sm contract-open" data-rid="${H.esc(r._key)}" style="width:100%;margin-top:8px">${ctrLabel}</button>`;
+  const establishedBand = signed ? `<div class="dealband">🤝 <b>⑤ 取引成立</b>：電子請負契約が締結され、本取引は成立しました。</div>` : '';
+  return dealBtn + (opened?`<div class="dealbox">${dealThreadHTML()}</div>`:'') + ctrBtn + establishedBand;
+}
+let contractFormLoaded=false;
+function openContract(rid){
+  const r=reqByMe[rid]; if(!r) return;
+  if(r.status!=='accepted'){ H.toast('承認済みの応援要請のみ、請負契約を締結できます','err'); return; }
+  contractRid=rid; contractEditMode=false; contractFormLoaded=false;
+  document.getElementById('ctrConsent').checked=false;
+  renderContractModal();
+  document.getElementById('contractOv').classList.add('on');
+}
+document.getElementById('ctrCancel').onclick=()=>{ document.getElementById('contractOv').classList.remove('on'); contractRid=null; };
+document.getElementById('contractOv').onclick=e=>{ if(e.target.id==='contractOv'){ e.currentTarget.classList.remove('on'); contractRid=null; } };
+document.getElementById('ctrEditToggle').onclick=()=>{
+  if(!confirm('内容を修正すると、両者の電子署名はリセットされます。よろしいですか？')) return;
+  contractEditMode=true; renderContractModal();
+};
+function renderContractModal(){
+  const rid=contractRid; if(!rid) return;
+  const r=reqByMe[rid]; if(!r) return;
+  const c=contractsByRid[rid]||{};
+  const role=contractRole(r); // 'from'=発注者 / 'to'=受注者
+  const mine=myCompanyEntry();
+  document.getElementById('ctrSub').textContent=(role==='from'?'発注者：':'受注者：')+((mine&&mine.name)||'')+'／大工「'+(r.craftsmanName||'')+'」の応援に関する契約';
+  document.getElementById('ctrBase').textContent='📍 '+(r.site||'—')+'　🗓 '+(r.dateText||'—')+(r.work?('\n🛠 '+r.work):'');
+  const signed=!!(c.fromSign && c.toSign);
+  document.getElementById('ctrSignedBand').style.display=signed?'block':'none';
+  const locked=signed && !contractEditMode;
+  ['ctrWork','ctrAmount','ctrAmountNote','ctrPayTerm','ctrForeman','ctrNotes','ctrConsent','ctrSignerName'].forEach(id=>{
+    document.getElementById(id).disabled=locked;
+  });
+  if(!contractFormLoaded){
+    document.getElementById('ctrWork').value = c.work!=null ? c.work : (r.work||'');
+    const k=craftsmen[r.craftsmanKey]||{};
+    const days=(r.dates&&r.dates.length)||0;
+    const defAmount = c.amount!=null ? c.amount : ((k.price&&days) ? (k.price*days) : (k.price||''));
+    document.getElementById('ctrAmount').value = defAmount;
+    document.getElementById('ctrAmountNote').value = c.amountNote!=null ? c.amountNote : ((k.price&&days) ? ('日当'+k.price+'円×'+days+'日分') : '');
+    document.getElementById('ctrPayTerm').value = c.payTerm || '';
+    document.getElementById('ctrForeman').value = c.foreman || '';
+    document.getElementById('ctrNotes').value = c.notes || '';
+    document.getElementById('ctrSignerName').value = c.signerNameDraft || (mine&&mine.contact) || '';
+    contractFormLoaded=true;
+  }
+  document.getElementById('ctrEditToggle').style.display = (signed && !contractEditMode) ? 'block' : 'none';
+  document.getElementById('ctrSave').style.display = locked ? 'none' : '';
+  document.getElementById('ctrSign').style.display = locked ? 'none' : '';
+  // 保存済みの契約（下書き・締結済みのいずれか）があればダウンロード／印刷を出す
+  const hasSaved = !!contractsByRid[rid];
+  document.getElementById('ctrDownload').style.display = hasSaved ? '' : 'none';
+  document.getElementById('ctrPrint').style.display = hasSaved ? '' : 'none';
+  const signHTML=(label,s)=> s ? `<div class="meta2">✅ ${label}：${H.esc(s.companyName||'')}　${H.esc(s.name||'')}（${H.fmtDate(s.at)}）</div>` : `<div class="meta2" style="color:var(--sub)">未署名：${label}</div>`;
+  document.getElementById('ctrSigns').innerHTML = signHTML('発注者', c.fromSign) + signHTML('受注者', c.toSign);
+}
+// ===== 契約書のダウンロード・印刷（保存済みの契約データから、単体で開ける契約書HTMLを生成） =====
+function contractAmountText(a){ return (Number(a)||0).toLocaleString('ja-JP')+'円（税込）'; }
+function sanitizeFileName(s){ return String(s||'').replace(/[\\\/:*?"<>|\s]+/g,'_').slice(0,40); }
+function contractFileName(rid){
+  const c=contractsByRid[rid]||{};
+  const d=(c.dateText||'').split(/[、,〜]/)[0] || H.todayStr();
+  return '電子請負契約_'+sanitizeFileName(c.craftsmanName||'')+'_'+sanitizeFileName(d)+'.html';
+}
+// 単体で開ける契約書HTML（当アプリのCSSに依存しない自己完結ドキュメント）
+function contractDocHTML(rid){
+  const c=contractsByRid[rid]; if(!c) return '';
+  const e=H.esc;
+  const signed=!!(c.fromSign && c.toSign);
+  const statusBanner = signed
+    ? '<div class="status ok">✅ 本契約は締結済みです（発注者・受注者の双方が電子署名を完了）</div>'
+    : '<div class="status draft">⚠️ この契約書はまだ両者の電子署名が完了していません（下書き段階）。締結には双方の電子署名が必要です。</div>';
+  const signBlock=(label,s)=> s
+    ? `<td><div class="slabel">${label}</div><div class="sval"><b>${e(s.companyName||'')}</b></div><div class="sval">担当者：${e(s.name||'')}</div><div class="sdate">電子署名日時：${e(H.fmtDate(s.at))}</div></td>`
+    : `<td><div class="slabel">${label}</div><div class="sval unsigned">未署名</div></td>`;
+  const rows=[
+    ['対象の大工', e(c.craftsmanName||'—')],
+    ['工事場所', e(c.site||'—')],
+    ['作業日（活用日）', e(c.dateText||'—')],
+    ['請負内容（作業範囲）', e(c.work||'—')],
+    ['請負代金', e(contractAmountText(c.amount)) + (c.amountNote?`<span class="sub">（${e(c.amountNote)}）</span>`:'')],
+    ['支払方法・支払期日', e(c.payTerm||'—')],
+    ['現場責任者（受注者側）', e(c.foreman||'—')],
+    ['特記事項', c.notes?`<span class="pre">${e(c.notes)}</span>`:'—']
+  ].map(([k,v])=>`<tr><th>${k}</th><td>${v}</td></tr>`).join('');
+  const issued=H.fmtDate(Date.now());
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>電子請負契約書（${e(c.craftsmanName||'')}）</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif; color:#1c2530; margin:0; padding:24px; line-height:1.7; background:#fff}
+  .doc{max-width:720px; margin:0 auto}
+  h1{font-size:22px; text-align:center; letter-spacing:.15em; margin:0 0 4px; border-bottom:3px double #333; padding-bottom:10px}
+  .cid{text-align:center; color:#788; font-size:11px; margin-bottom:14px}
+  .status{border-radius:8px; padding:9px 12px; font-weight:700; font-size:13px; margin:12px 0}
+  .status.ok{background:#eafaf0; border:1px solid #b6e6c8; color:#1a7a45}
+  .status.draft{background:#fff4e5; border:1px solid #ffd591; color:#8a5a00}
+  table{width:100%; border-collapse:collapse; margin:14px 0}
+  th,td{border:1px solid #cfd8e0; padding:9px 11px; font-size:14px; text-align:left; vertical-align:top}
+  th{background:#f2f6fa; width:38%; white-space:nowrap; font-weight:700}
+  .sub{color:#667; font-size:12px; margin-left:4px}
+  .pre{white-space:pre-wrap}
+  .clause{font-size:12.5px; color:#333; background:#fafbfc; border:1px solid #e3e8ee; border-radius:8px; padding:11px 13px; margin:14px 0}
+  .clause b{color:#b3462f}
+  .signs{width:100%; border-collapse:collapse; margin-top:16px}
+  .signs td{border:1px solid #cfd8e0; padding:12px 14px; width:50%; vertical-align:top}
+  .slabel{font-size:12px; color:#667; font-weight:700; margin-bottom:6px}
+  .sval{font-size:14px} .sval.unsigned{color:#b3462f; font-weight:700}
+  .sdate{font-size:11px; color:#788; margin-top:6px}
+  .foot{margin-top:18px; font-size:11px; color:#788; text-align:center; border-top:1px solid #e3e8ee; padding-top:10px}
+  .printbtn{display:block; width:100%; max-width:720px; margin:0 auto 16px; padding:11px; font-size:15px; font-weight:700; color:#fff; background:#e8541e; border:none; border-radius:10px; cursor:pointer}
+  @media print{ .printbtn{display:none} body{padding:0} }
+</style></head>
+<body>
+<button class="printbtn" onclick="window.print()">🖨 印刷 / PDFで保存</button>
+<div class="doc">
+  <h1>電子請負契約書</h1>
+  <div class="cid">契約ID：${e(rid)}　／　発行日時：${e(issued)}</div>
+  ${statusBanner}
+  <p style="font-size:13.5px">応援を依頼する側（以下「発注者」）と、応援する職人が所属する側（以下「受注者」）は、下記のとおり工事の一部の完成を目的とする請負契約を締結する。本契約は請負契約（業務委託契約）であり、労働者派遣・労働者供給には該当しない。</p>
+  <table>
+    <tr><th>発注者</th><td><b>${e(c.fromCompanyName||'—')}</b></td></tr>
+    <tr><th>受注者</th><td><b>${e(c.toCompanyName||'—')}</b></td></tr>
+    ${rows}
+  </table>
+  <div class="clause"><b>本契約の性質（重要）</b><br>本契約は請負契約（業務委託契約）である。受注者は、応援に従事させる自社の職人に対する労務管理・指揮命令・安全衛生管理・出退勤の管理を自ら行う。発注者は、当該職人に対して直接の作業指示や勤怠管理を行わず、工事内容の調整は受注者があらかじめ指定する上記の現場責任者を通じて行う。天災その他不可抗力による損害の負担、請負代金・工期の変更方法については当事者間で誠実に協議して定めるものとし、協議が調わない場合は運営（栗駒建業）が定める利用規約の紛争解決条項による。</div>
+  <table class="signs"><tr>${signBlock('発注者（署名）', c.fromSign)}${signBlock('受注者（署名）', c.toSign)}</tr></table>
+  <div class="foot">本書面は「大工シェア ネットワーク」アプリにより発行された電子請負契約書です。　運営：栗駒建業<br>電子署名は、各当事者が本アプリ上で内容を確認し同意操作を行った記録（会社名・担当者名・日時）です。必要な期間、大切に保管してください。</div>
+</div>
+</body></html>`;
+}
+function downloadContract(){
+  const rid=contractRid; if(!rid || !contractsByRid[rid]){ H.toast('保存された契約がありません','err'); return; }
+  const html=contractDocHTML(rid);
+  const blob=new Blob([html], {type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=contractFileName(rid); document.body.appendChild(a); a.click();
+  setTimeout(()=>{ try{ document.body.removeChild(a); URL.revokeObjectURL(url); }catch(_){} }, 4000);
+  H.toast('契約書をダウンロードしました','ok');
+}
+function printContract(){
+  const rid=contractRid; if(!rid || !contractsByRid[rid]){ H.toast('保存された契約がありません','err'); return; }
+  const html=contractDocHTML(rid);
+  const ifr=document.createElement('iframe');
+  ifr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0';
+  document.body.appendChild(ifr);
+  const d=ifr.contentWindow.document; d.open(); d.write(html); d.close();
+  setTimeout(()=>{ try{ ifr.contentWindow.focus(); ifr.contentWindow.print(); }catch(_){}
+    setTimeout(()=>{ try{ document.body.removeChild(ifr); }catch(_){} }, 1500); }, 350);
+}
+function contractFieldsFromForm(){
+  return {
+    work: document.getElementById('ctrWork').value.trim(),
+    amount: +document.getElementById('ctrAmount').value || 0,
+    amountNote: document.getElementById('ctrAmountNote').value.trim(),
+    payTerm: document.getElementById('ctrPayTerm').value.trim(),
+    foreman: document.getElementById('ctrForeman').value.trim(),
+    notes: document.getElementById('ctrNotes').value.trim(),
+    signerNameDraft: document.getElementById('ctrSignerName').value.trim()
+  };
+}
+function contractBaseFields(r){
+  return { rid:r._key, fromCompanyKey:r.fromCompanyKey, fromCompanyName:r.fromCompanyName, toCompanyKey:r.toCompanyKey, toCompanyName:r.toCompanyName,
+    craftsmanKey:r.craftsmanKey, craftsmanName:r.craftsmanName, site:r.site, dateText:r.dateText };
+}
+function validateContractForm(f){
+  if(!f.work){ H.toast('請負内容を入力してください','err'); return false; }
+  if(!f.amount){ H.toast('請負代金を入力してください','err'); return false; }
+  if(!f.foreman){ H.toast('現場責任者（受注者側）を入力してください','err'); return false; }
+  return true;
+}
+function saveContractDraft(){
+  const rid=contractRid; const r=reqByMe[rid]; if(!rid||!r) return;
+  const f=contractFieldsFromForm();
+  if(!validateContractForm(f)) return;
+  const mine=myCompanyEntry();
+  const payload=Object.assign(contractBaseFields(r), f, { fromSign:null, toSign:null, updatedAt:Date.now(), updatedBy:(mine&&mine.name)||'' });
+  DB.set('contracts/'+rid, payload)
+    .then(()=>{ contractEditMode=false; H.toast('下書きを保存しました（署名は未了です）','ok'); });
+}
+function signContract(){
+  const rid=contractRid; const r=reqByMe[rid]; if(!rid||!r) return;
+  const role=contractRole(r); if(!role) return;
+  const f=contractFieldsFromForm();
+  if(!validateContractForm(f)) return;
+  if(!f.signerNameDraft){ H.toast('署名者名（ご担当者名）を入力してください','err'); return; }
+  if(!document.getElementById('ctrConsent').checked){ H.toast('電子的方法による締結への同意にチェックしてください','err'); return; }
+  if(!confirm('この内容で電子署名し、'+(role==='from'?'発注者':'受注者')+'として契約を締結します。よろしいですか？')) return;
+  const mine=myCompanyEntry();
+  const c=contractsByRid[rid]||{};
+  const sign={ name:f.signerNameDraft, companyName:(mine&&mine.name)||'', at:Date.now() };
+  const payload=Object.assign(contractBaseFields(r), f, { updatedAt:Date.now(), updatedBy:(mine&&mine.name)||'' });
+  payload.fromSign = role==='from' ? sign : (c.fromSign||null);
+  payload.toSign = role==='to' ? sign : (c.toSign||null);
+  DB.set('contracts/'+rid, payload)
+    .then(()=>{ contractEditMode=false; H.toast('電子署名しました','ok'); });
+}
+document.getElementById('ctrSave').onclick=saveContractDraft;
+document.getElementById('ctrSign').onclick=signContract;
+document.getElementById('ctrDownload').onclick=downloadContract;
+document.getElementById('ctrPrint').onclick=printContract;
 
 function reqStatusLabel(s){
   if(s==='accepted') return '<span class="okbadge">承認</span>';
@@ -2236,6 +2542,8 @@ const HELP_TOPICS=[
   { t:'応援要請を送る', k:'応援要請 依頼 借りる お願い 送る', a:'大工カードの「🤝この大工に応援要請」から、工事場所（県・市・区）、作業期間、連絡先などを入力して送信します。番地など詳しい住所は送信後の「条件のやり取り」で当事者間で伝えます。' },
   { t:'応援要請を承認・辞退する', k:'承認 辞退 受信 受ける 返事', a:'自社の大工への要請は「応援」タブの「受信した要請」に届きます。「承認する」または「辞退」を選べます。新着は🔔お知らせとタブのバッジで分かります。' },
   { t:'条件のやり取り（チャット）', k:'チャット やり取り 条件 日当 支払い 住所 メッセージ', a:'承認後、当事者だけが見られるチャットで、住所・日当・支払い条件などを相談できます（管理者には表示されません）。自分は右、相手は左に表示されます。' },
+  { t:'取引の流れ（応援申請→承認→取引成立）', k:'流れ 順番 ステップ 取引 成立 進捗 申請 承認', a:'取引は「①応援申請 → ②承認 → ③取引条件の確認・やり取り → ④電子請負契約の締結 → ⑤取引成立」の順で進みます。承認済みの要請カードの上部に、いま取引がどの段階にあるかがステップ表示されます。' },
+  { t:'電子請負契約を結ぶ', k:'契約 請負 電子契約 署名 サイン 請負代金 現場責任者 偽装請負 派遣 締結', a:'承認後、まず「③取引条件を確認・やり取りする」で労働条件・支払い条件などを相談し、次に「④電子請負契約を締結する」から請負内容・請負代金・現場責任者などを入力して、発注者・受注者の双方が電子署名します。双方が署名すると「⑤取引成立」となります（契約内容は管理者には表示されません）。本アプリの応援は請負契約であり、職人への指揮命令・労務管理は職人が所属する会社（受注者）が行います。契約書は「📄契約書をダウンロード」でファイル保存、「🖨印刷（PDFで保存）」でPDF化でき、締結後はご自身でも保管してください。' },
   { t:'延長・予定変更を依頼する', k:'延長 予定変更 日程変更 リスケ 変更', a:'承認済みの要請で「📅延長・予定変更を依頼」から新しい作業期間を提案できます。相手が承認すると活用日が更新されます。' },
   { t:'取引を解除する', k:'解除 キャンセル 取消 中止 取引', a:'予定変更で条件が合わなくなった等の場合、承認済みの要請を「🚫取引を解除する」で解除できます。当事者どちらからでも可能です。' },
   { t:'評価のルール', k:'評価 ★ 星 レビュー 5段階 平均 ルール 自己評価', a:'評価は「取引・活用した相手」だけが入力できます（取引のない工務店・活用していない大工は評価不可）。応援画面の承認済み要請から、大工・相手工務店を5段階で評価します。自己評価はできません。平均は利用者全員の値で、大工をさがす／工務店画面に表示されます。' },
@@ -2289,15 +2597,16 @@ function termsHtml(){ return `
   <div class="termsbox">【最重要・免責】アプリ管理者は、ユーザー（工務店・職人）間で発生したトラブル・事故・労災・事件・紛争・費用未払い・損害等に <u>一切関与せず、いかなる責任も負いません</u>。当事者双方の費用と責任で直接解決してください。</div>
   <div class="termsbox ok">【個人情報の保護】アプリ管理者は、本アプリで取得した氏名・連絡先等の個人情報を、職人シェアの運営目的にのみ利用し、法令に従い適切に管理します（第7条）。ユーザーも、本アプリで知り得た他社・他者の情報を目的外に利用・漏洩してはなりません。</div>
   <p>本規約は、栗駒建業（以下「アプリ管理者」）が運営・提供する職人マッチング・シェアリング用WEBアプリケーション（以下「本アプリ」）を、アプリ管理者の工務店メンバーシップ会員およびその所属職人（以下、総称して「ユーザー」）が利用する際の諸条件を定めるものです。ユーザーは、本規約に同意した上で本アプリを利用するものとします。</p>
-  <p><b>第1条（目的）</b><br>本アプリは、地場工務店間における繁忙期・閑散期の職人の相互融通（職人シェアリング）、および技術情報の交換を円滑に行うためのプラットフォーム（場）を提供するものです。</p>
-  <p><b>第2条（ユーザー間の契約関係）</b><br>本アプリを通じて行われる職人の貸し借り、応援要請、外注請負、その他の取引に関する契約（応援契約、請負契約、在籍出向契約等）は、すべてユーザー（工務店および職人）間で直接締結されるものとします。アプリ管理者はこれらの契約の当事者とはならず、契約の成立・内容・履行について保証・関与しません。</p>
+  <p><b>第1条（目的）</b><br>本アプリは、建設業を営む地場工務店会員企業間において、請負契約（業務委託契約）に基づき、繁忙期・閑散期における工事の一部の相互協力（以下「応援」といいます）、および技術情報の交換を円滑に行うためのプラットフォーム（場）を提供するものです。本アプリを通じて成立する契約は、後記第2条に定めるとおり常に請負契約であり、労働者派遣事業の適正な運営の確保及び派遣労働者の保護等に関する法律（以下「労働者派遣法」）上の労働者派遣、および職業安定法上の労働者供給のいずれにも該当しない形で運用されなければなりません（建設業務については労働者派遣法により労働者派遣が禁止されています）。</p>
+  <p><b>第2条（ユーザー間の契約関係・請負契約としての運用）</b><br>1. 本アプリを通じてユーザー（工務店）間で成立する契約は、すべて請負契約（業務委託契約）とし、応援を依頼する側のユーザー（以下「発注者」）が、応援する職人が所属する側のユーザー（以下「受注者」）に対し、特定の工事の一部の完成その他業務の遂行を委託し、受注者がこれを自己の責任と管理の下で完成・遂行し、発注者がその成果に対して請負代金を支払う形式によるものとします。<br>2. 受注者は、応援に従事させる自社の職人に対する労務管理・技術指導・作業の指揮命令・安全衛生管理・出退勤の管理を自ら行うものとします。発注者は、当該職人に対して直接の作業指示や勤怠管理その他の指揮命令を行ってはならず、工事内容について指示・調整を行う場合は、受注者があらかじめ指定する現場責任者を通じて行うものとします。<br>3. ユーザーは、前2項に定める請負契約としての実態（受注者による自己の職人に対する独立した労務管理・指揮命令の実施）を欠いたまま本アプリを利用し、実質的に労働者派遣または労働者供給に該当する形態（いわゆる偽装請負を含みます）で職人を稼働させてはなりません。これは労働者派遣法・職業安定法等に違反するおそれがある重大な法令違反行為であり、行政指導・処分・刑事罰の対象となり得ます。<br>4. 本アプリを通じて行われる応援に関する請負契約は、次条（第2条の2）に定める「電子請負契約」機能により締結するものとします。アプリ管理者はこれらの契約の当事者とはならず、契約の成立・内容・履行について保証・関与しません。</p>
+  <p><b>第2条の2（電子請負契約の締結）</b><br>1. ユーザーは、本アプリが提供する電子請負契約機能を用いて、応援ごとに、工事場所・活用日、請負内容（作業範囲）、請負代金の額及びその算定根拠、支払方法及び支払期日、指揮命令系統（受注者側現場責任者）その他必要な事項を記載した請負契約を電子的方法により締結するものとします。契約に含まれない天災その他不可抗力による損害の負担、契約内容の変更方法、紛争解決方法については、本規約の定めによります。<br>2. ユーザーは、本アプリを通じて電子的方法により契約を締結することについて、あらかじめ相手方の承諾を得るものとし、本アプリ上で契約内容を確認して同意操作（電子署名）を行うことをもって、当該承諾及び契約締結の意思表示とみなします。<br>3. 電子請負契約は、発注者・受注者の双方が本アプリ上で内容を確認し、それぞれ電子署名（会社名・担当者名・締結日時を記録する操作）を行った時点で締結されたものとします。<br>4. 締結された電子請負契約の内容は、本アプリ上で各当事者がいつでも表示できる状態で保管されます。ただし本アプリ内のデータが将来にわたって保存され続けることを保証するものではないため、ユーザーは締結後、必要に応じて自らスクリーンショット・印刷等により契約内容を保存し、法令に基づき必要な期間保管するものとします。<br>5. 契約内容を変更する場合は、双方が再度合意のうえ、変更内容を反映した契約を電子的方法により再締結するものとします。一方当事者が内容の変更操作を行った場合、既存の電子署名は無効となり、双方が再度署名するまで契約は成立しません。</p>
   <p><b>第3条（管理者完全免責・ユーザー間トラブルの不関与）</b><br>アプリ管理者は、ユーザー間で発生した施工不備、遅延、事故、労災、対人対物賠償、費用の未払い、その他一切のトラブル、紛争、損害について、その理由の如何を問わず一切関与せず、何らの責任（仲裁責任、損害賠償責任等）も負わないものとします。<br>ユーザー間でトラブルが生じた場合は、当事者たるユーザー双方の費用と責任において直接これを解決するものとし、アプリ管理者に対して一切の負担や迷惑をかけないものとします。</p>
   <p><b>第4条（利用資格）</b><br>本アプリを利用できるのは、アプリ管理者の「工務店メンバーシップ会員企業」に所属する経営者、役員、社員、および当該企業が登録を認めた所属職人に限られます。ユーザーは、登録にあたり、自己が当該資格を有すること、および所属職人の情報を登録することについて当該職人本人の同意を得ていることを保証するものとします。</p>
   <p><b>第5条（アカウントの管理責任）</b><br>ユーザーは、自己の責任において本アプリのログイン情報（ID・パスワード等）を厳重に管理するものとします。<br>ユーザーは、いかなる場合もアカウントを第三者に譲渡・貸与、または複数人で共有することはできません。アカウントの管理不十分による損害の責任はユーザー本人が負うものとします。ログイン情報の漏洩・不正利用を認知した場合、ユーザーは直ちにアプリ管理者へ連絡するものとします。</p>
   <p><b>第6条（禁止事項）</b><br>ユーザーは、本アプリの利用にあたり、以下の行為を行ってはなりません。<br>(1) 虚偽の登録情報、または実体と異なる職人スキル・稼働状況を掲載する行為<br>(2) 本アプリで得た他のユーザーの個人情報や経営情報を、職人シェア以外の目的に流用または外部に漏洩する行為<br>(3) 他のユーザーに対する誹謗中傷、名誉毀損、脅迫、ハラスメント、または不適切な引き抜き行為<br>(4) 本アプリのシステムに過度な負荷をかける行為、不正アクセス、リバースエンジニアリング等の不正解析行為、その他セキュリティを害する行為<br>(5) 本アプリを通じて知り得た情報を用いてアプリ管理者を介さずに同種サービスを構築する等、アプリ管理者の事業を妨害する行為<br>(6) 法令、公序良俗に反する行為<br>(7) その他、アプリ管理者が不適切と判断する行為</p>
   <p><b>第7条（個人情報・プライバシーの取扱い）</b><br>1. アプリ管理者は、本アプリの運営に必要な範囲で、ユーザーおよび所属職人の氏名・連絡先・資格・稼働状況・評価等の情報（個人情報を含む）を取得・利用します。<br>2. アプリ管理者は、取得した個人情報を、職人シェアの提供・運営・改善、および本人への連絡の目的にのみ利用し、個人情報の保護に関する法律その他の法令を遵守して適切に管理します。<br>3. アプリ管理者は、法令に基づく場合を除き、本人の同意なく個人情報を第三者に提供しません。ただし、本アプリの性質上、登録された情報（工務店名・職人名・連絡先・単価・評価等）は他の会員ユーザーに表示・共有されることをユーザーは予め承諾します。<br>4. ユーザーは、他ユーザーの個人情報を職人シェアの目的の範囲でのみ取り扱い、目的外利用・第三者提供・漏洩をしてはなりません。<br>5. 個人情報の開示・訂正・利用停止等の請求は、アプリ管理者の定める窓口へ行うものとします。詳細はアプリ管理者のプライバシーポリシーに従います。</p>
   <p><b>第8条（秘密保持）</b><br>ユーザーは、本アプリの利用を通じて知り得た他のユーザーの営業上・技術上の情報、およびアプリ管理者の非公開情報を、アプリ管理者または当該ユーザーの事前の書面による承諾なく、第三者に開示・漏洩し、または本アプリの利用目的以外に使用してはなりません。</p>
-  <p><b>第9条（雇用・労働・社会保険・安全配慮の責任）</b><br>1. 職人の雇用関係、賃金・報酬の支払い、労働時間の管理、労働者災害補償保険（労災保険）・社会保険等の加入および負担、ならびに安全配慮義務は、当該職人を雇用する各ユーザー（工務店）が自己の責任と費用において負うものとします。<br>2. 応援（職人シェア）の実施にあたり、応援元・応援先の間の指揮命令関係、費用負担、労災・賠償の責任分担については、当事者間で事前に取り決めるものとし、アプリ管理者は一切関与・保証しません。<br>3. 現場で発生した人身事故・労災・第三者への損害について、アプリ管理者は一切の責任を負いません。</p>
+  <p><b>第9条（雇用・労働・社会保険・安全配慮の責任）</b><br>1. 応援に従事する職人の雇用関係、賃金・報酬の支払い、労働時間の管理、労働者災害補償保険（労災保険）・社会保険等の加入および負担、ならびに安全配慮義務は、当該職人を雇用する受注者（応援元）が自己の責任と費用において負うものとします。<br>2. 受注者は、応援に従事させる職人に対する指揮命令・労務管理・安全衛生管理を自ら行うものとし、発注者（応援先）は個々の職人に対して直接指示を行わず、第2条に定めるとおり受注者側現場責任者を通じて工事内容の調整を行うものとします。費用負担・労災や損害賠償の責任分担の具体的な取り決めは、第2条の2の電子請負契約その他当事者間の合意によるものとし、アプリ管理者は一切関与・保証しません。<br>3. 発注者及び受注者は、第2条及び第2条の2に定める請負契約としての実態を伴わない運用（実質的な労働者派遣・労働者供給に該当する運用）を行わないものとし、これに違反したことにより生じた行政指導・処分・罰則その他一切の責任は、当該違反を行ったユーザーが負うものとし、アプリ管理者は一切の責任を負いません。<br>4. 現場で発生した人身事故・労災・第三者への損害について、アプリ管理者は一切の責任を負いません。</p>
   <p><b>第10条（評価・レビュー）</b><br>1. 本アプリの評価（★）は、実際に取引・活用したユーザーの主観に基づく任意の情報であり、アプリ管理者はその真実性・正確性・有用性を保証しません。<br>2. ユーザーは、虚偽の評価、事実に基づかない誹謗中傷、報復・威圧を目的とした評価その他不当な評価を行ってはなりません。<br>3. アプリ管理者は、不適切と判断した評価を、事前の通知なく削除・非表示にすることができます。</p>
   <p><b>第11条（知的財産権）</b><br>本アプリおよびこれに含まれるプログラム、デザイン、商標、文章等に関する著作権その他の知的財産権は、アプリ管理者または正当な権利者に帰属します。ユーザーは、アプリ管理者の事前の承諾なく、これらを複製・改変・転載・二次利用してはなりません。ユーザーが本アプリに投稿した情報については、アプリ管理者が本アプリの運営・改善に必要な範囲で無償で利用できるものとします。</p>
   <p><b>第12条（反社会的勢力の排除）</b><br>ユーザーは、自己およびその役員・従業員が暴力団、暴力団員、その他の反社会的勢力に該当しないこと、およびこれらと関係を有しないことを表明・保証します。これに違反した場合、アプリ管理者は事前の通知なく直ちに利用を停止し、アカウントを削除できるものとし、これによりユーザーに生じた損害についてアプリ管理者は責任を負いません。</p>
@@ -2310,7 +2619,7 @@ function termsHtml(){ return `
   <p><b>第19条（連絡・通知方法）</b><br>アプリ管理者からユーザーへの連絡・通知は、本アプリ内の表示・通知、または登録された連絡先への連絡により行います。ユーザーからアプリ管理者への連絡は、アプリ管理者が別途指定する窓口を通じて行うものとします。</p>
   <p><b>第20条（分離可能性）</b><br>本規約のいずれかの条項またはその一部が法令により無効または執行不能と判断された場合であっても、当該部分以外の規定は引き続き完全に有効に存続するものとします。</p>
   <p><b>第21条（準拠法および合意管轄）</b><br>本規約の準拠法は日本法とします。本アプリまたは本規約に起因または関連してユーザーとアプリ管理者との間で生じた紛争については、アプリ管理者の本店所在地を管轄する地方裁判所を第一審の専属的合意管轄裁判所とします。</p>
-  <p style="color:var(--sub);font-size:12px;margin-top:14px">制定日：2026年6月28日／最終改定日：2026年7月8日（版 ${TERMS_VERSION}）　運営：栗駒建業</p>
+  <p style="color:var(--sub);font-size:12px;margin-top:14px">制定日：2026年6月28日／最終改定日：2026年7月10日（版 ${TERMS_VERSION}）　運営：栗駒建業</p>
 `; }
 function termsAgreedVer(){ try{ return localStorage.getItem('shokunin_terms_agreed')||''; }catch(_){ return ''; } }
 // 過去に「別の版」の規約へ同意したことがあるか（＝今回の表示が改定後の“再同意”かどうか）。
@@ -2508,6 +2817,7 @@ function reqCardHTML(r,kind){
     </div>
     <div class="meta2">📍 ${H.esc(r.site||'—')}　🗓 ${H.esc(r.dateText||'—')}</div>
     ${r.status==='accepted'?`<div class="confirmband">✅ 活用日 確定：<b>${H.esc(r.dateText||'—')}</b></div>`:''}
+    ${(r.status==='accepted'&&!reqIsFinished(r))?dealFlowHTML(r):''}
     ${r.status==='cancelled'?`<div class="cancelband">🚫 この取引は解除されました${r.cancelledByName?`（${H.esc(r.cancelledByName)}）`:''}${r.cancelledReason?`<div class="meta2" style="color:inherit;margin-top:2px">理由：${H.esc(r.cancelledReason)}</div>`:''}</div>`:''}
     ${evalHTML}
     ${r.work?`<div class="meta2">🛠 ${H.esc(r.work)}</div>`:''}
@@ -2533,10 +2843,10 @@ function reqCardHTML(r,kind){
         <button class="btn ghost sm req-edit" data-rid="${r._key}">✏️ 編集</button>
         <button class="btn ghost sm req-del" data-rid="${r._key}" style="color:var(--warn);border-color:#f0c4c0">🗑 削除</button>
       </div>`:''}
+    ${(r.status==='accepted'&&!reqIsFinished(r))?dealStageHTML(r,opened):''}
     ${(r.status==='accepted'&&!cr&&!reqIsFinished(r))?`<button class="btn ghost sm chg-req" data-rid="${r._key}" style="width:100%;margin-top:8px">📅 延長・予定変更を依頼</button>`:''}
     ${(r.status==='accepted'&&!cr&&!reqIsFinished(r))?`<button class="btn ghost sm deal-cancel" data-rid="${r._key}" style="width:100%;margin-top:8px;color:var(--warn);border-color:#f0c4c0">🚫 取引を解除する</button>`:''}
-    <button class="btn ghost sm deal-toggle" data-rid="${r._key}" style="width:100%;margin-top:8px">${opened?'▲ 条件のやり取りを閉じる':'💴 労働条件・支払い条件のやり取り'}</button>
-    ${opened?`<div class="dealbox">${dealThreadHTML()}</div>`:''}
+    ${(r.status!=='accepted'||reqIsFinished(r))?`<button class="btn ghost sm deal-toggle" data-rid="${r._key}" style="width:100%;margin-top:8px">${opened?'▲ 条件のやり取りを閉じる':'💴 労働条件・支払い条件のやり取り'}</button>${opened?`<div class="dealbox">${dealThreadHTML()}</div>`:''}`:''}
   </div>`;
 }
 // LINE風の吹き出しチャットHTML（自分=右・相手=左。自分の名前は出さず、相手名は送信者が変わった時だけ表示）
@@ -2591,6 +2901,7 @@ function bindReqCards(box){
   box.querySelectorAll('.chg-acc').forEach(b=>b.onclick=()=>applyChange(b.dataset.rid));
   box.querySelectorAll('.chg-dec').forEach(b=>b.onclick=()=>declineChange(b.dataset.rid));
   box.querySelectorAll('.deal-cancel').forEach(b=>b.onclick=()=>cancelDeal(b.dataset.rid));
+  box.querySelectorAll('.contract-open').forEach(b=>b.onclick=()=>openContract(b.dataset.rid));
   box.querySelectorAll('.chg-cancel').forEach(b=>b.onclick=()=>cancelChange(b.dataset.rid));
   box.querySelectorAll('.rv-craft').forEach(b=>b.onclick=()=>openReview('craftsman',b.dataset.ckey,b.dataset.cname,b.dataset.rid));
   box.querySelectorAll('.rv-co').forEach(b=>b.onclick=()=>openReview('company',b.dataset.cokey,b.dataset.coname));

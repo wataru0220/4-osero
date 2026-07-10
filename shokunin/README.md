@@ -151,11 +151,18 @@
       "announcements": {
         ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
         ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
+      },
+      "contracts": {
+        "$rid": {
+          ".read": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email )",
+          ".write": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email )"
+        }
       }
     }
   }
 }
 ```
+- **電子請負契約**：`contracts` は各応援要請（`requests/$rid`）の当事者2社だけが読み書きできます（`deals` と同じ考え方。管理者は対象外＝契約内容は見られません）。承認済みの要請カードの「📝請負契約」から、請負内容・請負代金・現場責任者などを入力し、発注者・受注者の双方が電子署名すると締結されます。
 - **一斉配信（お知らせ）**：`announcements` は全会員が閲覧でき、書き込みは管理者のみ（上記ルールに含まれています）。管理アプリの「📢一斉配信」タブから、内容確認→最終確認の2段階を経て配信します。
 - **退会した工務店の呼び戻し**：`deletedCompanies` は管理者のみ読み書きできます（上記ルールに含まれています。別途追加は不要）。管理者が工務店を削除すると、まずここに元データが退避され、退避の保存が確認できてから実データが削除されます。1か月以内なら管理アプリの「🗑退会した工務店」から**管理者の操作だけで元データのまま復元**できます。もし退会・呼び戻しが失敗する場合は、上記ルールに `deletedCompanies` が含まれているか（特に以前このルールを個別に追加していた場合、上記の統合版に更新されているか）をご確認ください。
 - **会員制**：`companies`/`craftsmen`/`reviews`/`approvals` の閲覧は「**`members` に登録された会員**または管理者」だけに限定されます。会員でないログインユーザーはマッチング画面を一切読めません（アプリ側でも門番が表示されます）。
