@@ -336,6 +336,7 @@
     <div class="count" id="ceSub"></div>
     <div class="count" id="ceDraftNote" style="display:none;color:var(--ok)">📝 入力中の内容を自動保存しています（保存前でも消えません）。<a id="ceDraftDiscard" style="text-decoration:underline;cursor:pointer">下書きを破棄</a></div>
     <div class="field"><label class="req">氏名</label><input type="text" id="ceName" placeholder="例）田中 一郎"></div>
+    <div class="field"><label>苗字（他社への表示用）</label><input type="text" id="ceSurname" placeholder="例）田中"><div class="count" id="ceSurnameHint" style="margin-top:2px">他社には氏名の下の名前は表示されず、「苗字＋大工」（例：田中大工）とだけ表示されます。自動推測が間違っている場合はここで修正してください。</div></div>
     <div class="row">
       <div class="field"><label>生年月日</label><input type="date" id="ceBirth"><div class="count" id="ceAgeShow" style="margin-top:2px">年齢：—（自動計算）</div></div>
       <div class="field"><label>性別</label>
@@ -598,7 +599,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-07-10b'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-07-10d'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-10'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -619,6 +620,7 @@ function toggleFav(kind,id){
 // 応援要請
 let reqByMe = {}, reqUnsub = {}, reqIndexUnsub = null, reqCompanyKey = null, reqTargetCraft = null, editReqKey = null;
 let contractUnsub = {}, contractsByRid = {}, contractRid = null, contractEditMode = false; // 電子請負契約（承認済みの応援ごとに1件）
+let _reconcileTimer = null; // ダブルブッキング防止：予約状態の再計算デバウンス（DB.on同期発火より前に宣言＝TDZ回避）
 let contactMsgs = [], contactUnsub = null, contactCompanyKey = null; // 管理者との連絡チャット
 let announcements = {}; // 運営からの一斉配信（お知らせ）
 let openDealRid = null, dealUnsub = null, dealMsgs = [];
@@ -688,6 +690,9 @@ function demoDecide(rid){
   const r=demoReqs[rid]; if(!r || r.status!=='pending') return;
   const p=demoPersonaFor(r), now=Date.now();
   DB.update('requests/'+rid, { status:'accepted', decidedAt:now, lastMsgAt:now, lastMsgByUid:p.uid });
+  // 体験モードでも予約済み日を記録（ダブルブッキング防止の挙動を体験できる）
+  const days=(r.dates&&r.dates.length)?r.dates:rangeDays(r.dateFrom,r.dateTo);
+  const bk={}; days.forEach(d=>bk[d]=rid); if(Object.keys(bk).length) DB.update('craftsmen/'+r.craftsmanKey+'/booked', bk);
   DB.push('deals/'+rid, { byUid:p.uid, byName:p.name, text:'ご依頼ありがとうございます。'+(r.craftsmanName||'弊社の大工')+'で対応可能です。この日程・条件で進めさせてください。当日の詳細はこちらでご相談しましょう。', at:now });
   H.toast('「'+p.name+'」が応援要請を承認しました（体験）', 'ok');
 }
@@ -1043,14 +1048,29 @@ function scheduleRender(){
 
 // ===== データ購読（リアルタイム） =====
 DB.on('companies', v=>{ companies=v||{}; scheduleRender('co','find','my'); });
-DB.on('craftsmen', v=>{ craftsmen=v||{}; scheduleRender('find','co','my'); });
+DB.on('craftsmen', v=>{ craftsmen=v||{}; scheduleRender('find','co','my'); if(typeof scheduleReconcile==='function') scheduleReconcile(); });
 DB.on('reviews', v=>{ reviews=v||{}; scheduleRender('find','co'); });
 DB.on('approvals', v=>{ approvals=v||{}; scheduleRender('find','co','my'); });
 DB.on('announcements', v=>{ announcements=v||{}; updateBadges(); }); // updateBadges が開いていればinboxも再描画
 
 // ===== 大工をさがす =====
+// 予約済み（承認済みの応援で押さえられている日）を除いた「空き」「応相談」。
+// これによりダブルブッキングを防ぐ（予約済みの日は他社の検索・要請に出ない）。
+function craftBookedSet(k){ return new Set(Object.keys((k&&k.booked)||{})); }
+function craftFreeDates(k){ const b=craftBookedSet(k); return H.upcomingFreeDates(k&&k.avail).filter(d=>!b.has(d)); }
+function craftMaybeDates(k){ const b=craftBookedSet(k); return H.upcomingMaybeDates(k&&k.avail).filter(d=>!b.has(d)); }
+// 応援要請・契約などに保存された大工名を、閲覧者の立場に応じて表示する。
+// 自社の大工（自分が受注者側＝toCompanyKey）なら実名、他社の大工なら「苗字＋大工」の匿名ラベル。
+function reqCraftLabel(r, mineKey){
+  if(!r) return '';
+  if(mineKey && r.toCompanyKey===mineKey){
+    const k=craftsmen[r.craftsmanKey];
+    return k ? k.name : (r.craftsmanName||'');
+  }
+  return H.craftLabelByKey(craftsmen, r.craftsmanKey, r.craftsmanName);
+}
 function matchFilter(k){
-  if(filter.freeOnly && !H.upcomingFreeDates(k.avail).length) return false;
+  if(filter.freeOnly && !craftFreeDates(k).length) return false;
   if(filter.favOnly && !favCraft.has(k._key)) return false;
   if(filter.work && !(k.good||[]).includes(filter.work)) return false;
   if(filter.qual && !(k.quals||[]).includes(filter.qual)) return false;
@@ -1064,8 +1084,8 @@ function renderFind(){
   const list=document.getElementById('kList');
   const arr=H.toArr(craftsmen).filter(k=>H.isApproved(approvals,k._key)).filter(matchFilter)
     .sort((a,b)=>{
-      const ea=H.upcomingFreeDates(a.avail), eb=H.upcomingFreeDates(b.avail);
-      const ma=H.upcomingMaybeDates(a.avail), mb=H.upcomingMaybeDates(b.avail);
+      const ea=craftFreeDates(a), eb=craftFreeDates(b);
+      const ma=craftMaybeDates(a), mb=craftMaybeDates(b);
       const ta=ea.length?2:(ma.length?1:0), tb=eb.length?2:(mb.length?1:0); // ①空き→②応相談→③予定なし の順
       if(tb!==ta) return tb-ta;
       if(ta===2 && ea[0]!==eb[0]) return ea[0]<eb[0]?-1:1;                 // 空き同士は早い日順
@@ -1084,7 +1104,7 @@ function kCardHTML(k){
   const ownerEmail=(companies[k.companyKey]||{}).ownerEmail;
   const r=H.ratingFor(reviews,'craftsman',k._key, ownerEmail);
   const isOwn=(myCompanyEntry()||{})._key===k.companyKey;
-  const free=H.upcomingFreeDates(k.avail), maybe=H.upcomingMaybeDates(k.avail);
+  const free=craftFreeDates(k), maybe=craftMaybeDates(k);
   const badge = free.length
     ? `<span class="badge" style="background:#1aa260"><span class="dot"></span>空きあり ${H.mdFromYmd(free[0])}〜</span>`
     : maybe.length
@@ -1094,7 +1114,7 @@ function kCardHTML(k){
   return `<div class="kcard">
     <div class="head">
       <div>
-        <div class="nm">${H.esc(k.name)}</div>
+        <div class="nm">${H.esc(H.craftLabel(craftsmen,k))}</div>
         <div class="co">🏢 ${H.esc(k.companyName||'—')}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
@@ -1102,7 +1122,7 @@ function kCardHTML(k){
         <button class="favbtn kfav${fav?' on':''}" data-key="${H.esc(k._key)}" title="お気に入り">${fav?'★':'☆'}</button>
       </div>
     </div>
-    <div class="meta">${(()=>{const a=H.craftAge(k);return a?a+'歳・':'';})()}${H.esc(k.gender||'')} ｜ 技術力: ${H.stars(r.avg)}${r.count?`（${r.count}件・利用者全員の平均）`:''}</div>
+    <div class="meta">👤 性別：${H.esc(k.gender||'—')}　／　年齢：${(()=>{const a=H.craftAge(k);return a?a+'歳':'—';})()} ｜ 技術力: ${H.stars(r.avg)}${r.count?`（${r.count}件・利用者全員の平均）`:''}</div>
     <div style="margin-top:6px"><span class="price">${H.fmtPrice(k.price)}</span></div>
     ${free.length?`<div class="availmemo">📅 直近の空き：${free.slice(0,6).map(H.mdFromYmd).join('、')}${free.length>6?' …':''}</div>`:''}
     ${maybe.length?`<div class="availmemo" style="color:#b5790a">🤔 応相談（条件次第で対応可）：${maybe.slice(0,6).map(H.mdFromYmd).join('、')}${maybe.length>6?' …':''}</div>`:''}
@@ -1111,7 +1131,7 @@ function kCardHTML(k){
     ${(k.ng&&k.ng.length)?`<div class="seclabel">NG作業</div>${H.chips(k.ng,'ng')}`:''}
     ${(k.quals&&k.quals.length)?`<div class="seclabel">保有資格</div>${H.chips(k.quals,'q')}`:''}
     <button class="btn ghost sm avail-toggle" data-key="${H.esc(k._key)}" style="width:100%;margin-top:8px">📅 3ヶ月の空き予定を${openAvailView===k._key?'閉じる':'見る'}</button>
-    ${openAvailView===k._key?`<div style="margin-top:8px">${calHTML(k.avail,false)}</div>`:''}
+    ${openAvailView===k._key?`<div style="margin-top:8px">${calHTML(k.avail,false,null,craftBookedSet(k))}</div>`:''}
     <button class="btn sm req-btn" data-key="${H.esc(k._key)}" style="width:100%;background:var(--accent);color:#fff;margin-top:8px">🤝 この大工に応援要請</button>
     <div class="count" style="margin-top:6px">評価は「応援」タブで、活用した大工にのみ入力できます。</div>
   </div>`;
@@ -1122,14 +1142,14 @@ function renderBoard(){
   const wrap=document.getElementById('boardWrap');
   const items=H.toArr(craftsmen)
     .filter(k=>H.isApproved(approvals,k._key))
-    .map(k=>({k, free:H.upcomingFreeDates(k.avail)}))
+    .map(k=>({k, free:craftFreeDates(k)}))
     .filter(x=>x.free.length)
     .sort((a,b)=>a.free[0]<b.free[0]?-1:1);
   if(!items.length){ wrap.innerHTML='<div class="empty">現在、空き予定が登録されている大工はいません。</div>'; return; }
   wrap.innerHTML='<div class="card" style="padding:11px 13px">'
     +`<div style="margin-bottom:8px"><span class="badge" style="background:#1aa260"><span class="dot"></span>空き予定あり</span> <b style="font-size:13px">${items.length} 名</b></div>`
     +items.map(x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--line)">
-        <div><b>${H.esc(x.k.name)}</b> <span style="color:var(--sub);font-size:12px">/ ${H.esc(x.k.companyName||'')}</span>
+        <div><b>${H.esc(H.craftLabel(craftsmen,x.k))}</b> <span style="color:var(--sub);font-size:12px">/ ${H.esc(x.k.companyName||'')}</span>
         <div style="font-size:12px;color:var(--sub)">${H.chips((x.k.good||[]).slice(0,3))}</div>
         <div style="font-size:12px;color:#1a7a45;margin-top:2px">📅 ${x.free.slice(0,6).map(H.mdFromYmd).join('、')}${x.free.length>6?' …':''}</div></div>
         <div style="text-align:right;white-space:nowrap"><span class="price" style="font-size:14px">${H.fmtPrice(x.k.price)}</span></div>
@@ -1183,7 +1203,7 @@ function coCraftRowHTML(k, isOwnCompany){
     : `<span class="badge" style="background:#9aa7b5"><span class="dot"></span>空き予定なし</span>`;
   return `<div class="cocraft">
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
-      <div class="nm">${H.esc(k.name)}</div>${badge}
+      <div class="nm">${H.esc(isOwnCompany?k.name:H.craftLabel(craftsmen,k))}</div>${badge}
     </div>
     <div class="meta2">${H.fmtPrice(k.price)} ｜ 技術力 ${H.stars(rk.avg)}${rk.count?`（${rk.count}件）`:''}</div>
     ${free.length?`<div class="meta2" style="color:#1a7a45">📅 ${free.slice(0,6).map(H.mdFromYmd).join('、')}${free.length>6?' …':''}</div>`:''}
@@ -1443,6 +1463,8 @@ function openCraftForm(key){
   document.getElementById('ceTitle').textContent=key?'大工の情報を編集':'大工を登録';
   document.getElementById('ceSub').textContent='所属：'+(mine.name||'');
   document.getElementById('ceName').value=k.name||'';
+  document.getElementById('ceSurname').value=k.surname||(k.name?H.surname(k.name):'');
+  ceSurnameTouched=!!k.surname;
   document.getElementById('ceBirth').value=k.birth||''; updateAgeShow();
   document.getElementById('ceGender').value=k.gender||'';
   document.getElementById('cePrice').value=k.price||'';
@@ -1466,12 +1488,14 @@ function updateAgeShow(){
 }
 function collectCraftForm(){
   const v=id=>document.getElementById(id).value;
-  return { name:v('ceName'), birth:v('ceBirth'), gender:v('ceGender'), price:v('cePrice'),
+  return { name:v('ceName'), surname:v('ceSurname'), birth:v('ceBirth'), gender:v('ceGender'), price:v('cePrice'),
     good:getChecked('ceGood'), ng:getChecked('ceNg'), quals:getChecked('ceQual'),
     goodCustom:ceGoodCustom.get(), ngCustom:ceNgCustom.get(), qualCustom:ceCustomQuals.get() };
 }
 function applyCraftDraft(d){
   document.getElementById('ceName').value=d.name||'';
+  document.getElementById('ceSurname').value=d.surname||'';
+  ceSurnameTouched=!!d.surname;
   document.getElementById('ceBirth').value=d.birth||''; updateAgeShow();
   document.getElementById('ceGender').value=d.gender||'';
   document.getElementById('cePrice').value=d.price||'';
@@ -1495,11 +1519,19 @@ function updateDraftHint(){
 ['input','change','click'].forEach(ev=>document.getElementById('craftOv').addEventListener(ev,()=>{ setTimeout(saveCraftDraft,0); }));
 document.getElementById('ceBirth').addEventListener('change', updateAgeShow);
 document.getElementById('ceBirth').addEventListener('input', updateAgeShow);
+// 苗字（表示用）：氏名の入力に合わせて自動推測するが、一度手で編集したら以後は追従しない
+let ceSurnameTouched=false;
+document.getElementById('ceSurname').addEventListener('input', ()=>{ ceSurnameTouched=true; });
+document.getElementById('ceName').addEventListener('input', ()=>{
+  if(ceSurnameTouched) return;
+  document.getElementById('ceSurname').value=H.surname(document.getElementById('ceName').value);
+});
 document.getElementById('ceDraftDiscard').onclick=()=>{
   if(!confirm('入力中の下書きを破棄しますか？')) return;
   clearCraftDraft();
   // フォームを空に戻す
-  ['ceName','ceBirth','ceGender','cePrice'].forEach(id=>document.getElementById(id).value=''); updateAgeShow();
+  ['ceName','ceSurname','ceBirth','ceGender','cePrice'].forEach(id=>document.getElementById(id).value=''); updateAgeShow();
+  ceSurnameTouched=false;
   setChecked('ceGood',[]); setChecked('ceNg',[]); setChecked('ceQual',[]);
   ceGoodCustom.set([]); ceNgCustom.set([]); ceCustomQuals.set([]);
   H.toast('下書きを破棄しました','ok');
@@ -1513,7 +1545,7 @@ document.getElementById('ceSave').onclick=()=>{
   if(!name){ H.toast('氏名を入力してください','err'); return; }
   const birth=document.getElementById('ceBirth').value||'';
   const data={
-    name, companyKey:mine._key, companyName:mine.name||'',
+    name, surname:document.getElementById('ceSurname').value.trim(), companyKey:mine._key, companyName:mine.name||'',
     birth, age:H.ageFromBirth(birth),
     gender:document.getElementById('ceGender').value,
     price:+document.getElementById('cePrice').value||null,
@@ -1554,7 +1586,7 @@ function calMonthsRange(){
   while(y<ey || (y===ey && m<=em)){ out.push(new Date(y,m,1)); m++; if(m>11){ m=0; y++; } }
   return out;
 }
-function monthGridHTML(monthDate, availMap, editable, reqMap, endS){
+function monthGridHTML(monthDate, availMap, editable, reqMap, endS, bookedSet){
   const y=monthDate.getFullYear(), m=monthDate.getMonth();
   const startWd=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(), todayS=calToday();
   endS=endS||calEnd3();
@@ -1564,20 +1596,25 @@ function monthGridHTML(monthDate, availMap, editable, reqMap, endS){
     const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     // 表示範囲は「今日〜3か月後」だけ。範囲外（過去・3か月より先）は空欄にする
     if(ds<todayS || ds>endS){ cells+='<div class="cal-cell empty"></div>'; continue; }
-    const st=availMap[ds], color=st?H.statusOf(st).color:'';
+    const isBooked = bookedSet && bookedSet.has(ds);
+    const st=availMap[ds]; let color=st?H.statusOf(st).color:'';
+    // 予約済み（応援確定）の日は、空き表示より優先してグレーで「予約済」と示す
+    if(isBooked) color='#9aa7b5';
     const reqs=reqMap&&reqMap[ds];
-    const reqTag=reqs&&reqs.length?`<div class="cal-req" title="${H.esc(reqs.join('、'))}">🤝${H.esc(reqs[0])}${reqs.length>1?'他':''}</div>`:'';
-    cells+=`<div class="cal-cell${editable?' edit':''}${reqs&&reqs.length?' has-req':''}" ${editable?`data-date="${ds}"`:''} style="${color?`background:${color};color:#fff;border-color:${color}`:''}">${d}${reqTag}</div>`;
+    const reqTag=isBooked?`<div class="cal-req" title="予約済み（応援が確定しています）">予約</div>`:(reqs&&reqs.length?`<div class="cal-req" title="${H.esc(reqs.join('、'))}">🤝${H.esc(reqs[0])}${reqs.length>1?'他':''}</div>`:'');
+    cells+=`<div class="cal-cell${editable&&!isBooked?' edit':''}${reqs&&reqs.length?' has-req':''}" ${editable&&!isBooked?`data-date="${ds}"`:''} style="${color?`background:${color};color:#fff;border-color:${color}`:''}">${d}${reqTag}</div>`;
   }
   return `<div class="cal-month"><div class="cal-title">${y}年${m+1}月</div><div class="cal-grid">`
     +['日','月','火','水','木','金','土'].map(w=>`<div class="cal-wd">${w}</div>`).join('')+cells+`</div></div>`;
 }
-function calHTML(availMap, editable, reqMap){
+function calHTML(availMap, editable, reqMap, bookedSet){
   const endS=calEnd3();
   const legend=H.statuses.map(s=>`<span class="lg" style="background:${s.color}"></span>${H.esc(s.label)}`).join('　');
-  return '<div class="cal-legend">'+legend+(editable?'（タップで切替・一日単位）':'')+'／表示は今日〜3か月後まで'
+  return '<div class="cal-legend">'+legend
+    + (bookedSet&&bookedSet.size?'　<span class="lg" style="background:#9aa7b5"></span>予約済（応援確定）':'')
+    + (editable?'（タップで切替・一日単位）':'')+'／表示は今日〜3か月後まで'
     + (reqMap&&Object.keys(reqMap).length?'　<span style="color:var(--accent);font-weight:800">🤝＝応援要請が入っている日（要請元の工務店名）</span>':'')+'</div>'
-    + calMonthsRange().map(md=>monthGridHTML(md, availMap||{}, editable, reqMap, endS)).join('');
+    + calMonthsRange().map(md=>monthGridHTML(md, availMap||{}, editable, reqMap, endS, bookedSet)).join('');
 }
 // 自社の大工へ来ている応援要請を日付→工務店名 のマップにする（owner視点・申請中/承認のみ）
 function rangeDays(from,to){ if(!from) return []; const out=[]; const d=new Date(from); const end=new Date(to||from); let n=0; while(d<=end && n<400){ out.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')); d.setDate(d.getDate()+1); n++; } return out; }
@@ -1693,7 +1730,7 @@ function teamAvailMap(){
     days.forEach(d=>ensure(d).deals.push({
       type: lend?'lend':'borrow',
       partner: lend?(r.fromCompanyName||'?'):(r.toCompanyName||'?'),
-      craftsmanName: r.craftsmanName||'',
+      craftsmanName: reqCraftLabel(r,mine._key),
       status: r.status
     }));
   });
@@ -1891,11 +1928,11 @@ function openRequestForm(kid){
   if(reviewNeededCount()>0){ H.toast('活用後の評価が未入力です。先に「応援」タブで評価してください','err'); goTab('req'); return; }
   const k=craftsmen[kid]; if(!k) return;
   if(k.companyKey===mine._key){ H.toast('自社の大工です','err'); return; }
-  const free=H.upcomingFreeDates(k.avail||{}), maybe=H.upcomingMaybeDates(k.avail||{});
-  if(!free.length && !maybe.length){ H.toast('この大工は現在「空き」「応相談」の日がありません。応援要請できません','err'); return; }
+  const free=craftFreeDates(k), maybe=craftMaybeDates(k);
+  if(!free.length && !maybe.length){ H.toast('この大工は現在、予約可能な「空き」「応相談」の日がありません。応援要請できません','err'); return; }
   editReqKey=null;
   reqTargetCraft=Object.assign({_key:kid},k);
-  document.getElementById('reqTitle').textContent='応援要請：'+k.name;
+  document.getElementById('reqTitle').textContent='応援要請：'+H.craftLabel(craftsmen,reqTargetCraft);
   document.getElementById('reqSub').textContent='所属「'+(k.companyName||'')+'」へ依頼します';
   ['reqWork','reqContact','reqMsg'].forEach(id=>document.getElementById(id).value='');
   setCond('reqParking','要相談'); setCond('reqLodging','要相談'); setCond('reqTransport','要相談'); setCond('reqToll','要相談');
@@ -1909,8 +1946,8 @@ let reqSelDates=new Set();
 function renderReqDates(craft, preselected){
   reqSelDates=new Set(preselected||[]);
   const box=document.getElementById('reqDates'); if(!box) return;
-  const free=H.upcomingFreeDates((craft&&craft.avail)||{});
-  const maybe=H.upcomingMaybeDates((craft&&craft.avail)||{});
+  const free=craftFreeDates(craft);   // 予約済みの日は選べない（ダブルブッキング防止）
+  const maybe=craftMaybeDates(craft);
   const typeOf={}; free.forEach(d=>typeOf[d]='free'); maybe.forEach(d=>typeOf[d]='maybe');
   (preselected||[]).forEach(d=>{ if(!typeOf[d]) typeOf[d]='free'; }); // 編集時：既存の選択日も残す
   const all=Object.keys(typeOf).sort();
@@ -1927,7 +1964,7 @@ function openRequestEdit(rid){
   editReqKey=rid;
   reqTargetCraft={_key:r.craftsmanKey, name:r.craftsmanName, companyKey:r.toCompanyKey, companyName:r.toCompanyName};
   document.getElementById('reqTitle').textContent='応援要請の編集';
-  document.getElementById('reqSub').textContent=r.craftsmanName+'（'+(r.toCompanyName||'')+'）への要請';
+  document.getElementById('reqSub').textContent=H.craftLabelByKey(craftsmen,r.craftsmanKey,r.craftsmanName)+'（'+(r.toCompanyName||'')+'）への要請';
   document.getElementById('reqPref').value=r.sitePref||''; fillReqCity();
   document.getElementById('reqCity').value=r.siteCity||''; fillReqWard();
   document.getElementById('reqWard').value=r.siteWard||'';
@@ -1987,7 +2024,8 @@ document.getElementById('reqSend').onclick=()=>{
 function openChangeForm(rid){
   const r=reqByMe[rid]; if(!r) return;
   chgRid=rid;
-  document.getElementById('chgSub').textContent=r.craftsmanName+'（現在の活用日：'+(r.dateText||'—')+'）';
+  const mineChg=myCompanyEntry();
+  document.getElementById('chgSub').textContent=reqCraftLabel(r,mineChg&&mineChg._key)+'（現在の活用日：'+(r.dateText||'—')+'）';
   document.getElementById('chgStart').value=r.dateFrom||'';
   document.getElementById('chgEnd').value=(r.dateTo&&r.dateTo!==r.dateFrom)?r.dateTo:'';
   document.getElementById('chgNote').value='';
@@ -2112,7 +2150,7 @@ function renderContractModal(){
   const c=contractsByRid[rid]||{};
   const role=contractRole(r); // 'from'=発注者 / 'to'=受注者
   const mine=myCompanyEntry();
-  document.getElementById('ctrSub').textContent=(role==='from'?'発注者：':'受注者：')+((mine&&mine.name)||'')+'／大工「'+(r.craftsmanName||'')+'」の応援に関する契約';
+  document.getElementById('ctrSub').textContent=(role==='from'?'発注者：':'受注者：')+((mine&&mine.name)||'')+'／大工「'+reqCraftLabel(r,mine&&mine._key)+'」の応援に関する契約';
   document.getElementById('ctrBase').textContent='📍 '+(r.site||'—')+'　🗓 '+(r.dateText||'—')+(r.work?('\n🛠 '+r.work):'');
   const signed=!!(c.fromSign && c.toSign);
   document.getElementById('ctrSignedBand').style.display=signed?'block':'none';
@@ -2146,15 +2184,25 @@ function renderContractModal(){
 // ===== 契約書のダウンロード・印刷（保存済みの契約データから、単体で開ける契約書HTMLを生成） =====
 function contractAmountText(a){ return (Number(a)||0).toLocaleString('ja-JP')+'円（税込）'; }
 function sanitizeFileName(s){ return String(s||'').replace(/[\\\/:*?"<>|\s]+/g,'_').slice(0,40); }
+// 契約に保存された大工名を、閲覧者の立場に応じて表示する（受注者側なら実名、それ以外は匿名ラベル）
+function contractCraftLabel(c){
+  const mine=myCompanyEntry();
+  if(mine && c.toCompanyKey===mine._key){
+    const k=craftsmen[c.craftsmanKey];
+    return k ? k.name : (c.craftsmanName||'');
+  }
+  return H.craftLabelByKey(craftsmen, c.craftsmanKey, c.craftsmanName);
+}
 function contractFileName(rid){
   const c=contractsByRid[rid]||{};
   const d=(c.dateText||'').split(/[、,〜]/)[0] || H.todayStr();
-  return '電子請負契約_'+sanitizeFileName(c.craftsmanName||'')+'_'+sanitizeFileName(d)+'.html';
+  return '電子請負契約_'+sanitizeFileName(contractCraftLabel(c))+'_'+sanitizeFileName(d)+'.html';
 }
 // 単体で開ける契約書HTML（当アプリのCSSに依存しない自己完結ドキュメント）
 function contractDocHTML(rid){
   const c=contractsByRid[rid]; if(!c) return '';
   const e=H.esc;
+  const craftLabel=contractCraftLabel(c);
   const signed=!!(c.fromSign && c.toSign);
   const statusBanner = signed
     ? '<div class="status ok">✅ 本契約は締結済みです（発注者・受注者の双方が電子署名を完了）</div>'
@@ -2163,7 +2211,7 @@ function contractDocHTML(rid){
     ? `<td><div class="slabel">${label}</div><div class="sval"><b>${e(s.companyName||'')}</b></div><div class="sval">担当者：${e(s.name||'')}</div><div class="sdate">電子署名日時：${e(H.fmtDate(s.at))}</div></td>`
     : `<td><div class="slabel">${label}</div><div class="sval unsigned">未署名</div></td>`;
   const rows=[
-    ['対象の大工', e(c.craftsmanName||'—')],
+    ['対象の大工', e(craftLabel||'—')],
     ['工事場所', e(c.site||'—')],
     ['作業日（活用日）', e(c.dateText||'—')],
     ['請負内容（作業範囲）', e(c.work||'—')],
@@ -2175,7 +2223,7 @@ function contractDocHTML(rid){
   const issued=H.fmtDate(Date.now());
   return `<!doctype html><html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>電子請負契約書（${e(c.craftsmanName||'')}）</title>
+<title>電子請負契約書（${e(craftLabel||'')}）</title>
 <style>
   *{box-sizing:border-box}
   body{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif; color:#1c2530; margin:0; padding:24px; line-height:1.7; background:#fff}
@@ -2469,24 +2517,25 @@ function inboxItems(){
   const myUid=DB.auth.user&&DB.auth.user.uid;
   const items=[];
   H.toArr(reqByMe).forEach(r=>{
+    const cname=reqCraftLabel(r,mine._key);
     if(r.toCompanyKey===mine._key && r.status==='pending')
-      items.push({key:'req:'+r._key,ic:'🤝',t:'応援要請が届いています',d:`${r.fromCompanyName||''} → 大工 ${r.craftsmanName||''}（${r.dateText||'日程未定'}）`,go:'req',at:r.createdAt||0});
+      items.push({key:'req:'+r._key,ic:'🤝',t:'応援要請が届いています',d:`${r.fromCompanyName||''} → 大工 ${cname}（${r.dateText||'日程未定'}）`,go:'req',at:r.createdAt||0});
     if(r.fromCompanyKey===mine._key && (r.status==='accepted'||r.status==='declined') && (r.decidedAt||0)>seenAt(r._key)){
       const ok=r.status==='accepted';
-      items.push({key:'decided:'+r._key+':'+(r.decidedAt||0),ic:ok?'✅':'🙅',t:ok?'応援要請が承認されました':'応援要請が辞退されました',d:`${r.toCompanyName||''}／大工 ${r.craftsmanName||''}（${r.dateText||''}）`,go:'req',at:r.decidedAt||0});
+      items.push({key:'decided:'+r._key+':'+(r.decidedAt||0),ic:ok?'✅':'🙅',t:ok?'応援要請が承認されました':'応援要請が辞退されました',d:`${r.toCompanyName||''}／大工 ${cname}（${r.dateText||''}）`,go:'req',at:r.decidedAt||0});
     }
     const crToMe = r.changeReq && r.changeReq.byUid && r.changeReq.byUid!==myUid;
     if(crToMe)
-      items.push({key:'chg:'+r._key+':'+(r.changeReq.at||0),ic:'📅',t:'日程変更の依頼',d:`大工 ${r.craftsmanName||''}：新しい日程 ${r.changeReq.dateText||''}（${r.changeReq.byName||''}より）`,go:'req',at:r.changeReq.at||0});
+      items.push({key:'chg:'+r._key+':'+(r.changeReq.at||0),ic:'📅',t:'日程変更の依頼',d:`大工 ${cname}：新しい日程 ${r.changeReq.dateText||''}（${r.changeReq.byName||''}より）`,go:'req',at:r.changeReq.at||0});
     const cancelledByOther = r.status==='cancelled' && r.cancelledByUid && r.cancelledByUid!==myUid && (r.cancelledAt||0)>seenAt(r._key);
     if(cancelledByOther)
-      items.push({key:'cancel:'+r._key+':'+(r.cancelledAt||0),ic:'🚫',t:'取引が解除されました',d:`大工 ${r.craftsmanName||''}（${r.dateText||'日程不明'}の予定）${r.cancelledReason?'・理由：'+r.cancelledReason:''}`,go:'req',at:r.cancelledAt||0});
+      items.push({key:'cancel:'+r._key+':'+(r.cancelledAt||0),ic:'🚫',t:'取引が解除されました',d:`大工 ${cname}（${r.dateText||'日程不明'}の予定）${r.cancelledReason?'・理由：'+r.cancelledReason:''}`,go:'req',at:r.cancelledAt||0});
     if(r.lastMsgAt && r.lastMsgByUid && r.lastMsgByUid!==myUid && r.lastMsgAt>seenAt(r._key) && !crToMe && !cancelledByOther){
       const other = r.toCompanyKey===mine._key ? r.fromCompanyName : r.toCompanyName;
-      items.push({key:'msg:'+r._key+':'+r.lastMsgAt,ic:'💴',t:'条件のやり取りに新着',d:`${other||''}・大工 ${r.craftsmanName||''}（${r.dateText||'日程不明'}）`,go:'req',at:r.lastMsgAt});
+      items.push({key:'msg:'+r._key+':'+r.lastMsgAt,ic:'💴',t:'条件のやり取りに新着',d:`${other||''}・大工 ${cname}（${r.dateText||'日程不明'}）`,go:'req',at:r.lastMsgAt});
     }
     if(needsMyReview(r))
-      items.push({key:'rev:'+r._key,ic:'⭐',t:'活用後の評価が必須です',d:`大工 ${r.craftsmanName||''}（${r.dateText||''}）`,go:'req',at:(r.dateTo?Date.parse(r.dateTo):0)});
+      items.push({key:'rev:'+r._key,ic:'⭐',t:'活用後の評価が必須です',d:`大工 ${cname}（${r.dateText||''}）`,go:'req',at:(r.dateTo?Date.parse(r.dateTo):0)});
   });
   const cu=contactUnread();
   if(cu>0)
@@ -2759,8 +2808,38 @@ function cleanupOldRequests(){
     ]).catch(()=>{});
   });
 }
+// ===== ダブルブッキング防止：自社の大工の「予約済み日(booked)」を承認済みの応援から整える =====
+// 予約状態の唯一の書き込み者は大工の所有工務店（＝自社）。承認/解除/日程変更/削除のいずれでも、
+// 自社が見えている「承認済み・未完了」の応援日だけが booked として残るよう差分同期する。
+// （相手側が解除しても、こちらのアプリが開いた時に自動で解放される。安全側：解放が遅れても二重予約はしない）
+function reconcileBookings(){
+  const mine=myCompanyEntry(); if(!mine) return;
+  const today=H.todayStr();
+  const myKids=Object.keys(craftsmen).filter(kid=>(craftsmen[kid]||{}).companyKey===mine._key);
+  if(!myKids.length) return;
+  const want={}; myKids.forEach(kid=>want[kid]={});
+  H.toArr(reqByMe).forEach(r=>{
+    if(r.status!=='accepted') return;
+    if(reqIsFinished(r)) return;
+    if(!want[r.craftsmanKey]) return;                 // 自社の大工のみ
+    const days=(r.dates&&r.dates.length)?r.dates:rangeDays(r.dateFrom,r.dateTo);
+    days.forEach(d=>{ if(d>=today) want[r.craftsmanKey][d]=r._key; });
+  });
+  myKids.forEach(kid=>{
+    const cur=(craftsmen[kid]&&craftsmen[kid].booked)||{};
+    const w=want[kid], upd={};
+    Object.keys(w).forEach(d=>{ if(cur[d]!==w[d]) upd[d]=w[d]; });          // 追加・付け替え
+    Object.keys(cur).forEach(d=>{ if(d>=today && !w[d]) upd[d]=null; });    // 未来の不要な予約を解放
+    if(Object.keys(upd).length){
+      if(craftsmen[kid]){ craftsmen[kid].booked=Object.assign({}, cur); Object.keys(upd).forEach(d=>{ if(upd[d]===null) delete craftsmen[kid].booked[d]; else craftsmen[kid].booked[d]=upd[d]; }); } // 即時反映
+      DB.update('craftsmen/'+kid+'/booked', upd).catch(()=>{});
+    }
+  });
+}
+function scheduleReconcile(){ if(_reconcileTimer) return; _reconcileTimer=setTimeout(()=>{ _reconcileTimer=null; try{ reconcileBookings(); }catch(_){} }, 60); }
 function renderRequests(){
   updateBadges();
+  scheduleReconcile();
   const box=document.getElementById('reqBox'); if(!box) return;
   const mine=myCompanyEntry();
   const hc=document.getElementById('histCard'); if(hc) hc.style.display = mine?'block':'none';
@@ -2807,7 +2886,7 @@ function loadHistory(){
         const r=reqByMe[rid]||{};
         const recent=msgs.filter(m=>(m.at||0)>=cutoff).sort((a,b)=>(a.at||0)-(b.at||0));
         const partner = r.fromCompanyKey===mine._key ? (r.toCompanyName||'相手') : (r.fromCompanyName||'相手');
-        return { rid, partner, craft:r.craftsmanName||'', msgs:recent, last: recent.length?(recent[recent.length-1].at||0):0 };
+        return { rid, partner, craft:reqCraftLabel(r,mine._key), msgs:recent, last: recent.length?(recent[recent.length-1].at||0):0 };
       }).filter(t=>t.msgs.length>0).sort((a,b)=>b.last-a.last);
       histLoading=false; renderHistory();
     });
@@ -2833,6 +2912,8 @@ function reqCardHTML(r,kind){
   const opened=openDealRid===r._key;
   const isNew=reqIsNew(r);
   const myUid=DB.auth.user&&DB.auth.user.uid;
+  const mine=myCompanyEntry();
+  const craftLabel=reqCraftLabel(r,mine&&mine._key);
   const cr=r.changeReq; // 延長・予定変更の依頼（保留中のみ存在）
   const iAmProposer=cr&&cr.byUid&&cr.byUid===myUid;
   const needReview=needsMyReview(r); // 活用後の評価が必須
@@ -2841,14 +2922,14 @@ function reqCardHTML(r,kind){
   const evalHTML = reqCompleted(r) ? `<div class="evalbox">
       <div class="seclabel" style="margin-top:0">⭐ 評価（工期終了・完了した取引のみ／5段階・利用者全員の平均に反映）</div>
       ${kind==='sent' ? (needReview
-        ? `<div class="reviewneed" style="margin-top:6px">活用後の評価が<b>必須</b>です。<div class="row" style="margin-top:6px"><button class="btn sm rv-craft" data-ckey="${H.esc(r.craftsmanKey||'')}" data-cname="${H.esc(r.craftsmanName||'')}" data-rid="${H.esc(r._key)}">⭐ 大工「${H.esc(r.craftsmanName||'')}」を評価（必須）</button></div></div>`
-        : `<button class="btn ghost sm rv-craft" data-ckey="${H.esc(r.craftsmanKey||'')}" data-cname="${H.esc(r.craftsmanName||'')}" data-rid="${H.esc(r._key)}" style="width:100%;margin-top:6px">⭐ 大工「${H.esc(r.craftsmanName||'')}」を評価</button>`)
+        ? `<div class="reviewneed" style="margin-top:6px">活用後の評価が<b>必須</b>です。<div class="row" style="margin-top:6px"><button class="btn sm rv-craft" data-ckey="${H.esc(r.craftsmanKey||'')}" data-cname="${H.esc(craftLabel)}" data-rid="${H.esc(r._key)}">⭐ 大工「${H.esc(craftLabel)}」を評価（必須）</button></div></div>`
+        : `<button class="btn ghost sm rv-craft" data-ckey="${H.esc(r.craftsmanKey||'')}" data-cname="${H.esc(craftLabel)}" data-rid="${H.esc(r._key)}" style="width:100%;margin-top:6px">⭐ 大工「${H.esc(craftLabel)}」を評価</button>`)
       : ''}
       <button class="btn ghost sm rv-co" data-cokey="${H.esc(partnerKey)}" data-coname="${H.esc(partnerName)}" style="width:100%;margin-top:6px">⭐ 工務店「${H.esc(partnerName)}」を評価</button>
     </div>` : '';
   return `<div class="reqcard" data-rid="${H.esc(r._key)}"${(isNew||needReview)?' style="border-color:var(--warn);box-shadow:0 0 0 1px var(--warn) inset"':''}>
     <div style="display:flex;justify-content:space-between;gap:8px">
-      <div>${isNew?'<span class="newtag">NEW</span> ':''}<b>${H.esc(r.craftsmanName)}</b> <span class="count" style="display:inline">${kind==='recv'?'← '+H.esc(r.fromCompanyName):'→ '+H.esc(r.toCompanyName)}</span></div>
+      <div>${isNew?'<span class="newtag">NEW</span> ':''}<b>${H.esc(craftLabel)}</b> <span class="count" style="display:inline">${kind==='recv'?'← '+H.esc(r.fromCompanyName):'→ '+H.esc(r.toCompanyName)}</span></div>
       <div>${reqStatusLabel(r.status)}</div>
     </div>
     <div class="meta2">📍 ${H.esc(r.site||'—')}　🗓 ${H.esc(r.dateText||'—')}</div>
@@ -2922,9 +3003,15 @@ function dealThreadHTML(){
 }
 function bindReqCards(box){
   box.querySelectorAll('.acc').forEach(b=>b.onclick=()=>{
-    const rid=b.dataset.rid, now=Date.now();
+    const rid=b.dataset.rid; const r=reqByMe[rid]; if(!r) return;
+    // ダブルブッキング防止：この大工が既に別の応援で押さえている日と重複していないか確認
+    const k=craftsmen[r.craftsmanKey]||{}; const booked=k.booked||{}; const today=H.todayStr();
+    const days=(r.dates&&r.dates.length)?r.dates:rangeDays(r.dateFrom,r.dateTo);
+    const conflict=days.filter(d=>d>=today && booked[d] && booked[d]!==rid);
+    if(conflict.length){ H.toast('日程が重複しています（'+conflict.map(H.mdFromYmd).join('、')+'）。この日は別の応援で確定済みです。先に予定を調整してください','err'); return; }
+    const now=Date.now();
     if(reqByMe[rid]){ reqByMe[rid].status='accepted'; reqByMe[rid].decidedAt=now; scheduleRender('req'); } // 即時反映
-    DB.update('requests/'+rid,{status:'accepted', decidedAt:now}).then(()=>H.toast('承認しました','ok'));
+    DB.update('requests/'+rid,{status:'accepted', decidedAt:now}).then(()=>{ reconcileBookings(); H.toast('承認しました（この日程を予約済みにしました）','ok'); });
   });
   box.querySelectorAll('.dec').forEach(b=>b.onclick=()=>{
     const rid=b.dataset.rid, now=Date.now();

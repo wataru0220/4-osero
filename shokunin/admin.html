@@ -759,7 +759,7 @@ function renderReqList(){
   list.innerHTML=arr.map(r=>`<div class="item">
     <div class="top">
       <div><div class="nm">${H.esc(r.fromCompanyName)} → ${H.esc(r.toCompanyName)}</div>
-      <div class="meta">大工：${H.esc(r.craftsmanName)}　🗓${H.esc(r.dateText||'—')}</div>
+      <div class="meta">大工：${H.esc(H.craftLabelByKey(craftsmen,r.craftsmanKey,r.craftsmanName))}　🗓${H.esc(r.dateText||'—')}</div>
       <div class="meta">📍${H.esc(r.site||'—')}</div></div>
       <div>${stl(r.status)}</div>
     </div>

@@ -134,6 +134,54 @@
   };
   // 大工の表示年齢（生年月日があれば自動計算、なければ従来のage）
   H.craftAge = (k) => (k && k.birth) ? H.ageFromBirth(k.birth) : (k && k.age) || null;
+  // 氏名から「苗字」を推測する（あくまで簡易推測。正確な苗字は大工の登録画面の
+  // 「苗字（表示用）」欄で指定でき、指定があればそちらが優先される＝H.craftLabel参照）。
+  // ・空白があれば最初の空白より前（全角/半角スペース対応）。
+  // ・空白が無ければ、日本人の苗字で最も多い2文字を暫定的な苗字とみなす（例：金野幸二→金野）。
+  //   3文字以上の苗字（佐々木 等）や1文字の苗字（林 等）は外れることがあるため、
+  //   その場合は登録画面で「苗字（表示用）」を明示的に入力して補正してください。
+  H.surname = (name) => {
+    const s = String(name || "").trim();
+    if (!s) return "";
+    if (/[\s　]/.test(s)) return s.split(/[\s　]+/)[0] || s;
+    return s.length >= 2 ? s.slice(0, 2) : s;
+  };
+  // ①②③…の丸数字（21以上は "(21)" のようにフォールバック）
+  H.circledNum = (n) => {
+    const c = ["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩","⑪","⑫","⑬","⑭","⑮","⑯","⑰","⑱","⑲","⑳"];
+    return c[n - 1] || ("(" + n + ")");
+  };
+  // 大工レコードの苗字を求める。登録画面の「苗字（表示用）」欄が入力されていればそれを優先し、
+  // 無ければ氏名からの簡易推測（H.surname）を使う。
+  H.surnameOf = (k) => (k && k.surname && String(k.surname).trim()) || H.surname(k && k.name);
+  // 他社に見せる大工の表示名：「苗字＋大工」。同じ工務店内に同姓の大工が複数いる場合は
+  // 登録が早い順に①②…を付けて区別する（プライバシー配慮のため、個人の下の名前は表示しない）。
+  // craftsmenMap: 全大工のマップ（{key:{...,companyKey,name,surname}}）。k: 対象の大工（_key を含む）。
+  H.craftLabel = (craftsmenMap, k) => {
+    if (!k) return "";
+    const surname = H.surnameOf(k);
+    const label = surname + "大工";
+    if (!craftsmenMap || !k.companyKey) return label;
+    const siblings = Object.keys(craftsmenMap)
+      .filter((kid) => craftsmenMap[kid] && craftsmenMap[kid].companyKey === k.companyKey && H.surnameOf(craftsmenMap[kid]) === surname)
+      .sort((a, b) => {
+        const ca = (craftsmenMap[a] || {}).createdAt || 0, cb = (craftsmenMap[b] || {}).createdAt || 0;
+        if (ca !== cb) return ca - cb;
+        return a < b ? -1 : 1;
+      });
+    if (siblings.length <= 1) return label;
+    let idx = siblings.indexOf(k._key);
+    if (idx < 0) idx = 0;
+    return label + H.circledNum(idx + 1);
+  };
+  // 応援要請・契約など「大工名を保存済みのレコード」向け：大工が現存すれば最新の表示名（番号込み）、
+  // 削除済みなら保存済みの名前から苗字＋大工のみ（番号なし）で表示する。
+  H.craftLabelByKey = (craftsmenMap, key, fallbackName) => {
+    const k = craftsmenMap && craftsmenMap[key];
+    if (k) return H.craftLabel(craftsmenMap, Object.assign({ _key: key }, k));
+    const s = H.surname(fallbackName);
+    return s ? s + "大工" : "";
+  };
 
   // メッセージ本文をエスケープしつつ、URL（http(s)://… や www.…）だけをリンク化する。
   // 先に全文をエスケープ相当の処理にし、URL部分のみ <a> で包む（XSS安全。javascript: 等はマッチしない）。
