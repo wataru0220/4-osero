@@ -598,7 +598,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-07-10a'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-07-10b'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-10'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
@@ -2367,7 +2367,43 @@ function updateBadges(){
 }
 // ===== 通知（段階導入：クライアント通知。アプリを開いている間、新着をOS通知） =====
 let swReg=null;
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').then(r=>{ swReg=r; }).catch(()=>{}); }
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(r=>{ swReg=r; try{ r.update(); }catch(_){} }).catch(()=>{});
+  // アプリを開いている間、定期的にSWの更新を確認（スマホPWAは自動チェックが遅いため）
+  setInterval(()=>{ try{ swReg && swReg.update(); }catch(_){} }, 60*1000);
+  // 新しいSWが有効化されたら一度だけ自動リロード（SW自体が更新されたとき）
+  let _swReloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange', ()=>{ if(_swReloaded) return; _swReloaded=true; try{ location.reload(); }catch(_){} });
+}
+// ===== 公開版の更新検知（特にスマホPWAで古い版が残る問題への対策） =====
+// ネットワーク上の最新 index.html の APP_VERSION を読み、今動いている版と違えば更新バナーを出す。
+let _updateBannerShown=false;
+function checkForUpdate(){
+  try{
+    fetch('index.html', { cache:'no-store' }).then(r=>r.text()).then(t=>{
+      const m=t.match(/APP_VERSION\s*=\s*'([^']+)'/);
+      if(m && m[1] && m[1]!==APP_VERSION) showUpdateBanner(m[1]);
+    }).catch(()=>{});
+  }catch(_){}
+}
+function showUpdateBanner(newVer){
+  if(_updateBannerShown || document.getElementById('updateBar')) return; _updateBannerShown=true;
+  const bar=document.createElement('div'); bar.id='updateBar';
+  bar.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:100000;background:#e8541e;color:#fff;padding:12px 14px;font-size:14px;font-weight:700;display:flex;gap:10px;align-items:center;justify-content:center;box-shadow:0 -2px 12px rgba(0,0,0,.25)';
+  bar.innerHTML='🆕 新しいバージョン（'+H.esc(newVer)+'）があります。<button id="updateNow" style="background:#fff;color:#e8541e;border:none;border-radius:8px;padding:7px 14px;font-weight:800;cursor:pointer">今すぐ更新</button>';
+  document.body.appendChild(bar);
+  document.getElementById('updateNow').onclick=doUpdateReload;
+}
+function doUpdateReload(){
+  const btn=document.getElementById('updateNow'); if(btn){ btn.textContent='更新中…'; btn.disabled=true; }
+  try{ if(swReg) swReg.update(); }catch(_){}
+  const done=()=>{ try{ location.reload(); }catch(_){ location.href='index.html'; } };
+  if(window.caches && caches.keys){ caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(done).catch(done); }
+  else done();
+}
+setTimeout(checkForUpdate, 3000);
+// アプリを前面に戻したとき（スマホでよくある操作）にも確認
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) checkForUpdate(); });
 function notifGranted(){ return ('Notification' in window) && Notification.permission==='granted'; }
 function loadNotified(){ try{ return JSON.parse(localStorage.getItem('shokunin_notified')||'{}'); }catch(_){ return {}; } }
 function saveNotified(o){ try{ localStorage.setItem('shokunin_notified', JSON.stringify(o)); }catch(_){} }
