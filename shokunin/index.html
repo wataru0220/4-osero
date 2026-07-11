@@ -62,6 +62,7 @@
   .row{display:flex; gap:10px} .row>*{flex:1}
   .btn{padding:11px 14px; border:0; border-radius:10px; background:var(--brand); color:#fff; font-weight:800; cursor:pointer}
   .btn.ghost{background:#fff; color:var(--brand-dark); border:1.5px solid var(--line)}
+  .btn.ghost.on{background:var(--brand); color:#fff; border-color:var(--brand)}
   .btn.ln{background:var(--line-green); color:#fff}
   .btn.full{width:100%}
   .btn.sm{padding:7px 11px; font-size:13px; border-radius:8px}
@@ -531,10 +532,10 @@
       <button class="btn ghost sm" id="ctrEditToggle" style="display:none;width:100%">✏️ 内容を修正する（署名はリセットされます）</button>
     </div>
     <div class="row" style="margin-top:8px">
-      <button class="btn ghost sm" id="ctrDownload" style="display:none;flex:1">📄 契約書をダウンロード</button>
-      <button class="btn ghost sm" id="ctrPrint" style="display:none;flex:1">🖨 印刷（PDFで保存）</button>
+      <button class="btn ghost sm" id="ctrDownload" style="display:none;flex:1">📄 契約書をPDFでダウンロード</button>
+      <button class="btn ghost sm" id="ctrPrint" style="display:none;flex:1">🖨 その場で印刷する</button>
     </div>
-    <div class="count" style="margin-top:8px">※ 締結後は「📄契約書をダウンロード」または「🖨印刷」で保存し、法令に基づき必要な期間保管してください。本アプリ内のデータが将来にわたって保存され続けることは保証されません。</div>
+    <div class="count" style="margin-top:8px">※ 締結後は「📄契約書をPDFでダウンロード」で保存し、法令に基づき必要な期間保管してください。本アプリ内のデータが将来にわたって保存され続けることは保証されません。</div>
   </div>
 </div>
 
@@ -596,6 +597,7 @@
   <button data-page="contact"><span class="ic">📨</span>連絡<span class="tabbadge" id="contactBadge" style="display:none">0</span></button>
 </nav>
 
+<script src="jspdf.umd.min.js?v=20260711a"></script>
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
@@ -2196,7 +2198,7 @@ function contractCraftLabel(c){
 function contractFileName(rid){
   const c=contractsByRid[rid]||{};
   const d=(c.dateText||'').split(/[、,〜]/)[0] || H.todayStr();
-  return '電子請負契約_'+sanitizeFileName(contractCraftLabel(c))+'_'+sanitizeFileName(d)+'.html';
+  return '電子請負契約_'+sanitizeFileName(contractCraftLabel(c))+'_'+sanitizeFileName(d)+'.pdf';
 }
 // 単体で開ける契約書HTML（当アプリのCSSに依存しない自己完結ドキュメント）
 function contractDocHTML(rid){
@@ -2267,15 +2269,154 @@ function contractDocHTML(rid){
 </div>
 </body></html>`;
 }
+// ===== 契約書PDFの生成（jsPDF＋Canvas。日本語フォントの埋め込みが不要な「画像として貼り込む」方式） =====
+// 1行分の文字列を、指定の幅に収まるよう折り返して配列で返す（日本語なので単語区切りではなく文字単位）。
+function wrapCanvasText(ctx, text, maxWidth){
+  const out=[]; let cur='';
+  const s=String(text==null?'':text);
+  for(const ch of s){
+    if(ch==='\n'){ out.push(cur); cur=''; continue; }
+    const test=cur+ch;
+    if(cur && ctx.measureText(test).width>maxWidth){ out.push(cur); cur=ch; }
+    else cur=test;
+  }
+  out.push(cur);
+  return out;
+}
+function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight){
+  const lines=wrapCanvasText(ctx, text, maxWidth);
+  lines.forEach((ln,i)=>ctx.fillText(ln, x, y+i*lineHeight));
+  return y + lines.length*lineHeight;
+}
+function roundRectPath(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+// 契約内容をCanvasに描画する（縦に十分大きい下書き用キャンバスに描いてから、実際に使った高さだけ切り出す＝内容の長さに関わらず絶対にはみ出さない）。
+function renderContractCanvas(rid){
+  const c=contractsByRid[rid]; if(!c) return null;
+  const craftLabel=contractCraftLabel(c);
+  const signed=!!(c.fromSign && c.toSign);
+  const FONT="'Yu Gothic','Hiragino Kaku Gothic ProN','Meiryo',sans-serif";
+  const W=1240, MARGIN=70, DRAFT_H=3400; // 下書き用キャンバス（十分に大きい。最後に実高さで切り出す）
+  const draw=document.createElement('canvas'); draw.width=W; draw.height=DRAFT_H;
+  const ctx=draw.getContext('2d');
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,DRAFT_H);
+  ctx.textBaseline='alphabetic';
+
+  let y=90;
+  ctx.fillStyle='#1c2530'; ctx.textAlign='center'; ctx.font='bold 34px '+FONT;
+  ctx.fillText('電子請負契約書', W/2, y);
+  ctx.font='13px '+FONT; ctx.fillStyle='#7a8896';
+  ctx.fillText('契約ID：'+rid+'　／　発行日時：'+H.fmtDate(Date.now()), W/2, y+34);
+  ctx.textAlign='left';
+  y += 34+40;
+
+  // 締結状況バンド
+  const bandH=54;
+  roundRectPath(ctx, MARGIN, y, W-2*MARGIN, bandH, 8);
+  ctx.fillStyle = signed ? '#eafaf0' : '#fff4e5'; ctx.fill();
+  ctx.strokeStyle = signed ? '#b6e6c8' : '#ffd591'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.fillStyle = signed ? '#1a7a45' : '#8a5a00'; ctx.font='bold 16px '+FONT;
+  ctx.fillText(signed ? '✅ 本契約は締結済みです（発注者・受注者の双方が電子署名を完了）'
+    : '⚠️ この契約書はまだ両者の電子署名が完了していません（下書き段階）', MARGIN+16, y+34);
+  y += bandH+30;
+
+  // 前文
+  ctx.fillStyle='#333'; ctx.font='14px '+FONT;
+  y = drawWrappedText(ctx, '応援を依頼する側（以下「発注者」）と、応援する職人が所属する側（以下「受注者」）は、下記のとおり工事の一部の完成を目的とする請負契約を締結する。本契約は請負契約（業務委託契約）であり、労働者派遣・労働者供給には該当しない。', MARGIN, y, W-2*MARGIN, 23);
+  y += 26;
+
+  // 項目テーブル
+  const rows=[
+    ['発注者', c.fromCompanyName||'—'],
+    ['受注者', c.toCompanyName||'—'],
+    ['対象の大工', craftLabel||'—'],
+    ['工事場所', c.site||'—'],
+    ['作業日（活用日）', c.dateText||'—'],
+    ['請負内容（作業範囲）', c.work||'—'],
+    ['請負代金', contractAmountText(c.amount) + (c.amountNote?('（'+c.amountNote+'）'):'')],
+    ['支払方法・支払期日', c.payTerm||'—'],
+    ['現場責任者（受注者側）', c.foreman||'—'],
+    ['特記事項', c.notes||'—']
+  ];
+  const labelW=232, valueX=MARGIN+labelW+12, valueW=W-2*MARGIN-labelW-12;
+  rows.forEach(([label,val])=>{
+    const rowTop=y;
+    ctx.font='bold 14px '+FONT; ctx.fillStyle='#1c2530';
+    ctx.fillText(label, MARGIN+14, y+22);
+    ctx.font='14px '+FONT; ctx.fillStyle='#222';
+    const endY=drawWrappedText(ctx, val, valueX, y+22, valueW, 20);
+    const rowH=Math.max(endY-y, 38);
+    y = rowTop+rowH+10;
+    ctx.strokeStyle='#e3e8ee'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(MARGIN,y-6); ctx.lineTo(W-MARGIN,y-6); ctx.stroke();
+  });
+  y += 14;
+
+  // 本契約の性質（重要）
+  ctx.font='12.5px '+FONT;
+  const clauseText='本契約は請負契約（業務委託契約）である。受注者は、応援に従事させる自社の職人に対する労務管理・指揮命令・安全衛生管理・出退勤の管理を自ら行う。発注者は、当該職人に対して直接の作業指示や勤怠管理を行わず、工事内容の調整は受注者があらかじめ指定する上記の現場責任者を通じて行う。天災その他不可抗力による損害の負担、請負代金・工期の変更方法については当事者間で誠実に協議して定めるものとする。アプリ管理者は本契約の当事者ではなく、本契約の成立・内容・履行及び当事者間の紛争について一切関与せず、何らの責任も負わない。';
+  const clauseLines=wrapCanvasText(ctx, clauseText, W-2*MARGIN-32);
+  const clauseH=34+clauseLines.length*19+16;
+  roundRectPath(ctx, MARGIN, y, W-2*MARGIN, clauseH, 8);
+  ctx.fillStyle='#fafbfc'; ctx.fill(); ctx.strokeStyle='#e3e8ee'; ctx.lineWidth=1; ctx.stroke();
+  ctx.font='bold 14px '+FONT; ctx.fillStyle='#b3462f';
+  ctx.fillText('本契約の性質（重要）', MARGIN+16, y+26);
+  ctx.font='12.5px '+FONT; ctx.fillStyle='#333';
+  clauseLines.forEach((ln,i)=>ctx.fillText(ln, MARGIN+16, y+50+i*19));
+  y += clauseH+28;
+
+  // 署名欄（発注者・受注者の2列）
+  const colGap=20, colW=(W-2*MARGIN-colGap)/2, sigH=112;
+  [['発注者（署名）', c.fromSign], ['受注者（署名）', c.toSign]].forEach(([label,s],idx)=>{
+    const x=MARGIN+idx*(colW+colGap);
+    ctx.strokeStyle='#cfd8e0'; ctx.lineWidth=1; ctx.strokeRect(x,y,colW,sigH);
+    ctx.font='12px '+FONT; ctx.fillStyle='#667';
+    ctx.fillText(label, x+16, y+26);
+    if(s){
+      ctx.font='bold 15px '+FONT; ctx.fillStyle='#1c2530';
+      ctx.fillText(s.companyName||'', x+16, y+52);
+      ctx.font='14px '+FONT; ctx.fillStyle='#333';
+      ctx.fillText('担当者：'+(s.name||''), x+16, y+76);
+      ctx.font='11px '+FONT; ctx.fillStyle='#7a8896';
+      ctx.fillText('電子署名日時：'+H.fmtDate(s.at), x+16, y+98);
+    } else {
+      ctx.font='bold 14px '+FONT; ctx.fillStyle='#b3462f';
+      ctx.fillText('未署名', x+16, y+56);
+    }
+  });
+  y += sigH+34;
+
+  // フッター
+  ctx.font='11px '+FONT; ctx.fillStyle='#7a8896'; ctx.textAlign='center';
+  ctx.fillText('本書面は「大工シェア ネットワーク」アプリにより発行された電子請負契約書です。', W/2, y);
+  ctx.fillText('電子署名は、各当事者が本アプリ上で内容を確認し同意操作を行った記録です。必要な期間、大切に保管してください。', W/2, y+20);
+  ctx.textAlign='left';
+  y += 46;
+
+  // 実際に使った高さだけを切り出す
+  const finalH=Math.min(Math.ceil(y), DRAFT_H);
+  const out=document.createElement('canvas'); out.width=W; out.height=finalH;
+  out.getContext('2d').drawImage(draw,0,0,W,finalH,0,0,W,finalH);
+  return out;
+}
 function downloadContract(){
   const rid=contractRid; if(!rid || !contractsByRid[rid]){ H.toast('保存された契約がありません','err'); return; }
-  const html=contractDocHTML(rid);
-  const blob=new Blob([html], {type:'text/html;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url; a.download=contractFileName(rid); document.body.appendChild(a); a.click();
-  setTimeout(()=>{ try{ document.body.removeChild(a); URL.revokeObjectURL(url); }catch(_){} }, 4000);
-  H.toast('契約書をダウンロードしました','ok');
+  if(!(window.jspdf && window.jspdf.jsPDF)){ H.toast('PDF機能の読み込みに失敗しました。通信環境を確認して再度お試しください','err'); return; }
+  try{
+    const canvas=renderContractCanvas(rid);
+    // JPEGで埋め込む（PNGだと文字のアンチエイリアスでファイルが数MBに膨らむため。0.92は文字の可読性を保ったまま数百KB程度に収まる）
+    const imgData=canvas.toDataURL('image/jpeg', 0.92);
+    const { jsPDF }=window.jspdf;
+    const pdf=new jsPDF({ unit:'px', format:[canvas.width, canvas.height], hotfixes:['px_scaling'] });
+    pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+    pdf.save(contractFileName(rid));
+    H.toast('契約書（PDF）をダウンロードしました','ok');
+  }catch(e){
+    H.toast('PDFの作成に失敗しました：'+((e&&e.message)||e),'err');
+  }
 }
 function printContract(){
   const rid=contractRid; if(!rid || !contractsByRid[rid]){ H.toast('保存された契約がありません','err'); return; }
@@ -2628,7 +2769,7 @@ const HELP_TOPICS=[
   { t:'応援要請を承認・辞退する', k:'承認 辞退 受信 受ける 返事', a:'自社の大工への要請は「応援」タブの「受信した要請」に届きます。「承認する」または「辞退」を選べます。新着は🔔お知らせとタブのバッジで分かります。' },
   { t:'条件のやり取り（チャット）', k:'チャット やり取り 条件 日当 支払い 住所 メッセージ', a:'承認後、当事者だけが見られるチャットで、住所・日当・支払い条件などを相談できます（管理者には表示されません）。自分は右、相手は左に表示されます。' },
   { t:'取引の流れ（応援申請→承認→取引成立）', k:'流れ 順番 ステップ 取引 成立 進捗 申請 承認', a:'取引は「①応援申請 → ②承認 → ③取引条件の確認・やり取り → ④電子請負契約の締結 → ⑤取引成立」の順で進みます。承認済みの要請カードの上部に、いま取引がどの段階にあるかがステップ表示されます。' },
-  { t:'電子請負契約を結ぶ', k:'契約 請負 電子契約 署名 サイン 請負代金 現場責任者 偽装請負 派遣 締結', a:'承認後、まず「③取引条件を確認・やり取りする」で労働条件・支払い条件などを相談し、次に「④電子請負契約を締結する」から請負内容・請負代金・現場責任者などを入力して、発注者・受注者の双方が電子署名します。双方が署名すると「⑤取引成立」となります（契約内容は管理者には表示されません）。本アプリの応援は請負契約であり、職人への指揮命令・労務管理は職人が所属する会社（受注者）が行います。契約書は「📄契約書をダウンロード」でファイル保存、「🖨印刷（PDFで保存）」でPDF化でき、締結後はご自身でも保管してください。' },
+  { t:'電子請負契約を結ぶ', k:'契約 請負 電子契約 署名 サイン 請負代金 現場責任者 偽装請負 派遣 締結', a:'承認後、まず「③取引条件を確認・やり取りする」で労働条件・支払い条件などを相談し、次に「④電子請負契約を締結する」から請負内容・請負代金・現場責任者などを入力して、発注者・受注者の双方が電子署名します。双方が署名すると「⑤取引成立」となります（契約内容は管理者には表示されません）。本アプリの応援は請負契約であり、職人への指揮命令・労務管理は職人が所属する会社（受注者）が行います。契約書は「📄契約書をPDFでダウンロード」でPDFファイルとして保存でき、締結後はご自身でも保管してください。' },
   { t:'延長・予定変更を依頼する', k:'延長 予定変更 日程変更 リスケ 変更', a:'承認済みの要請で「📅延長・予定変更を依頼」から新しい作業期間を提案できます。相手が承認すると活用日が更新されます。' },
   { t:'取引を解除する', k:'解除 キャンセル 取消 中止 取引', a:'予定変更で条件が合わなくなった等の場合、承認済みの要請を「🚫取引を解除する」で解除できます。当事者どちらからでも可能です。' },
   { t:'評価のルール', k:'評価 ★ 星 レビュー 5段階 平均 ルール 自己評価', a:'評価は「取引・活用した相手」だけが入力できます（取引のない工務店・活用していない大工は評価不可）。応援画面の承認済み要請から、大工・相手工務店を5段階で評価します。自己評価はできません。平均は利用者全員の値で、大工をさがす／工務店画面に表示されます。' },
@@ -2644,15 +2785,19 @@ function renderHelp(){
   const q=((document.getElementById('helpSearch')||{}).value||'').trim().toLowerCase();
   const items=HELP_TOPICS.filter(it=>!q || (it.t+' '+it.k+' '+it.a).toLowerCase().includes(q));
   const videoBtns='<div class="row" style="margin-bottom:8px;flex-wrap:wrap">'
-    +'<button class="btn sm" data-vid="guide-howto.mp4" data-vtitle="▶ 使い方動画">▶ 使い方動画（約3分半）</button>'
-    +'<button class="btn ghost sm" data-vid="guide-value.mp4" data-vtitle="▶ アプリの価値紹介">▶ アプリの価値紹介（約3分）</button>'
-    +'<button class="btn ghost sm" data-vid="guide-caution.mp4" data-vtitle="▶ 依頼の際の注意事項">▶ 依頼の際の注意事項（約3分）</button></div>';
+    +'<button class="btn ghost sm vid-btn" data-vid="guide-howto.mp4" data-vtitle="▶ 使い方動画">▶ 使い方動画（約3分半）</button>'
+    +'<button class="btn ghost sm vid-btn" data-vid="guide-value.mp4" data-vtitle="▶ アプリの価値紹介">▶ アプリの価値紹介（約3分）</button>'
+    +'<button class="btn ghost sm vid-btn" data-vid="guide-caution.mp4" data-vtitle="▶ 依頼の際の注意事項">▶ 依頼の際の注意事項（約3分）</button></div>';
   const termsBtn='<button class="btn ghost sm" id="helpTermsBtn" style="width:100%;margin-bottom:10px">📜 利用規約・免責事項を見る（同意状況の確認）</button>';
   const body=items.length?items.map(it=>`<details class="helpitem"><summary>${H.esc(it.t)}</summary><div class="helpa">${H.esc(it.a)}</div></details>`).join('')
     :'<div class="empty" style="padding:18px">該当する項目がありません。別のキーワードでお試しください。</div>';
   list.innerHTML=videoBtns+termsBtn+body;
   const tb=document.getElementById('helpTermsBtn'); if(tb) tb.onclick=()=>{ document.getElementById('helpOv').classList.remove('on'); showTerms(!termsAgreedEffective()); };
-  list.querySelectorAll('[data-vid]').forEach(b=>b.onclick=()=>openVideo(b.dataset.vid, b.dataset.vtitle));
+  list.querySelectorAll('[data-vid]').forEach(b=>b.onclick=()=>{
+    list.querySelectorAll('.vid-btn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    openVideo(b.dataset.vid, b.dataset.vtitle);
+  });
 }
 // 動画はアプリ内モーダルで再生（別タブ遷移しないのでアプリ・ヘルプボタンは残る）
 function openVideo(src, title){
