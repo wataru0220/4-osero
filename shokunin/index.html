@@ -2051,8 +2051,22 @@ function applyChange(rid){
   if(!confirm('活用日を「'+(cr.dateText||'')+'」に変更しますか？')) return;
   const uid=DB.auth.user&&DB.auth.user.uid;
   Object.assign(r,{dateFrom:cr.dateFrom,dateTo:cr.dateTo,dateText:cr.dateText,dates:null,changeReq:null}); scheduleRender('req'); // 即時反映
-  DB.update('requests/'+rid, { dateFrom:cr.dateFrom, dateTo:cr.dateTo, dateText:cr.dateText, dates:null, changeReq:null, lastMsgAt:Date.now(), lastMsgByUid:uid })
-    .then(()=>{ H.toast('活用日を変更しました','ok'); markSeen(rid); });
+  const ps=[ DB.update('requests/'+rid, { dateFrom:cr.dateFrom, dateTo:cr.dateTo, dateText:cr.dateText, dates:null, changeReq:null, lastMsgAt:Date.now(), lastMsgByUid:uid }) ];
+  // 活用日（条件）が変わったら、既存の電子請負契約は内容が古くなるため、同じ契約レコード（rid）を
+  // 更新して日程を反映し、双方の署名をリセットする＝③取引条件確認〜④電子請負締結〜⑤取引成立を
+  // やり直してもらう。新しい要請・新しい契約を別途作らないので、取引が重複することはない。
+  const c=contractsByRid[rid];
+  const wasFullySigned = !!(c && c.fromSign && c.toSign);
+  if(c){
+    c.dateText=cr.dateText; c.fromSign=null; c.toSign=null; scheduleRender('req'); // 即時反映
+    ps.push(DB.update('contracts/'+rid, { dateText:cr.dateText, fromSign:null, toSign:null, updatedAt:Date.now() }));
+  }
+  Promise.all(ps).then(()=>{
+    H.toast(wasFullySigned
+      ? '活用日を変更しました。契約内容が変わったため、電子請負契約の署名がリセットされました。お手数ですが結び直してください'
+      : '活用日を変更しました', 'ok');
+    markSeen(rid);
+  });
 }
 function declineChange(rid){
   const r=reqByMe[rid]; if(!r||!r.changeReq) return;
@@ -2770,7 +2784,7 @@ const HELP_TOPICS=[
   { t:'条件のやり取り（チャット）', k:'チャット やり取り 条件 日当 支払い 住所 メッセージ', a:'承認後、当事者だけが見られるチャットで、住所・日当・支払い条件などを相談できます（管理者には表示されません）。自分は右、相手は左に表示されます。' },
   { t:'取引の流れ（応援申請→承認→取引成立）', k:'流れ 順番 ステップ 取引 成立 進捗 申請 承認', a:'取引は「①応援申請 → ②承認 → ③取引条件の確認・やり取り → ④電子請負契約の締結 → ⑤取引成立」の順で進みます。承認済みの要請カードの上部に、いま取引がどの段階にあるかがステップ表示されます。' },
   { t:'電子請負契約を結ぶ', k:'契約 請負 電子契約 署名 サイン 請負代金 現場責任者 偽装請負 派遣 締結', a:'承認後、まず「③取引条件を確認・やり取りする」で労働条件・支払い条件などを相談し、次に「④電子請負契約を締結する」から請負内容・請負代金・現場責任者などを入力して、発注者・受注者の双方が電子署名します。双方が署名すると「⑤取引成立」となります（契約内容は管理者には表示されません）。本アプリの応援は請負契約であり、職人への指揮命令・労務管理は職人が所属する会社（受注者）が行います。契約書は「📄契約書をPDFでダウンロード」でPDFファイルとして保存でき、締結後はご自身でも保管してください。' },
-  { t:'延長・予定変更を依頼する', k:'延長 予定変更 日程変更 リスケ 変更', a:'承認済みの要請で「📅延長・予定変更を依頼」から新しい作業期間を提案できます。相手が承認すると活用日が更新されます。' },
+  { t:'延長・予定変更を依頼する', k:'延長 予定変更 日程変更 リスケ 変更 再契約 再署名', a:'承認済みの要請で「📅延長・予定変更を依頼」から新しい作業期間を提案できます。相手が承認すると活用日が更新されます。すでに電子請負契約を締結していた場合は、日程が変わったことで契約内容が古くなるため、同じ取引のまま（新しい取引が別に増えることはありません）契約の署名が自動的にリセットされます。お手数ですが、③取引条件の確認→④電子請負契約の締結を改めて行い、⑤取引成立まで進めてください。' },
   { t:'取引を解除する', k:'解除 キャンセル 取消 中止 取引', a:'予定変更で条件が合わなくなった等の場合、承認済みの要請を「🚫取引を解除する」で解除できます。当事者どちらからでも可能です。' },
   { t:'評価のルール', k:'評価 ★ 星 レビュー 5段階 平均 ルール 自己評価', a:'評価は「取引・活用した相手」だけが入力できます（取引のない工務店・活用していない大工は評価不可）。応援画面の承認済み要請から、大工・相手工務店を5段階で評価します。自己評価はできません。平均は利用者全員の値で、大工をさがす／工務店画面に表示されます。' },
   { t:'過去のやり取り履歴', k:'履歴 過去 3か月 やり取り 記録', a:'「応援」タブの「💬当事者どうしのやり取り履歴（過去3か月）を見る」で、相手ごとに過去3か月分のやり取りをまとめて確認できます。' },
