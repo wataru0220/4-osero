@@ -483,12 +483,9 @@
   <div class="sheet">
     <h3>📅 延長・予定変更の依頼</h3>
     <div class="count" id="chgSub" style="margin-bottom:10px"></div>
-    <div class="field"><label class="req">新しい作業期間</label>
-      <div class="row">
-        <input type="date" id="chgStart">
-        <input type="date" id="chgEnd">
-      </div>
-      <div class="count" style="margin-top:4px">開始日〜終了日を選択（単日は開始日のみでOK）。延長・短縮・日程ずらしのいずれにも使えます。</div>
+    <div class="field"><label class="req">新しい活用日（この大工の空き日から選択）</label>
+      <div id="chgDates" class="reqdates"></div>
+      <div class="count" style="margin-top:4px">この大工が「空き」に設定した日だけ選べます（複数選択可）。応援要請を送るときと同じカレンダーです。延長・短縮・日程ずらしのいずれにも使えます。</div>
     </div>
     <div class="field"><label>メモ（任意）</label><textarea id="chgNote" placeholder="例）1日延長してほしい／開始を翌日に変更希望 など"></textarea></div>
     <div class="count">※ 送信すると相手の工務店に「変更依頼」が届きます。相手が承認すると活用日が更新されます。</div>
@@ -1944,23 +1941,30 @@ function openRequestForm(kid){
   document.getElementById('reqSend').textContent='この内容で要請する';
   document.getElementById('reqOv').classList.add('on');
 }
-let reqSelDates=new Set();
-function renderReqDates(craft, preselected){
-  reqSelDates=new Set(preselected||[]);
-  const box=document.getElementById('reqDates'); if(!box) return;
+// 大工の空き予定から選べる日付チップの描画（応援要請フォーム・延長予定変更フォームで共用）。
+// selSet: 選択中の日付を保持するSet（呼び出し側の変数をそのまま渡し、中身だけ入れ替える）。
+// preselected に含まれる日が「予約済み（このリクエスト自身の予約）」で free/maybe に出てこない場合も、
+// 選べる状態のまま表示する（自分自身の予約日を選び直せないと延長・変更依頼ができなくなるため）。
+function renderDateChipPicker(containerId, selSet, craft, preselected){
+  selSet.clear(); (preselected||[]).forEach(d=>selSet.add(d));
+  const box=document.getElementById(containerId); if(!box) return;
   const free=craftFreeDates(craft);   // 予約済みの日は選べない（ダブルブッキング防止）
   const maybe=craftMaybeDates(craft);
   const typeOf={}; free.forEach(d=>typeOf[d]='free'); maybe.forEach(d=>typeOf[d]='maybe');
   (preselected||[]).forEach(d=>{ if(!typeOf[d]) typeOf[d]='free'; }); // 編集時：既存の選択日も残す
   const all=Object.keys(typeOf).sort();
-  if(!all.length){ box.innerHTML='<div class="count" style="color:var(--warn)">この大工は現在「空き」「応相談」の日がありません。要請できません。</div>'; return; }
+  if(!all.length){ box.innerHTML='<div class="count" style="color:var(--warn)">この大工は現在「空き」「応相談」の日がありません。</div>'; return; }
   const wd=['日','月','火','水','木','金','土'];
   box.innerHTML=all.map(d=>{ const isMaybe=typeOf[d]==='maybe';
-    return `<button type="button" class="daychip${isMaybe?' maybe':''}${reqSelDates.has(d)?' on':''}" data-d="${d}">${H.mdFromYmd(d)}（${wd[new Date(d).getDay()]}）${isMaybe?'・応相談':''}</button>`;
+    return `<button type="button" class="daychip${isMaybe?' maybe':''}${selSet.has(d)?' on':''}" data-d="${d}">${H.mdFromYmd(d)}（${wd[new Date(d).getDay()]}）${isMaybe?'・応相談':''}</button>`;
   }).join('')
   + (maybe.length?'<div class="count" style="width:100%;margin-top:6px">🤔 応相談の日は確定ではありません。メッセージ欄で条件をご相談ください。</div>':'');
-  box.querySelectorAll('.daychip').forEach(b=>b.onclick=()=>{ const d=b.dataset.d; if(reqSelDates.has(d)){ reqSelDates.delete(d); b.classList.remove('on'); } else { reqSelDates.add(d); b.classList.add('on'); } });
+  box.querySelectorAll('.daychip').forEach(b=>b.onclick=()=>{ const d=b.dataset.d; if(selSet.has(d)){ selSet.delete(d); b.classList.remove('on'); } else { selSet.add(d); b.classList.add('on'); } });
 }
+let reqSelDates=new Set();
+function renderReqDates(craft, preselected){ renderDateChipPicker('reqDates', reqSelDates, craft, preselected); }
+let chgSelDates=new Set();
+function renderChgDates(craft, preselected){ renderDateChipPicker('chgDates', chgSelDates, craft, preselected); }
 function openRequestEdit(rid){
   const r=reqByMe[rid]; if(!r) return;
   editReqKey=rid;
@@ -2028,8 +2032,8 @@ function openChangeForm(rid){
   chgRid=rid;
   const mineChg=myCompanyEntry();
   document.getElementById('chgSub').textContent=reqCraftLabel(r,mineChg&&mineChg._key)+'（現在の活用日：'+(r.dateText||'—')+'）';
-  document.getElementById('chgStart').value=r.dateFrom||'';
-  document.getElementById('chgEnd').value=(r.dateTo&&r.dateTo!==r.dateFrom)?r.dateTo:'';
+  const preDates=(r.dates&&r.dates.length)?r.dates:rangeDays(r.dateFrom,r.dateTo);
+  renderChgDates(craftsmen[r.craftsmanKey]||{avail:{}}, preDates);
   document.getElementById('chgNote').value='';
   document.getElementById('chgOv').classList.add('on');
 }
@@ -2037,12 +2041,11 @@ document.getElementById('chgCancel').onclick=()=>document.getElementById('chgOv'
 document.getElementById('chgOv').onclick=e=>{ if(e.target.id==='chgOv') e.currentTarget.classList.remove('on'); };
 document.getElementById('chgSend').onclick=()=>{
   if(!chgRid) return;
-  const start=rqVal('chgStart'), end=rqVal('chgEnd');
-  if(!start){ H.toast('新しい開始日を選んでください','err'); return; }
-  if(end && end<start){ H.toast('終了日は開始日以降にしてください','err'); return; }
-  const dateText=(end && end!==start)?(fmtReqDate(start)+'〜'+fmtReqDate(end)):fmtReqDate(start);
+  const dates=[...chgSelDates].sort();
+  if(!dates.length){ H.toast('新しい活用日を1つ以上選んでください','err'); return; }
+  const dateText=dates.map(fmtReqDate).join('、');
   const mine=myCompanyEntry(); const uid=DB.auth.user&&DB.auth.user.uid;
-  const changeReq={ byUid:uid, byName:(mine&&mine.name)||myUser.email, byKey:mine?mine._key:'', dateFrom:start, dateTo:end||start, dateText, note:rqVal('chgNote').trim(), at:Date.now() };
+  const changeReq={ byUid:uid, byName:(mine&&mine.name)||myUser.email, byKey:mine?mine._key:'', dates, dateFrom:dates[0], dateTo:dates[dates.length-1], dateText, note:rqVal('chgNote').trim(), at:Date.now() };
   DB.update('requests/'+chgRid, { changeReq, lastMsgAt:Date.now(), lastMsgByUid:uid })
     .then(()=>{ const rid=chgRid; document.getElementById('chgOv').classList.remove('on'); H.toast('変更を依頼しました。相手の承認をお待ちください','ok'); markSeen(rid); chgRid=null; });
 };
@@ -2050,8 +2053,8 @@ function applyChange(rid){
   const r=reqByMe[rid], cr=r&&r.changeReq; if(!cr) return;
   if(!confirm('活用日を「'+(cr.dateText||'')+'」に変更しますか？')) return;
   const uid=DB.auth.user&&DB.auth.user.uid;
-  Object.assign(r,{dateFrom:cr.dateFrom,dateTo:cr.dateTo,dateText:cr.dateText,dates:null,changeReq:null}); scheduleRender('req'); // 即時反映
-  const ps=[ DB.update('requests/'+rid, { dateFrom:cr.dateFrom, dateTo:cr.dateTo, dateText:cr.dateText, dates:null, changeReq:null, lastMsgAt:Date.now(), lastMsgByUid:uid }) ];
+  Object.assign(r,{dateFrom:cr.dateFrom,dateTo:cr.dateTo,dateText:cr.dateText,dates:cr.dates||null,changeReq:null}); scheduleRender('req'); // 即時反映
+  const ps=[ DB.update('requests/'+rid, { dateFrom:cr.dateFrom, dateTo:cr.dateTo, dateText:cr.dateText, dates:cr.dates||null, changeReq:null, lastMsgAt:Date.now(), lastMsgByUid:uid }) ];
   // 活用日（条件）が変わったら、既存の電子請負契約は内容が古くなるため、同じ契約レコード（rid）を
   // 更新して日程を反映し、双方の署名をリセットする＝③取引条件確認〜④電子請負締結〜⑤取引成立を
   // やり直してもらう。新しい要請・新しい契約を別途作らないので、取引が重複することはない。
@@ -2784,7 +2787,7 @@ const HELP_TOPICS=[
   { t:'条件のやり取り（チャット）', k:'チャット やり取り 条件 日当 支払い 住所 メッセージ', a:'承認後、当事者だけが見られるチャットで、住所・日当・支払い条件などを相談できます（管理者には表示されません）。自分は右、相手は左に表示されます。' },
   { t:'取引の流れ（応援申請→承認→取引成立）', k:'流れ 順番 ステップ 取引 成立 進捗 申請 承認', a:'取引は「①応援申請 → ②承認 → ③取引条件の確認・やり取り → ④電子請負契約の締結 → ⑤取引成立」の順で進みます。承認済みの要請カードの上部に、いま取引がどの段階にあるかがステップ表示されます。' },
   { t:'電子請負契約を結ぶ', k:'契約 請負 電子契約 署名 サイン 請負代金 現場責任者 偽装請負 派遣 締結', a:'承認後、まず「③取引条件を確認・やり取りする」で労働条件・支払い条件などを相談し、次に「④電子請負契約を締結する」から請負内容・請負代金・現場責任者などを入力して、発注者・受注者の双方が電子署名します。双方が署名すると「⑤取引成立」となります（契約内容は管理者には表示されません）。本アプリの応援は請負契約であり、職人への指揮命令・労務管理は職人が所属する会社（受注者）が行います。契約書は「📄契約書をPDFでダウンロード」でPDFファイルとして保存でき、締結後はご自身でも保管してください。' },
-  { t:'延長・予定変更を依頼する', k:'延長 予定変更 日程変更 リスケ 変更 再契約 再署名', a:'承認済みの要請で「📅延長・予定変更を依頼」から新しい作業期間を提案できます。相手が承認すると活用日が更新されます。すでに電子請負契約を締結していた場合は、日程が変わったことで契約内容が古くなるため、同じ取引のまま（新しい取引が別に増えることはありません）契約の署名が自動的にリセットされます。お手数ですが、③取引条件の確認→④電子請負契約の締結を改めて行い、⑤取引成立まで進めてください。' },
+  { t:'延長・予定変更を依頼する', k:'延長 予定変更 日程変更 リスケ 変更 再契約 再署名 カレンダー', a:'承認済みの要請で「📅延長・予定変更を依頼」から新しい活用日を提案できます。選べる日は、応援要請を送るときと同じく、その大工の「空き」「応相談」カレンダーから選びます（空き以外の日は選べません）。相手が承認すると活用日が更新されます。すでに電子請負契約を締結していた場合は、日程が変わったことで契約内容が古くなるため、同じ取引のまま（新しい取引が別に増えることはありません）契約の署名が自動的にリセットされます。お手数ですが、③取引条件の確認→④電子請負契約の締結を改めて行い、⑤取引成立まで進めてください。' },
   { t:'取引を解除する', k:'解除 キャンセル 取消 中止 取引', a:'予定変更で条件が合わなくなった等の場合、承認済みの要請を「🚫取引を解除する」で解除できます。当事者どちらからでも可能です。' },
   { t:'評価のルール', k:'評価 ★ 星 レビュー 5段階 平均 ルール 自己評価', a:'評価は「取引・活用した相手」だけが入力できます（取引のない工務店・活用していない大工は評価不可）。応援画面の承認済み要請から、大工・相手工務店を5段階で評価します。自己評価はできません。平均は利用者全員の値で、大工をさがす／工務店画面に表示されます。' },
   { t:'過去のやり取り履歴', k:'履歴 過去 3か月 やり取り 記録', a:'「応援」タブの「💬当事者どうしのやり取り履歴（過去3か月）を見る」で、相手ごとに過去3か月分のやり取りをまとめて確認できます。' },
