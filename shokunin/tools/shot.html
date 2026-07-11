@@ -1,0 +1,57 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#fff}iframe{width:390px;height:800px;border:0;display:block}</style>
+</head><body>
+<!-- 動画スライド用のアプリ画面キャプチャ・ドライバ（build-videos.ps1 が各 scene を撮影する）。
+     体験モード（?demo=1）で本アプリを iframe 読み込みし、シーンごとに画面を作ってから撮影する。 -->
+<iframe id="f" src="../index.html?demo=1"></iframe>
+<script>
+const scene=(location.search.match(/scene=(\w+)/)||[])[1]||'find';
+const f=document.getElementById('f');
+f.onload=async()=>{
+  const w=f.contentWindow, s=ms=>new Promise(r=>setTimeout(r,ms));
+  const ymd=(n)=>{const d=new Date();d.setDate(d.getDate()+n);const p=x=>String(x).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());};
+  document.title='LOADING';
+  try{
+    await w.DB.ready; await s(800); // 体験モードの自動ログイン・シード待ち
+    if(scene==='login'){ await w.DB.auth.signOut(); await s(300); w.goTab('update'); }
+    else if(scene==='find'){ w.goTab('find'); }
+    else if(scene==='avail'){ w.goTab('update'); await s(300); w.openAvailEditor('DKY1'); }
+    else if(scene==='team'){ w.goTab('update'); await s(300); w.openTeamAvail(); }
+    else if(scene==='reqform'){
+      w.openRequestForm('DK1'); await s(300);
+      const c=w.document.querySelector('#reqDates .daychip'); if(c) c.click();
+      const p=w.document.getElementById('reqPref'); if(p){ p.value='宮城県'; w.fillReqCity(); }
+      const ci=w.document.getElementById('reqCity'); if(ci){ ci.value='仙台市'; w.fillReqWard(); }
+      const wd=w.document.getElementById('reqWard'); if(wd&&wd.options.length>1) wd.value=wd.options[1].value;
+      const wk=w.document.getElementById('reqWork'); if(wk) wk.value='木造2階 内装下地・ボード貼り';
+    }
+    else if(scene==='reqtab'){
+      // 完了した取引（評価ボタンが出る状態）を作って応援タブを表示
+      const k=await w.DB.get('craftsmen/DK1');
+      await w.DB.set('requests/SHOTDONE',{fromCompanyKey:'DCYOU',fromCompanyName:'（体験）あなたの工務店',fromEmail:'you@demo.jp',toCompanyKey:'DC1',toCompanyName:'青葉建築',toOwnerEmail:'pc1@demo.jp',craftsmanKey:'DK1',craftsmanName:(k&&k.name)||'大工',status:'accepted',decidedAt:Date.now(),dates:[ymd(-3)],dateFrom:ymd(-3),dateTo:ymd(-3),dateText:'完了',work:'内装造作',parking:'依頼元（借りる側）が負担',lodging:'なし',transport:'実費精算',toll:'依頼元（借りる側）が負担',contact:'090-0000-0000',createdAt:Date.now()});
+      await w.DB.set('reqIndex/DCYOU/SHOTDONE',true); await w.DB.set('reqIndex/DC1/SHOTDONE',true);
+      await s(500); w.goTab('req');
+    }
+    else if(scene==='chat'){
+      w.goTab('req'); await s(400);
+      w.toggleDeal('DEMOIN1'); await s(400);
+      const dbx=w.document.querySelector('.dealbox'); if(dbx) dbx.scrollIntoView(false);
+    }
+    else if(scene==='contract'){
+      // 承認済みの受信要請(DEMOIN1)で電子請負契約モーダルを撮影
+      await w.DB.update('requests/DEMOIN1', { status:'accepted', decidedAt:Date.now() });
+      await s(300); w.goTab('req'); await s(300);
+      w.openContract('DEMOIN1'); await s(300);
+      const f=id=>w.document.getElementById(id);
+      if(f('ctrForeman')) f('ctrForeman').value='青葉建築 現場責任者・佐藤';
+      if(f('ctrPayTerm')) f('ctrPayTerm').value='完了確認後、翌月末までに銀行振込';
+      if(f('ctrSignerName')) f('ctrSignerName').value='体験 太郎';
+    }
+    else if(scene==='inbox'){
+      await s(400); const ib=w.document.getElementById('inboxBtn'); if(ib) ib.click();
+    }
+    await s(700);
+    document.title='READY:'+scene;
+  }catch(e){ document.title='ERR:'+e; }
+};
+</script></body></html>

@@ -517,7 +517,7 @@
     <div class="field"><label>特記事項（任意）</label><textarea id="ctrNotes" placeholder="その他の取り決めがあれば"></textarea></div>
     <div class="termsbox" style="margin-top:4px">
       <b>本契約の性質（重要）</b><br>
-      本契約は請負契約（業務委託契約）です。受注者は、応援に従事させる自社の職人に対する労務管理・指揮命令・安全衛生管理・出退勤の管理を自ら行います。発注者は、当該職人に対して直接の作業指示や勤怠管理を行わず、工事内容の調整は受注者があらかじめ指定する上記の現場責任者を通じて行います。天災その他不可抗力による損害の負担、請負代金・工期の変更方法については当事者間で誠実に協議して定めるものとし、協議が調わない場合は運営が定める利用規約の紛争解決条項によります。
+      本契約は請負契約（業務委託契約）です。受注者は、応援に従事させる自社の職人に対する労務管理・指揮命令・安全衛生管理・出退勤の管理を自ら行います。発注者は、当該職人に対して直接の作業指示や勤怠管理を行わず、工事内容の調整は受注者があらかじめ指定する上記の現場責任者を通じて行います。天災その他不可抗力による損害の負担、請負代金・工期の変更方法については当事者間で誠実に協議して定めるものとします。アプリ管理者は本契約の当事者ではなく、本契約の成立・内容・履行及び当事者間の紛争について一切関与せず、何らの責任も負いません。
     </div>
     <div class="field"><label style="display:flex;align-items:flex-start;gap:8px;font-weight:400"><input type="checkbox" id="ctrConsent" style="margin-top:3px"> 上記内容を確認し、電子的方法による本契約の締結に同意します。</label></div>
     <div class="field"><label>署名者名（ご担当者名）</label><input type="text" id="ctrSignerName" placeholder="例）山田 太郎"></div>
@@ -2261,7 +2261,7 @@ function contractDocHTML(rid){
     <tr><th>受注者</th><td><b>${e(c.toCompanyName||'—')}</b></td></tr>
     ${rows}
   </table>
-  <div class="clause"><b>本契約の性質（重要）</b><br>本契約は請負契約（業務委託契約）である。受注者は、応援に従事させる自社の職人に対する労務管理・指揮命令・安全衛生管理・出退勤の管理を自ら行う。発注者は、当該職人に対して直接の作業指示や勤怠管理を行わず、工事内容の調整は受注者があらかじめ指定する上記の現場責任者を通じて行う。天災その他不可抗力による損害の負担、請負代金・工期の変更方法については当事者間で誠実に協議して定めるものとし、協議が調わない場合は運営（栗駒建業）が定める利用規約の紛争解決条項による。</div>
+  <div class="clause"><b>本契約の性質（重要）</b><br>本契約は請負契約（業務委託契約）である。受注者は、応援に従事させる自社の職人に対する労務管理・指揮命令・安全衛生管理・出退勤の管理を自ら行う。発注者は、当該職人に対して直接の作業指示や勤怠管理を行わず、工事内容の調整は受注者があらかじめ指定する上記の現場責任者を通じて行う。天災その他不可抗力による損害の負担、請負代金・工期の変更方法については当事者間で誠実に協議して定めるものとする。アプリ管理者は本契約の当事者ではなく、本契約の成立・内容・履行及び当事者間の紛争について一切関与せず、何らの責任も負わない。</div>
   <table class="signs"><tr>${signBlock('発注者（署名）', c.fromSign)}${signBlock('受注者（署名）', c.toSign)}</tr></table>
   <div class="foot">本書面は「大工シェア ネットワーク」アプリにより発行された電子請負契約書です。　運営：栗駒建業<br>電子署名は、各当事者が本アプリ上で内容を確認し同意操作を行った記録（会社名・担当者名・日時）です。必要な期間、大切に保管してください。</div>
 </div>
@@ -2643,9 +2643,10 @@ function renderHelp(){
   const list=document.getElementById('helpList'); if(!list) return;
   const q=((document.getElementById('helpSearch')||{}).value||'').trim().toLowerCase();
   const items=HELP_TOPICS.filter(it=>!q || (it.t+' '+it.k+' '+it.a).toLowerCase().includes(q));
-  const videoBtns='<div class="row" style="margin-bottom:8px">'
-    +'<button class="btn sm" data-vid="guide-howto.mp4" data-vtitle="▶ 使い方動画">▶ 使い方動画（約3分）</button>'
-    +'<button class="btn ghost sm" data-vid="guide-value.mp4" data-vtitle="▶ アプリの価値紹介">▶ アプリの価値紹介（約2分半）</button></div>';
+  const videoBtns='<div class="row" style="margin-bottom:8px;flex-wrap:wrap">'
+    +'<button class="btn sm" data-vid="guide-howto.mp4" data-vtitle="▶ 使い方動画">▶ 使い方動画（約3分半）</button>'
+    +'<button class="btn ghost sm" data-vid="guide-value.mp4" data-vtitle="▶ アプリの価値紹介">▶ アプリの価値紹介（約3分）</button>'
+    +'<button class="btn ghost sm" data-vid="guide-caution.mp4" data-vtitle="▶ 依頼の際の注意事項">▶ 依頼の際の注意事項（約3分）</button></div>';
   const termsBtn='<button class="btn ghost sm" id="helpTermsBtn" style="width:100%;margin-bottom:10px">📜 利用規約・免責事項を見る（同意状況の確認）</button>';
   const body=items.length?items.map(it=>`<details class="helpitem"><summary>${H.esc(it.t)}</summary><div class="helpa">${H.esc(it.a)}</div></details>`).join('')
     :'<div class="empty" style="padding:18px">該当する項目がありません。別のキーワードでお試しください。</div>';
