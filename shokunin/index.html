@@ -501,6 +501,7 @@
   <div class="sheet">
     <h3>📝 電子請負契約</h3>
     <div class="count" id="ctrSub" style="margin-bottom:8px"></div>
+    <div id="ctrSubStep" style="margin-bottom:10px"></div>
     <div class="termsbox" id="ctrSignedBand" style="display:none">✅ <b>契約締結済み</b>：発注者・受注者の双方が電子署名し、本契約は成立しています。</div>
     <div class="field"><label>工事場所・活用日（応援要請の内容から自動反映／変更は「応援」タブの要請編集で）</label>
       <div class="note" id="ctrBase" style="white-space:pre-wrap"></div>
@@ -2162,6 +2163,43 @@ document.getElementById('ctrEditToggle').onclick=()=>{
   if(!confirm('内容を修正すると、両者の電子署名はリセットされます。よろしいですか？')) return;
   contractEditMode=true; renderContractModal();
 };
+// 契約書のやり取りが「キャッチボール」のようにスムーズに進むよう、
+// 契約書内の現在地（①発注者入力→②受注者入力→③発注者署名→④受注者署名→⑤契約成立）を判定して表示する。
+function contractSubStep(c){
+  c=c||{};
+  if(!(c.projectName && c.siteDetail)) return 1; // ①発注者：工事場所・工事名
+  if(!(c.payTerm && c.foreman)) return 2;        // ②受注者：支払条件・作業指示者
+  if(!c.fromSign) return 3;                       // ③発注者：署名
+  if(!c.toSign) return 4;                         // ④受注者：署名
+  return 5;                                       // ⑤契約成立
+}
+function contractSubStepHTML(c, role){
+  const step=contractSubStep(c);
+  const items=[
+    {n:'①発注者が入力', who:'from', what:'工事場所・工事名'},
+    {n:'②受注者が入力', who:'to',   what:'支払方法・作業指示者'},
+    {n:'③発注者が署名', who:'from', what:'電子署名'},
+    {n:'④受注者が署名', who:'to',   what:'電子署名'},
+    {n:'⑤契約成立',     who:null,  what:''}
+  ];
+  const cells=items.map((it,i)=>{
+    const at=i+1;
+    let cls; if(at<step) cls='done'; else if(at===step) cls=(step===5?'done':'cur'); else cls='';
+    const arrow = i<items.length-1 ? '<span class="arw">▶</span>' : '';
+    return `<span class="stp ${cls}">${it.n}</span>${arrow}`;
+  }).join('');
+  let msg;
+  if(step===5){ msg='✅ 双方の署名が完了し、契約が成立しました。'; }
+  else{
+    const cur=items[step-1];
+    const isMyTurn=cur.who===role;
+    const whoLabel=cur.who==='from'?'発注者':'受注者';
+    msg = isMyTurn
+      ? `👉 今はあなたの番です：${cur.what}をお願いします。`
+      : `⏳ 今は${whoLabel}の番です（${cur.what}）。入力・署名が終わるまでお待ちください。`;
+  }
+  return `<div class="dealflow">${cells}</div><div class="count" style="margin-top:6px">${msg}</div>`;
+}
 function renderContractModal(){
   const rid=contractRid; if(!rid) return;
   const r=reqByMe[rid]; if(!r) return;
@@ -2170,6 +2208,7 @@ function renderContractModal(){
   const mine=myCompanyEntry();
   document.getElementById('ctrSub').textContent=(role==='from'?'発注者：':'受注者：')+((mine&&mine.name)||'')+'／大工「'+reqCraftLabel(r,mine&&mine._key)+'」の応援に関する契約';
   document.getElementById('ctrBase').textContent='📍 '+(r.site||'—')+'　🗓 '+(r.dateText||'—')+(r.work?('\n🛠 '+r.work):'');
+  document.getElementById('ctrSubStep').innerHTML = contractSubStepHTML(c, role);
   const signed=!!(c.fromSign && c.toSign);
   document.getElementById('ctrSignedBand').style.display=signed?'block':'none';
   const locked=signed && !contractEditMode;
@@ -2513,10 +2552,12 @@ function saveContractDraft(){
   const rid=contractRid; const r=reqByMe[rid]; if(!rid||!r) return;
   const f=contractFieldsFromForm();
   if(!validateContractForm(f, {draft:true})) return;
-  const mine=myCompanyEntry();
+  const mine=myCompanyEntry(); const uid=DB.auth.user&&DB.auth.user.uid;
   const payload=Object.assign(contractBaseFields(r), f, { fromSign:null, toSign:null, updatedAt:Date.now(), updatedBy:(mine&&mine.name)||'' });
-  DB.set('contracts/'+rid, payload)
-    .then(()=>{ contractEditMode=false; H.toast('下書きを保存しました（署名は未了です）','ok'); });
+  // 契約書のキャッチボールが相手に伝わるよう、保存のたびに「新着」として相手に通知する
+  // （既存の🔔お知らせ・バッジの仕組みに乗せる。応援タブの条件のやり取り等と同じ方式）。
+  Promise.all([ DB.set('contracts/'+rid, payload), DB.update('requests/'+rid, { lastMsgAt:Date.now(), lastMsgByUid:uid }) ])
+    .then(()=>{ contractEditMode=false; H.toast('下書きを保存しました（相手に入力をお願いする通知が届きます）','ok'); });
 }
 function signContract(){
   const rid=contractRid; const r=reqByMe[rid]; if(!rid||!r) return;
@@ -2526,14 +2567,15 @@ function signContract(){
   if(!f.signerNameDraft){ H.toast('署名者名（ご担当者名）を入力してください','err'); return; }
   if(!document.getElementById('ctrConsent').checked){ H.toast('電子的方法による締結への同意にチェックしてください','err'); return; }
   if(!confirm('この内容で電子署名し、'+(role==='from'?'発注者':'受注者')+'として契約を締結します。よろしいですか？')) return;
-  const mine=myCompanyEntry();
+  const mine=myCompanyEntry(); const uid=DB.auth.user&&DB.auth.user.uid;
   const c=contractsByRid[rid]||{};
   const sign={ name:f.signerNameDraft, companyName:(mine&&mine.name)||'', at:Date.now() };
   const payload=Object.assign(contractBaseFields(r), f, { updatedAt:Date.now(), updatedBy:(mine&&mine.name)||'' });
   payload.fromSign = role==='from' ? sign : (c.fromSign||null);
   payload.toSign = role==='to' ? sign : (c.toSign||null);
-  DB.set('contracts/'+rid, payload)
-    .then(()=>{ contractEditMode=false; H.toast('電子署名しました','ok'); });
+  const bothSigned = !!(payload.fromSign && payload.toSign);
+  Promise.all([ DB.set('contracts/'+rid, payload), DB.update('requests/'+rid, { lastMsgAt:Date.now(), lastMsgByUid:uid }) ])
+    .then(()=>{ contractEditMode=false; H.toast(bothSigned ? '電子署名しました。契約が成立しました🎉' : '電子署名しました（相手に署名をお願いする通知が届きます）','ok'); });
 }
 document.getElementById('ctrSave').onclick=saveContractDraft;
 document.getElementById('ctrSign').onclick=signContract;
