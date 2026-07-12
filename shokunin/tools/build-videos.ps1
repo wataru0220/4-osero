@@ -164,6 +164,7 @@ public static class SlideMaker2 {
       float textW = hasShot? 700f : 1060f;
       float titleW = hasShot? 812f : 1120f;
       var sfNoWrap = new StringFormat(StringFormatFlags.NoWrap);
+      float bulletBottomY=252f; // 箇条書き欄の最終的な下端（キャラクターとの重なり判定に使う。下で計測する）
       using(var fK=new Font("Yu Gothic UI",22,FontStyle.Bold))
       using(var fT=new Font("Yu Gothic UI",33,FontStyle.Bold))
       using(var fL=new Font("Yu Gothic UI",23))
@@ -174,6 +175,14 @@ public static class SlideMaker2 {
         g.DrawString(kicker, fK, bA, new RectangleF(80,58,titleW,44));
         g.DrawString(title, fT, bI, new RectangleF(80,106,titleW,64), sfNoWrap);
         g.FillRectangle(bA,84,196,150,6);
+        // 先に全項目（revealCountに関わらず）を計測して、箇条書き欄の最終的な下端を求める。
+        // これでキャラクターの位置・大きさを、実際の文章量に合わせて重ならないよう調整できる。
+        float measureY=252f;
+        foreach(var ln0 in lines){
+          var sz0=g.MeasureString(ln0, fL, (int)(textW-46));
+          measureY += Math.Max(52f, sz0.Height+16f);
+        }
+        bulletBottomY=measureY;
         float y=252;
         int shown = (revealCount<0 || revealCount>lines.Length) ? lines.Length : revealCount;
         for(int li=0; li<lines.Length; li++){
@@ -201,8 +210,14 @@ public static class SlideMaker2 {
       }
       if(charPng!=null && File.Exists(charPng)){
         using(var ch=Image.FromFile(charPng)){
-          float h=150f, w=h*ch.Width/ch.Height;
-          g.DrawImage(ch, 18, 720-h-10, w, h);
+          // 通常はh=150・y=560固定。箇条書きが長くて下端(bulletBottomY)がその位置に迫る場合は、
+          // 重ならない範囲までキャラクターを縮小・下げる（最小60pxまでは許容。それでも足りない
+          // 極端なケースでは、文章の下端ぎりぎりまで詰めて重なりを最小限にする）。
+          float minCharTop = Math.Max(560f, bulletBottomY+16f);
+          float charH = Math.Min(150f, Math.Max(60f, 710f-minCharTop));
+          float charY = 720f-charH-10f;
+          float w=charH*ch.Width/ch.Height;
+          g.DrawImage(ch, 18, charY, w, charH);
         }
       }
       bmp.Save(path, ImageFormat.Png);
