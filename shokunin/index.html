@@ -507,7 +507,7 @@
     </div>
     <div class="field"><label class="req">請負内容（作業範囲）</label><textarea id="ctrWork" placeholder="例）木造2階の内装下地・ボード貼り一式"></textarea></div>
     <div class="field"><label class="req">請負代金（税込・円）</label><input type="number" id="ctrAmount" min="0" placeholder="例）66000"></div>
-    <div class="field"><label>支払方法・支払期日</label><input type="text" id="ctrPayTerm" placeholder="例）完了確認後、翌月末までに銀行振込"></div>
+    <div class="field"><label class="req">支払方法・支払期日</label><input type="text" id="ctrPayTerm" placeholder="例）完了確認後、翌月末までに銀行振込"><div class="count" id="ctrPayTermHint" style="margin-top:2px">この項目は受注者側のみ入力できます。</div></div>
     <div class="field"><label class="req">作業指示者（受注者側・職人へ指揮命令を行う担当者）</label><input type="text" id="ctrForeman" placeholder="例）受注者側の作業指示者・氏名"><div class="count" id="ctrForemanHint" style="margin-top:2px">この項目は受注者側のみ入力できます。</div></div>
     <div class="field"><label>特記事項（任意）</label><textarea id="ctrNotes" placeholder="その他の取り決めがあれば"></textarea></div>
     <div class="termsbox" style="margin-top:4px">
@@ -2174,10 +2174,14 @@ function renderContractModal(){
   ['ctrWork','ctrAmount','ctrPayTerm','ctrForeman','ctrNotes','ctrConsent','ctrSignerName'].forEach(id=>{
     document.getElementById(id).disabled=locked;
   });
-  // 作業指示者（受注者側の担当者）は受注者本人にしか分からない情報のため、発注者側は常に入力不可にする。
+  // 作業指示者・支払方法は受注者側が決める事項のため、発注者側は常に入力不可にする
+  // （受注者がこれらを入力するまで、発注者は署名に進めない＝validateContractFormでも同様にチェックする）。
   const foremanEl=document.getElementById('ctrForeman');
   foremanEl.disabled = locked || role!=='to';
   foremanEl.placeholder = role==='to' ? '例）受注者側の作業指示者・氏名' : '（受注者側が入力します）';
+  const payTermEl=document.getElementById('ctrPayTerm');
+  payTermEl.disabled = locked || role!=='to';
+  payTermEl.placeholder = role==='to' ? '例）完了確認後、翌月末までに銀行振込' : '（受注者側が入力します）';
   if(!contractFormLoaded){
     // 作業範囲は応援要請の作業内容から自動反映するが、「◯◯の応援」という依頼時の口語表現は
     // 契約書としては不自然なため、契約欄の初期値では取り除く（要請自体の表示は変更しない）。
@@ -2461,12 +2465,17 @@ function contractBaseFields(r){
   return { rid:r._key, fromCompanyKey:r.fromCompanyKey, fromCompanyName:r.fromCompanyName, toCompanyKey:r.toCompanyKey, toCompanyName:r.toCompanyName,
     craftsmanKey:r.craftsmanKey, craftsmanName:r.craftsmanName, site:r.site, dateText:r.dateText };
 }
-// draft:true のときは下書き保存用の緩い検証（作業指示者は必須にしない＝発注者側が先に保存できるように）。
-// 作業指示者は受注者側にしか入力できないため、発注者側での未入力エラーは待ってもらう旨の文言にする。
+// draft:true のときは下書き保存用の緩い検証（作業指示者・支払方法は必須にしない＝発注者側が先に保存できるように）。
+// この2項目は受注者側にしか入力できないため、発注者側での未入力エラーは待ってもらう旨の文言にする
+// （＝受注者がこれらを入力するまで、発注者は署名に進めない）。
 function validateContractForm(f, opts){
   opts=opts||{};
   if(!f.work){ H.toast('請負内容を入力してください','err'); return false; }
   if(!f.amount){ H.toast('請負代金を入力してください','err'); return false; }
+  if(!opts.draft && !f.payTerm){
+    H.toast(opts.role==='from' ? '支払方法・支払期日（受注者側）が未入力です。受注者側が入力するまでお待ちください' : '支払方法・支払期日（受注者側）を入力してください', 'err');
+    return false;
+  }
   if(!opts.draft && !f.foreman){
     H.toast(opts.role==='from' ? '作業指示者（受注者側）が未入力です。受注者側が入力するまでお待ちください' : '作業指示者（受注者側）を入力してください', 'err');
     return false;
