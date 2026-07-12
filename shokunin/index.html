@@ -511,7 +511,7 @@
       <div class="field" style="flex:1"><label>算定根拠</label><input type="text" id="ctrAmountNote" placeholder="例）日当22000円×3日分"></div>
     </div>
     <div class="field"><label>支払方法・支払期日</label><input type="text" id="ctrPayTerm" placeholder="例）完了確認後、翌月末までに銀行振込"></div>
-    <div class="field"><label class="req">現場責任者（受注者側・職人へ指揮命令を行う担当者）</label><input type="text" id="ctrForeman" placeholder="例）受注者側の現場責任者・氏名"></div>
+    <div class="field"><label class="req">現場責任者（受注者側・職人へ指揮命令を行う担当者）</label><input type="text" id="ctrForeman" placeholder="例）受注者側の現場責任者・氏名"><div class="count" id="ctrForemanHint" style="margin-top:2px">この項目は受注者側のみ入力できます。</div></div>
     <div class="field"><label>特記事項（任意）</label><textarea id="ctrNotes" placeholder="その他の取り決めがあれば"></textarea></div>
     <div class="termsbox" style="margin-top:4px">
       <b>本契約の性質（重要）</b><br>
@@ -2177,6 +2177,10 @@ function renderContractModal(){
   ['ctrWork','ctrAmount','ctrAmountNote','ctrPayTerm','ctrForeman','ctrNotes','ctrConsent','ctrSignerName'].forEach(id=>{
     document.getElementById(id).disabled=locked;
   });
+  // 現場責任者（受注者側の担当者）は受注者本人にしか分からない情報のため、発注者側は常に入力不可にする。
+  const foremanEl=document.getElementById('ctrForeman');
+  foremanEl.disabled = locked || role!=='to';
+  foremanEl.placeholder = role==='to' ? '例）受注者側の現場責任者・氏名' : '（受注者側が入力します）';
   if(!contractFormLoaded){
     document.getElementById('ctrWork').value = c.work!=null ? c.work : (r.work||'');
     const k=craftsmen[r.craftsmanKey]||{};
@@ -2460,16 +2464,22 @@ function contractBaseFields(r){
   return { rid:r._key, fromCompanyKey:r.fromCompanyKey, fromCompanyName:r.fromCompanyName, toCompanyKey:r.toCompanyKey, toCompanyName:r.toCompanyName,
     craftsmanKey:r.craftsmanKey, craftsmanName:r.craftsmanName, site:r.site, dateText:r.dateText };
 }
-function validateContractForm(f){
+// draft:true のときは下書き保存用の緩い検証（現場責任者は必須にしない＝発注者側が先に保存できるように）。
+// 現場責任者は受注者側にしか入力できないため、発注者側での未入力エラーは待ってもらう旨の文言にする。
+function validateContractForm(f, opts){
+  opts=opts||{};
   if(!f.work){ H.toast('請負内容を入力してください','err'); return false; }
   if(!f.amount){ H.toast('請負代金を入力してください','err'); return false; }
-  if(!f.foreman){ H.toast('現場責任者（受注者側）を入力してください','err'); return false; }
+  if(!opts.draft && !f.foreman){
+    H.toast(opts.role==='from' ? '現場責任者（受注者側）が未入力です。受注者側が入力するまでお待ちください' : '現場責任者（受注者側）を入力してください', 'err');
+    return false;
+  }
   return true;
 }
 function saveContractDraft(){
   const rid=contractRid; const r=reqByMe[rid]; if(!rid||!r) return;
   const f=contractFieldsFromForm();
-  if(!validateContractForm(f)) return;
+  if(!validateContractForm(f, {draft:true})) return;
   const mine=myCompanyEntry();
   const payload=Object.assign(contractBaseFields(r), f, { fromSign:null, toSign:null, updatedAt:Date.now(), updatedBy:(mine&&mine.name)||'' });
   DB.set('contracts/'+rid, payload)
@@ -2479,7 +2489,7 @@ function signContract(){
   const rid=contractRid; const r=reqByMe[rid]; if(!rid||!r) return;
   const role=contractRole(r); if(!role) return;
   const f=contractFieldsFromForm();
-  if(!validateContractForm(f)) return;
+  if(!validateContractForm(f, {role})) return;
   if(!f.signerNameDraft){ H.toast('署名者名（ご担当者名）を入力してください','err'); return; }
   if(!document.getElementById('ctrConsent').checked){ H.toast('電子的方法による締結への同意にチェックしてください','err'); return; }
   if(!confirm('この内容で電子署名し、'+(role==='from'?'発注者':'受注者')+'として契約を締結します。よろしいですか？')) return;
