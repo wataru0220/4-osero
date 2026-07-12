@@ -605,6 +605,7 @@ let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
 let reviewTarget = null, rvValue = 0;
 let myUser = null;
 let demoReqs = {}; // 体験モードのPC自動応答用（購読同期発火より前に宣言してTDZ回避）
+let demoContracts = {}; // 体験モードのPC自動応答用：契約の全件スナップショット（同上の理由でTDZ回避のため先頭で宣言）
 let openAvailView = null; // find カードで開いている読み取り専用カレンダー（renderより前に宣言が必要）
 let openCoView = null; // 工務店一覧で「所属大工」を展開中の工務店キー
 // お気に入り（この端末に保存・ログイン不要）
@@ -660,7 +661,26 @@ function demoPersonaFor(r){ // 取引の相手（PC側）を返す
 }
 function startDemoBot(){
   if(!DB.demo || window.__demoBot) return; window.__demoBot=1;
-  const handled={}, replied={};
+  const handled={}, replied={}, contractHandled={};
+  // 3) 電子請負契約で「PCの番」（相手側の入力・署名）になったら、少し待ってPCが自動で対応する。
+  //    これがないと、体験モードでは相手役がいないため契約のやり取りが進まず止まってしまう。
+  //    契約レコードが一度も保存されていない状態（①発注者の最初の入力）も検知できるよう、
+  //    requests・contracts の両方の購読から同じチェックを呼ぶ。
+  function checkDemoContractTurn(){
+    const meKey=(myCompanyEntry()||{})._key; if(!meKey) return;
+    Object.keys(demoReqs||{}).forEach(rid=>{
+      const r=demoReqs[rid]; if(!r || r.status!=='accepted') return;
+      const pcKey = r.fromCompanyKey===meKey ? r.toCompanyKey : (r.toCompanyKey===meKey ? r.fromCompanyKey : null);
+      if(!isDemoPc(pcKey)) return;
+      const pcRole = r.fromCompanyKey===meKey ? 'to' : 'from'; // PCが受注者か発注者か
+      const c = demoContracts[rid] ? Object.assign({_key:rid}, demoContracts[rid]) : {};
+      const step=contractSubStep(c);
+      const pcTurn = (step===1&&pcRole==='from') || (step===2&&pcRole==='to') || (step===3&&pcRole==='from') || (step===4&&pcRole==='to');
+      const hkey=rid+':'+step;
+      if(!pcTurn || contractHandled[hkey]) return;
+      contractHandled[hkey]=1; setTimeout(()=>demoContractStep(rid, step, pcRole), 2500+Math.random()*3000);
+    });
+  }
   // 1) あなたがPC企業へ送った応援要請（pending）を、少し待ってPCが自動で承認
   DB.on('requests', v=>{
     demoReqs=v||{};
@@ -670,6 +690,7 @@ function startDemoBot(){
         handled[r._key]=1; setTimeout(()=>demoDecide(r._key), 3500+Math.random()*4000);
       }
     });
+    checkDemoContractTurn();
   });
   // 2) 条件のやり取りチャットで、あなたの発言にPCが自動で返信
   DB.on('deals', all=>{
@@ -683,6 +704,38 @@ function startDemoBot(){
         replied[lk]=1; setTimeout(()=>demoReply(rid, last.text||''), 2500+Math.random()*3000);
       }
     });
+  });
+  DB.on('contracts', all=>{ demoContracts=all||{}; checkDemoContractTurn(); });
+}
+function demoContractStep(rid, step, pcRole){
+  const r=demoReqs[rid]; if(!r) return;
+  const c = demoContracts[rid] ? Object.assign({_key:rid}, demoContracts[rid]) : {};
+  if(contractSubStep(c)!==step) return; // 状態が変わっていたら何もしない（多重実行防止）
+  const p=demoPersonaFor(r);
+  const k=craftsmen[r.craftsmanKey]||{};
+  const days=(r.dates&&r.dates.length)||0;
+  const payload=Object.assign({}, contractBaseFields(r), c, { updatedAt:Date.now(), updatedBy:p.name });
+  // 請負内容・請負代金はどちらの担当とも決めていないため、PCが対応する際に空欄なら埋めておく
+  // （体験している人間側の入力を待たずに、まずは進めて後から見直せるようにする）。
+  if(!payload.work) payload.work=(r.work||'').replace(/の応援/g,'')||'応援作業一式';
+  if(!payload.amount) payload.amount=(k.price&&days) ? (k.price*days) : (k.price||30000);
+  let toastMsg;
+  if(step===1){ // PCが発注者：工事名・詳細な現場住所を入力
+    payload.projectName = (r.work||'内装造作').replace(/の応援/g,'')+'工事';
+    payload.siteDetail = (r.site||'')+'　現場入口の看板を目印にお越しください（体験用サンプル住所）';
+    toastMsg='「'+p.name+'」が工事名・現場住所を入力しました（体験）';
+  } else if(step===2){ // PCが受注者：支払方法・作業指示者を入力
+    payload.payTerm = '完了確認後、翌月末までに銀行振込';
+    payload.foreman = p.name+' 作業指示者・佐藤';
+    toastMsg='「'+p.name+'」が支払方法・作業指示者を入力しました（体験）';
+  } else { // step 3 or 4：PCが電子署名
+    const sign={ name:p.name+' 担当者', companyName:p.name, at:Date.now() };
+    if(pcRole==='from') payload.fromSign=sign; else payload.toSign=sign;
+    toastMsg='「'+p.name+'」が電子署名しました（体験）';
+  }
+  DB.set('contracts/'+rid, payload).then(()=>{
+    DB.update('requests/'+rid, { lastMsgAt:Date.now(), lastMsgByUid:p.uid });
+    H.toast(toastMsg, 'ok');
   });
 }
 function demoDecide(rid){
@@ -2246,6 +2299,14 @@ function renderContractModal(){
     document.getElementById('ctrNotes').value = c.notes || '';
     document.getElementById('ctrSignerName').value = c.signerNameDraft || (mine&&mine.contact) || '';
     contractFormLoaded=true;
+  } else {
+    // モーダルを開いたまま相手の番を待っているとき、相手が入力を終えたらすぐ反映されるよう、
+    // 自分が編集できない（相手専用の）項目だけは開きっぱなしでも常に最新の値に同期する。
+    // 自分が編集できる項目は、入力中の内容を壊さないためここでは上書きしない。
+    if(projectNameEl.disabled) projectNameEl.value = c.projectName || '';
+    if(siteDetailEl.disabled) siteDetailEl.value = c.siteDetail || '';
+    if(payTermEl.disabled) payTermEl.value = c.payTerm || '';
+    if(foremanEl.disabled) foremanEl.value = c.foreman || '';
   }
   document.getElementById('ctrEditToggle').style.display = (signed && !contractEditMode) ? 'block' : 'none';
   document.getElementById('ctrSave').style.display = locked ? 'none' : '';
