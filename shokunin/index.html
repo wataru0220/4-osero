@@ -2318,7 +2318,9 @@ function renderContractModal(){
     document.getElementById('ctrPayTerm').value = c.payTerm || '';
     document.getElementById('ctrForeman').value = c.foreman || '';
     document.getElementById('ctrNotes').value = c.notes || '';
-    document.getElementById('ctrSignerName').value = c.signerNameDraft || (mine&&mine.contact) || '';
+    // 署名者名（電子署名）は、実際に署名する本人がその都度みずから記入する。
+    // 会社の担当者名や下書きで自動補完すると、実際の署名者と違う名前になり得るため常に空欄で開く。
+    document.getElementById('ctrSignerName').value = '';
     contractFormLoaded=true;
   } else {
     // モーダルを開いたまま相手の番を待っているとき、相手が入力を終えたらすぐ反映されるよう、
