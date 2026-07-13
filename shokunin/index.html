@@ -2102,10 +2102,17 @@ document.getElementById('chgSend').onclick=()=>{
   DB.update('requests/'+chgRid, { changeReq, lastMsgAt:Date.now(), lastMsgByUid:uid })
     .then(()=>{ const rid=chgRid; document.getElementById('chgOv').classList.remove('on'); H.toast('変更を依頼しました。相手の承認をお待ちください','ok'); markSeen(rid); chgRid=null; });
 };
+// 応援要請・変更依頼が押さえている活用日の日数（請負金額の自動計算に使う）
+function dealDayCount(o){
+  if(o && o.dates && o.dates.length) return o.dates.length;
+  if(o && o.dateFrom) return rangeDays(o.dateFrom, o.dateTo).length;
+  return 0;
+}
 function applyChange(rid){
   const r=reqByMe[rid], cr=r&&r.changeReq; if(!cr) return;
   if(!confirm('活用日を「'+(cr.dateText||'')+'」に変更しますか？')) return;
   const uid=DB.auth.user&&DB.auth.user.uid;
+  const oldDays=dealDayCount(r), newDays=dealDayCount(cr); // 日数の変化を先に把握（請負金額の再計算用）
   Object.assign(r,{dateFrom:cr.dateFrom,dateTo:cr.dateTo,dateText:cr.dateText,dates:cr.dates||null,changeReq:null}); scheduleRender('req'); // 即時反映
   const ps=[ DB.update('requests/'+rid, { dateFrom:cr.dateFrom, dateTo:cr.dateTo, dateText:cr.dateText, dates:cr.dates||null, changeReq:null, lastMsgAt:Date.now(), lastMsgByUid:uid }) ];
   // 活用日（条件）が変わったら、既存の電子請負契約は内容が古くなるため、同じ契約レコード（rid）を
@@ -2113,14 +2120,28 @@ function applyChange(rid){
   // やり直してもらう。新しい要請・新しい契約を別途作らないので、取引が重複することはない。
   const c=contractsByRid[rid];
   const wasFullySigned = !!(c && c.fromSign && c.toSign);
+  let recalcAmount=null;
   if(c){
-    c.dateText=cr.dateText; c.fromSign=null; c.toSign=null; scheduleRender('req'); // 即時反映
-    ps.push(DB.update('contracts/'+rid, { dateText:cr.dateText, fromSign:null, toSign:null, updatedAt:Date.now() }));
+    const upd={ dateText:cr.dateText, fromSign:null, toSign:null, updatedAt:Date.now() };
+    // 工事延長・短縮で日数が変わったら、請負金額（工事総額）を新しい日数で自動再計算する。
+    // 標準（日給×日数）どおりの金額なら日給×新日数へ、手動調整済みなら比率を保って比例配分する。
+    const k=craftsmen[r.craftsmanKey]||{};
+    if(newDays>0 && oldDays>0 && c.amount!=null && newDays!==oldDays){
+      const stdOld=(k.price||0)*oldDays;
+      if(k.price && Math.round(c.amount)===Math.round(stdOld)) recalcAmount=k.price*newDays;
+      else recalcAmount=Math.round(c.amount*newDays/oldDays);
+      if(recalcAmount===Math.round(c.amount)) recalcAmount=null; // 変化なしなら何もしない
+      if(recalcAmount!=null) upd.amount=recalcAmount;
+    }
+    Object.assign(c, upd); scheduleRender('req'); // 即時反映
+    ps.push(DB.update('contracts/'+rid, upd));
   }
   Promise.all(ps).then(()=>{
-    H.toast(wasFullySigned
+    let msg = wasFullySigned
       ? '活用日を変更しました。契約内容が変わったため、電子請負契約の署名がリセットされました。お手数ですが結び直してください'
-      : '活用日を変更しました', 'ok');
+      : '活用日を変更しました';
+    if(recalcAmount!=null) msg += '。請負金額を'+recalcAmount.toLocaleString('ja-JP')+'円（税込）に自動再計算しました';
+    H.toast(msg, 'ok');
     markSeen(rid);
   });
 }
