@@ -75,7 +75,13 @@
 ```json
 {
   "rules": {
-    "kintai": { ".read": true, ".write": true },
+    "kintai": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "records": { ".indexOn": ["workerName", "date"] },
+      "workers": { ".indexOn": ["name"] },
+      "sites":   { ".indexOn": ["name"] }
+    },
     "shokunin": {
       "admins": {
         ".read": "auth != null",
@@ -155,7 +161,8 @@
       "contracts": {
         "$rid": {
           ".read": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email )",
-          ".write": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email )"
+          ".write": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email )",
+          ".validate": "( root.child('shokunin/requests').child($rid).child('fromEmail').val() !== auth.token.email || !newData.child('toSign').exists() || newData.child('toSign/at').val() === data.child('toSign/at').val() ) && ( root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() !== auth.token.email || !newData.child('fromSign').exists() || newData.child('fromSign/at').val() === data.child('fromSign/at').val() )"
         }
       },
       "adminMeta": {
@@ -167,6 +174,8 @@
 }
 ```
 - **電子請負契約**：`contracts` は各応援要請（`requests/$rid`）の当事者2社だけが読み書きできます（`deals` と同じ考え方。管理者は対象外＝契約内容は見られません）。承認済みの要請カードの「📝請負契約」から、工事名・詳細な現場住所（発注者側のみ入力可）、請負内容・請負代金・支払方法・作業指示者（受注者側のみ入力可。職人へ指揮命令を行う担当者）などを入力し、発注者・受注者の双方が電子署名すると締結されます。相手方専用の項目が未入力の間は署名できません。
+  - **電子署名の偽造防止（`.validate`）**：上のルールの `contracts/$rid` には `.validate` を追加しています。**発注者（fromEmail）は相手の署名 `toSign` を、受注者（toOwnerEmail）は相手の署名 `fromSign` を、勝手に作成・改変できません**（各当事者は自分の署名だけを書け、相手の署名欄は「未入力のまま」か「既存の値を維持」しかできない）。これにより、一方の当事者が相手になりすまして両者署名済みに見せかける偽造を防ぎます。内容を編集して署名リセットする既存動作（自分の署名を消す／両者 nullにする）は引き続き可能です。
+    - **検収**：本番反映後、当事者Aでログインし、ブラウザのコンソールから相手（B）の署名だけを書き込もうとする操作（例：`DB.set('contracts/<rid>', {... , toSign:{name:'X',companyName:'X',at:Date.now()}})` を A=from 側で実行）が **`permission_denied`（`.validate` 違反）で失敗**することを確認してください。通常の「自分の署名→相手の署名→取引成立」の流れは成功します。
 - **一斉配信（お知らせ）**：`announcements` は全会員が閲覧でき、書き込みは管理者のみ（上記ルールに含まれています）。管理アプリの「📢一斉配信」タブから、内容確認→最終確認の2段階を経て配信します。利用規約（`TERMS_VERSION`）またはアプリの版（`APP_VERSION`）が更新されると、管理アプリが自動でお知らせ文の下書きを生成して表示します。管理者はその内容を確認し、「配信する」か「配信しない（削除）」かを判断します（自動送信はされません）。判断済みの版は `adminMeta/versionTracker`（管理者のみ読み書き可。上記ルールに含まれています）に記録され、同じ版で再度表示されることはありません。それ以外のお知らせは、これまでどおり管理者が自由入力して配信できます。★index.html の `APP_VERSION` / `TERMS_VERSION` を更新した際は、admin.html 側の `CURRENT_APP_VERSION` / `CURRENT_TERMS_VERSION` も必ず同じ値に更新してください。
 - **退会した工務店の呼び戻し**：`deletedCompanies` は管理者のみ読み書きできます（上記ルールに含まれています。別途追加は不要）。管理者が工務店を削除すると、まずここに元データが退避され、退避の保存が確認できてから実データが削除されます。1か月以内なら管理アプリの「🗑退会した工務店」から**管理者の操作だけで元データのまま復元**できます。もし退会・呼び戻しが失敗する場合は、上記ルールに `deletedCompanies` が含まれているか（特に以前このルールを個別に追加していた場合、上記の統合版に更新されているか）をご確認ください。
 - **会員制**：`companies`/`craftsmen`/`reviews`/`approvals` の閲覧は「**`members` に登録された会員**または管理者」だけに限定されます。会員でないログインユーザーはマッチング画面を一切読めません（アプリ側でも門番が表示されます）。
@@ -247,8 +256,27 @@ service firebase.storage {
 無料の社内利用から「法人向け有料サービス」へ移行する場合、下記を**必ず**実施してください。上のコピペ用ルールは動作重視の最小構成で、以下の観点が不足しています。
 
 ### 🔴 最優先（データ流出・乗っ取りに直結）
-1. **`kintai` パスの全開放を閉じる**
-   上のマージ用ルールに含まれる `"kintai": { ".read": true, ".write": true }` は、**データベースURLを知る誰でも勤怠・給与データを読み書きできる**状態です（`databaseURL` は `config.js` に公開されています）。勤怠アプリ側の適切なルール（認証必須・会社単位の制限）へ必ず差し替えてください。大工シェアと Firebase プロジェクトを共有している以上、片方の穴は全体の穴になります。
+1. **`kintai` パスの全開放を閉じる（✅ コード側は対応済み。本番ルールの差し替えが必要）**
+   以前の `"kintai": { ".read": true, ".write": true }` は、**データベースURLを知る誰でも勤怠・給与データを読み書きできる**状態でした（`databaseURL` は `config.js` に公開）。上のコピペ用ルールを**認証必須版（`".read"/".write"` に `"auth != null"`）に差し替え済み**で、あわせて勤怠アプリ（`kintai/index.html`・`kintai/admin.html`）が起動時に**匿名サインイン**してから読み書きするよう修正済みです。これにより、Firebase Auth のトークンを持たない第三者の直接アクセスを遮断します。大工シェアと Firebase プロジェクトを共有している以上、片方の穴は全体の穴になります。
+
+   **⚠️ 本番反映の順序（必ずこの順で／逆順にすると勤怠アプリが即停止します）**
+   1. まず **kintai アプリ（`kintai/`）の更新を本番へデプロイ**（匿名サインインを追加した版）。GitHub Pages なら `git push` 後に反映を待つ。
+   2. Firebase コンソール → Authentication → Sign-in method で **「匿名（Anonymous）」を有効化**（大工シェアの会員制では未使用だが、勤怠アプリのために必要）。
+   3. 反映後、Firebase コンソール → Realtime Database → ルールに、上のコピペ用ルール（`kintai` が認証必須になった版）を**まるごと貼り付けて「公開」**。
+   4. 逆順（先にルールだけ差し替え）で公開すると、まだ匿名サインインを持たない旧 kintai アプリが `permission_denied` で動かなくなります。必ず 1→2→3 の順で。
+
+   **検収手順（未認証で kintai に読み書きできないことの確認）**
+   - 手順3の公開後、ブラウザのシークレットウィンドウで **開発者ツール → コンソール**を開き、以下を実行（`<databaseURL>` は `config.js` の値）：
+     ```js
+     fetch('<databaseURL>/kintai/records.json').then(r=>r.json()).then(d=>console.log('read result:', d))
+     ```
+     → **`Permission denied` 相当（`null` またはエラー）**になれば、未認証読み取りが遮断されています。以前は勤怠データがそのまま返っていました。
+   - 書き込みの確認：
+     ```js
+     fetch('<databaseURL>/kintai/_pentest.json',{method:'PUT',body:'"x"'}).then(r=>console.log('write status:', r.status))
+     ```
+     → **`401`/`403` 相当**で書き込めなければOK（`200` なら未対応）。
+   - 正常系：勤怠アプリ（`kintai/index.html`・`admin.html`）を通常どおり開き、氏名・現場の読込／勤怠の保存・記録一覧が**これまでどおり動く**ことを確認（＝匿名サインイン経由で読み書きできている）。
 2. **匿名ユーザーへの個人情報の全開放を見直す**
    現在は `companies`/`craftsmen` が `".read": "auth != null"` で、**匿名サインインした誰でも全工務店の電話番号・担当者名・メール（`ownerEmail`）・単価・大工名簿を丸ごと取得**できます。同業者や無関係の第三者による名簿・連絡先・価格の一括スクレイピングが可能です。法人提供では次のいずれかを推奨：
    - 閲覧も**本登録アカウント（匿名不可）**に限定する（`auth.token.firebase.sign_in_provider != 'anonymous'` を条件に加える）。

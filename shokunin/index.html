@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>大工シェア｜工務店ネットワーク</title>
+<title>職人シェア｜大工職人の応援・マッチング支援</title>
 <!-- ホーム画面に追加してアプリのように起動（PWA） -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="大工シェア">
+<meta name="apple-mobile-web-app-title" content="職人シェア">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -240,8 +240,8 @@
 <header>
   <div class="hrow">
     <div>
-      <h1>🪚 大工シェア ネットワーク</h1>
-      <div class="sub">工務店どうしで大工をシェア・空き状況をリアルタイム共有</div>
+      <h1>🪚 職人シェア</h1>
+      <div class="sub">一棟司塾 匠と連携した、大工職人の応援・マッチング支援ネットワーク（大工シェア ネットワーク）／空き状況をリアルタイム共有</div>
     </div>
     <div style="display:flex; flex-wrap:wrap; gap:6px; flex:none; justify-content:flex-end; max-width:176px">
       <button class="hbtn" id="refreshBtn"><span class="ic">🔄</span>更新</button>
@@ -598,8 +598,42 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-07-12c'; // 画面で最新版か確認するための版番号
-const TERMS_VERSION = '2026-07-12c'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
+const APP_VERSION = '2026-07-13a'; // 画面で最新版か確認するための版番号
+const TERMS_VERSION = '2026-07-13a'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
+
+// ===== 事務局連絡先・料金（★正式運用の前に、事務局が実際の値へ必ず書き換えてください） =====
+// 未会員・検討中の方の問い合わせ窓口、および有料プランの案内に使います。決済機能は持たず、
+// 申込は電話・LINE・フォーム等の外部導線で受け付けます（アプリ内では契約を確定させません）。
+const OFFICE = {
+  name: '一棟司塾 匠 事務局',
+  tel: '（ここに電話番号を記入）',
+  email: '（ここにメールアドレスを記入）',
+  line: '（ここにLINEの友だち追加URL/IDを記入）',
+  applyUrl: '' // 本利用のお申し込みフォームURL（あれば記入。空なら電話・LINEをご案内）
+};
+const PRICE_TRIAL = '3か月お試しプラン：10,000円（税込）';
+const PRICE_YEAR  = '年間本契約：120,000円（税込）';
+// 事務局の連絡先ブロック（ログイン・審査中・体験モード等で共通表示）
+function officeContactHTML(){
+  const apply = OFFICE.applyUrl ? '<br>📝 お申し込みフォーム：<a href="'+H.esc(OFFICE.applyUrl)+'" target="_blank" rel="noopener">'+H.esc(OFFICE.applyUrl)+'</a>' : '';
+  return '<div class="termsbox" style="margin-top:10px;font-size:12.5px;text-align:left">'
+    +'<b>お問い合わせ・お申し込み（'+H.esc(OFFICE.name)+'）</b><br>'
+    +'📞 電話：'+H.esc(OFFICE.tel)+'<br>'
+    +'✉️ メール：'+H.esc(OFFICE.email)+'<br>'
+    +'💬 LINE：'+H.esc(OFFICE.line)+apply
+    +'</div>';
+}
+// 料金プランの表示ブロック
+function pricePlanHTML(){
+  return '<div class="termsbox ok" style="margin:10px 0;font-size:12.5px;text-align:left">'
+    +'<b>ご利用料金（税込）</b><br>'
+    +'・'+H.esc(PRICE_TRIAL)+'<br>'
+    +'・'+H.esc(PRICE_YEAR)+'<br>'
+    +'<span style="color:var(--sub)">※ 詳細な契約条件は、事務局からの個別のご案内・お申し込み時にご確認いただきます。特定商取引法に基づく表記は '
+    +'<a href="tokushoho.html" target="_blank" rel="noopener">こちら</a>、個人情報の取扱いは '
+    +'<a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a> をご覧ください。</span>'
+    +'</div>';
+}
 let companies = {}, craftsmen = {}, reviews = {}, approvals = {};
 let filter = { freeOnly:false, favOnly:false, text:'', work:'', qual:'' };
 let reviewTarget = null, rvValue = 0;
@@ -636,6 +670,11 @@ const _cleanupTried = {};                                    // 6か月超の自
   if (DB.demo) {
     m.className = 'modebar local';
     m.innerHTML = '🧪 <b>体験モード</b>：ログイン不要で、あなたは「（体験）あなたの工務店」として操作できます。相手の工務店（PC）が応援要請の承認や返信を自動で行います。データは端末内だけに保存され<b>24時間で自動的に消えます</b>（本番には影響しません）。';
+    // 体験中の方が本利用へ進めるよう、申込・問い合わせ導線を常設する（決済はせず外部導線で受付）
+    m.innerHTML += '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #ffd591">'
+      +'🚀 <b>気に入ったら本利用へ</b>（会員制・有料）：'+H.esc(PRICE_TRIAL)+'／'+H.esc(PRICE_YEAR)+'　'
+      +'<a class="deallink" id="demoApplyLink" style="cursor:pointer;text-decoration:underline">本利用のお申し込み・お問い合わせはこちら ▼</a>'
+      +'<div id="demoApplyBox" style="display:none;margin-top:6px">'+pricePlanHTML()+officeContactHTML()+'</div></div>';
     DB._seedIfEmpty(H.demoSeed());
     try{ localStorage.setItem('shokunin_terms_agreed', TERMS_VERSION); }catch(_){}   // 体験は規約同意プロンプトを省略
     if(!(DB.auth.user && DB.auth.user.email)) DB.auth.signIn('you@demo.jp');           // ログインせず自動的に「あなたの工務店」として利用
@@ -649,6 +688,8 @@ const _cleanupTried = {};                                    // 6か月超の自
     m.innerHTML = '🟢 <b>共有モード</b>：登録した情報は参加工務店どうしでリアルタイムに共有されます。';
   }
   m.innerHTML += ' <span style="opacity:.7">（版 '+APP_VERSION+'）</span>';
+  const dal=document.getElementById('demoApplyLink');
+  if(dal) dal.onclick=()=>{ const bx=document.getElementById('demoApplyBox'); if(bx) bx.style.display=(bx.style.display==='none'?'block':'none'); };
 })();
 
 // ===== 体験モード：PCを相手役にして応援のやり取りを体験できるようにする =====
@@ -892,7 +933,7 @@ function showGate(mode){
   document.body.classList.add('gated');
   const b=document.getElementById('memberGateBody'); if(!b) return;
   const u=DB.auth.user;
-  const head='<div class="glogo">🪚 大工シェア ネットワーク</div>';
+  const head='<div class="glogo">🪚 職人シェア</div><div class="gsub" style="text-align:center;margin:-4px 0 10px">一棟司塾 匠と連携した、大工職人の応援・マッチング支援ネットワーク</div>';
   if(mode==='loading'){ b.innerHTML=head+'<div class="gsub" style="text-align:center">確認中…</div>'; return; }
   if(mode==='login'){
     b.innerHTML=head+`
@@ -907,7 +948,9 @@ function showGate(mode){
       <div class="gsub" style="margin:0 0 8px">以前ご利用いただいていた方（退会・利用停止等で会員権限が外れた方）はこちら。</div>
       <button class="btn full" id="gToRejoin" style="margin-bottom:10px">🔁 再入会する（以前ご利用の方）</button>
       <div class="gsub" style="margin:0 0 8px">まだ一度もご利用でない方（工務店）は、入会をご申請ください。事務局の審査後にご利用いただけます。</div>
-      <button class="btn ghost full" id="gToApply">✍️ 新規に入会を申請する</button>`;
+      <button class="btn ghost full" id="gToApply">✍️ 新規に入会を申請する</button>
+      ${pricePlanHTML()}
+      ${officeContactHTML()}`;
     document.getElementById('gLoginBtn').onclick=gateLogin;
     document.getElementById('gPass').addEventListener('keydown',e=>{ if(e.key==='Enter') gateLogin(); });
     document.getElementById('gReset').onclick=gateReset;
@@ -930,8 +973,11 @@ function showGate(mode){
       <div class="field"><label class="req">大工の氏名</label><input type="text" id="aCkName" placeholder="例）田中 一郎"></div>
       <div class="field"><label>日給（税込）</label><input type="number" id="aCkPrice" min="0" placeholder="例）22000（円/日・税込）"></div>
       <div class="count">※ 得意作業・年齢・性別・資格などの詳細は、承認後ログインしてから「✏️情報を編集」で追加できます。</div>
+      ${pricePlanHTML()}
+      <label class="gsub" style="display:flex;align-items:flex-start;gap:8px;margin:8px 0"><input type="checkbox" id="aPriceAgree" style="margin-top:3px"><span>上記のご利用料金（3か月お試し 10,000円／年間本契約 120,000円・いずれも税込）と、<a href="tokushoho.html" target="_blank" rel="noopener">特定商取引法に基づく表記</a>・<a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>を確認し、同意します。（正式な契約内容は事務局の個別ご案内時に確認します）</span></label>
       <div class="row"><button class="btn full" id="aSubmit">この内容で入会を申請する</button></div>
       <div class="gerr" id="gErr"></div>
+      ${officeContactHTML()}
       <div style="margin-top:12px"><a class="deallink" id="aBack" style="cursor:pointer">← ログインに戻る</a></div>`;
     document.getElementById('aSubmit').onclick=gateApply;
     document.getElementById('aBack').onclick=()=>showGate('login');
@@ -988,7 +1034,8 @@ function showGate(mode){
   b.innerHTML=head+`
     <h2>⏳ 審査中です</h2>
     <div class="gsub">入会申請を受け付けました。<b>事務局の承認をお待ちください。</b>承認されると、このアカウントでマッチング画面をご利用いただけます。<br><br>ログイン中：<b>${gateEsc(u&&u.email)}</b></div>
-    <button class="btn ghost full" id="gLogout2">ログアウト</button>`;
+    ${officeContactHTML()}
+    <button class="btn ghost full" id="gLogout2" style="margin-top:10px">ログアウト</button>`;
   document.getElementById('gLogout2').onclick=()=>DB.auth.signOut();
 }
 function gateErr(msg){ const el=document.getElementById('gErr'); if(el){ el.textContent='⚠️ '+msg; el.style.display='block'; } }
@@ -1012,7 +1059,9 @@ function gateApply(){
   const area=(document.getElementById('aArea').value||'').trim();
   const ckName=(document.getElementById('aCkName').value||'').trim();
   const ckPrice=+document.getElementById('aCkPrice').value||null;
+  const priceAgree=!!(document.getElementById('aPriceAgree')||{}).checked;
   if(!email||pass.length<6){ gateErr('メールと6文字以上のパスワードを入力してください'); return; }
+  if(!priceAgree){ gateErr('ご利用料金・特商法表記・プライバシーポリシーへの同意にチェックしてください'); return; }
   const btn=document.getElementById('aSubmit'); if(btn){ btn.disabled=true; }
   // まず「既にログインアカウントを持っている」前提でサインインを試す（退会・呼び戻し等で
   // 会員権限だけが外れた方の再申請）。成功すれば工務店名などの入力は不要＝登録済みの
@@ -1025,7 +1074,8 @@ function gateApply(){
     return DB.auth.signUp(email,pass);
   }).then(()=>{
     const u=DB.auth.user;
-    const app={ email:email, company:company, contact:contact, tel:tel, at:Date.now() };
+    const app={ email:email, company:company, contact:contact, tel:tel, at:Date.now(),
+      priceAgreed:true, priceAgreedPlan:'trial:10000/year:120000', priceAgreedAt:Date.now(), termsVersionAtApply:TERMS_VERSION };
     if(nameKana) app.nameKana=nameKana;
     if(area) app.area=area;
     if(ckName) app.craftsman={ name:ckName, price:ckPrice };
@@ -3036,7 +3086,8 @@ function termsHtml(){ return `
   <p><b>第19条（連絡・通知方法）</b><br>アプリ管理者からユーザーへの連絡・通知は、本アプリ内の表示・通知、または登録された連絡先への連絡により行います。ユーザーからアプリ管理者への連絡は、アプリ管理者が別途指定する窓口を通じて行うものとします。</p>
   <p><b>第20条（分離可能性）</b><br>本規約のいずれかの条項またはその一部が法令により無効または執行不能と判断された場合であっても、当該部分以外の規定は引き続き完全に有効に存続するものとします。</p>
   <p><b>第21条（準拠法および合意管轄）</b><br>本規約の準拠法は日本法とします。本アプリまたは本規約に起因または関連してユーザーとアプリ管理者との間で生じた紛争については、アプリ管理者の本店所在地を管轄する地方裁判所を第一審の専属的合意管轄裁判所とします。</p>
-  <p style="color:var(--sub);font-size:12px;margin-top:14px">制定日：2026年6月28日／最終改定日：2026年7月12日（版 ${TERMS_VERSION}）　運営：栗駒建業</p>
+  <p style="margin-top:14px"><b>関連文書：</b><a href="tokushoho.html" target="_blank" rel="noopener">特定商取引法に基づく表記</a>　／　<a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a></p>
+  <p style="color:var(--sub);font-size:12px;margin-top:6px">制定日：2026年6月28日／最終改定日：2026年7月13日（版 ${TERMS_VERSION}）　運営：栗駒建業</p>
 `; }
 function termsAgreedVer(){ try{ return localStorage.getItem('shokunin_terms_agreed')||''; }catch(_){ return ''; } }
 // 過去に「別の版」の規約へ同意したことがあるか（＝今回の表示が改定後の“再同意”かどうか）。
@@ -3132,11 +3183,15 @@ function cleanupOldRequests(){
     if(_cleanupTried[r._key]) return;
     if(!reqIsFinished(r) || reqFinishedAt(r)>cut) return;
     _cleanupTried[r._key]=1;
+    // 関連する contracts も一緒に削除する（requests を消すと contracts のルールが
+    // requests/$rid を参照できず「誰も読めない孤児データ」になるため）。締結済み契約書は
+    // 規約どおり当事者が事前にPDF等で保存している前提（アプリ内の永続保存は保証しない）。
     Promise.all([
       DB.remove('requests/'+r._key),
       DB.remove('reqIndex/'+r.fromCompanyKey+'/'+r._key),
       DB.remove('reqIndex/'+r.toCompanyKey+'/'+r._key),
-      DB.remove('deals/'+r._key)
+      DB.remove('deals/'+r._key),
+      DB.remove('contracts/'+r._key)
     ]).catch(()=>{});
   });
 }
@@ -3288,10 +3343,11 @@ function reqCardHTML(r,kind){
         <button class="btn sm acc" data-rid="${r._key}">承認する</button>
         <button class="btn ghost sm dec" data-rid="${r._key}" style="color:var(--warn);border-color:#f0c4c0">辞退</button>
       </div>`:''}
-    ${kind==='sent'?`<div class="row" style="margin-top:8px">
+    ${(kind==='sent'&&r.status!=='accepted')?`<div class="row" style="margin-top:8px">
         <button class="btn ghost sm req-edit" data-rid="${r._key}">✏️ 編集</button>
         <button class="btn ghost sm req-del" data-rid="${r._key}" style="color:var(--warn);border-color:#f0c4c0">🗑 削除</button>
       </div>`:''}
+    ${(kind==='sent'&&r.status==='accepted'&&reqIsFinished(r))?`<div class="meta2" style="margin-top:8px;color:var(--sub)">完了した取引の記録は、相手方の同意なく単独では削除できません。削除が必要な場合は事務局へご連絡ください。</div>`:''}
     ${(r.status==='accepted'&&!reqIsFinished(r))?dealStageHTML(r,opened):''}
     ${(r.status==='accepted'&&!cr&&!reqIsFinished(r))?`<button class="btn ghost sm chg-req" data-rid="${r._key}" style="width:100%;margin-top:8px">📅 延長・予定変更を依頼</button>`:''}
     ${(r.status==='accepted'&&!cr&&!reqIsFinished(r))?`<button class="btn ghost sm deal-cancel" data-rid="${r._key}" style="width:100%;margin-top:8px;color:var(--warn);border-color:#f0c4c0">🚫 取引を解除する</button>`:''}

@@ -15,6 +15,7 @@
 <meta name="apple-mobile-web-app-title" content="勤怠管理">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <!-- Excel出力 (SheetJS) -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="config.js"></script>
@@ -344,16 +345,21 @@
   }
 
   function initFirebase(){
-    try{ if(typeof firebase==='undefined'||!CFG.firebase||!CFG.firebase.databaseURL) return false;
-      firebase.initializeApp(CFG.firebase); db=firebase.database(); return true;
-    }catch(e){ console.error(e); return false; }
+    try{ if(typeof firebase==='undefined'||!CFG.firebase||!CFG.firebase.databaseURL) return Promise.resolve(false);
+      firebase.initializeApp(CFG.firebase); db=firebase.database();
+      // kintai を「認証必須」ルールにしているため、読み書きの前に匿名サインインを済ませる
+      // （データベースURLを知るだけの第三者による勤怠・給与データへの直接アクセスを遮断する）。
+      return firebase.auth().signInAnonymously().then(()=>true).catch(e=>{ console.error('匿名サインイン失敗', e); return 'authfail'; });
+    }catch(e){ console.error(e); return Promise.resolve(false); }
   }
   const ref=p=>db.ref(dbRoot+'/'+p);
 
-  function startApp(){
+  async function startApp(){
     $('app').classList.remove('hide');
     bindHelp();
-    if(!initFirebase()){ toast('Firebase未設定です（config.js）','err'); return; }
+    const ok=await initFirebase();
+    if(ok==='authfail'){ toast('認証に接続できませんでした（Firebaseで匿名ログインの有効化が必要です）','err'); return; }
+    if(!ok){ toast('Firebase未設定です（config.js）','err'); return; }
     setThisMonth();
     bindTabs(); bindFilters(); bindMasters(); bindEditModal(); $('exportBtn').onclick=exportExcel;
     ref('workers').on('value',s=>{ workers=s.val()||{}; migrateLegacyWages(); renderWorkers(); fillWorkerFilter(); renderAll(); });

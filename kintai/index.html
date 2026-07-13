@@ -16,6 +16,7 @@
 <!-- Firebase (オセロと同じ compat 版) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="config.js"></script>
 <style>
   :root{
@@ -234,11 +235,13 @@
   // ---- Firebase 初期化 ----
   function initFirebase(){
     try{
-      if(typeof firebase==='undefined' || !CFG.firebase || !CFG.firebase.databaseURL) return false;
+      if(typeof firebase==='undefined' || !CFG.firebase || !CFG.firebase.databaseURL) return Promise.resolve(false);
       firebase.initializeApp(CFG.firebase);
       db = firebase.database();
-      return true;
-    }catch(e){ console.error('Firebase init失敗', e); return false; }
+      // セキュリティルールで kintai を「認証必須」にしているため、読み書きの前に匿名サインインを済ませる。
+      // これにより、データベースURLを知るだけの第三者が勤怠・給与データへ直接アクセスすることを遮断する。
+      return firebase.auth().signInAnonymously().then(()=>true).catch(e=>{ console.error('匿名サインイン失敗', e); return 'authfail'; });
+    }catch(e){ console.error('Firebase init失敗', e); return Promise.resolve(false); }
   }
 
   function ref(path){ return db.ref(dbRoot+'/'+path); }
@@ -470,15 +473,17 @@
     $('helpSearch').addEventListener('input', renderHelp);
   }
 
-  function boot(){
+  async function boot(){
     bindUI();
-    const ok=initFirebase();
     const banner=$('modeBanner');
-    if(!ok){
-      banner.innerHTML='<div class="banner warn">⚠ Firebase未設定のため保存できません。config.js を設定してください。</div>';
-    }else{
+    const ok=await initFirebase();
+    if(ok===true){
       banner.innerHTML='<div class="banner info">📲 このページのURLをLINEグループに貼って、各自が報告に使えます。</div>';
       loadWorkers(); loadSites();
+    }else if(ok==='authfail'){
+      banner.innerHTML='<div class="banner warn">⚠ 認証に接続できませんでした。少し時間をおいて再読み込みしてください（Firebaseコンソールで「匿名」ログインの有効化が必要です）。</div>';
+    }else{
+      banner.innerHTML='<div class="banner warn">⚠ Firebase未設定のため保存できません。config.js を設定してください。</div>';
     }
     updateWho();
   }

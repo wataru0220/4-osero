@@ -1,7 +1,7 @@
 {
-  "name": "大工シェア ネットワーク",
-  "short_name": "大工シェア",
-  "description": "工務店どうしで大工をシェア・空き状況をリアルタイム共有",
+  "name": "職人シェア（大工シェア ネットワーク）",
+  "short_name": "職人シェア",
+  "description": "一棟司塾 匠と連携した、大工職人の応援・マッチング支援ネットワーク。空き状況をリアルタイム共有。",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
