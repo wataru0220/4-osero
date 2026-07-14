@@ -164,21 +164,24 @@
   <div id="securityNotice"></div>
   <div id="approvalNotice"></div>
   <div class="tabs">
-    <button class="on" data-page="co">🏢 工務店</button>
+    <button class="on" data-page="co" style="position:relative">🏢 工務店<span class="tabbadge" id="mBadge" style="display:none">0</span></button>
     <button data-page="ki" style="position:relative">🪚 大工<span class="tabbadge" id="kBadge" style="display:none">0</span></button>
-    <button data-page="member" style="position:relative">🎫 会員<span class="tabbadge" id="mBadge" style="display:none">0</span></button>
     <button data-page="hist">📜 評価履歴</button>
     <button data-page="req">🤝 応援要請</button>
     <button data-page="contact" style="position:relative">📨 工務店連絡<span class="tabbadge" id="ctBadge" style="display:none">0</span></button>
     <button data-page="announce">📢 一斉配信</button>
   </div>
 
-  <!-- ========== 会員（審査・発行・停止） ========== -->
-  <section class="page" id="page-member">
-    <div class="modebar" style="background:#eef3fb;color:#1759c4;border:1px solid #c7dbff">会員制のログイン管理です。<b>審査を通過した会員だけ</b>が利用者アプリのマッチング画面を使えます。</div>
+  <!-- ========== 工務店（＝利用者＝会員。入会審査・アカウント発行・一覧をここに統合） ========== -->
+  <section class="page on" id="page-co">
+    <div class="modebar" style="background:#eef3fb;color:#1759c4;border:1px solid #c7dbff">利用者（工務店）の管理です。<b>入会申請の承認＝入会審査</b>で、承認された工務店だけが利用者アプリのマッチング画面を使えます。工務店・大工の<b>登録・編集は利用者アプリ</b>で各社が行います。</div>
 
-    <h2 class="sec">🆕 会員アカウントを発行する</h2>
-    <div class="count" style="margin:-4px 2px 8px">審査を通過した工務店に、ここでアカウントを発行します。発行後に表示されるメール・パスワードを相手へお渡しください。</div>
+    <h2 class="sec">📝 入会申請（審査待ち）<span id="appCount" class="count" style="display:inline"></span></h2>
+    <div class="count" style="margin:-4px 2px 8px">承認すると、その工務店（利用者）が利用者アプリを使えるようになります（＝入会審査）。</div>
+    <div id="appList"></div>
+
+    <h2 class="sec" style="margin-top:18px">🆕 アカウントを発行する（申請フォームを使わない相手向け・任意）</h2>
+    <div class="count" style="margin:-4px 2px 8px">こちらから直接アカウントを発行できます。発行後に表示されるメール・パスワードを相手へお渡しください。</div>
     <div class="card" style="padding:12px 14px">
       <div class="field"><label>メールアドレス（ログインID）</label><input type="email" id="isEmail" placeholder="company@example.com"></div>
       <div class="field"><label>初期パスワード（6文字以上）</label>
@@ -189,21 +192,15 @@
       <div id="isResult" style="margin-top:8px"></div>
     </div>
 
-    <h2 class="sec" style="margin-top:18px">📝 入会申請（審査待ち）<span id="appCount" class="count" style="display:inline"></span></h2>
-    <div id="appList"></div>
-
-    <h2 class="sec" style="margin-top:18px">✅ 会員一覧</h2>
-    <input type="text" id="mSearch" placeholder="🔍 メール・工務店名で検索" style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:10px">
-    <div id="memberList"></div>
-  </section>
-
-  <!-- ========== 工務店 ========== -->
-  <section class="page on" id="page-co">
-    <div class="modebar" style="background:#eef3fb;color:#1759c4;border:1px solid #c7dbff">工務店の<b>登録・編集は利用者アプリ</b>で各工務店が行います。ここでは一覧の確認と、必要な場合の削除のみ行えます。</div>
-    <h2 class="sec">登録済みの工務店（あいうえお順）</h2>
+    <h2 class="sec" style="margin-top:18px">🏢 登録済みの工務店（あいうえお順）</h2>
     <input type="text" id="coSearch" placeholder="🔍 工務店名で検索" style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:10px">
     <div id="sampleClean"></div>
     <div id="coList"></div>
+
+    <h2 class="sec" style="margin-top:18px">✅ ログインできる利用者（会員）一覧</h2>
+    <input type="text" id="mSearch" placeholder="🔍 メール・工務店名で検索" style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:10px">
+    <div id="memberList"></div>
+
     <h2 class="sec" style="margin-top:18px">🗑 退会した工務店（1か月以内は呼び戻し可能）</h2>
     <div class="count" style="margin:-4px 2px 8px">退会（削除）した工務店は1か月間ここに保管されます。期限を過ぎると自動で完全に削除されます。</div>
     <div id="deletedCoBox"></div>
@@ -588,7 +585,7 @@ function renderCoList(){
         <div class="meta">🎫 会員（ログイン許可）：${c.ownerEmail?(isMember?'<span style="color:#1a7a45;font-weight:800">済</span>':'<span style="color:var(--warn);font-weight:800">未登録・ログイン不可</span>'):'—'}</div></div>
       </div>
       ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
-      ${(!isMember&&c.ownerEmail)?'<div class="note" style="background:#fff7e8;color:#8a5a00">⚠️ この工務店の担当者はまだ会員登録されていないため、ログインできません。ご本人にログイン画面から「入会を申請」してもらい、下の「🎫会員」タブで承認してください。</div>':''}
+      ${(!isMember&&c.ownerEmail)?'<div class="note" style="background:#fff7e8;color:#8a5a00">⚠️ この工務店の担当者はまだログイン許可されていないため、ログインできません。ご本人にログイン画面から「入会を申請」してもらい、この「🏢工務店」タブ上部の「📝入会申請（審査待ち）」で承認してください。</div>':''}
       <div class="acts">
         <button class="btn danger sm co-del" data-key="${H.esc(c._key)}">削除</button>
       </div></div>`;
