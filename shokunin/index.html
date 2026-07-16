@@ -151,6 +151,9 @@
   .helpitem[open] summary::before{content:"− "}
   .helpitem[open] summary{border-bottom:1px solid var(--line)}
   .helpa{padding:10px 12px; font-size:13px; line-height:1.7; color:var(--ink)}
+  /* ヘルプの画面写真：実際のアプリ画面を見せて操作を分かりやすくする（タップで拡大） */
+  .helpimg{display:block; width:100%; max-width:300px; margin:10px auto 2px; border:1px solid var(--line); border-radius:10px; cursor:zoom-in; background:#fff}
+  .helpimgcap{font-size:11px; color:var(--sub); text-align:center; margin-bottom:4px}
   .cocraftbox{margin-top:8px; border-top:1px dashed var(--line); padding-top:8px}
   .cocraft{border:1px solid var(--line); border-radius:10px; padding:9px 11px; margin-bottom:8px; background:#fafbfc}
   .histthread{border:1px solid var(--line); border-radius:11px; padding:10px 12px; margin-bottom:10px; background:#fafbfc}
@@ -598,7 +601,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-07-13a'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-07-14a'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-13a'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 
 // ===== 事務局連絡先・料金（★正式運用の前に、事務局が実際の値へ必ず書き換えてください） =====
@@ -2995,22 +2998,22 @@ document.getElementById('inboxOv').onclick=e=>{ if(e.target.id==='inboxOv') e.cu
 
 // ===== ヘルプ（使い方・ルールの検索） =====
 const HELP_TOPICS=[
-  { t:'ログイン・新規登録', k:'ログイン 新規登録 メール パスワード アカウント', a:'「自社の大工」タブでメールアドレスとパスワードでログインします（初めての方は「新規登録」）。大工をさがす・工務店の閲覧はログイン不要ですが、登録・応援要請・評価にはログインが必要です。' },
+  { t:'ログイン・新規登録', k:'ログイン 新規登録 メール パスワード アカウント', a:'「自社の大工」タブでメールアドレスとパスワードでログインします（初めての方は「新規登録」）。大工をさがす・工務店の閲覧はログイン不要ですが、登録・応援要請・評価にはログインが必要です。', img:'help/login.png', imgCap:'「自社の大工」タブのログイン画面' },
   { t:'工務店を登録する', k:'工務店 会社 登録 自社', a:'「自社の大工」タブでログイン後、「＋工務店を登録」から自社を登録します。登録時に最初の大工を1名以上登録します（ふりがなを入れるとあいうえお順で正しく並びます）。' },
   { t:'大工を登録・編集する', k:'大工 職人 登録 編集 追加 下書き', a:'「自社の大工」タブ→「＋大工を登録」。氏名・日給（税込）・得意作業・NG作業・資格などを入力します。入力中の内容は自動保存され、途中で閉じても消えません（「下書きあり」と表示）。' },
-  { t:'空き予定を登録する', k:'空き 空き予定 カレンダー 稼働 日程 応相談', a:'「自社の大工」タブで各大工の「📅空き予定（3ヶ月）」を開き、入力モード（空き／応相談）を選んでから日付をタップして登録します。「応相談」は条件次第で対応できる可能性がある日で、確定の「空き」とは別に色分けして表示されます。登録内容は他社の検索に反映されます。' },
-  { t:'大工をさがす', k:'さがす 検索 大工 絞り込み 得意 資格 お気に入り', a:'「大工をさがす」タブで、名前・工務店・得意作業・資格で検索できます。「空き予定のみ」「★お気に入りのみ」で絞り込みも可能です。技術力の★は利用者全員の平均です。' },
+  { t:'空き予定を登録する', k:'空き 空き予定 カレンダー 稼働 日程 応相談', a:'「自社の大工」タブで各大工の「📅空き予定（3ヶ月）」を開き、入力モード（空き／応相談）を選んでから日付をタップして登録します。「応相談」は条件次第で対応できる可能性がある日で、確定の「空き」とは別に色分けして表示されます。登録内容は他社の検索に反映されます。', img:'help/avail.png', imgCap:'空き予定カレンダー（日付をタップして登録）' },
+  { t:'大工をさがす', k:'さがす 検索 大工 絞り込み 得意 資格 お気に入り', a:'「大工をさがす」タブで、名前・工務店・得意作業・資格で検索できます。「空き予定のみ」「★お気に入りのみ」で絞り込みも可能です。技術力の★は利用者全員の平均です。', img:'help/find.png', imgCap:'「大工をさがす」タブの検索画面' },
   { t:'工務店から大工をさがす', k:'工務店 会社 所属 大工 応援要請', a:'「工務店」タブで会社を選び「👷所属大工を見る・応援要請」を開くと、その会社の大工が表示され、そのまま応援要請できます。' },
-  { t:'応援要請を送る', k:'応援要請 依頼 借りる お願い 送る', a:'大工カードの「🤝この大工に応援要請」から、工事場所（県・市・区）、作業期間、連絡先などを入力して送信します。番地など詳しい住所は送信後の「条件のやり取り」で当事者間で伝えます。' },
-  { t:'応援要請を承認・辞退する', k:'承認 辞退 受信 受ける 返事', a:'自社の大工への要請は「応援」タブの「受信した要請」に届きます。「承認する」または「辞退」を選べます。新着は🔔お知らせとタブのバッジで分かります。' },
-  { t:'条件のやり取り（チャット）', k:'チャット やり取り 条件 日当 支払い 住所 メッセージ', a:'承認後、当事者だけが見られるチャットで、住所・日当・支払い条件などを相談できます（管理者には表示されません）。自分は右、相手は左に表示されます。' },
-  { t:'取引の流れ（応援申請→承認→取引成立）', k:'流れ 順番 ステップ 取引 成立 進捗 申請 承認', a:'取引は「①応援申請 → ②承認 → ③取引条件の確認・やり取り → ④電子請負契約の締結 → ⑤取引成立」の順で進みます。承認済みの要請カードの上部に、いま取引がどの段階にあるかがステップ表示されます。' },
-  { t:'電子請負契約を結ぶ', k:'契約 請負 電子契約 署名 サイン 請負代金 作業指示者 現場責任者 偽装請負 派遣 締結', a:'承認後、まず「③取引条件を確認・やり取りする」で労働条件・支払い条件などを相談し、次に「④電子請負契約を締結する」から請負内容・請負代金・作業指示者などを入力して、発注者・受注者の双方が電子署名します。双方が署名すると「⑤取引成立」となります（契約内容は管理者には表示されません）。本アプリの応援は請負契約であり、職人への指揮命令・労務管理は職人が所属する会社（受注者）が行います。契約書は「📄契約書をPDFでダウンロード」でPDFファイルとして保存でき、締結後はご自身でも保管してください。' },
+  { t:'応援要請を送る', k:'応援要請 依頼 借りる お願い 送る', a:'大工カードの「🤝この大工に応援要請」から、工事場所（県・市・区）、作業期間、連絡先などを入力して送信します。番地など詳しい住所は送信後の「条件のやり取り」で当事者間で伝えます。', img:'help/reqform.png', imgCap:'応援要請フォーム（日程は空き日から選択）' },
+  { t:'応援要請を承認・辞退する', k:'承認 辞退 受信 受ける 返事', a:'自社の大工への要請は「応援」タブの「受信した要請」に届きます。「承認する」または「辞退」を選べます。新着は🔔お知らせとタブのバッジで分かります。', img:'help/reqtab.png', imgCap:'「応援」タブ（受信した要請・取引の進み具合）' },
+  { t:'条件のやり取り（チャット）', k:'チャット やり取り 条件 日当 支払い 住所 メッセージ', a:'承認後、当事者だけが見られるチャットで、住所・日当・支払い条件などを相談できます（管理者には表示されません）。自分は右、相手は左に表示されます。', img:'help/chat.png', imgCap:'条件のやり取り（当事者だけのチャット）' },
+  { t:'取引の流れ（応援申請→承認→取引成立）', k:'流れ 順番 ステップ 取引 成立 進捗 申請 承認', a:'取引は「①応援申請 → ②承認 → ③取引条件の確認・やり取り → ④電子請負契約の締結 → ⑤取引成立」の順で進みます。承認済みの要請カードの上部に、いま取引がどの段階にあるかがステップ表示されます。', img:'help/reqtab.png', imgCap:'承認済みカードのステップ表示（現在地が色で分かる）' },
+  { t:'電子請負契約を結ぶ', k:'契約 請負 電子契約 署名 サイン 請負代金 作業指示者 現場責任者 偽装請負 派遣 締結', a:'承認後、まず「③取引条件を確認・やり取りする」で労働条件・支払い条件などを相談し、次に「④電子請負契約を締結する」から請負内容・請負代金・作業指示者などを入力して、発注者・受注者の双方が電子署名します。双方が署名すると「⑤取引成立」となります（契約内容は管理者には表示されません）。本アプリの応援は請負契約であり、職人への指揮命令・労務管理は職人が所属する会社（受注者）が行います。契約書は「📄契約書をPDFでダウンロード」でPDFファイルとして保存でき、締結後はご自身でも保管してください。', img:'help/contract.png', imgCap:'電子請負契約の入力画面（上部に進み具合を表示）' },
   { t:'延長・予定変更を依頼する', k:'延長 予定変更 日程変更 リスケ 変更 再契約 再署名 カレンダー', a:'承認済みの要請で「📅延長・予定変更を依頼」から新しい活用日を提案できます。選べる日は、応援要請を送るときと同じく、その大工の「空き」「応相談」カレンダーから選びます（空き以外の日は選べません）。相手が承認すると活用日が更新されます。すでに電子請負契約を締結していた場合は、日程が変わったことで契約内容が古くなるため、同じ取引のまま（新しい取引が別に増えることはありません）契約の署名が自動的にリセットされます。お手数ですが、③取引条件の確認→④電子請負契約の締結を改めて行い、⑤取引成立まで進めてください。' },
   { t:'取引を解除する', k:'解除 キャンセル 取消 中止 取引', a:'予定変更で条件が合わなくなった等の場合、承認済みの要請を「🚫取引を解除する」で解除できます。当事者どちらからでも可能です。' },
   { t:'評価のルール', k:'評価 ★ 星 レビュー 5段階 平均 ルール 自己評価', a:'評価は「取引・活用した相手」だけが入力できます（取引のない工務店・活用していない大工は評価不可）。応援画面の承認済み要請から、大工・相手工務店を5段階で評価します。自己評価はできません。平均は利用者全員の値で、大工をさがす／工務店画面に表示されます。' },
   { t:'過去のやり取り履歴', k:'履歴 過去 3か月 やり取り 記録', a:'「応援」タブの「💬当事者どうしのやり取り履歴（過去3か月）を見る」で、相手ごとに過去3か月分のやり取りをまとめて確認できます。' },
-  { t:'お知らせ・通知', k:'お知らせ 通知 ベル 受信箱 新着 プッシュ 一斉配信 運営から', a:'ヘッダーの🔔お知らせで、未対応（応援要請・日程変更・新着メッセージ・必須評価・管理者連絡・運営からの一斉配信）をまとめて確認できます。運営からのお知らせをタップすると全文を確認できます。「通知をオンにする」と、アプリを開いている間に新着をこの端末へ通知します。' },
+  { t:'お知らせ・通知', k:'お知らせ 通知 ベル 受信箱 新着 プッシュ 一斉配信 運営から', a:'ヘッダーの🔔お知らせで、未対応（応援要請・日程変更・新着メッセージ・必須評価・管理者連絡・運営からの一斉配信）をまとめて確認できます。運営からのお知らせをタップすると全文を確認できます。「通知をオンにする」と、アプリを開いている間に新着をこの端末へ通知します。', img:'help/inbox.png', imgCap:'🔔お知らせ（未対応の項目がまとまる）' },
   { t:'お気に入り', k:'お気に入り ★ ブックマーク 保存', a:'大工・工務店の★を押すとお気に入りに登録できます（この端末内に保存）。検索で「★お気に入りのみ」に絞り込めます。' },
   { t:'最新の情報に更新', k:'更新 リロード 反映 最新', a:'反映が遅いと感じたら、ヘッダーの🔄更新で最新データを取り直せます。' },
   { t:'アプリにする（ホーム画面に追加）', k:'アプリ インストール ホーム画面 PWA', a:'ヘッダーの「⬇️アプリにする」から、スマホのホーム画面に追加するとアイコンから全画面で起動できます。' },
@@ -3025,15 +3028,38 @@ function renderHelp(){
     +'<button class="btn ghost sm vid-btn" data-vid="guide-value.mp4" data-vtitle="▶ アプリの価値紹介">▶ アプリの価値紹介（約3分）</button>'
     +'<button class="btn ghost sm vid-btn" data-vid="guide-caution.mp4" data-vtitle="▶ 依頼の際の注意事項">▶ 依頼の際の注意事項（約3分）</button></div>';
   const termsBtn='<button class="btn ghost sm" id="helpTermsBtn" style="width:100%;margin-bottom:10px">📜 利用規約・免責事項を見る（同意状況の確認）</button>';
-  const body=items.length?items.map(it=>`<details class="helpitem"><summary>${H.esc(it.t)}</summary><div class="helpa">${H.esc(it.a)}</div></details>`).join('')
+  // 画面写真は最初は src を付けず、その項目を開いたときに読み込む（通信量を抑える）。
+  // ※ loading="lazy" はモーダル内だと発火しないことがあるため、開いた時に自分で読み込む。
+  const shot=it=>it.img?`<img class="helpimg" data-src="${H.esc(it.img)}" alt="${H.esc(it.t)}の画面" data-zoom="${H.esc(it.img)}"><div class="helpimgcap">${H.esc(it.imgCap||'')}（タップで拡大）</div>`:'';
+  const body=items.length?items.map(it=>`<details class="helpitem"><summary>${H.esc(it.t)}</summary><div class="helpa">${H.esc(it.a)}${shot(it)}</div></details>`).join('')
     :'<div class="empty" style="padding:18px">該当する項目がありません。別のキーワードでお試しください。</div>';
   list.innerHTML=videoBtns+termsBtn+body;
+  const loadShots=el=>el.querySelectorAll('.helpimg[data-src]').forEach(im=>{ im.src=im.dataset.src; im.removeAttribute('data-src'); });
+  list.querySelectorAll('.helpitem').forEach(d=>d.addEventListener('toggle',()=>{ if(d.open) loadShots(d); }));
+  list.querySelectorAll('.helpimg').forEach(im=>im.onclick=()=>openHelpImg(im.dataset.zoom||im.getAttribute('src'), im.alt));
   const tb=document.getElementById('helpTermsBtn'); if(tb) tb.onclick=()=>{ document.getElementById('helpOv').classList.remove('on'); showTerms(!termsAgreedEffective()); };
   list.querySelectorAll('[data-vid]').forEach(b=>b.onclick=()=>{
     list.querySelectorAll('.vid-btn').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
     openVideo(b.dataset.vid, b.dataset.vtitle);
   });
+}
+// ヘルプの画面写真をタップしたとき、全画面に近い大きさで拡大表示する（小さくて読めないのを防ぐ）
+function openHelpImg(src, alt){
+  if(!src) return;
+  let ov=document.getElementById('helpImgOv');
+  if(!ov){
+    ov=document.createElement('div'); ov.id='helpImgOv';
+    ov.style.cssText='position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;gap:10px';
+    ov.innerHTML='<img id="helpImgBig" alt="" style="max-width:100%;max-height:82vh;border-radius:10px;background:#fff">'
+      +'<div id="helpImgCap" style="color:#fff;font-size:12px;text-align:center"></div>'
+      +'<button class="btn" id="helpImgClose" style="min-width:140px">とじる</button>';
+    document.body.appendChild(ov);
+    ov.onclick=e=>{ if(e.target.id==='helpImgOv'||e.target.id==='helpImgClose') ov.remove(); };
+  }
+  ov.querySelector('#helpImgBig').src=src;
+  ov.querySelector('#helpImgBig').alt=alt||'';
+  ov.querySelector('#helpImgCap').textContent=alt||'';
 }
 // 動画はアプリ内モーダルで再生（別タブ遷移しないのでアプリ・ヘルプボタンは残る）
 function openVideo(src, title){

@@ -3,8 +3,9 @@
 #  使い方:  powershell -ExecutionPolicy Bypass -File shokunin\tools\build-videos.ps1
 #  やること: 体験モードのアプリ画面を撮影 → 案内キャラ「匠」＋字幕＋BGM＋
 #            ナレーション(VOICEVOX)でスライド動画を生成 → shokunin/ に出力。
+#            あわせて、アプリ内ヘルプに載せる画面写真を shokunin/help/ に書き出す。
 #  前提ツール(すべて無料): ffmpeg, Google Chrome, VOICEVOX(CPU版), Yu Gothicフォント
-#  ※アプリ画面(index.html等)を変更したら、このスクリプトを実行すれば動画に反映されます。
+#  ※アプリ画面(index.html等)を変更したら、このスクリプトを実行すれば動画とヘルプ画像に反映されます。
 # =============================================================================
 $ErrorActionPreference = 'Stop'
 $root  = Split-Path -Parent $PSScriptRoot        # = shokunin ディレクトリ
@@ -27,6 +28,10 @@ $wingetPkgs = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages'
 $ff = Find-Under $wingetPkgs 'ffmpeg.exe' 'Gyan.FFmpeg'
 if(-not $ff){ $ff = (Get-Command ffmpeg -ErrorAction SilentlyContinue).Source }
 if(-not $ff){ throw 'ffmpeg が見つかりません。`winget install Gyan.FFmpeg` を実行してください。' }
+# ffprobe（ffmpegと同じフォルダにある）。ナレーション音声の長さを測るのに使う。
+$ffp = Join-Path (Split-Path $ff -Parent) 'ffprobe.exe'
+if(-not (Test-Path $ffp)){ $ffp = (Get-Command ffprobe -ErrorAction SilentlyContinue).Source }
+if(-not $ffp){ throw 'ffprobe が見つかりません（ffmpeg と同じ場所にあるはずです）。' }
 
 $chrome = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe","${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe","$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 if(-not $chrome){ throw 'Google Chrome が見つかりません（アプリ画面の撮影に使用します）。' }
@@ -83,6 +88,19 @@ try {
   $missing = $scenes | Where-Object { -not (Test-Path (Join-Path $shots "shot_$_.png")) }
   if($missing){ throw ('画面撮影に失敗: ' + ($missing -join ',')) }
   Write-Host 'screenshots OK'
+
+  # アプリ内ヘルプに載せる画面写真も、同じ撮影結果から書き出す（動画とヘルプの画面を常に同じ版に保つ）。
+  # 表示は幅300px程度なので、2倍相当の幅600pxに縮小して容量を抑える。
+  $helpDir = Join-Path $root 'help'
+  New-Item -ItemType Directory -Force $helpDir | Out-Null
+  foreach($sc in $scenes){
+    $src = Join-Path $shots "shot_$sc.png"
+    $dst = Join-Path $helpDir "$sc.png"
+    cmd /c "`"$ff`" -y -hide_banner -loglevel error -i `"$src`" -vf scale=600:-1 `"$dst`" 2>nul" | Out-Null
+  }
+  $helpMissing = $scenes | Where-Object { -not (Test-Path (Join-Path $helpDir "$_.png")) }
+  if($helpMissing){ throw ('ヘルプ用画面の書き出しに失敗: ' + ($helpMissing -join ',')) }
+  Write-Host 'help screenshots OK'
 } finally {
   Stop-Job $server -ErrorAction SilentlyContinue; Remove-Job $server -Force -ErrorAction SilentlyContinue
 }
@@ -161,12 +179,23 @@ public static class SlideMaker2 {
       g.Clear(Color.White);
       using(var b=new SolidBrush(Accent)) g.FillRectangle(b,0,0,1280,14);
       bool hasShot = shotPng!=null && File.Exists(shotPng);
-      float textW = hasShot? 700f : 1060f;
-      float titleW = hasShot? 812f : 1120f;
+      // アプリ画面を読みやすくするため、スマホ画面は幅390px（＝アプリの実寸と同じ1:1）で大きく表示する。
+      // その分だけ本文・見出しの幅を狭めて、画面と重ならないようにする。
+      float textW = hasShot? 660f : 1060f;
+      float titleW = hasShot? 700f : 1120f;
       var sfNoWrap = new StringFormat(StringFormatFlags.NoWrap);
       float bulletBottomY=252f; // 箇条書き欄の最終的な下端（キャラクターとの重なり判定に使う。下で計測する）
+      // タイトルは折り返さない設定のため、長いと右が見切れる。スマホ画面を大きくした分だけ
+      // 見出しの幅が狭くなっているので、枠に収まるまで文字サイズを自動で少し下げる。
+      float tSize = 33f;
+      while(tSize > 20f){
+        using(var probe = new Font("Yu Gothic UI", tSize, FontStyle.Bold)){
+          if(g.MeasureString(title, probe, new SizeF(4000,200), sfNoWrap).Width <= titleW) break;
+        }
+        tSize -= 1f;
+      }
       using(var fK=new Font("Yu Gothic UI",22,FontStyle.Bold))
-      using(var fT=new Font("Yu Gothic UI",33,FontStyle.Bold))
+      using(var fT=new Font("Yu Gothic UI",tSize,FontStyle.Bold))
       using(var fL=new Font("Yu Gothic UI",23))
       using(var fF=new Font("Yu Gothic UI",16))
       using(var bA=new SolidBrush(Accent))
@@ -194,11 +223,13 @@ public static class SlideMaker2 {
           }
           y += Math.Max(52f, sz.Height+16f);
         }
-        g.DrawString("大工シェア ネットワーク", fF, bS, new RectangleF(200,676,400,32));
+        g.DrawString("職人シェア", fF, bS, new RectangleF(200,676,400,32));
       }
       if(hasShot){
         using(var sh=Image.FromFile(shotPng)){
-          var rect=new RectangleF(902,42,306,628);
+          // 幅390＝アプリ実寸と同じ大きさで描き、高さ660の枠でクリップする（画面下部は切れるが、
+          // 操作の要点が写る上部を拡大して見せることを優先する）。
+          var rect=new RectangleF(818,30,390,660);
           using(var rp=Round(rect,26)){
             var st=g.Save();
             g.SetClip(rp);
@@ -293,8 +324,17 @@ $bgm = Join-Path $work 'bgm.wav'
 function New-Segment { param([string]$Png,[string]$Text,[string]$Mp4,[double]$PadDur)
   $wav=[System.IO.Path]::ChangeExtension($Mp4,'.wav')
   New-Voice -Text $Text -Path $wav
-  $af = 'apad=pad_dur=' + $PadDur.ToString([System.Globalization.CultureInfo]::InvariantCulture)
-  cmd /c "`"$ff`" -y -hide_banner -loglevel error -loop 1 -i `"$Png`" -i `"$wav`" -af $af -c:v libx264 -tune stillimage -r 15 -c:a aac -ar 44100 -b:a 128k -pix_fmt yuv420p -shortest `"$Mp4`" 2>nul" | Out-Null
+  # ナレーション音声の長さを測り、映像と音声を「まったく同じ長さ・コマ境界ぴったり」に揃える。
+  # -shortest 任せにすると映像だけ15fpsのコマ単位に丸められ、1本あたり最大1/15秒ずれる。
+  # 本編は数十本のセグメントを連結するため、このわずかなズレが積み上がり、
+  # 後半ほどナレーションと画面がずれてしまう（そのための固定長化）。
+  $ci = [System.Globalization.CultureInfo]::InvariantCulture
+  $durRaw = (& $ffp -v error -show_entries format=duration -of csv=p=0 $wav) | Select-Object -First 1
+  $dur = [double]::Parse([string]$durRaw, $ci)
+  $frames = [math]::Ceiling(($dur + $PadDur) * 15)
+  if($frames -lt 1){ $frames = 1 }
+  $exact = ([double]$frames / 15).ToString('0.######', $ci)
+  cmd /c "`"$ff`" -y -hide_banner -loglevel error -loop 1 -i `"$Png`" -i `"$wav`" -af apad -t $exact -c:v libx264 -tune stillimage -r 15 -c:a aac -ar 44100 -b:a 128k -pix_fmt yuv420p `"$Mp4`" 2>nul" | Out-Null
   if(-not (Test-Path $Mp4)){ throw "segment failed: $Mp4" }
 }
 
