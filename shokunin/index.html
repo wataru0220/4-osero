@@ -601,7 +601,7 @@
 <script src="data.js?v=20260629f"></script>
 <script src="common.js?v=20260629f"></script>
 <script>
-const APP_VERSION = '2026-07-14a'; // 画面で最新版か確認するための版番号
+const APP_VERSION = '2026-07-14b'; // 画面で最新版か確認するための版番号
 const TERMS_VERSION = '2026-07-13a'; // 利用規約の版（DB.on同期発火より前に宣言してTDZ回避）。改定時は必ず更新し、利用者に再同意を求める。
 
 // ===== 事務局連絡先・料金（★正式運用の前に、事務局が実際の値へ必ず書き換えてください） =====
@@ -2411,6 +2411,25 @@ function contractFileName(rid){
   const d=(c.dateText||'').split(/[、,〜]/)[0] || H.todayStr();
   return '電子請負契約_'+sanitizeFileName(contractCraftLabel(c))+'_'+sanitizeFileName(d)+'.pdf';
 }
+// 電子請負契約書に添付する標準約款（契約条項）。HTML版・PDF(Canvas)版で同じ内容を使う。
+// ※これは一般的なひな形（たたき台）です。正式運用の前に専門家（弁護士等）の確認を推奨します。
+const CONTRACT_CLAUSES=[
+  '第1条（目的）本契約は、発注者が受注者に対し本書記載の工事（作業範囲）の完成を委託し、受注者が善良な管理者の注意をもってこれを完成し、発注者が請負代金を支払うことを目的とする。',
+  '第2条（契約の性質）本契約の性質は、前記「本契約の性質（重要）」欄に定めるとおり、請負契約（業務委託契約）であり、労働者派遣・労働者供給には該当しない。',
+  '第3条（請負代金および支払）発注者は、本書記載の請負代金を、記載の支払方法・支払期日に従い受注者へ支払う。',
+  '第4条（作業日・工期の変更）作業は本書記載の作業日（活用日）に従い行う。変更・延長は当事者双方が協議し、本アプリの機能等により再合意するものとし、再合意までは従前の内容を有効とする。',
+  '第5条（再委託の制限）受注者は、発注者の事前の承諾（本アプリ上の合意を含む）なく、本契約上の業務の全部または重要な一部を第三者に再委託してはならない。',
+  '第6条（安全衛生・労働災害）受注者は、応援に従事する自社の職人に係る安全衛生管理および労働災害補償（労災保険等の加入・負担を含む）を、自らの責任と費用で行う。',
+  '第7条（費用負担）材料・工具の準備、駐車料金・宿泊費・交通費・有料道路料金その他の費用の負担は、本書の記載および当事者間の合意（本アプリ上のやり取りを含む）による。',
+  '第8条（契約不適合責任）完成した作業に契約不適合があった場合、受注者は、当事者間で合意する相当の期間内において、無償で修補その他必要な履行の追完を行う。',
+  '第9条（秘密保持・個人情報）当事者は、本契約に関して知り得た相手方および職人の営業上・技術上の情報ならびに個人情報を、本契約の目的以外に利用せず、正当な理由なく第三者に開示・漏えいしない。',
+  '第10条（反社会的勢力の排除）当事者は、自己および自己の関係者が暴力団等の反社会的勢力でなく、将来も関係を持たないことを表明し確約する。これに反した場合、相手方は催告なく本契約を解除できる。',
+  '第11条（解除）当事者の一方が本契約に違反し、相当期間を定めた催告後も是正されないとき、または信頼関係を著しく害する行為があったときは、相手方は本契約を解除できる。',
+  '第12条（損害賠償）当事者は、自己の責めに帰すべき事由により相手方に損害を与えたときは、通常生ずべき損害の範囲でこれを賠償する。',
+  '第13条（不可抗力）天災地変、感染症の蔓延、法令の改廃その他の不可抗力により履行が不能または遅延した場合、当事者はその責任を負わない。これに伴う損害の負担は誠実に協議して定める。',
+  '第14条（アプリ管理者の非関与）本アプリの管理者は本契約の当事者ではなく、本契約の成立・内容・履行および当事者間の紛争について一切関与せず、いかなる責任も負わない。管理者に対して紹介料等は発生しない。',
+  '第15条（協議・合意管轄）本契約に定めのない事項または疑義が生じた事項は、当事者が信義誠実の原則に従い協議して解決する。協議により解決しない紛争については、受注者の所在地を管轄する裁判所を第一審の専属的合意管轄裁判所とする。'
+];
 // 単体で開ける契約書HTML（当アプリのCSSに依存しない自己完結ドキュメント）
 function contractDocHTML(rid){
   const c=contractsByRid[rid]; if(!c) return '';
@@ -2455,6 +2474,9 @@ function contractDocHTML(rid){
   .pre{white-space:pre-wrap}
   .clause{font-size:12.5px; color:#333; background:#fafbfc; border:1px solid #e3e8ee; border-radius:8px; padding:11px 13px; margin:14px 0}
   .clause b{color:#b3462f}
+  .terms{margin:14px 0; border:1px solid #e3e8ee; border-radius:8px; padding:6px 13px 10px}
+  .terms .termshd{font-weight:700; font-size:13px; color:#1c2530; margin:8px 0 6px}
+  .terms .art{font-size:11.5px; color:#333; line-height:1.65; margin:5px 0}
   .signs{width:100%; border-collapse:collapse; margin-top:16px}
   .signs td{border:1px solid #cfd8e0; padding:12px 14px; width:50%; vertical-align:top}
   .slabel{font-size:12px; color:#667; font-weight:700; margin-bottom:6px}
@@ -2477,6 +2499,7 @@ function contractDocHTML(rid){
     ${rows}
   </table>
   <div class="clause"><b>本契約の性質（重要）</b><br>本契約は請負契約（業務委託契約）である。受注者は、応援に従事させる自社の職人に対する労務管理・指揮命令・安全衛生管理・出退勤の管理を自ら行う。発注者は、当該職人に対して直接の作業指示や勤怠管理を行わず、工事内容の調整は受注者があらかじめ指定する上記の作業指示者を通じて行う。天災その他不可抗力による損害の負担、請負代金・工期の変更方法については当事者間で誠実に協議して定めるものとする。アプリ管理者は本契約の当事者ではなく、本契約の成立・内容・履行及び当事者間の紛争について一切関与せず、何らの責任も負わない。</div>
+  <div class="terms"><div class="termshd">契約約款（契約条項）</div>${CONTRACT_CLAUSES.map(cl=>`<p class="art">${e(cl)}</p>`).join('')}</div>
   <table class="signs"><tr>${signBlock('発注者（署名）', c.fromSign)}${signBlock('受注者（署名）', c.toSign)}</tr></table>
   <div class="foot">本書面は「大工シェア ネットワーク」アプリにより発行された電子請負契約書です。　運営：栗駒建業<br>電子署名は、各当事者が本アプリ上で内容を確認し同意操作を行った記録（会社名・担当者名・日時）です。必要な期間、大切に保管してください。</div>
 </div>
@@ -2512,7 +2535,7 @@ function renderContractCanvas(rid){
   const craftLabel=contractCraftLabel(c);
   const signed=!!(c.fromSign && c.toSign);
   const FONT="'Yu Gothic','Hiragino Kaku Gothic ProN','Meiryo',sans-serif";
-  const W=1240, MARGIN=70, DRAFT_H=3400; // 下書き用キャンバス（十分に大きい。最後に実高さで切り出す）
+  const W=1240, MARGIN=70, DRAFT_H=6000; // 下書き用キャンバス（十分に大きい。最後に実高さで切り出す）
   const draw=document.createElement('canvas'); draw.width=W; draw.height=DRAFT_H;
   const ctx=draw.getContext('2d');
   ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,DRAFT_H);
@@ -2581,7 +2604,19 @@ function renderContractCanvas(rid){
   ctx.fillText('本契約の性質（重要）', MARGIN+16, y+26);
   ctx.font='12.5px '+FONT; ctx.fillStyle='#333';
   clauseLines.forEach((ln,i)=>ctx.fillText(ln, MARGIN+16, y+50+i*19));
-  y += clauseH+28;
+  y += clauseH+22;
+
+  // 契約約款（契約条項）：各条を折り返して順に描画する
+  ctx.font='bold 14px '+FONT; ctx.fillStyle='#1c2530';
+  ctx.fillText('契約約款（契約条項）', MARGIN, y+4); y+=24;
+  ctx.font='12px '+FONT; ctx.fillStyle='#333';
+  const artLH=18;
+  CONTRACT_CLAUSES.forEach(cl=>{
+    const ls=wrapCanvasText(ctx, cl, W-2*MARGIN);
+    ls.forEach((ln,i)=>ctx.fillText(ln, MARGIN, y+i*artLH));
+    y += ls.length*artLH + 8;
+  });
+  y += 16;
 
   // 署名欄（発注者・受注者の2列）
   const colGap=20, colW=(W-2*MARGIN-colGap)/2, sigH=112;
@@ -3017,7 +3052,8 @@ const HELP_TOPICS=[
   { t:'お気に入り', k:'お気に入り ★ ブックマーク 保存', a:'大工・工務店の★を押すとお気に入りに登録できます（この端末内に保存）。検索で「★お気に入りのみ」に絞り込めます。' },
   { t:'最新の情報に更新', k:'更新 リロード 反映 最新', a:'反映が遅いと感じたら、ヘッダーの🔄更新で最新データを取り直せます。' },
   { t:'アプリにする（ホーム画面に追加）', k:'アプリ インストール ホーム画面 PWA', a:'ヘッダーの「⬇️アプリにする」から、スマホのホーム画面に追加するとアイコンから全画面で起動できます。' },
-  { t:'プライバシー・基本ルール', k:'プライバシー ルール 住所 個人情報 匿名', a:'アプリ上の住所表示は県・市・区まで。詳しい住所は当事者間のやり取りで伝えます。評価はトラブル防止のため★のみ（コメントなし）です。自社・自分の大工は評価できません。' }
+  { t:'プライバシー・基本ルール', k:'プライバシー ルール 住所 個人情報 匿名', a:'アプリ上の住所表示は県・市・区まで。詳しい住所は当事者間のやり取りで伝えます。評価はトラブル防止のため★のみ（コメントなし）です。自社・自分の大工は評価できません。' },
+  { t:'退会（利用をやめる）', k:'退会 やめる 解約 停止 脱会 アカウント削除 会員 呼び戻し', a:`本サービスの退会（利用停止）をご希望の場合は、事務局までご連絡ください（電話：${OFFICE.tel}／メール：${OFFICE.email}）。退会するとログインできなくなり、登録した工務店・大工・空き状況などの情報は現役の一覧から外れます。退会後1か月間は事務局側で保管され、その間はお申し出により元のデータのまま呼び戻し（再開）できます。1か月を過ぎると完全に削除されます。締結済みの電子請負契約書は、退会前に各取引の「📄契約書をPDFでダウンロード」で保存しておいてください（退会後はアプリから取得できなくなります）。料金・契約条件・利用停止の詳細は、利用規約および特定商取引法に基づく表記をご確認ください。` }
 ];
 function renderHelp(){
   const list=document.getElementById('helpList'); if(!list) return;
