@@ -1,0 +1,20 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#fff}#box{padding:0;display:flex;align-items:center;justify-content:center;width:560px;height:560px;background:#fff}#box svg{width:520px;height:520px}</style>
+<script src="../qrcode.min.js"></script>
+</head><body>
+<!-- リール動画のCTA用QRコード。?url= のURLを大きなQRにして、build-reel.ps1 が撮影する。 -->
+<div id="box"></div>
+<script>
+(function(){
+  var url=(location.search.match(/[?&]url=([^&]+)/)||[])[1];
+  url = url ? decodeURIComponent(url) : 'https://ws.formzu.net/sfgen/S281999641/';
+  document.title='LOADING';
+  try{
+    var qr=qrcode(0,'M'); qr.addData(url); qr.make();
+    document.getElementById('box').innerHTML=qr.createSvgTag({cellSize:8, margin:2, scalable:true});
+    var svg=document.querySelector('#box svg'); if(svg){ svg.setAttribute('width','520'); svg.setAttribute('height','520'); }
+    document.title='READY';
+  }catch(e){ document.title='ERR:'+e; }
+})();
+</script>
+</body></html>
