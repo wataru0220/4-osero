@@ -7,6 +7,9 @@
 #  前提ツール(すべて無料): ffmpeg, Google Chrome, VOICEVOX(CPU版), Yu Gothicフォント
 #  ※アプリ画面(index.html等)を変更したら、このスクリプトを実行すれば動画とヘルプ画像に反映されます。
 # =============================================================================
+#  -Only <all|howto|value|caution>：指定した動画だけを書き出す（既定は all）。
+#    例) 注意事項だけ作り直す:  powershell -ExecutionPolicy Bypass -File shokunin\tools\build-videos.ps1 -Only caution
+param([ValidateSet('all','howto','value','caution')][string]$Only='all')
 $ErrorActionPreference = 'Stop'
 $root  = Split-Path -Parent $PSScriptRoot        # = shokunin ディレクトリ
 $tools = $PSScriptRoot
@@ -101,6 +104,17 @@ try {
   $helpMissing = $scenes | Where-Object { -not (Test-Path (Join-Path $helpDir "$_.png")) }
   if($helpMissing){ throw ('ヘルプ用画面の書き出しに失敗: ' + ($helpMissing -join ',')) }
   Write-Host 'help screenshots OK'
+
+  # 「派遣」と「請負」のちがいを説明する図解を、段階（stage）ごとに撮影する。
+  # 発注者（青）・受注者（橙）・労働者＝職人（緑）の3人で、指揮命令と契約の流れを示す。
+  $diaSpecs = @(
+    @{k='haken_1'; u='type=haken&stage=1'}, @{k='haken_2'; u='type=haken&stage=2'}, @{k='haken_3'; u='type=haken&stage=3'},
+    @{k='ukeoi_1'; u='type=ukeoi&stage=1'}, @{k='ukeoi_2'; u='type=ukeoi&stage=2'}, @{k='ukeoi_3'; u='type=ukeoi&stage=3'}
+  )
+  foreach($d in $diaSpecs){ Shoot ("http://localhost:$port/tools/haken-ukeoi.html?"+$d.u) (Join-Path $shots ("dia_"+$d.k+".png")) 1200 520 }
+  $diaMissing = $diaSpecs | Where-Object { -not (Test-Path (Join-Path $shots ("dia_"+$_.k+".png"))) }
+  if($diaMissing){ throw ('図解の撮影に失敗: ' + (($diaMissing|ForEach-Object{$_.k}) -join ',')) }
+  Write-Host 'diagram screenshots OK'
 } finally {
   Stop-Job $server -ErrorAction SilentlyContinue; Remove-Job $server -Force -ErrorAction SilentlyContinue
 }
@@ -254,6 +268,46 @@ public static class SlideMaker2 {
       bmp.Save(path, ImageFormat.Png);
     }
   }
+
+  // 図解スライド：上に見出し、下に全幅の図（派遣／請負の関係図）を大きく配置する。
+  public static void Diagram(string path, string kicker, string title, string bgPng, string footer){
+    using (var bmp = new Bitmap(1280,720))
+    using (var g = Graphics.FromImage(bmp)){
+      g.SmoothingMode = SmoothingMode.AntiAlias;
+      g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+      g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+      g.Clear(Color.White);
+      using(var bA=new SolidBrush(Accent)) g.FillRectangle(bA,0,0,1280,14);
+      var sfNoWrap = new StringFormat(StringFormatFlags.NoWrap);
+      float titleW=1120f, tSize=33f;
+      while(tSize>20f){
+        using(var probe=new Font("Yu Gothic UI",tSize,FontStyle.Bold)){
+          if(g.MeasureString(title, probe, new SizeF(4000,200), sfNoWrap).Width <= titleW) break;
+        }
+        tSize-=1f;
+      }
+      using(var fK=new Font("Yu Gothic UI",22,FontStyle.Bold))
+      using(var fT=new Font("Yu Gothic UI",tSize,FontStyle.Bold))
+      using(var fF=new Font("Yu Gothic UI",16))
+      using(var bA=new SolidBrush(Accent))
+      using(var bI=new SolidBrush(Ink))
+      using(var bS=new SolidBrush(Sub)){
+        g.DrawString(kicker, fK, bA, new RectangleF(80,52,titleW,44));
+        g.DrawString(title, fT, bI, new RectangleF(80,96,titleW,60), sfNoWrap);
+        g.FillRectangle(bA,84,182,150,6);
+        if(footer!=null && footer.Length>0) g.DrawString(footer, fF, bS, new RectangleF(200,690,400,28));
+      }
+      if(bgPng!=null && File.Exists(bgPng)){
+        using(var im=Image.FromFile(bgPng)){
+          float x0=54f, y0=200f, bw=1172f, bh=496f;   // 図を収める枠
+          float scale=Math.Min(bw/im.Width, bh/im.Height);
+          float w=im.Width*scale, h=im.Height*scale;
+          g.DrawImage(im, x0+(bw-w)/2f, y0+(bh-h)/2f, w, h);
+        }
+      }
+      bmp.Save(path, ImageFormat.Png);
+    }
+  }
 }
 
 public static class BgmMaker {
@@ -351,6 +405,19 @@ function Build-Video {
       [SlideMaker2]::Cover($png,$s.k,$s.t,[string[]]$s.l,$char,[string]$s.f)
       New-Segment -Png $png -Text $s.n -Mp4 $mp4 -PadDur 0.8
       $segs += $mp4
+    } elseif($s.diagram -eq $true){
+      # 図解スライド：ナレーションの各段に合わせて、図の表示段階（frames）を切り替える。
+      $narrs = @($s.n)
+      for($j=0;$j -lt $narrs.Count;$j++){
+        $fk = $s.frames[[Math]::Min($j, $s.frames.Count-1)]
+        $bg = Join-Path $shots ("dia_"+$fk+".png")
+        $png=Join-Path $work ("{0}_{1:d2}_{2:d2}.png" -f $Name,$i,$j)
+        $mp4=Join-Path $work ("{0}_{1:d2}_{2:d2}.mp4" -f $Name,$i,$j)
+        [SlideMaker2]::Diagram($png,[string]$s.k,[string]$s.t,$bg,$null)
+        $isLast = ($j -eq ($narrs.Count-1))
+        New-Segment -Png $png -Text $narrs[$j] -Mp4 $mp4 -PadDur $(if($isLast){0.8}else{0.2})
+        $segs += $mp4
+      }
     } else {
       # 本編スライド：箇条書きの数＋1（導入）本のナレーションに分け、ナレーションが各項目に
       # 差しかかったタイミングで、その項目だけを画面に追加表示する（スライドと説明のタイミングを一致させる）。
@@ -507,10 +574,20 @@ $caution = @(
          '承認されたら、当事者だけが見られるチャットで詳細を相談してください。',
          '住所や日当、作業内容は、必ず具体的に確認しましょう。',
          '写真やPDFも送れますので、現場の情報共有にご活用ください。') },
+  @{ diagram=$true; k='いちばん大切なこと ①'; t='「派遣」は、建設業では禁止';
+     frames=@('haken_1','haken_2','haken_3');
+     n=@('ここで、この仕組みでいちばん大切な、派遣と請負のちがいをご説明します。まずは、建設業ではやってはいけない、派遣の形です。',
+         '派遣とは、応援に来た職人に対して、依頼した発注者の側が現場で直接、指揮命令、つまり作業の指示を出す形のことです。',
+         'じつは、この労働者派遣は、建設業では法律ではっきりと禁止されています。ここが、いちばんの注意点です。') },
+  @{ diagram=$true; k='いちばん大切なこと ②'; t='本アプリは「請負」だから安心';
+     frames=@('ukeoi_1','ukeoi_2','ukeoi_3');
+     n=@('では、本アプリはどうするのか。答えは、請負です。登場するのは三者。応援を頼む発注者、応援する受注者、そして受注者の社員である職人です。',
+         '発注者は、職人にではなく、受注者の工務店に対して仕事を発注します。これが、請負契約です。',
+         'そして職人への指示は、あくまで受注者、つまり職人が所属する工務店が行います。発注者が職人に直接指示することはありません。だから労働者派遣にはあたらず、安心してご利用いただけます。') },
   @{ k='注意点 4（重要）'; t='電子請負契約を必ず締結する'; shot='contract';
      l=@('承認後は、必ず電子請負契約を締結してください','請負代金・作業指示者を確認し、双方が電子署名','職人への指揮命令は、所属する工務店が行います');
      n=@('四つ目、とても大切な点です。',
-         '承認後は、必ず電子請負契約を締結してください。これは、建設業務への労働者派遣が法律で禁止されているためで、本アプリの応援は常に請負契約として行われる仕組みになっています。',
+         'いま図でご説明した請負の形を、契約書としてきちんと残すのが、電子請負契約です。承認後は、必ず締結してください。',
          '請負代金や作業指示者などの内容を確認し、双方が電子署名することで契約が成立します。',
          '職人への作業指示や労務管理は、職人が所属する工務店が行うものとし、依頼した工務店が直接指示することはできません。') },
   @{ k='注意点 5'; t='予約とスケジュール変更のルール'; shot='reqtab';
@@ -534,9 +611,10 @@ $caution = @(
 $out1 = Join-Path $root 'guide-howto.mp4'
 $out2 = Join-Path $root 'guide-value.mp4'
 $out3 = Join-Path $root 'guide-caution.mp4'
-Build-Video -Name 'howto' -Slides $howto -OutPath $out1
-Build-Video -Name 'value' -Slides $value -OutPath $out2
-Build-Video -Name 'caution' -Slides $caution -OutPath $out3
+if($Only -eq 'all' -or $Only -eq 'howto')  { Build-Video -Name 'howto' -Slides $howto -OutPath $out1 }
+if($Only -eq 'all' -or $Only -eq 'value')  { Build-Video -Name 'value' -Slides $value -OutPath $out2 }
+if($Only -eq 'all' -or $Only -eq 'caution'){ Build-Video -Name 'caution' -Slides $caution -OutPath $out3 }
 
-Write-Host ("DONE  guide-howto.mp4 = " + [math]::Round((Get-Item $out1).Length/1MB,2) + "MB / guide-value.mp4 = " + [math]::Round((Get-Item $out2).Length/1MB,2) + "MB / guide-caution.mp4 = " + [math]::Round((Get-Item $out3).Length/1MB,2) + "MB")
+$report = @($out1,$out2,$out3) | Where-Object { Test-Path $_ } | ForEach-Object { (Split-Path $_ -Leaf) + " = " + [math]::Round((Get-Item $_).Length/1MB,2) + "MB" }
+Write-Host ("DONE  " + ($report -join ' / '))
 Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue

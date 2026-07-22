@@ -1,0 +1,121 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
+<style>
+  html,body{margin:0;background:#fff;font-family:"Yu Gothic UI","Hiragino Kaku Gothic ProN",sans-serif}
+  #stage{width:1200px;height:520px;position:relative;overflow:hidden}
+  .haken,.ukeoi{display:none}
+  body[data-type="haken"] .haken{display:inline}
+  body[data-type="ukeoi"] .ukeoi{display:inline}
+  .s2,.s3{opacity:0}
+  body[data-stage="2"] .s2{opacity:1}
+  body[data-stage="3"] .s2{opacity:1}
+  body[data-stage="3"] .s3{opacity:1}
+  text{dominant-baseline:middle}
+</style></head>
+<body>
+<div id="stage"><svg id="svg" width="1200" height="520" viewBox="0 0 1200 520" xmlns="http://www.w3.org/2000/svg"></svg></div>
+<script>
+(function(){
+  var q=new URLSearchParams(location.search);
+  var type=q.get('type')||'haken';
+  var stage=q.get('stage')||'3';
+  document.body.setAttribute('data-type',type);
+  document.body.setAttribute('data-stage',stage);
+  var NS='http://www.w3.org/2000/svg';
+  var svg=document.getElementById('svg');
+
+  function el(name,attrs,text){
+    var e=document.createElementNS(NS,name);
+    for(var k in attrs){ e.setAttribute(k,attrs[k]); }
+    if(text!=null){ e.textContent=text; }
+    return e;
+  }
+  function add(parent,e){ parent.appendChild(e); return e; }
+
+  // 人物（ヘルメット＋作業着）。cx,ty=頭の上端あたり。col=服の色, hel=ヘルメット色。
+  function person(g, cx, ty, col, hel, name, sub){
+    add(g, el('ellipse',{cx:cx, cy:ty+150, rx:60, ry:12, fill:'rgba(0,0,0,0.10)'}));
+    // 体
+    add(g, el('rect',{x:cx-40, y:ty+66, width:80, height:74, rx:20, fill:col}));
+    // 腕
+    add(g, el('rect',{x:cx-56, y:ty+72, width:22, height:56, rx:11, fill:col}));
+    add(g, el('rect',{x:cx+34, y:ty+72, width:22, height:56, rx:11, fill:col}));
+    // 首
+    add(g, el('rect',{x:cx-12, y:ty+50, width:24, height:24, fill:'#f4cfa4'}));
+    // 顔
+    add(g, el('circle',{cx:cx, cy:ty+34, r:34, fill:'#f7d5ae', stroke:'#e6b98a', 'stroke-width':2}));
+    // 目・口
+    add(g, el('circle',{cx:cx-12, cy:ty+32, r:4.5, fill:'#2b1d12'}));
+    add(g, el('circle',{cx:cx+12, cy:ty+32, r:4.5, fill:'#2b1d12'}));
+    add(g, el('path',{d:'M '+(cx-11)+' '+(ty+46)+' Q '+cx+' '+(ty+54)+' '+(cx+11)+' '+(ty+46), stroke:'#b3552e', 'stroke-width':4, fill:'none', 'stroke-linecap':'round'}));
+    // ヘルメット
+    add(g, el('path',{d:'M '+(cx-40)+' '+(ty+14)+' Q '+cx+' '+(ty-30)+' '+(cx+40)+' '+(ty+14)+' Z', fill:hel}));
+    add(g, el('rect',{x:cx-46, y:ty+12, width:92, height:12, rx:6, fill:hel}));
+    add(g, el('rect',{x:cx-6, y:ty-18, width:12, height:30, rx:5, fill:hel, opacity:0.85}));
+    // 名前・注釈
+    add(g, el('text',{x:cx, y:ty+178, 'text-anchor':'middle', 'font-size':30, 'font-weight':'bold', fill:'#1b2430'}, name));
+    add(g, el('text',{x:cx, y:ty+208, 'text-anchor':'middle', 'font-size':20, fill:'#5d6b7c'}, sub));
+  }
+
+  // 矢印
+  function defsArrow(id,color){
+    var m=el('marker',{id:id, viewBox:'0 0 10 10', refX:8, refY:5, markerWidth:8, markerHeight:8, orient:'auto-start-reverse'});
+    add(m, el('path',{d:'M 0 0 L 10 5 L 0 10 z', fill:color}));
+    return m;
+  }
+  function arrow(g, x1,y1,x2,y2, color, marker, dashed){
+    var a={x1:x1,y1:y1,x2:x2,y2:y2, stroke:color, 'stroke-width':8, 'stroke-linecap':'round', 'marker-end':'url(#'+marker+')'};
+    if(dashed){ a['stroke-dasharray']='2 14'; a['stroke-width']=7; }
+    add(g, el('line',a));
+  }
+  function label(g, x, y, text, color, size, weight){
+    add(g, el('text',{x:x, y:y, 'text-anchor':'middle', 'font-size':(size||24), 'font-weight':(weight||'bold'), fill:color}, text));
+  }
+  function banner(g, x,y,w,h, bg, brd, text, tcol){
+    add(g, el('rect',{x:x, y:y, width:w, height:h, rx:20, fill:bg, stroke:brd, 'stroke-width':3}));
+    add(g, el('text',{x:x+w/2, y:y+h/2, 'text-anchor':'middle', 'font-size':30, 'font-weight':'bold', fill:tcol}, text));
+  }
+
+  var defs=add(svg, el('defs',{}));
+  add(defs, defsArrow('arrRed','#dc2626'));
+  add(defs, defsArrow('arrOrange','#ea580c'));
+  add(defs, defsArrow('arrGreen','#16a34a'));
+  add(defs, defsArrow('arrGray','#9aa4b0'));
+
+  var BLUE='#1e4fa3', ORANGE='#ea580c', GREEN='#15803d';
+  var HEL_BLUE='#93b4e6', HEL_ORANGE='#f6b26b', HEL_GREEN='#f5c518';
+
+  // ===== 派遣（禁止） =====
+  var gH=add(svg, el('g',{class:'haken'}));
+  person(gH, 250, 150, BLUE, HEL_BLUE, '発注者', '応援を頼む工務店');
+  person(gH, 950, 150, GREEN, HEL_GREEN, '労働者（職人）', '応援に来る大工');
+  var gH2=add(gH, el('g',{class:'s2'}));
+  arrow(gH2, 360, 214, 838, 214, '#dc2626', 'arrRed', false);
+  label(gH2, 600, 182, '指揮命令', '#dc2626', 30);
+  label(gH2, 600, 250, '現場で直接あれこれ指示', '#dc2626', 22, 'normal');
+  var gH3=add(gH, el('g',{class:'s3'}));
+  banner(gH3, 300, 372, 600, 92, '#fdecec', '#f0b4b4', '❌ 建設業では労働者派遣は法律で禁止', '#c02626');
+  label(gH3, 600, 494, '＝ これが「派遣」の形', '#c02626', 24);
+
+  // ===== 請負（本アプリ） =====
+  var gU=add(svg, el('g',{class:'ukeoi'}));
+  person(gU, 190, 120, BLUE, HEL_BLUE, '発注者', '応援を頼む工務店');
+  person(gU, 600, 120, ORANGE, HEL_ORANGE, '受注者', '応援する工務店');
+  person(gU, 1010, 120, GREEN, HEL_GREEN, '労働者（職人）', '受注者の社員');
+  var gU2=add(gU, el('g',{class:'s2'}));
+  arrow(gU2, 285, 184, 500, 184, '#ea580c', 'arrOrange', false);
+  label(gU2, 392, 156, '請負契約', '#ea580c', 28);
+  label(gU2, 392, 214, '仕事を発注', '#ea580c', 20, 'normal');
+  var gU3=add(gU, el('g',{class:'s3'}));
+  arrow(gU3, 700, 184, 915, 184, '#16a34a', 'arrGreen', false);
+  label(gU3, 807, 156, '指揮命令', '#16a34a', 28);
+  label(gU3, 807, 214, '指示は自社で', '#16a34a', 20, 'normal');
+  // 発注者→職人 の直接指示は無い（点線＋バツ）
+  add(gU3, el('path',{d:'M 210 300 Q 600 372 1000 300', fill:'none', stroke:'#9aa4b0', 'stroke-width':6, 'stroke-dasharray':'2 14'}));
+  add(gU3, el('text',{x:600, y:352, 'text-anchor':'middle', 'font-size':46, 'font-weight':'bold', fill:'#c02626'}, '✕'));
+  label(gU3, 600, 392, '発注者は職人に直接指示しない', '#7a8797', 22, 'normal');
+  banner(gU3, 300, 424, 600, 78, '#eafaf0', '#a7e3c0', '✅ 本アプリの応援は いつも「請負」', '#127a3e');
+
+  document.title='READY';
+})();
+</script>
+</body></html>
