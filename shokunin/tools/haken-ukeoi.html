@@ -52,8 +52,8 @@
     add(g, el('rect',{x:cx-46, y:ty+12, width:92, height:12, rx:6, fill:hel}));
     add(g, el('rect',{x:cx-6, y:ty-18, width:12, height:30, rx:5, fill:hel, opacity:0.85}));
     // 名前・注釈
-    add(g, el('text',{x:cx, y:ty+178, 'text-anchor':'middle', 'font-size':30, 'font-weight':'bold', fill:'#1b2430'}, name));
-    add(g, el('text',{x:cx, y:ty+208, 'text-anchor':'middle', 'font-size':20, fill:'#5d6b7c'}, sub));
+    add(g, el('text',{x:cx, y:ty+178, 'text-anchor':'middle', 'font-size':25, 'font-weight':'bold', fill:'#1b2430'}, name));
+    add(g, el('text',{x:cx, y:ty+206, 'text-anchor':'middle', 'font-size':18, fill:'#5d6b7c'}, sub));
   }
 
   // 矢印
@@ -72,7 +72,7 @@
   }
   function banner(g, x,y,w,h, bg, brd, text, tcol){
     add(g, el('rect',{x:x, y:y, width:w, height:h, rx:20, fill:bg, stroke:brd, 'stroke-width':3}));
-    add(g, el('text',{x:x+w/2, y:y+h/2, 'text-anchor':'middle', 'font-size':30, 'font-weight':'bold', fill:tcol}, text));
+    add(g, el('text',{x:x+w/2, y:y+h/2, 'text-anchor':'middle', 'font-size':25, 'font-weight':'bold', fill:tcol}, text));
   }
 
   var defs=add(svg, el('defs',{}));
@@ -90,11 +90,11 @@
   person(gH, 950, 150, GREEN, HEL_GREEN, '労働者（職人）', '応援に来る大工');
   var gH2=add(gH, el('g',{class:'s2'}));
   arrow(gH2, 360, 214, 838, 214, '#dc2626', 'arrRed', false);
-  label(gH2, 600, 182, '指揮命令', '#dc2626', 30);
-  label(gH2, 600, 250, '現場で直接あれこれ指示', '#dc2626', 22, 'normal');
+  label(gH2, 600, 184, '指揮命令', '#dc2626', 26);
+  label(gH2, 600, 250, '現場で直接あれこれ指示', '#dc2626', 19, 'normal');
   var gH3=add(gH, el('g',{class:'s3'}));
-  banner(gH3, 300, 372, 600, 92, '#fdecec', '#f0b4b4', '❌ 建設業では労働者派遣は法律で禁止', '#c02626');
-  label(gH3, 600, 494, '＝ これが「派遣」の形', '#c02626', 24);
+  banner(gH3, 320, 374, 560, 88, '#fdecec', '#f0b4b4', '❌ 建設業では労働者派遣は法律で禁止', '#c02626');
+  label(gH3, 600, 492, '＝ これが「派遣」の形', '#c02626', 21);
 
   // ===== 請負（本アプリ） =====
   var gU=add(svg, el('g',{class:'ukeoi'}));
@@ -103,17 +103,17 @@
   person(gU, 1010, 120, GREEN, HEL_GREEN, '労働者（職人）', '受注者の社員');
   var gU2=add(gU, el('g',{class:'s2'}));
   arrow(gU2, 285, 184, 500, 184, '#ea580c', 'arrOrange', false);
-  label(gU2, 392, 156, '請負契約', '#ea580c', 28);
-  label(gU2, 392, 214, '仕事を発注', '#ea580c', 20, 'normal');
+  label(gU2, 392, 158, '請負契約', '#ea580c', 24);
+  label(gU2, 392, 214, '仕事を発注', '#ea580c', 18, 'normal');
   var gU3=add(gU, el('g',{class:'s3'}));
   arrow(gU3, 700, 184, 915, 184, '#16a34a', 'arrGreen', false);
-  label(gU3, 807, 156, '指揮命令', '#16a34a', 28);
-  label(gU3, 807, 214, '指示は自社で', '#16a34a', 20, 'normal');
+  label(gU3, 807, 158, '指揮命令', '#16a34a', 24);
+  label(gU3, 807, 214, '指示は自社で', '#16a34a', 18, 'normal');
   // 発注者→職人 の直接指示は無い（点線＋バツ）
   add(gU3, el('path',{d:'M 210 300 Q 600 372 1000 300', fill:'none', stroke:'#9aa4b0', 'stroke-width':6, 'stroke-dasharray':'2 14'}));
-  add(gU3, el('text',{x:600, y:352, 'text-anchor':'middle', 'font-size':46, 'font-weight':'bold', fill:'#c02626'}, '✕'));
-  label(gU3, 600, 392, '発注者は職人に直接指示しない', '#7a8797', 22, 'normal');
-  banner(gU3, 300, 424, 600, 78, '#eafaf0', '#a7e3c0', '✅ 本アプリの応援は いつも「請負」', '#127a3e');
+  add(gU3, el('text',{x:600, y:352, 'text-anchor':'middle', 'font-size':40, 'font-weight':'bold', fill:'#c02626'}, '✕'));
+  label(gU3, 600, 390, '発注者は職人に直接指示しない', '#7a8797', 19, 'normal');
+  banner(gU3, 320, 424, 560, 76, '#eafaf0', '#a7e3c0', '✅ 本アプリの応援は いつも「請負」', '#127a3e');
 
   document.title='READY';
 })();
