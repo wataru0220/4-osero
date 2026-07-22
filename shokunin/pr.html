@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>職人シェア PR動画 ダウンロード</title>
+<style>
+  :root{ --accent:#ea580c; --accent2:#c81a4a; --ink:#1b2430; --sub:#5b6673; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; }
+  body{
+    font-family:"Yu Gothic UI","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;
+    color:var(--ink); background:#f7f4f0;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    padding:24px 16px 48px;
+  }
+  .wrap{ width:100%; max-width:440px; }
+  h1{ font-size:22px; text-align:center; margin:8px 0 4px; }
+  .lead{ text-align:center; color:var(--sub); font-size:13px; margin:0 0 20px; line-height:1.7; }
+  .video-card{
+    background:#000; border-radius:20px; overflow:hidden;
+    box-shadow:0 12px 30px rgba(0,0,0,.18); margin-bottom:22px;
+  }
+  video{ width:100%; display:block; aspect-ratio:9/16; background:#000; }
+  .btn{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    width:100%; padding:18px; border-radius:16px; text-decoration:none;
+    font-size:18px; font-weight:700; border:none; cursor:pointer;
+  }
+  .btn-dl{
+    color:#fff; background:linear-gradient(135deg,var(--accent),var(--accent2));
+    box-shadow:0 8px 20px rgba(234,88,12,.35);
+  }
+  .btn-dl:active{ transform:translateY(1px); }
+  .btn-open{
+    margin-top:12px; color:var(--accent); background:#fff;
+    border:2px solid rgba(234,88,12,.3);
+  }
+  .note{
+    margin-top:22px; background:#fff; border-radius:14px; padding:16px 18px;
+    font-size:13px; color:var(--sub); line-height:1.9;
+    border:1px solid rgba(0,0,0,.06);
+  }
+  .note b{ color:var(--ink); }
+  .meta{ text-align:center; color:var(--sub); font-size:12px; margin-top:20px; }
+  .foot{ text-align:center; color:#9aa4af; font-size:12px; margin-top:28px; }
+  .foot a{ color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>職人シェア PR動画</h1>
+  <p class="lead">縦型（9:16）・約67秒。<br>インスタのリール／ストーリーズにそのまま投稿できます。</p>
+
+  <div class="video-card">
+    <video src="reel-pr.mp4" controls playsinline preload="metadata"></video>
+  </div>
+
+  <a class="btn btn-dl" href="reel-pr.mp4" download="職人シェア_PR動画.mp4">
+    ⬇️ 動画をダウンロード
+  </a>
+  <a class="btn btn-open" href="reel-pr.mp4" target="_blank" rel="noopener">
+    ▶ 別タブで開く
+  </a>
+
+  <div class="note">
+    <b>保存できないときは</b><br>
+    ・<b>iPhone（Safari）</b>：上の「別タブで開く」→ 動画を長押し →「"写真"に保存」<br>
+    ・<b>Android</b>：「ダウンロード」ボタンでそのまま保存できます<br>
+    ・<b>パソコン</b>：「ダウンロード」ボタンでmp4が保存されます<br><br>
+    保存した動画を Instagram アプリで選び、リールとして投稿してください。
+  </div>
+
+  <p class="meta">ファイル名：reel-pr.mp4 ／ 1080×1920 ／ mp4（H.264＋AAC）</p>
+  <p class="foot"><a href="index.html">← 職人シェアに戻る</a></p>
+</div>
+</body>
+</html>
