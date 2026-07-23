@@ -10,6 +10,7 @@
     { key: "busy", label: "稼働中", color: "#c0392b" }
   ];
   H.workTypes = CFG.workTypes || [];
+  H.constructionWorks = CFG.constructionWorks || [];
   H.qualifications = CFG.qualifications || [];
 
   H.statusOf = (key) => H.statuses.find((s) => s.key === key) || H.statuses[0];

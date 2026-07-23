@@ -225,6 +225,17 @@
   .checkgrid label{display:inline-flex; align-items:center; gap:5px; background:#f4f6f8; border:1.5px solid var(--line); border-radius:18px; padding:6px 11px; font-size:13px; font-weight:700; color:var(--ink); cursor:pointer; margin:0}
   .checkgrid input{width:auto; accent-color:var(--brand)}
   .checkgrid label.on{background:var(--chip); border-color:var(--brand); color:var(--brand-dark)}
+  /* 大工をさがす：工務店を選んでから大工を選ぶ（アコーディオン） */
+  .cogroup{border:1.5px solid var(--line); border-radius:12px; margin-bottom:9px; overflow:hidden; background:#fff}
+  .cogroup.open{border-color:var(--brand)}
+  .cohead{width:100%; display:flex; align-items:center; gap:9px; padding:13px 12px; background:#fff; border:0; cursor:pointer; font-family:inherit; text-align:left}
+  .cogroup.open .cohead{background:var(--chip)}
+  .cochev{font-size:13px; color:var(--brand); font-weight:900; width:13px; flex:none}
+  .cottl{font-weight:800; font-size:15px; color:var(--ink); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .cocnt{font-size:12px; color:var(--sub); font-weight:700; flex:none}
+  .cobadge{font-size:11px; font-weight:800; color:#fff; border-radius:20px; padding:3px 9px; flex:none}
+  .cobadge.free{background:#1aa260} .cobadge.maybe{background:#e0a200} .cobadge.none{background:#9aa7b5}
+  .comembers{padding:2px 10px 10px}
   /* 会員制ログインの門番：会員以外は中身（マッチング画面）を出さない */
   body.gated > header, body.gated > .wrap, body.gated > .tabbar{ display:none !important; }
   #memberGate{ display:none; }
@@ -463,7 +474,11 @@
       <div id="reqDates" class="reqdates"></div>
       <div class="count" style="margin-top:4px">この大工が「空き」に設定した日だけ選べます（複数選択可）。空き以外の日は要請できません。</div>
     </div>
-    <div class="field"><label>現場・作業内容</label><textarea id="reqWork" placeholder="例）木造2階の内装下地・ボード貼り"></textarea></div>
+    <div class="field"><label>作業内容（あてはまるものを選択）</label>
+      <div class="checkgrid" id="reqWorkGrid"></div>
+      <input type="text" id="reqWorkOther" placeholder="その他の作業内容（自由入力）" style="margin-top:8px">
+      <div class="count" style="margin-top:4px">複数選択できます。細かい内容はメッセージ欄や送信後の「条件のやり取り」でもお伝えいただけます。</div>
+    </div>
     <div class="field"><label>応援条件（費用の負担）</label>
       <div class="row"><div style="flex:1"><div class="count" style="margin:0 0 2px">🅿 駐車料金</div><select id="reqParking"></select></div>
         <div style="flex:1"><div class="count" style="margin:0 0 2px">🏨 宿泊費</div><select id="reqLodging"></select></div></div>
@@ -1185,22 +1200,58 @@ function matchFilter(k){
   }
   return true;
 }
+// 大工の空き状況ランク（②空き→①応相談→⓪なし）と、大工どうしの並べ替え。
+function craftAvailRank(k){ return craftFreeDates(k).length?2:(craftMaybeDates(k).length?1:0); }
+function cmpCraft(a,b){
+  const ea=craftFreeDates(a), eb=craftFreeDates(b);
+  const ma=craftMaybeDates(a), mb=craftMaybeDates(b);
+  const ta=ea.length?2:(ma.length?1:0), tb=eb.length?2:(mb.length?1:0);
+  if(tb!==ta) return tb-ta;
+  if(ta===2 && ea[0]!==eb[0]) return ea[0]<eb[0]?-1:1;   // 空き同士は早い日順
+  if(ta===1 && ma[0]!==mb[0]) return ma[0]<mb[0]?-1:1;   // 応相談同士も早い日順
+  const fa=favCraft.has(a._key)?1:0, fb=favCraft.has(b._key)?1:0;
+  return fb-fa;                                          // 同条件ならお気に入りを上に
+}
+let openFindCompany=null;   // いま開いている工務店（工務店を選んでから大工を選ぶ）
 function renderFind(){
   const list=document.getElementById('kList');
-  const arr=H.toArr(craftsmen).filter(k=>H.isApproved(approvals,k._key)).filter(matchFilter)
-    .sort((a,b)=>{
-      const ea=craftFreeDates(a), eb=craftFreeDates(b);
-      const ma=craftMaybeDates(a), mb=craftMaybeDates(b);
-      const ta=ea.length?2:(ma.length?1:0), tb=eb.length?2:(mb.length?1:0); // ①空き→②応相談→③予定なし の順
-      if(tb!==ta) return tb-ta;
-      if(ta===2 && ea[0]!==eb[0]) return ea[0]<eb[0]?-1:1;                 // 空き同士は早い日順
-      if(ta===1 && ma[0]!==mb[0]) return ma[0]<mb[0]?-1:1;                 // 応相談同士も早い日順
-      const fa=favCraft.has(a._key)?1:0, fb=favCraft.has(b._key)?1:0;
-      return fb-fa;                                     // 同条件ならお気に入りを上に
-    });
-  document.getElementById('findCount').textContent=`${arr.length} 名の大工`;
-  if(!arr.length){ list.innerHTML='<div class="empty">該当する大工がいません。</div>'; return; }
-  list.innerHTML=arr.map(kCardHTML).join('');
+  // 検索条件（得意作業・資格・空き・名前）で大工をしぼり込み、工務店ごとにまとめる。
+  const arr=H.toArr(craftsmen).filter(k=>H.isApproved(approvals,k._key)).filter(matchFilter);
+  const groups={};
+  arr.forEach(k=>{ const ck=k.companyKey||('name:'+(k.companyName||'')); (groups[ck]=groups[ck]||[]).push(k); });
+  const glist=Object.keys(groups).map(ck=>{
+    const members=groups[ck].slice().sort(cmpCraft);
+    const comp=companies[ck]||{};
+    const name=comp.name||(members[0]&&members[0].companyName)||'工務店';
+    const kana=comp.nameKana||name;
+    const rank=members.reduce((m,k)=>Math.max(m,craftAvailRank(k)),0);
+    const favc=members.some(k=>favCraft.has(k._key));
+    return { ck, name, kana, members, rank, favc };
+  }).sort((a,b)=>{
+    if(b.rank!==a.rank) return b.rank-a.rank;              // 空きのある工務店を上に
+    if(a.favc!==b.favc) return a.favc?-1:1;                // お気に入りを含む工務店を上に
+    return (a.kana||'').localeCompare((b.kana||''),'ja');  // あいうえお順
+  });
+  document.getElementById('findCount').textContent=`${glist.length} 工務店・${arr.length} 名の大工`;
+  if(!glist.length){ list.innerHTML='<div class="empty">該当する大工がいません。</div>'; return; }
+  // 開いていた工務店がしぼり込みで消えたら閉じる
+  if(openFindCompany && !groups[openFindCompany]) openFindCompany=null;
+  list.innerHTML=glist.map(g=>{
+    const open=(openFindCompany===g.ck);
+    const badge = g.rank===2 ? '<span class="cobadge free">空きあり</span>'
+                : g.rank===1 ? '<span class="cobadge maybe">応相談</span>'
+                : '<span class="cobadge none">空き予定なし</span>';
+    return `<div class="cogroup${open?' open':''}">
+      <button type="button" class="cohead" data-ck="${H.esc(g.ck)}">
+        <span class="cochev">${open?'▾':'▸'}</span>
+        <span class="cottl">🏢 ${H.esc(g.name)}</span>
+        <span class="cocnt">大工${g.members.length}名</span>
+        ${badge}
+      </button>
+      ${open?`<div class="comembers">${g.members.map(kCardHTML).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.cohead').forEach(b=>b.onclick=()=>{ openFindCompany=(openFindCompany===b.dataset.ck)?null:b.dataset.ck; renderFind(); });
   list.querySelectorAll('.req-btn').forEach(b=>b.onclick=()=>openRequestForm(b.dataset.key));
   list.querySelectorAll('.avail-toggle').forEach(b=>b.onclick=()=>{ openAvailView = (openAvailView===b.dataset.key)?null:b.dataset.key; renderFind(); });
   list.querySelectorAll('.kfav').forEach(b=>b.onclick=()=>toggleFav('craft',b.dataset.key));
@@ -1521,6 +1572,7 @@ let editCraftKey=null;
   buildChecks('ceNg', H.workTypes);
   buildChecks('ceQual', H.qualifications);
   buildChecks('coCkGood', H.workTypes); // 工務店登録時の最初の大工の得意作業
+  buildChecks('reqWorkGrid', H.constructionWorks); // 応援要請の作業内容
 })();
 function buildChecks(id, arr){
   const box=document.getElementById(id);
@@ -2039,7 +2091,8 @@ function openRequestForm(kid){
   reqTargetCraft=Object.assign({_key:kid},k);
   document.getElementById('reqTitle').textContent='応援要請：'+H.craftLabel(craftsmen,reqTargetCraft);
   document.getElementById('reqSub').textContent='所属「'+(k.companyName||'')+'」へ依頼します';
-  ['reqWork','reqContact','reqMsg'].forEach(id=>document.getElementById(id).value='');
+  ['reqContact','reqMsg','reqWorkOther'].forEach(id=>document.getElementById(id).value='');
+  setChecked('reqWorkGrid',[]);
   setCond('reqParking','要相談'); setCond('reqLodging','要相談'); setCond('reqTransport','要相談'); setCond('reqToll','要相談');
   document.getElementById('reqPref').value=''; fillReqCity();
   document.getElementById('reqContact').value=mine.tel||'';
@@ -2082,7 +2135,9 @@ function openRequestEdit(rid){
   document.getElementById('reqWard').value=r.siteWard||'';
   const preDates=(r.dates&&r.dates.length)?r.dates:rangeDays(r.dateFrom,r.dateTo);
   renderReqDates(craftsmen[r.craftsmanKey]||{avail:{}}, preDates);
-  document.getElementById('reqWork').value=r.work||'';
+  const sw=splitByMaster((r.work||'').split('、').map(s=>s.trim()).filter(Boolean), H.constructionWorks);
+  setChecked('reqWorkGrid', sw.checked);
+  document.getElementById('reqWorkOther').value = sw.custom.join('、');
   setCond('reqParking',r.parking); setCond('reqLodging',r.lodging); setCond('reqTransport',r.transport); setCond('reqToll',r.toll);
   document.getElementById('reqContact').value=r.contact||'';
   document.getElementById('reqMsg').value=r.message||'';
@@ -2100,6 +2155,13 @@ function deleteRequest(rid){
     DB.remove('contracts/'+rid)
   ]).then(()=>H.toast('削除しました','ok'));
 }
+// 作業内容（選択したもの＋その他自由入力）を「、」でつないだ文字列にする
+function reqWorkValue(){
+  const sel=getChecked('reqWorkGrid');
+  const other=(document.getElementById('reqWorkOther').value||'').trim();
+  if(other) sel.push(other);
+  return sel.join('、');
+}
 document.getElementById('reqCancel').onclick=()=>document.getElementById('reqOv').classList.remove('on');
 document.getElementById('reqOv').onclick=e=>{ if(e.target.id==='reqOv') e.currentTarget.classList.remove('on'); };
 document.getElementById('reqSend').onclick=()=>{
@@ -2113,7 +2175,7 @@ document.getElementById('reqSend').onclick=()=>{
   const site=pref+city+(ward||'');
   const dateText=dates.map(fmtReqDate).join('、');
   const fields={ site, sitePref:pref, siteCity:city, siteWard:ward||'', dateText, dates, dateFrom:dates[0], dateTo:dates[dates.length-1],
-    work:rqVal('reqWork').trim(), contact:rqVal('reqContact').trim(), message:rqVal('reqMsg').trim(),
+    work:reqWorkValue(), contact:rqVal('reqContact').trim(), message:rqVal('reqMsg').trim(),
     parking:rqVal('reqParking'), lodging:rqVal('reqLodging'), transport:rqVal('reqTransport'), toll:rqVal('reqToll') };
   if(editReqKey){
     DB.update('requests/'+editReqKey, fields)
