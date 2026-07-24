@@ -575,18 +575,15 @@ function renderCoList(){
   list.innerHTML=arr.map(c=>{
     const cnt=H.toArr(craftsmen).filter(k=>k.companyKey===c._key).length;
     const r=H.ratingFor(reviews,'company',c._key, c.ownerEmail);
-    const isMember=c.ownerEmail && H.toArr(members).some(m=>m.email===c.ownerEmail);
     return `<div class="item">
       <div class="top">
         <div><div class="nm">${H.esc(c.name)}</div>
         <div class="meta">📍${H.esc(c.area||'—')}　👤${H.esc(c.contact||'—')}　📞${H.esc(c.tel||'—')}</div>
         <div class="meta">🔑${H.esc(c.ownerEmail||'（ログインメール未設定）')}</div>
         <div class="meta">所属大工 ${cnt}名　評価 ${H.stars(r.avg)}（${r.count}件）</div>
-        <div class="meta">📜 規約同意：${c.termsAgreed?('<span style="color:#1a7a45;font-weight:800">済</span>（版'+H.esc(c.termsAgreed)+(c.termsAgreedAt?'・'+H.fmtDate(c.termsAgreedAt):'')+'）'):'<span style="color:var(--warn);font-weight:800">未</span>'}</div>
-        <div class="meta">🎫 会員（ログイン許可）：${c.ownerEmail?(isMember?'<span style="color:#1a7a45;font-weight:800">済</span>':'<span style="color:var(--warn);font-weight:800">未登録・ログイン不可</span>'):'—'}</div></div>
+        <div class="meta">📜 規約同意：${c.termsAgreed?('<span style="color:#1a7a45;font-weight:800">済</span>（版'+H.esc(c.termsAgreed)+(c.termsAgreedAt?'・'+H.fmtDate(c.termsAgreedAt):'')+'）'):'<span style="color:var(--warn);font-weight:800">未</span>'}</div></div>
       </div>
       ${c.notes?`<div class="note">📝 ${H.esc(c.notes)}</div>`:''}
-      ${(!isMember&&c.ownerEmail)?'<div class="note" style="background:#fff7e8;color:#8a5a00">⚠️ この工務店の担当者はまだログイン許可されていないため、ログインできません。ご本人にログイン画面から「入会を申請」してもらい、この「🏢工務店」タブ上部の「📝入会申請（審査待ち）」で承認してください。</div>':''}
       <div class="acts">
         <button class="btn danger sm co-del" data-key="${H.esc(c._key)}">削除</button>
       </div></div>`;
