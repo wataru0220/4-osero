@@ -11,6 +11,7 @@ $work  = Join-Path $env:TEMP ("reelbuild_" + [Guid]::NewGuid().ToString('N').Sub
 New-Item -ItemType Directory -Force $work | Out-Null
 $shots = Join-Path $work 'shots'; New-Item -ItemType Directory -Force $shots | Out-Null
 $char  = Join-Path $work 'char.png'
+$logo  = Join-Path $PSScriptRoot 'juku-logo.png'   # 一棟司塾 匠 ロゴ（スライドに配置）
 $qrpng = Join-Path $work 'qr.png'
 $VVU   = 'http://127.0.0.1:50021'
 $SPK   = 39   # VOICEVOX 玄野武宏「喜び」（明るい若い男性声・無料/商用可・クレジット表記のみ）
@@ -200,7 +201,7 @@ public static class ReelMaker {
   }
 
   // 表紙・キメ・締め：派手なオレンジ地に大きな白文字（kickerは黄色いバッジ）
-  public static void Cover(string path, string kicker, string[] big, string[] sub, string charPng, string footer){
+  public static void Cover(string path, string kicker, string[] big, string[] sub, string charPng, string footer, string logoPng){
     using(var bmp=new Bitmap(W,H)) using(var g=G(bmp)){
       VividBg(g); Sunburst(g, W/2, 560); Confetti(g);
       using(var fK=new Font("Yu Gothic UI",34,FontStyle.Bold))
@@ -218,6 +219,19 @@ public static class ReelMaker {
         using(var bA=new SolidBrush(Pop)) g.FillRectangle(bA,(W-170)/2,y+24,170,11);
         y+=66;
         if(sub!=null) DrawCenterLinesShadow(g, sub, fS, Color.FromArgb(255,255,255), y, 58);
+      }
+      // ロゴ（一棟司塾 匠）を白フチのブランドバッジで中央に配置
+      if(logoPng!=null && File.Exists(logoPng)){
+        using(var lg=Image.FromFile(logoPng)){
+          float ls=390f, lx=(W-ls)/2, ly=900f;
+          using(var rpo=Round(new RectangleF(lx-16,ly-16,ls+32,ls+32),38)){ using(var wb=new SolidBrush(Color.FromArgb(245,255,255,255))) g.FillPath(wb,rpo); }
+          using(var rp=Round(new RectangleF(lx,ly,ls,ls),26)){
+            var st=g.Save(); g.SetClip(rp);
+            float scale=Math.Min(ls/lg.Width, ls/lg.Height); float w=lg.Width*scale, h=lg.Height*scale;
+            g.DrawImage(lg, lx+(ls-w)/2, ly+(ls-h)/2, w, h);
+            g.Restore(st);
+          }
+        }
       }
       DrawChar(g, charPng, 460, W/2, H-70);
       if(footer!=null && footer.Length>0){ using(var fF=new Font("Yu Gothic UI",22)){ var sf=new StringFormat(){ Alignment=StringAlignment.Center }; g.DrawString(footer,fF,new SolidBrush(Color.FromArgb(210,255,255,255)),new RectangleF(0,H-52,W,40),sf); } }
@@ -388,7 +402,7 @@ $slides = @(
      n='電話で応援を探し回る時代は、もう終わり。繁忙期の人手不足も、閑散期の手すきも、地域で解決できます。' },
   @{ t='cover'; kicker='大工を育てる塾「一棟司塾 匠」から'; big=@('職人シェア'); sub=@('地域の工務店どうしで','大工職人をシェアするアプリ');
      n='職人シェア。地域の工務店どうしで、大工職人をシェアするアプリです。' },
-  @{ t='cover'; kicker='「一棟司塾 匠」の工務店ネットワーク'; big=@('育てた職人を、','地域でシェア'); sub=@('塾で腕を磨いた職人を、地域でシェア。','建方・内装・階段・和室…認定資格で','技術に見合った、適正な単価に。');
+  @{ t='cover'; logo=$logo; kicker='「一棟司塾 匠」の工務店ネットワーク'; big=@('育てた職人を、','地域でシェア'); sub=@('塾で腕を磨いた職人を、地域でシェア。','建方・内装・階段・和室…認定資格で','技術に見合った、適正な単価に。');
      n='職人シェアは、いっとうつかさじゅく たくみの工務店ネットワークです。塾で腕を磨いた職人を、地域でシェア。建方、内装、階段、和室などの認定資格と連動し、技術に見合った、適正な単価を実現します。' },
   @{ t='showcase'; kicker='空き状況が見える'; head=@('誰がいつ空いてるか','カレンダーで一目'); shot='find';
      n='どの大工さんが、いつ空いているか。カレンダーでひとめでわかります。電話をかけまわす必要はありません。' },
@@ -416,7 +430,7 @@ for($i=0;$i -lt $slides.Count;$i++){
   $png=Join-Path $work ("s{0:d2}.png" -f $i)
   $mp4=Join-Path $work ("s{0:d2}.mp4" -f $i)
   switch($s.t){
-    'cover'    { [ReelMaker]::Cover($png,[string]$s.kicker,[string[]]$s.big,[string[]]$s.sub,$char,[string]$s.footer) }
+    'cover'    { [ReelMaker]::Cover($png,[string]$s.kicker,[string[]]$s.big,[string[]]$s.sub,$char,[string]$s.footer,[string]$s.logo) }
     'showcase' { $shot=Join-Path $shots ('shot_'+$s.shot+'.png'); [ReelMaker]::Showcase($png,[string]$s.kicker,[string[]]$s.head,$shot) }
     'cta'      { [ReelMaker]::Cta($png,[string[]]$s.big,[string]$s.price,$qrpng,[string[]]$s.contact) }
   }
