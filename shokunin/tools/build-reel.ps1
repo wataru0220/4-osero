@@ -220,20 +220,21 @@ public static class ReelMaker {
         y+=66;
         if(sub!=null) DrawCenterLinesShadow(g, sub, fS, Color.FromArgb(255,255,255), y, 58);
       }
-      // ロゴ（一棟司塾 匠）を白フチのブランドバッジで中央に配置
+      // ロゴがある場合は、ロゴを大きくヒーロー表示し、キャラは出さない
       if(logoPng!=null && File.Exists(logoPng)){
         using(var lg=Image.FromFile(logoPng)){
-          float ls=390f, lx=(W-ls)/2, ly=900f;
-          using(var rpo=Round(new RectangleF(lx-16,ly-16,ls+32,ls+32),38)){ using(var wb=new SolidBrush(Color.FromArgb(245,255,255,255))) g.FillPath(wb,rpo); }
-          using(var rp=Round(new RectangleF(lx,ly,ls,ls),26)){
+          float ls=640f, lx=(W-ls)/2, ly=1000f;
+          using(var rpo=Round(new RectangleF(lx-18,ly-18,ls+36,ls+36),42)){ using(var wb=new SolidBrush(Color.FromArgb(245,255,255,255))) g.FillPath(wb,rpo); }
+          using(var rp=Round(new RectangleF(lx,ly,ls,ls),30)){
             var st=g.Save(); g.SetClip(rp);
             float scale=Math.Min(ls/lg.Width, ls/lg.Height); float w=lg.Width*scale, h=lg.Height*scale;
             g.DrawImage(lg, lx+(ls-w)/2, ly+(ls-h)/2, w, h);
             g.Restore(st);
           }
         }
+      } else {
+        DrawChar(g, charPng, 460, W/2, H-70);
       }
-      DrawChar(g, charPng, 460, W/2, H-70);
       if(footer!=null && footer.Length>0){ using(var fF=new Font("Yu Gothic UI",22)){ var sf=new StringFormat(){ Alignment=StringAlignment.Center }; g.DrawString(footer,fF,new SolidBrush(Color.FromArgb(210,255,255,255)),new RectangleF(0,H-52,W,40),sf); } }
       bmp.Save(path, ImageFormat.Png);
     }
