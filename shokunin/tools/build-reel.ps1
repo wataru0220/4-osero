@@ -304,26 +304,44 @@ public static class ReelMaker {
 }
 
 public static class ReelBgm {
-  // 明るく前向きなアルペジオ（テンポ速め）。動画長ぶんループさせる。
+  // 明るく弾むメジャー進行（きらびやかなメロディ入り・テンポ速め）。動画長ぶんループさせる。
   public static void Make(string path, double seconds){
     int sr=44100; int total=(int)(sr*seconds);
     short[] data=new short[total];
-    // 4小節進行（I-V-vi-IV系）。1拍=0.4秒（=BPM150くらいの軽快さ）
-    double beat=0.4; double[] bass={130.81,196.00,220.00,174.61};
-    double[][] chords={ new double[]{261.63,329.63,392.00}, new double[]{293.66,369.99,440.00}, new double[]{220.00,277.18,329.63}, new double[]{174.61,261.63,349.23} };
+    // 明るいメジャー進行 C - G - Am - F。1拍=0.375秒（=BPM160の軽快さ）。2拍で1コード。
+    double beat=0.375; double[] bass={130.81,196.00,220.00,174.61}; // C,G,A,F
+    double[][] chords={
+      new double[]{261.63,329.63,392.00},   // C  (C E G)
+      new double[]{246.94,293.66,392.00},    // G  (B D G)
+      new double[]{261.63,329.63,440.00},    // Am (C E A)
+      new double[]{261.63,349.23,440.00}     // F  (C F A)
+    };
+    // きらびやかな高音メロディ（8分・弾む）
+    double[][] melody={
+      new double[]{523.25,659.25,783.99,659.25},
+      new double[]{587.33,783.99,587.33,493.88},
+      new double[]{659.25,880.00,659.25,523.25},
+      new double[]{698.46,523.25,698.46,880.00}
+    };
     for(int i=0;i<total;i++){
       double t=(double)i/sr;
       int beatIdx=(int)(t/beat);
       int bar=(beatIdx/2)%4;               // 2拍で1コード
       double bt=t-beatIdx*beat;            // 拍内時間
-      double env=Math.Exp(-bt*4.5);        // 各拍でポンと鳴る
-      // アルペジオ（拍ごとにコード構成音を回す）
+      double env=Math.Exp(-bt*5.0);        // 各拍でポンと鳴る
+      // アルペジオ（基音＋オクターブで明るいマリンバ風）
       double note=chords[bar][beatIdx%3];
-      double v=Math.Sin(2*Math.PI*note*t)*0.18*env;
+      double v=Math.Sin(2*Math.PI*note*t)*0.16*env;
       v+=Math.Sin(2*Math.PI*note*2*t)*0.05*env;
-      // ベース
-      double bv=Math.Sin(2*Math.PI*bass[bar]*t)*0.16*Math.Exp(-(t-beatIdx*beat)*2.0);
-      double s=(v+bv)*0.6;
+      // メロディ（8分ごとに1音・きらびやか）
+      double half=beat/2; int eIdx=(int)(t/half); double et=t-eIdx*half;
+      double menv=Math.Exp(-et*7.5);
+      double mnote=melody[bar][eIdx%4];
+      double mel=Math.Sin(2*Math.PI*mnote*t)*0.10*menv;
+      mel+=Math.Sin(2*Math.PI*mnote*2*t)*0.03*menv;
+      // ベース（軽く弾む）
+      double bv=Math.Sin(2*Math.PI*bass[bar]*t)*0.14*Math.Exp(-bt*2.2);
+      double s=(v+mel+bv)*0.55;
       data[i]=(short)Math.Max(short.MinValue,Math.Min(short.MaxValue,s*short.MaxValue));
     }
     using(var fs=new FileStream(path,FileMode.Create)) using(var bw=new BinaryWriter(fs)){
@@ -368,8 +386,10 @@ $slides = @(
      n='来週、大工が一人足りない。そんなとき、どうしていますか？' },
   @{ t='cover'; big=@('電話でアテを探す','時代は、おわり。'); sub=@('繁忙期は人手不足、閑散期は仕事がない。','その悩み、地域で解決できます。');
      n='電話で応援を探し回る時代は、もう終わり。繁忙期の人手不足も、閑散期の手すきも、地域で解決できます。' },
-  @{ t='cover'; kicker='一棟司塾 匠と連携'; big=@('職人シェア'); sub=@('地域の工務店どうしで','大工職人をシェアするアプリ');
+  @{ t='cover'; kicker='大工を育てる塾「一棟司塾 匠」から'; big=@('職人シェア'); sub=@('地域の工務店どうしで','大工職人をシェアするアプリ');
      n='職人シェア。地域の工務店どうしで、大工職人をシェアするアプリです。' },
+  @{ t='cover'; kicker='「一棟司塾 匠」の工務店ネットワーク'; big=@('育てた職人を、','地域でシェア'); sub=@('塾で腕を磨いた職人を、地域でシェア。','建方・内装・階段・和室…認定資格で','技術に見合った、適正な単価に。');
+     n='職人シェアは、いっとうつかさじゅく たくみの工務店ネットワークです。塾で腕を磨いた職人を、地域でシェア。建方、内装、階段、和室などの認定資格と連動し、技術に見合った、適正な単価を実現します。' },
   @{ t='showcase'; kicker='空き状況が見える'; head=@('誰がいつ空いてるか','カレンダーで一目'); shot='find';
      n='どの大工さんが、いつ空いているか。カレンダーでひとめでわかります。電話をかけまわす必要はありません。' },
   @{ t='showcase'; kicker='借りる側'; head=@('空いてる大工に','アプリから直接依頼'); shot='reqform';
@@ -382,8 +402,8 @@ $slides = @(
      n='本アプリの応援は、常に請負契約。労働者派遣にはあたりません。法令に沿った、安心の仕組みです。' },
   @{ t='cta'; big=@('まずは、','3か月お試しから'); price='10,000円（税込）'; contact=@('お申し込み・ご相談はこちら','ws.formzu.net/sfgen/S281999641/');
      n='まずは3か月お試し、1万円から。お申し込み・ご相談は、画面のQRコード、またはユーアールエルからどうぞ。' },
-  @{ t='cover'; kicker='一棟司塾 匠と連携'; big=@('職人シェア'); sub=@('地域で、仕事と職人を守る。'); footer='音声:VOICEVOX 玄野武宏 ／ 制作:オリジナル';
-     n='職人シェア。地域で、仕事と職人を守ります。' }
+  @{ t='cover'; kicker='大工を育てる塾「一棟司塾 匠」と共に'; big=@('職人シェア'); sub=@('育てて、シェアして、','地域で仕事と職人を守る。'); footer='音声:VOICEVOX 玄野武宏 ／ 制作:オリジナル';
+     n='職人シェア。育てて、シェアして、地域で仕事と職人を守る。いっとうつかさじゅく たくみと共に、地域の未来をつくります。' }
 )
 
 # BGMは動画の想定長ぶん先に作る（あとで実尺にループ）
