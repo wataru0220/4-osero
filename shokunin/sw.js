@@ -1,4 +1,4 @@
-// ===== 大工シェア Service Worker =====
+// ===== 匠コネクト Service Worker =====
 // SW_VERSION: 2026-07-10b（このファイルを更新したら版を変える＝端末が新SWを取り込み、
 //   アプリ側の controllerchange で自動リロードが走り、最新のHTML/JSに切り替わる）
 // 段階導入（フェーズ1）：通知の表示とクリック時のアプリ前面化を担当します。
@@ -52,7 +52,7 @@ self.addEventListener('notificationclick', function (e) {
 // var messaging = firebase.messaging();
 // messaging.onBackgroundMessage(function (payload) {
 //   var n = (payload && payload.notification) || {};
-//   self.registration.showNotification(n.title || '大工シェア', {
+//   self.registration.showNotification(n.title || '匠コネクト', {
 //     body: n.body || '', icon: 'icon-192.png', badge: 'icon-192.png',
 //     data: { url: './index.html' }
 //   });

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0e7490">
-<title>管理画面｜大工シェア</title>
+<title>管理画面｜匠コネクト</title>
 <!-- ホーム画面に追加してアプリのように起動（PWA） -->
 <link rel="manifest" href="manifest-admin.json">
 <link rel="apple-touch-icon" href="apple-touch-icon-admin.png">
@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="大工シェア管理">
+<meta name="apple-mobile-web-app-title" content="匠コネクト管理">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -117,7 +117,7 @@
 <header>
   <div class="hrow">
     <div>
-      <h1>🛠 管理画面｜大工シェア</h1>
+      <h1 style="display:flex;align-items:center;gap:8px;margin:0"><img src="logo.png" alt="" style="height:40px;width:auto">管理画面｜匠コネクト</h1>
       <div class="sub">大工の認証・評価、応援要請の確認、工務店との連絡</div>
     </div>
     <div id="hbtns" style="display:flex; flex-direction:column; gap:6px; flex:none">
@@ -1012,7 +1012,7 @@ function autoDraftDefs(){
     defs.push({
       kind:'app', version:CURRENT_APP_VERSION, label:'アプリの更新（操作方法の変更）',
       title:'アプリを更新しました（版 '+CURRENT_APP_VERSION+'）',
-      body:'職人シェア（大工シェア ネットワーク）を更新しました（版 '+CURRENT_APP_VERSION+'）。操作方法が一部変わっている場合があります。最新の使い方は「❓ヘルプ」からご確認いただけます。'
+      body:'匠コネクトを更新しました（版 '+CURRENT_APP_VERSION+'）。操作方法が一部変わっている場合があります。最新の使い方は「❓ヘルプ」からご確認いただけます。'
     });
   }
   return defs;

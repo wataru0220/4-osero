@@ -1,4 +1,4 @@
-// ===== 大工シェアアプリ 共通データ層 =====
+// ===== 匠コネクトアプリ 共通データ層 =====
 // Firebase が設定されていれば Realtime Database を使い、未設定なら
 // この端末内の localStorage で動く「お試しモード」に自動で切り替わります。
 // どちらのモードでも同じ API（DB.on / push / update / remove / get）で使えます。

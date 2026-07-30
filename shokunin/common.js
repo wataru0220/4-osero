@@ -1,4 +1,4 @@
-// ===== 大工シェアアプリ 共通ヘルパー =====
+// ===== 匠コネクトアプリ 共通ヘルパー =====
 (function (global) {
   const CFG = global.SHOKUNIN_CONFIG || {};
   const H = {};
