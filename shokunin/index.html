@@ -829,11 +829,25 @@ window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferred
   const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   if(standalone){ btn.style.display='none'; return; } // 既にアプリ起動中
   btn.onclick=async()=>{
+    // すでにインストール済みなら、その旨と開き方だけ案内（Chrome/Edge）
+    if(await isThisAppInstalled()){ showAlreadyInstalled(); return; }
     // Android/PC Chrome等：その場でインストール（ワンタップ）
     if(deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){ } deferredPrompt=null; return; }
     showInstallSteps();
   };
 })();
+// このアプリ(PWA)が既にインストール済みか（Chrome/Edge。未対応ブラウザはfalse）
+async function isThisAppInstalled(){
+  try{ if(navigator.getInstalledRelatedApps){ const a=await navigator.getInstalledRelatedApps(); return !!(a && a.some(x=>x.platform==='webapp')); } }catch(_){}
+  return false;
+}
+function showAlreadyInstalled(){
+  const html='<div style="font-weight:800;font-size:16px;margin-bottom:8px">✅ すでにインストール済みです</div>'
+    +'<div style="line-height:1.8">再インストールは不要です。次のいずれかで、全画面のアプリとして開けます。</div>'
+    +'<div style="margin-top:10px;line-height:2">・アドレスバー右側の <b>緑色の「アプリで開く」</b> をクリック<br>・<b>タスクバー</b>／<b>スタート画面</b>（スマホはホーム画面）の <b>匠コネクトのアイコン</b> をタップ</div>';
+  document.getElementById('installSteps').innerHTML=html;
+  document.getElementById('installOv').classList.add('on');
+}
 function showInstallSteps(){
   const ua=navigator.userAgent||'';
   const isIOS=/iphone|ipad|ipod/i.test(ua);
