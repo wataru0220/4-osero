@@ -124,6 +124,7 @@
       <button class="hbtn" id="refreshBtn"><span class="ic">🔄</span>更新</button>
       <button class="hbtn" id="installBtn"><span class="ic">⬇️</span>アプリにする</button>
       <button class="hbtn" id="inviteBtn"><span class="ic">🔗</span>利用者用URLをコピー</button>
+      <button class="hbtn" id="adminUrlBtn"><span class="ic">🔐</span>管理者用URLをコピー</button>
       <button class="hbtn" id="demoQrBtn"><span class="ic">📱</span>体験版のQRコード</button>
       <a class="hbtn" id="prVideoBtn" href="pr.html" target="_blank" rel="noopener" style="text-decoration:none"><span class="ic">🎬</span>PR動画</a>
     </div>
@@ -723,6 +724,22 @@ function fallbackCopy(text, done){
   catch(_){ prompt('この利用者用URLをコピーしてください', text); }
 }
 document.getElementById('inviteBtn').onclick=copyUserUrl;
+
+// ---- 管理者アプリ（この画面）のURLをコピー（自分の端末のブックマーク等に） ----
+function adminAppUrl(){
+  var p=location.pathname;
+  if(/\/$/.test(p)) p=p+'admin.html';
+  else if(/index\.html$/.test(p)) p=p.replace(/index\.html$/,'admin.html');
+  return location.origin+p;
+}
+function copyAdminUrl(){
+  const url=adminAppUrl();
+  const done=()=>H.toast('管理者用URLをコピーしました。ご自身の端末のブックマーク等にご利用ください（他者への配布は不可）','ok');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done).catch(()=>fallbackCopy(url,done));
+  }else fallbackCopy(url,done);
+}
+document.getElementById('adminUrlBtn').onclick=copyAdminUrl;
 
 // ---- 体験版の配布用QRコード（利用者URL + ?demo=1） ----
 function demoAppUrl(){ return userAppUrl()+'?demo=1'; }
