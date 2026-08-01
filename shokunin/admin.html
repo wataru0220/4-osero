@@ -302,8 +302,12 @@ function showInstallSteps(){
   let body;
   if(isIOS){ body='<div style="font-weight:800;margin-bottom:8px">iPhone / iPad（Safari）</div>'+step(1,'画面下の <b>共有ボタン</b>（□に↑）をタップ')+step(2,'<b>「ホーム画面に追加」</b> をタップ')+step(3,'右上の <b>「追加」</b> をタップ'); }
   else if(isAndroid){ body='<div style="font-weight:800;margin-bottom:8px">Android（Chrome）</div>'+step(1,'右上の <b>メニュー（⋮）</b> をタップ')+step(2,'<b>「アプリをインストール」</b>／<b>「ホーム画面に追加」</b> をタップ')+step(3,'<b>「追加／インストール」</b> をタップ'); }
-  else{ body='<div style="font-weight:800;margin-bottom:8px">パソコン（Chrome / Edge）</div>'+step(1,'アドレスバー右の <b>インストールアイコン</b> をクリック')+step(2,'<b>「インストール」</b> をクリック'); }
-  document.getElementById('installSteps').innerHTML=body;
+  else{ body='<div style="font-weight:800;margin-bottom:8px">パソコン（Chrome / Edge）</div>'
+    +step(1,'ブラウザ<b>右上の「⋮」メニュー</b>（Edgeは「…」）を開く')
+    +step(2,'メニュー内の <b>「ページをアプリとしてインストール」</b> または <b>「アプリをインストール」</b> を選ぶ<br><span style="color:var(--sub);font-size:12px">Chromeは「キャスト、保存、共有」の中、Edgeは「アプリ」の中にあります</span>')
+    +step(3,'表示された画面で <b>「インストール」</b> をクリック'); }
+  const note='<div style="margin-top:4px;padding:10px 12px;background:#e9f5f8;border:1px solid #bfe0e8;border-radius:10px;font-size:13px;line-height:1.7">💡 <b>すでに追加済みかもしれません。</b><br>アドレスバーに <b>緑色の「アプリで開く」</b> が出ている、またはタスクバー／スタート画面・ホーム画面に <b>匠コネクトのアイコン</b> がある場合は、そこから開いてください（再インストール不要です）。</div>';
+  document.getElementById('installSteps').innerHTML=body+note;
   document.getElementById('installOv').classList.add('on');
 }
 document.getElementById('installClose').onclick=()=>document.getElementById('installOv').classList.remove('on');
