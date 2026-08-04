@@ -236,6 +236,13 @@
   .cobadge{font-size:11px; font-weight:800; color:#fff; border-radius:20px; padding:3px 9px; flex:none}
   .cobadge.free{background:#1aa260} .cobadge.maybe{background:#e0a200} .cobadge.none{background:#9aa7b5}
   .comembers{padding:2px 10px 10px}
+  /* 記憶した名前（作業指示者・署名者名）のチップ。クリックで入力、×で削除 */
+  .savednames{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:7px}
+  .savedlbl{font-size:12px;color:var(--sub)}
+  .savedchip{display:inline-flex;align-items:center;background:#f0f4f8;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .savedchip .sn-use{border:0;background:transparent;padding:5px 4px 5px 12px;font-size:13px;font-weight:700;color:var(--brand-dark);cursor:pointer;font-family:inherit}
+  .savedchip .sn-del{border:0;background:transparent;padding:5px 10px 5px 4px;font-size:15px;line-height:1;color:var(--sub);cursor:pointer;font-family:inherit}
+  .savedchip .sn-del:hover{color:var(--warn)}
   /* 会員制ログインの門番：会員以外は中身（マッチング画面）を出さない */
   body.gated > header, body.gated > .wrap, body.gated > .tabbar{ display:none !important; }
   #memberGate{ display:none; }
@@ -528,15 +535,26 @@
     <div class="field"><label class="req">詳細な現場住所（番地・建物名など）</label><input type="text" id="ctrSiteDetail" placeholder="例）仙台市青葉区〇〇1-2-3　〇〇マンション101"><div class="count" id="ctrSiteDetailHint" style="margin-top:2px">この項目は発注者側のみ入力できます。アプリ上の他の画面では県・市・区までしか表示されませんが、契約書には当事者間で必要な詳しい住所を記載します。</div></div>
     <div class="field"><label class="req">請負内容（作業範囲）</label><textarea id="ctrWork" placeholder="例）木造2階の内装下地・ボード貼り一式"></textarea></div>
     <div class="field"><label class="req">請負代金（税込・円）</label><input type="number" id="ctrAmount" min="0" placeholder="例）66000"></div>
-    <div class="field"><label class="req">支払方法・支払期日</label><input type="text" id="ctrPayTerm" placeholder="例）完了確認後、翌月末までに銀行振込"><div class="count" id="ctrPayTermHint" style="margin-top:2px">この項目は受注者側のみ入力できます。</div></div>
-    <div class="field"><label class="req">作業指示者（受注者側・職人へ指揮命令を行う担当者）</label><input type="text" id="ctrForeman" placeholder="例）受注者側の作業指示者・氏名"><div class="count" id="ctrForemanHint" style="margin-top:2px">この項目は受注者側のみ入力できます。</div></div>
+    <div class="field"><label class="req">支払方法・支払期日</label>
+      <select id="ctrPayTermSel">
+        <option value="">選択してください</option>
+        <option value="末締め、翌月末に現金振込">① 末締め、翌月末に現金振込</option>
+        <option value="末締め、翌々月末に現金振込">② 末締め、翌々月末に現金振込</option>
+        <option value="__free__">③ その他（自由記述）</option>
+      </select>
+      <input type="text" id="ctrPayTermFree" placeholder="例）完了確認後、翌月末までに銀行振込" style="margin-top:8px;display:none">
+      <div class="count" id="ctrPayTermHint" style="margin-top:2px">この項目は受注者側のみ入力できます。①②から選ぶか、③その他で自由に記入できます。</div>
+    </div>
+    <div class="field"><label class="req">作業指示者（受注者側・職人へ指揮命令を行う担当者）</label><input type="text" id="ctrForeman" placeholder="例）受注者側の作業指示者・氏名"><div class="count" id="ctrForemanHint" style="margin-top:2px">この項目は受注者側のみ入力できます。</div>
+      <div id="ctrForemanSaved" class="savednames"></div></div>
     <div class="field"><label>特記事項（任意）</label><textarea id="ctrNotes" placeholder="その他の取り決めがあれば"></textarea></div>
     <div class="termsbox" style="margin-top:4px">
       <b>本契約の性質（重要）</b><br>
       本契約は請負契約（業務委託契約）です。受注者は、応援に従事させる自社の職人に対する労務管理・指揮命令・安全衛生管理・出退勤の管理を自ら行います。発注者は、当該職人に対して直接の作業指示や勤怠管理を行わず、工事内容の調整は受注者があらかじめ指定する上記の作業指示者を通じて行います。天災その他不可抗力による損害の負担、請負代金・工期の変更方法については当事者間で誠実に協議して定めるものとします。アプリ管理者は本契約の当事者ではなく、本契約の成立・内容・履行及び当事者間の紛争について一切関与せず、何らの責任も負いません。
     </div>
     <div class="field"><label style="display:flex;align-items:flex-start;gap:8px;font-weight:400"><input type="checkbox" id="ctrConsent" style="margin-top:3px"> 上記内容を確認し、電子的方法による本契約の締結に同意します。</label></div>
-    <div class="field"><label>署名者名（ご担当者名）</label><input type="text" id="ctrSignerName" placeholder="例）山田 太郎"></div>
+    <div class="field"><label>署名者名（ご担当者名）</label><input type="text" id="ctrSignerName" placeholder="例）山田 太郎">
+      <div id="ctrSignerSaved" class="savednames"></div></div>
     <div id="ctrSigns" style="margin:6px 0"></div>
     <div class="row" style="margin-top:8px">
       <button class="btn ghost" id="ctrCancel">とじる</button>
@@ -720,7 +738,7 @@ function demoPersonaFor(r){ // 取引の相手（PC側）を返す
 }
 function startDemoBot(){
   if(!DB.demo || window.__demoBot) return; window.__demoBot=1;
-  const handled={}, replied={}, contractHandled={};
+  const handled={}, replied={}, contractHandled={}, changeHandled={};
   // 3) 電子請負契約で「PCの番」（相手側の入力・署名）になったら、少し待ってPCが自動で対応する。
   //    これがないと、体験モードでは相手役がいないため契約のやり取りが進まず止まってしまう。
   //    契約レコードが一度も保存されていない状態（①発注者の最初の入力）も検知できるよう、
@@ -735,7 +753,8 @@ function startDemoBot(){
       const c = demoContracts[rid] ? Object.assign({_key:rid}, demoContracts[rid]) : {};
       const step=contractSubStep(c);
       const pcTurn = (step===1&&pcRole==='from') || (step===2&&pcRole==='to') || (step===3&&pcRole==='from') || (step===4&&pcRole==='to');
-      const hkey=rid+':'+step;
+      // 更新時刻をキーに含めることで、日程変更で署名がリセットされた後も再署名が走る
+      const hkey=rid+':'+step+':'+(c.updatedAt||0);
       if(!pcTurn || contractHandled[hkey]) return;
       contractHandled[hkey]=1; setTimeout(()=>demoContractStep(rid, step, pcRole), 2500+Math.random()*3000);
     });
@@ -747,6 +766,12 @@ function startDemoBot(){
     H.toArr(demoReqs).forEach(r=>{
       if(r.status==='pending' && r.fromCompanyKey===meKey && isDemoPc(r.toCompanyKey) && !handled[r._key]){
         handled[r._key]=1; setTimeout(()=>demoDecide(r._key), 3500+Math.random()*4000);
+      }
+      // あなたが送った日程変更依頼を、少し待ってPCが自動承認（契約は署名リセット→結び直し）
+      if(r.changeReq && r.changeReq.byKey===meKey && r.status==='accepted'){
+        const pcKey = r.fromCompanyKey===meKey ? r.toCompanyKey : (r.toCompanyKey===meKey ? r.fromCompanyKey : null);
+        const chk=r._key+':chg:'+(r.changeReq.at||0);
+        if(isDemoPc(pcKey) && !changeHandled[chk]){ changeHandled[chk]=1; setTimeout(()=>demoApproveChange(r._key), 3000+Math.random()*3000); }
       }
     });
     checkDemoContractTurn();
@@ -784,7 +809,7 @@ function demoContractStep(rid, step, pcRole){
     payload.siteDetail = (r.site||'')+'　現場入口の看板を目印にお越しください（体験用サンプル住所）';
     toastMsg='「'+p.name+'」が工事名・現場住所を入力しました（体験）';
   } else if(step===2){ // PCが受注者：支払方法・作業指示者を入力
-    payload.payTerm = '完了確認後、翌月末までに銀行振込';
+    payload.payTerm = '末締め、翌月末に現金振込';
     payload.foreman = p.name+' 作業指示者・佐藤';
     toastMsg='「'+p.name+'」が支払方法・作業指示者を入力しました（体験）';
   } else { // step 3 or 4：PCが電子署名
@@ -795,6 +820,36 @@ function demoContractStep(rid, step, pcRole){
   DB.set('contracts/'+rid, payload).then(()=>{
     DB.update('requests/'+rid, { lastMsgAt:Date.now(), lastMsgByUid:p.uid });
     H.toast(toastMsg, 'ok');
+  });
+}
+// 体験モード：あなたが出した日程変更依頼を、PCが承認する（applyChange相当をPC側で実行）。
+// 契約があれば署名をリセットし、日数が変われば請負金額を再計算する（本番のapplyChangeと同じ挙動）。
+function demoApproveChange(rid){
+  const r=demoReqs[rid], cr=r&&r.changeReq; if(!cr) return;
+  const meKey=(myCompanyEntry()||{})._key;
+  if(cr.byKey!==meKey || r.status!=='accepted') return; // あなたの依頼のみPCが承認
+  const p=demoPersonaFor(r);
+  const oldDays=dealDayCount(r), newDays=dealDayCount(cr);
+  const ps=[ DB.update('requests/'+rid, { dateFrom:cr.dateFrom, dateTo:cr.dateTo, dateText:cr.dateText, dates:cr.dates||null, changeReq:null, lastMsgAt:Date.now(), lastMsgByUid:p.uid }) ];
+  const c=demoContracts[rid];
+  let recalc=null;
+  if(c){
+    const upd={ dateText:cr.dateText, fromSign:null, toSign:null, updatedAt:Date.now(), updatedBy:p.name };
+    const k=craftsmen[r.craftsmanKey]||{};
+    if(newDays>0 && oldDays>0 && c.amount!=null && newDays!==oldDays){
+      const stdOld=(k.price||0)*oldDays;
+      if(k.price && Math.round(c.amount)===Math.round(stdOld)) recalc=k.price*newDays;
+      else recalc=Math.round(c.amount*newDays/oldDays);
+      if(recalc===Math.round(c.amount)) recalc=null;
+      if(recalc!=null) upd.amount=recalc;
+    }
+    ps.push(DB.update('contracts/'+rid, upd));
+  }
+  Promise.all(ps).then(()=>{
+    let msg='「'+p.name+'」が日程変更を承認しました（体験）';
+    if(recalc!=null) msg+='。請負金額を'+recalc.toLocaleString('ja-JP')+'円に再計算';
+    H.toast(msg,'ok');
+    DB.push('deals/'+rid, { byUid:p.uid, byName:p.name, text:'日程変更、承知しました。新しい日程（'+(cr.dateText||'')+'）で対応します。契約書の署名はリセットされますので、あらためて署名をお願いします。', at:Date.now() });
   });
 }
 function demoDecide(rid){
@@ -2405,6 +2460,46 @@ function contractSubStepHTML(c, role){
   }
   return `<div class="dealflow">${cells}</div><div class="count" style="margin-top:6px">${msg}</div>`;
 }
+// ===== 支払方法（選択式①②＋③自由記述） =====
+const PAY_TERM_OPTIONS = ['末締め、翌月末に現金振込','末締め、翌々月末に現金振込'];
+function payTermSyncFree(){
+  const sel=document.getElementById('ctrPayTermSel'), free=document.getElementById('ctrPayTermFree');
+  if(!sel||!free) return;
+  free.style.display = sel.value==='__free__' ? '' : 'none';
+}
+function getContractPayTerm(){
+  const sel=document.getElementById('ctrPayTermSel'), free=document.getElementById('ctrPayTermFree');
+  if(!sel) return '';
+  if(sel.value==='__free__') return (free.value||'').trim();
+  return sel.value;
+}
+function setContractPayTerm(val){
+  const sel=document.getElementById('ctrPayTermSel'), free=document.getElementById('ctrPayTermFree');
+  if(!sel||!free) return;
+  val=val||'';
+  if(!val){ sel.value=''; free.value=''; }
+  else if(PAY_TERM_OPTIONS.indexOf(val)>=0){ sel.value=val; free.value=''; }
+  else { sel.value='__free__'; free.value=val; }
+  payTermSyncFree();
+}
+// ===== 記憶した名前（作業指示者・署名者名。クリックで入力欄へ、×で削除） =====
+const FOREMAN_KEY='shokunin_saved_foreman', SIGNER_KEY='shokunin_saved_signer';
+function savedNames(key){ try{ return JSON.parse(localStorage.getItem(key)||'[]'); }catch(_){ return []; } }
+function addSavedName(key, name){ name=(name||'').trim(); if(!name) return; const a=savedNames(key).filter(x=>x!==name); a.unshift(name); localStorage.setItem(key, JSON.stringify(a.slice(0,12))); }
+function removeSavedName(key, name){ localStorage.setItem(key, JSON.stringify(savedNames(key).filter(x=>x!==name))); }
+function renderSavedNames(containerId, storeKey, targetInputId){
+  const box=document.getElementById(containerId); if(!box) return;
+  const target=document.getElementById(targetInputId);
+  const arr=savedNames(storeKey);
+  if(!arr.length || (target && target.disabled)){ box.innerHTML=''; return; }
+  box.innerHTML='<span class="savedlbl">記憶した名前：</span>'+arr.map(n=>`<span class="savedchip"><button type="button" class="sn-use" data-n="${H.esc(n)}">${H.esc(n)}</button><button type="button" class="sn-del" data-n="${H.esc(n)}" title="この名前を削除">×</button></span>`).join('');
+  box.querySelectorAll('.sn-use').forEach(b=>b.onclick=()=>{ if(target && !target.disabled){ target.value=b.dataset.n; } });
+  box.querySelectorAll('.sn-del').forEach(b=>b.onclick=()=>{ removeSavedName(storeKey, b.dataset.n); renderSavedNames(containerId, storeKey, targetInputId); });
+}
+function renderContractSavedNames(){
+  renderSavedNames('ctrForemanSaved', FOREMAN_KEY, 'ctrForeman');
+  renderSavedNames('ctrSignerSaved', SIGNER_KEY, 'ctrSignerName');
+}
 function renderContractModal(){
   const rid=contractRid; if(!rid) return;
   const r=reqByMe[rid]; if(!r) return;
@@ -2417,7 +2512,7 @@ function renderContractModal(){
   const signed=!!(c.fromSign && c.toSign);
   document.getElementById('ctrSignedBand').style.display=signed?'block':'none';
   const locked=signed && !contractEditMode;
-  ['ctrProjectName','ctrSiteDetail','ctrWork','ctrAmount','ctrPayTerm','ctrForeman','ctrNotes','ctrConsent','ctrSignerName'].forEach(id=>{
+  ['ctrProjectName','ctrSiteDetail','ctrWork','ctrAmount','ctrForeman','ctrNotes','ctrConsent','ctrSignerName'].forEach(id=>{
     document.getElementById(id).disabled=locked;
   });
   // 作業指示者・支払方法は受注者側が決める事項のため、発注者側は常に入力不可にする
@@ -2425,9 +2520,9 @@ function renderContractModal(){
   const foremanEl=document.getElementById('ctrForeman');
   foremanEl.disabled = locked || role!=='to';
   foremanEl.placeholder = role==='to' ? '例）受注者側の作業指示者・氏名' : '（受注者側が入力します）';
-  const payTermEl=document.getElementById('ctrPayTerm');
-  payTermEl.disabled = locked || role!=='to';
-  payTermEl.placeholder = role==='to' ? '例）完了確認後、翌月末までに銀行振込' : '（受注者側が入力します）';
+  const payTermDisabled = locked || role!=='to';
+  document.getElementById('ctrPayTermSel').disabled = payTermDisabled;
+  document.getElementById('ctrPayTermFree').disabled = payTermDisabled;
   // 工事名・詳細な現場住所は発注者側が決める事項のため、受注者側は常に入力不可にする
   // （発注者がこれらを入力するまで、受注者は署名に進めない＝validateContractFormでも同様にチェックする）。
   const projectNameEl=document.getElementById('ctrProjectName');
@@ -2446,7 +2541,7 @@ function renderContractModal(){
     const days=(r.dates&&r.dates.length)||0;
     const defAmount = c.amount!=null ? c.amount : ((k.price&&days) ? (k.price*days) : (k.price||''));
     document.getElementById('ctrAmount').value = defAmount;
-    document.getElementById('ctrPayTerm').value = c.payTerm || '';
+    setContractPayTerm(c.payTerm || '');
     document.getElementById('ctrForeman').value = c.foreman || '';
     document.getElementById('ctrNotes').value = c.notes || '';
     // 署名者名（電子署名）は、実際に署名する本人がその都度みずから記入する。
@@ -2459,9 +2554,10 @@ function renderContractModal(){
     // 自分が編集できる項目は、入力中の内容を壊さないためここでは上書きしない。
     if(projectNameEl.disabled) projectNameEl.value = c.projectName || '';
     if(siteDetailEl.disabled) siteDetailEl.value = c.siteDetail || '';
-    if(payTermEl.disabled) payTermEl.value = c.payTerm || '';
+    if(payTermDisabled) setContractPayTerm(c.payTerm || '');
     if(foremanEl.disabled) foremanEl.value = c.foreman || '';
   }
+  renderContractSavedNames();
   document.getElementById('ctrEditToggle').style.display = (signed && !contractEditMode) ? 'block' : 'none';
   document.getElementById('ctrSave').style.display = locked ? 'none' : '';
   document.getElementById('ctrSign').style.display = locked ? 'none' : '';
@@ -2775,7 +2871,7 @@ function contractFieldsFromForm(){
     siteDetail: document.getElementById('ctrSiteDetail').value.trim(),
     work: document.getElementById('ctrWork').value.trim(),
     amount: +document.getElementById('ctrAmount').value || 0,
-    payTerm: document.getElementById('ctrPayTerm').value.trim(),
+    payTerm: getContractPayTerm(),
     foreman: document.getElementById('ctrForeman').value.trim(),
     notes: document.getElementById('ctrNotes').value.trim(),
     signerNameDraft: document.getElementById('ctrSignerName').value.trim()
@@ -2815,6 +2911,8 @@ function saveContractDraft(){
   const rid=contractRid; const r=reqByMe[rid]; if(!rid||!r) return;
   const f=contractFieldsFromForm();
   if(!validateContractForm(f, {draft:true})) return;
+  if(contractRole(r)==='to' && f.foreman) addSavedName(FOREMAN_KEY, f.foreman);
+  if(f.signerNameDraft) addSavedName(SIGNER_KEY, f.signerNameDraft);
   const mine=myCompanyEntry(); const uid=DB.auth.user&&DB.auth.user.uid;
   const payload=Object.assign(contractBaseFields(r), f, { fromSign:null, toSign:null, updatedAt:Date.now(), updatedBy:(mine&&mine.name)||'' });
   // 契約書のキャッチボールが相手に伝わるよう、保存のたびに「新着」として相手に通知する
@@ -2830,6 +2928,8 @@ function signContract(){
   if(!f.signerNameDraft){ H.toast('署名者名（ご担当者名）を入力してください','err'); return; }
   if(!document.getElementById('ctrConsent').checked){ H.toast('電子的方法による締結への同意にチェックしてください','err'); return; }
   if(!confirm('この内容で電子署名し、'+(role==='from'?'発注者':'受注者')+'として契約を締結します。よろしいですか？')) return;
+  addSavedName(SIGNER_KEY, f.signerNameDraft);
+  if(role==='to' && f.foreman) addSavedName(FOREMAN_KEY, f.foreman);
   const mine=myCompanyEntry(); const uid=DB.auth.user&&DB.auth.user.uid;
   const c=contractsByRid[rid]||{};
   const sign={ name:f.signerNameDraft, companyName:(mine&&mine.name)||'', at:Date.now() };
@@ -2842,6 +2942,7 @@ function signContract(){
 }
 document.getElementById('ctrSave').onclick=saveContractDraft;
 document.getElementById('ctrSign').onclick=signContract;
+document.getElementById('ctrPayTermSel').onchange=payTermSyncFree;
 document.getElementById('ctrDownload').onclick=downloadContract;
 document.getElementById('ctrPrint').onclick=printContract;
 
