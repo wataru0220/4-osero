@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#e8792a">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>匠協コネクト｜工務店からの依頼・お知らせ</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon-partner.png">
+<link rel="icon" href="icon-partner-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="匠協コネクト">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="config.js?v=20260806b"></script>
+<script src="data.js?v=20260806b"></script>
+<script src="common.js?v=20260806b"></script>
+<link rel="stylesheet" href="styles.css?v=20260806b">
+<style>:root{--brand:#e8792a;--brand-dark:#b8560f;--chip:#fdece0}</style>
+</head>
+<body>
+<header>
+  <h1><span>🤝</span> 匠協コネクト <span class="role">協力業者</span></h1>
+  <div class="sub" id="hSub">工務店からの依頼・お知らせ</div>
+</header>
+
+<!-- 招待リンク未指定のときの案内 -->
+<div id="gate" class="gate" style="display:none">
+  <img src="icon-partner-192.png" class="logo" alt="">
+  <h2>招待リンクから開いてください</h2>
+  <p>取引先の工務店から届いた「招待リンク」を開くと、その工務店からの<b>作業依頼</b>や<b>お知らせ</b>を確認して返信できます。<br>登録やログインは不要です。</p>
+  <div class="card">
+    <p class="hint" style="margin-top:0">お試しで動きを見るには、体験版をご利用ください。</p>
+    <a class="btn full" id="demoBtn" href="index.html?demo=1" style="text-decoration:none;text-align:center;display:block">🧪 体験版をひらく</a>
+  </div>
+</div>
+
+<!-- 本体 -->
+<div id="app" style="display:none">
+  <section id="page-requests" class="page on">
+    <div class="wrap">
+      <div id="modebar"></div>
+      <div class="card" id="whoCard" style="display:none">
+        <div class="seclabel" style="margin:0 0 6px">あなた</div>
+        <div id="whoBody"></div>
+      </div>
+      <div class="seclabel">📨 作業依頼</div>
+      <div id="listR"></div>
+    </div>
+  </section>
+
+  <section id="page-announce" class="page">
+    <div class="wrap">
+      <div class="seclabel">📢 工務店からのお知らせ</div>
+      <div id="listA"></div>
+    </div>
+  </section>
+
+  <nav class="tabbar">
+    <button data-tab="requests" class="on"><span class="ic">📨</span>依頼</button>
+    <button data-tab="announce"><span class="ic">📢</span>お知らせ</button>
+  </nav>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var H = window.H, DB = window.DB, CFG = window.GYOUSHA_CONFIG;
+  var $ = function (id) { return document.getElementById(id); };
+  var ck = null, bk = null, company = {}, unsub = null;
+
+  function me() { return (company && company.partners && company.partners[bk]) || null; }
+  function companyName() { return (company && company.profile && company.profile.name) || "工務店"; }
+  function myRequests() {
+    var r = (company && company.requests) || {};
+    return Object.keys(r).map(function (k) { var o = r[k]; o._key = k; return o; })
+      .filter(function (o) { return o.partnerKey === bk; })
+      .sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+  }
+  function myAnnounce() {
+    var a = (company && company.announcements) || {};
+    var myTrade = (me() || {}).trade;
+    return Object.keys(a).map(function (k) { var o = a[k]; o._key = k; return o; })
+      .filter(function (o) { return !o.targetTrade || o.targetTrade === myTrade; })
+      .sort(function (x, y) { return (y.createdAt || 0) - (x.createdAt || 0); });
+  }
+
+  function boot() {
+    if (DB.demo) { ck = H.DEMO_CK; bk = H.DEMO_BK; DB._seedIfEmpty(H.demoSeed()); return startApp(); }
+    var u = null; try { u = new URL(location.href); } catch (_) {}
+    var qc = u && u.searchParams.get("c"), qb = u && u.searchParams.get("b");
+    if (qc && qb) { ck = qc; bk = qb; try { localStorage.setItem("takyo_partner_ck", ck); localStorage.setItem("takyo_partner_bk", bk); } catch (_) {} }
+    else { try { ck = localStorage.getItem("takyo_partner_ck"); bk = localStorage.getItem("takyo_partner_bk"); } catch (_) {} }
+    if (ck && bk) startApp(); else showGate();
+  }
+  function showGate() { $("gate").style.display = "block"; $("app").style.display = "none"; }
+  function startApp() {
+    $("gate").style.display = "none"; $("app").style.display = "block";
+    if (unsub) unsub();
+    unsub = DB.on("companies/" + ck, function (d) { company = d || {}; renderAll(); }, function () {
+      H.toast("読み込みに失敗しました（リンクが正しいかご確認ください）", "err");
+    });
+  }
+
+  function renderAll() { renderHeader(); renderModebar(); renderWho(); renderRequests(); renderAnnounce(); renderBadge(); }
+  function renderHeader() { $("hSub").textContent = companyName() + " より"; }
+  function renderModebar() {
+    var el = $("modebar");
+    if (DB.demo) { el.className = "modebar demo"; el.innerHTML = "🧪 <b>体験版</b>：サンプルの依頼に返信を試せます（24時間で自動リセット）。"; }
+    else if (DB.mode === "local") { el.className = "modebar local"; el.innerHTML = "💾 <b>お試しモード</b>：この端末内だけで動作中です。"; }
+    else { el.className = ""; el.innerHTML = ""; }
+  }
+  function renderWho() {
+    var m = me();
+    if (!m) { $("whoCard").style.display = "none"; return; }
+    var ti = H.tradeInfo(m);
+    $("whoCard").style.display = "block";
+    $("whoBody").innerHTML = '<span class="badge" style="background:' + ti.color + '">' + H.esc(ti.icon + " " + ti.label) + '</span> <b style="font-size:16px">' + H.esc(m.name || "") + "</b>";
+  }
+  function renderBadge() {
+    var pending = myRequests().filter(function (r) { return !r.reply; }).length;
+    var btn = document.querySelector('.tabbar button[data-tab="requests"]');
+    var b = btn.querySelector(".tabbadge");
+    if (pending > 0) { if (!b) { b = document.createElement("span"); b.className = "tabbadge"; btn.appendChild(b); } b.textContent = pending; }
+    else if (b) b.remove();
+  }
+
+  function renderRequests() {
+    var list = myRequests(), root = $("listR");
+    if (!me()) { root.innerHTML = emptyBox("この招待リンクは無効です", "工務店にリンクの再送をご依頼ください。"); return; }
+    if (!list.length) { root.innerHTML = emptyBox("まだ依頼はありません", "工務店から作業依頼が届くと、ここに表示されます。"); return; }
+    root.innerHTML = list.map(reqcard).join("");
+  }
+  function emptyBox(t, s) { return '<div class="empty"><div class="empty-t">' + H.esc(t) + '</div><div class="empty-s">' + H.esc(s) + "</div></div>"; }
+  function reqcard(r) {
+    var rl = H.replyLabel(r.reply);
+    var meta = "";
+    if (r.site) meta += '<div class="req-meta"><b>現場</b>' + H.esc(r.site) + "</div>";
+    if (r.dateText) meta += '<div class="req-meta"><b>希望日</b>' + H.esc(r.dateText) + "</div>";
+    var respond =
+      '<div class="respond" id="resp_' + r._key + '"' + (r.reply ? ' style="display:none"' : "") + ">" +
+        '<textarea class="rnote" id="rnote_' + r._key + '" placeholder="一言（任意）例）月曜から入れます／その日は難しいです">' + H.esc(r.replyNote || "") + "</textarea>" +
+        '<div class="row" style="margin-top:8px">' +
+          '<button class="btn" style="background:#1a7a45" data-accept="' + r._key + '">✅ 受ける</button>' +
+          '<button class="btn danger" data-decline="' + r._key + '">✖ 不可</button>' +
+        "</div>" +
+      "</div>";
+    var band = "";
+    if (r.reply) {
+      band = '<div class="replyband" style="color:' + rl.color + ';background:' + rl.bg + ';border:1px solid ' + rl.color + '33">あなたの返答：<b>' + rl.text + "</b>" +
+        (r.replyNote ? "／" + H.esc(r.replyNote) : "") + '　<a href="#" data-rereply="' + r._key + '" style="color:' + rl.color + '">変更</a></div>';
+    }
+    return '<div class="reqcard">' +
+      '<div class="req-top"><div class="req-title">' + H.esc(r.title || "(件名なし)") + "</div>" +
+      (r.reply ? '<span class="replychip" style="color:' + rl.color + ';background:' + rl.bg + '">' + rl.text + "</span>" : "") + "</div>" +
+      meta +
+      (r.body ? '<div class="req-body">' + H.linkify(r.body) + "</div>" : "") +
+      band + respond +
+      '<div class="req-date">受信 ' + H.esc(H.fmtDate(r.createdAt)) + "</div>" +
+      "</div>";
+  }
+  function reply(rid, kind) {
+    var note = ($("rnote_" + rid) && $("rnote_" + rid).value.trim()) || "";
+    DB.update("companies/" + ck + "/requests/" + rid, { reply: kind, replyNote: note, repliedAt: Date.now() })
+      .then(function () { H.toast(kind === "accept" ? "「受ける」で返信しました" : "「不可」で返信しました", "ok"); })
+      .catch(function () {});
+  }
+
+  function renderAnnounce() {
+    var list = myAnnounce(), root = $("listA");
+    if (!list.length) { root.innerHTML = emptyBox("まだお知らせはありません", "工務店からのお知らせがここに表示されます。"); return; }
+    root.innerHTML = list.map(function (a) {
+      return '<div class="anncard"><div class="ann-body">' + H.linkify(a.body || "") + "</div>" +
+        '<div class="ann-meta"><span>' + H.esc(H.fmtDate(a.createdAt)) + "</span></div></div>";
+    }).join("");
+  }
+
+  function switchTab(name) {
+    ["requests", "announce"].forEach(function (n) { $("page-" + n).classList.toggle("on", n === name); });
+    Array.prototype.forEach.call(document.querySelectorAll(".tabbar button"), function (b) { b.classList.toggle("on", b.dataset.tab === name); });
+    window.scrollTo(0, 0);
+  }
+
+  document.addEventListener("click", function (e) {
+    var el;
+    if ((el = e.target.closest("[data-accept]"))) return reply(el.dataset.accept, "accept");
+    if ((el = e.target.closest("[data-decline]"))) return reply(el.dataset.decline, "decline");
+    if ((el = e.target.closest("[data-rereply]"))) { e.preventDefault(); var box = $("resp_" + el.dataset.rereply); if (box) box.style.display = "block"; return; }
+    if ((el = e.target.closest(".tabbar button"))) return switchTab(el.dataset.tab);
+  });
+
+  DB.ready.then(boot);
+
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) navigator.serviceWorker.register("sw.js").catch(function () {});
+})();
+</script>
+</body>
+</html>

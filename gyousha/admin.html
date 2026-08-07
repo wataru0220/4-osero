@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#7b3fa6">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>匠協コネクト（管理）｜協力業者への依頼・連絡</title>
+<link rel="manifest" href="manifest-admin.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="匠協コネクト管理">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="config.js?v=20260806b"></script>
+<script src="data.js?v=20260806b"></script>
+<script src="common.js?v=20260806b"></script>
+<link rel="stylesheet" href="styles.css?v=20260806b">
+<style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
+</head>
+<body>
+<header>
+  <h1><span>🏗️</span> 匠協コネクト <span class="role">管理</span></h1>
+  <div class="sub" id="hSub">協力業者への依頼・連絡</div>
+</header>
+
+<!-- 会社作成ゲート -->
+<div id="gate" class="gate" style="display:none">
+  <img src="icon-192.png" class="logo" alt="">
+  <h2>自社（工務店）を登録</h2>
+  <p>まず自社の名前を登録します。次に協力業者を登録して、招待リンクを送ると依頼・連絡ができます。</p>
+  <div class="card">
+    <div class="field">
+      <label for="gName">自社の工務店名</label>
+      <input id="gName" type="text" placeholder="例）〇〇工務店">
+    </div>
+    <button class="btn full" id="gCreate">この名前で始める</button>
+    <p class="hint">登録後は「管理リンク」をブックマークすれば、別の端末でも同じデータを開けます。</p>
+  </div>
+</div>
+
+<!-- 本体 -->
+<div id="app" style="display:none">
+  <!-- ① 業者 -->
+  <section id="page-partners" class="page on">
+    <div class="wrap">
+      <div id="modebar"></div>
+      <div class="searchbar"><input id="qP" type="text" placeholder="🔍 業者名・担当者・エリア・メモで検索"></div>
+      <div class="chips" id="chipsP"></div>
+      <div class="listtools">
+        <span class="countlabel" id="countP">0 件</span>
+        <select id="sortP" aria-label="並び替え">
+          <option value="trade">業種ごと</option>
+          <option value="name">名前順</option>
+          <option value="new">新しい順</option>
+        </select>
+      </div>
+      <div id="listP"></div>
+    </div>
+  </section>
+
+  <!-- ② 依頼 -->
+  <section id="page-requests" class="page">
+    <div class="wrap">
+      <button class="btn full" id="btnNewReq">＋ 新しい作業依頼を送る</button>
+      <div class="listtools">
+        <span class="countlabel" id="countR">0 件</span>
+        <select id="reqFilter" aria-label="絞り込み">
+          <option value="all">すべて</option>
+          <option value="pending">未返信</option>
+          <option value="answered">返信あり</option>
+        </select>
+      </div>
+      <div id="listR"></div>
+    </div>
+  </section>
+
+  <!-- ③ お知らせ -->
+  <section id="page-announce" class="page">
+    <div class="wrap">
+      <div class="card">
+        <div class="seclabel">📢 協力業者へ一斉お知らせ</div>
+        <div class="field">
+          <textarea id="an_body" placeholder="例）年末年始は12/29〜1/4を休業します。よろしくお願いします。"></textarea>
+        </div>
+        <div class="field">
+          <label for="an_target">送る相手</label>
+          <select id="an_target"></select>
+        </div>
+        <button class="btn full" id="an_send">この内容で配信する</button>
+        <p class="hint">配信すると、対象の協力業者アプリにすぐ表示されます。</p>
+      </div>
+      <div class="seclabel">配信したお知らせ</div>
+      <div id="listA"></div>
+    </div>
+  </section>
+
+  <!-- ④ 設定 -->
+  <section id="page-settings" class="page">
+    <div class="wrap">
+      <div class="card">
+        <label for="coName2">自社の工務店名</label>
+        <input id="coName2" type="text" placeholder="例）〇〇工務店">
+        <p class="hint">ヘッダーや、協力業者に送る招待・お知らせに表示されます。</p>
+      </div>
+      <div class="card">
+        <div class="seclabel">🔑 管理リンク（この端末以外でも管理する用）</div>
+        <div class="linkbox"><span class="url" id="adminUrl"></span></div>
+        <div class="row" style="margin-top:9px">
+          <button class="btn ghost" id="btnAdminCopy">コピー</button>
+          <button class="btn ln" id="btnAdminShare">共有</button>
+        </div>
+        <p class="hint">このリンクを開くと同じ会社の管理画面になります。他人に渡さないでください（渡した人も管理できます）。</p>
+      </div>
+      <div class="card">
+        <div class="seclabel">協力業者の招待について</div>
+        <p class="hint" style="margin-top:0">各業者の招待リンクは「業者」タブの各カードの「📲 招待」から送れます。業者はリンクを開くだけで、依頼の確認・返信ができます（ログイン不要）。</p>
+      </div>
+      <p class="ver" id="verLabel"></p>
+    </div>
+  </section>
+
+  <nav class="tabbar">
+    <button data-tab="partners" class="on"><span class="ic">👷</span>業者</button>
+    <button data-tab="requests"><span class="ic">📨</span>依頼</button>
+    <button data-tab="announce"><span class="ic">📢</span>お知らせ</button>
+    <button data-tab="settings"><span class="ic">⚙️</span>設定</button>
+  </nav>
+  <button class="fab" id="fabAdd" aria-label="業者を追加">＋</button>
+</div>
+
+<!-- 業者 追加/編集 -->
+<div class="ov" id="ovPartner">
+  <div class="sheet">
+    <h3 id="pfTitle">業者を追加</h3>
+    <div class="field"><label for="pf_trade">業種</label><select id="pf_trade"></select></div>
+    <div class="field" id="pf_other_wrap" style="display:none"><label for="pf_other">その他の業種名</label><input id="pf_other" type="text" placeholder="例）解体、造園 など"></div>
+    <div class="field"><label for="pf_name">業者名（屋号・会社名）<span style="color:var(--warn)">＊</span></label><input id="pf_name" type="text" placeholder="例）〇〇建設、△△電気"></div>
+    <div class="field"><label for="pf_tel">電話番号</label><input id="pf_tel" type="tel" placeholder="例）090-1234-5678"></div>
+    <div class="field"><label for="pf_contact">担当者名</label><input id="pf_contact" type="text" placeholder="例）山田さん"></div>
+    <div class="field"><label for="pf_area">対応エリア</label><input id="pf_area" type="text" placeholder="例）市内全域"></div>
+    <div class="field"><label for="pf_note">メモ（得意分野・実績・注意点など）</label><textarea id="pf_note" placeholder="例）内装リフォームが得意。急ぎ対応可。"></textarea></div>
+    <div class="field"><label class="toggle"><input id="pf_fav" type="checkbox"><span>★ よく使う（優先的に手配する業者）</span></label></div>
+    <div class="sheet-actions"><button class="btn ghost" id="pf_cancel">キャンセル</button><button class="btn" id="pf_save">保存</button></div>
+    <button class="btn danger full" id="pf_delete" style="display:none; margin-top:9px">🗑 この業者を削除</button>
+  </div>
+</div>
+
+<!-- 作業依頼 作成 -->
+<div class="ov" id="ovReq">
+  <div class="sheet">
+    <h3 id="rfTitle">作業依頼を送る</h3>
+    <div class="field"><label for="rf_partner">依頼する業者</label><select id="rf_partner"></select></div>
+    <div class="field"><label for="rf_titleIn">工事名・件名<span style="color:var(--warn)">＊</span></label><input id="rf_titleIn" type="text" placeholder="例）〇〇邸 新築工事"></div>
+    <div class="field"><label for="rf_site">現場</label><input id="rf_site" type="text" placeholder="例）市内△△町3-1"></div>
+    <div class="field"><label for="rf_date">希望日</label><input id="rf_date" type="text" placeholder="例）来週 月〜水、○/○ 午前 など"></div>
+    <div class="field"><label for="rf_body">依頼内容</label><textarea id="rf_body" placeholder="例）分電盤の設置と配線をお願いします。"></textarea></div>
+    <div class="sheet-actions"><button class="btn ghost" id="rf_cancel">キャンセル</button><button class="btn" id="rf_save">この内容で送る</button></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var H = window.H, DB = window.DB, CFG = window.GYOUSHA_CONFIG, TRADES = H.trades;
+  var $ = function (id) { return document.getElementById(id); };
+  var ck = null, company = {}, unsub = null;
+  var filter = "all", sort = "trade", q = "", editingBk = null;
+
+  function partners() { return (company && company.partners) || {}; }
+  function partnersArr() { var p = partners(); return Object.keys(p).map(function (k) { var o = p[k]; o._key = k; return o; }); }
+  function requestsArr() { var r = (company && company.requests) || {}; return Object.keys(r).map(function (k) { var o = r[k]; o._key = k; return o; }); }
+  function announceArr() { var a = (company && company.announcements) || {}; return Object.keys(a).map(function (k) { var o = a[k]; o._key = k; return o; }); }
+  function companyName() { return (company && company.profile && company.profile.name) || "(未設定)"; }
+
+  // ---------- 起動 ----------
+  function boot() {
+    if (DB.demo) { ck = H.DEMO_CK; DB._seedIfEmpty(H.demoSeed()); startApp(); return; }
+    var urlCk = null;
+    try { urlCk = new URL(location.href).searchParams.get("c"); } catch (_) {}
+    if (urlCk) { ck = urlCk; try { localStorage.setItem("takyo_admin_ck", ck); } catch (_) {} }
+    else { try { ck = localStorage.getItem("takyo_admin_ck") || null; } catch (_) {} }
+    if (ck) startApp(); else showGate();
+  }
+  function showGate() { $("gate").style.display = "block"; $("app").style.display = "none"; }
+  function startApp() {
+    $("gate").style.display = "none"; $("app").style.display = "block";
+    fillSelects();
+    if (unsub) unsub();
+    unsub = DB.on("companies/" + ck, function (d) { company = d || {}; renderAll(); }, function () {
+      H.toast("読み込みに失敗しました（Firebaseのルール設定をご確認ください）", "err");
+    });
+  }
+  function createCompany() {
+    var name = $("gName").value.trim();
+    if (!name) { H.toast("自社の工務店名を入力してください", "err"); return; }
+    var now = Date.now();
+    DB.push("companies", { profile: { name: name, createdAt: now } }).then(function (key) {
+      ck = key; try { localStorage.setItem("takyo_admin_ck", ck); } catch (_) {}
+      startApp(); H.toast("登録しました", "ok");
+    }).catch(function () {});
+  }
+
+  // ---------- 共通描画 ----------
+  function renderAll() { renderHeader(); renderModebar(); renderChips(); renderPartners(); renderRequests(); renderAnnounce(); renderSettings(); renderTabBadges(); }
+  function renderHeader() { $("hSub").textContent = companyName(); }
+  function renderModebar() {
+    var el = $("modebar"), m = DB.mode;
+    if (DB.demo) { el.className = "modebar demo"; el.innerHTML = "🧪 <b>体験版</b>：お試し用のサンプルです（24時間で自動リセット・共有されません）。"; }
+    else if (m === "local") { el.className = "modebar local"; el.innerHTML = "💾 <b>お試しモード</b>：この端末内だけで動作中（Firebase未設定）。協力業者との共有には Firebase 設定が必要です。"; }
+    else { el.className = "modebar live"; el.innerHTML = "🔗 <b>共有中</b>：招待リンクを送った協力業者とリアルタイムでつながります。"; }
+  }
+  function renderTabBadges() {
+    var pending = requestsArr().filter(function (r) { return r.reply === "accept" || r.reply === "decline"; });
+    // 依頼タブに「返信あり」の件数バッジ
+    var answered = requestsArr().filter(function (r) { return r.reply; }).length;
+    var btn = document.querySelector('.tabbar button[data-tab="requests"]');
+    var b = btn.querySelector(".tabbadge");
+    if (answered > 0) { if (!b) { b = document.createElement("span"); b.className = "tabbadge"; btn.appendChild(b); } b.textContent = answered; }
+    else if (b) b.remove();
+  }
+
+  // ---------- 業者タブ ----------
+  function fillSelects() {
+    if (!$("pf_trade").options.length) {
+      var h = ""; TRADES.forEach(function (t) { h += '<option value="' + H.esc(t.key) + '">' + H.esc(t.icon + " " + t.label) + "</option>"; });
+      $("pf_trade").innerHTML = h;
+    }
+    if (!$("an_target").options.length) {
+      var a = '<option value="">全員に送る</option>';
+      TRADES.forEach(function (t) { a += '<option value="' + H.esc(t.key) + '">' + H.esc(t.icon + " " + t.label) + "だけに送る</option>"; });
+      $("an_target").innerHTML = a;
+    }
+  }
+  function matchesQ(it) {
+    if (!q) return true;
+    var ti = H.tradeInfo(it);
+    return [it.name, it.contact, it.area, it.note, it.tel, ti.label].join(" ").toLowerCase().indexOf(q.toLowerCase()) >= 0;
+  }
+  function passFilter(it) { if (filter === "all") return true; if (filter === "fav") return !!it.fav; return it.trade === filter; }
+  function byName(a, b) { return String(a.name || "").localeCompare(String(b.name || ""), "ja"); }
+  function favThenName(a, b) { return (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || byName(a, b); }
+
+  function renderChips() {
+    var base = partnersArr().filter(matchesQ);
+    var html = chip("all", "すべて", base.length, "#334155", "📋");
+    html += chip("fav", "よく使う", base.filter(function (it) { return it.fav; }).length, "#f59e0b", "★");
+    TRADES.forEach(function (t) { var n = base.filter(function (it) { return it.trade === t.key; }).length; if (n > 0) html += chip(t.key, t.label, n, t.color, t.icon); });
+    $("chipsP").innerHTML = html;
+  }
+  function chip(key, label, n, color, icon) {
+    var on = filter === key;
+    var style = on ? ("background:" + color + ";border-color:" + color + ";color:#fff") : ("color:" + color + ";border-color:" + color + "33");
+    return '<button class="fchip' + (on ? " on" : "") + '" data-filter="' + H.esc(key) + '" style="' + style + '">' + H.esc(icon) + " " + H.esc(label) + " <b>" + n + "</b></button>";
+  }
+  function renderPartners() {
+    var list = partnersArr().filter(function (it) { return passFilter(it) && matchesQ(it); });
+    var root = $("listP");
+    $("countP").textContent = list.length + " 件";
+    if (partnersArr().length === 0) { root.innerHTML = emptyBox("まだ協力業者がいません", "右下の <b>＋</b> から、協力業者を登録してください。"); return; }
+    if (list.length === 0) { root.innerHTML = emptyBox("該当する業者がありません", "検索や絞り込みを変えてみてください。"); return; }
+    var html = "";
+    if (sort === "trade") {
+      TRADES.forEach(function (t) {
+        var g = list.filter(function (it) { return it.trade === t.key; }).sort(favThenName);
+        if (!g.length) return;
+        html += '<div class="grouphd" style="color:' + t.color + '"><span class="gdot" style="background:' + t.color + '"></span>' + H.esc(t.icon + " " + t.label) + ' <span class="gcnt">' + g.length + "</span></div>";
+        g.forEach(function (it) { html += pcard(it); });
+      });
+    } else {
+      list.slice().sort(sort === "name" ? byName : function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }).forEach(function (it) { html += pcard(it); });
+    }
+    root.innerHTML = html;
+  }
+  function emptyBox(t, s) { return '<div class="empty"><div class="empty-t">' + H.esc(t) + '</div><div class="empty-s">' + s + "</div></div>"; }
+  function pcard(it) {
+    var ti = H.tradeInfo(it), tel = String(it.tel || "").trim(), meta = [];
+    if (it.contact) meta.push("👤 " + H.esc(it.contact));
+    if (it.area) meta.push("📍 " + H.esc(it.area));
+    return '<div class="gcard">' +
+      '<div class="gc-top"><span class="badge" style="background:' + ti.color + '">' + H.esc(ti.icon + " " + ti.label) + '</span>' +
+      '<button class="favtog ' + (it.fav ? "on" : "") + '" data-fav="' + it._key + '" aria-label="よく使う">' + (it.fav ? "★" : "☆") + "</button></div>" +
+      '<div class="gc-name">' + H.esc(it.name || "（名称未設定）") + "</div>" +
+      (meta.length ? '<div class="gc-meta">' + meta.join('<span class="dotsep">・</span>') + "</div>" : "") +
+      (tel ? '<div class="gc-tel"><a class="telbtn" href="tel:' + H.esc(H.telDigits(tel)) + '">📞 ' + H.esc(tel) + '</a><button class="btn sm ghost" data-copy="' + H.esc(tel) + '">コピー</button></div>' : "") +
+      (it.note ? '<div class="gc-note">' + H.esc(it.note) + "</div>" : "") +
+      '<div class="gc-actions">' +
+        '<button class="btn sm" data-req="' + it._key + '">📨 依頼を送る</button>' +
+        '<button class="btn sm ln" data-invite="' + it._key + '">📲 招待</button>' +
+        '<button class="btn sm ghost" data-edit="' + it._key + '">✏️ 編集</button>' +
+      "</div></div>";
+  }
+
+  // ---------- 依頼タブ ----------
+  function renderRequests() {
+    var f = $("reqFilter").value;
+    var list = requestsArr().sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+    if (f === "pending") list = list.filter(function (r) { return !r.reply; });
+    else if (f === "answered") list = list.filter(function (r) { return r.reply; });
+    $("countR").textContent = list.length + " 件";
+    var root = $("listR");
+    if (requestsArr().length === 0) { root.innerHTML = emptyBox("まだ依頼はありません", "「業者」タブの各業者から、または上の「＋新しい作業依頼」から送れます。"); return; }
+    if (!list.length) { root.innerHTML = emptyBox("該当する依頼がありません", ""); return; }
+    root.innerHTML = list.map(reqcard).join("");
+  }
+  function reqcard(r) {
+    var rl = H.replyLabel(r.reply);
+    var meta = [];
+    if (r.site) meta.push('<div class="req-meta"><b>現場</b>' + H.esc(r.site) + "</div>");
+    if (r.dateText) meta.push('<div class="req-meta"><b>希望日</b>' + H.esc(r.dateText) + "</div>");
+    var band = "";
+    if (r.reply) {
+      band = '<div class="replyband" style="color:' + rl.color + ';background:' + rl.bg + ';border:1px solid ' + rl.color + '33">' +
+        "返答：" + rl.text + (r.replyNote ? "／" + H.esc(r.replyNote) : "") + "</div>";
+    } else {
+      band = '<div class="replyband" style="color:#8a94a2;background:#eef1f4;border:1px solid #d6dde4">まだ返答がありません</div>';
+    }
+    return '<div class="reqcard">' +
+      '<div class="req-top"><div><div class="req-title">' + H.esc(r.title || "(件名なし)") + '</div><div class="req-to">→ ' + H.esc(r.partnerName || "") + '</div></div>' +
+      '<span class="replychip" style="color:' + rl.color + ';background:' + rl.bg + '">' + rl.text + "</span></div>" +
+      meta.join("") +
+      (r.body ? '<div class="req-body">' + H.esc(r.body) + "</div>" : "") +
+      band +
+      '<div class="req-date">送信 ' + H.esc(H.fmtDate(r.createdAt)) + (r.repliedAt ? "／返答 " + H.esc(H.fmtDate(r.repliedAt)) : "") + '</div>' +
+      '<div class="gc-actions"><button class="btn sm ghost" data-delreq="' + r._key + '">削除</button></div>' +
+      "</div>";
+  }
+
+  // ---------- お知らせタブ ----------
+  function renderAnnounce() {
+    var list = announceArr().sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+    var root = $("listA");
+    if (!list.length) { root.innerHTML = emptyBox("まだお知らせはありません", ""); return; }
+    root.innerHTML = list.map(function (a) {
+      var tag = a.targetTrade ? (H.tradeMap[a.targetTrade] ? H.tradeMap[a.targetTrade].label + "のみ" : "") : "全員";
+      return '<div class="anncard"><div class="ann-body">' + H.linkify(a.body || "") + "</div>" +
+        '<div class="ann-meta"><span><span class="ann-tag">' + H.esc(tag) + "</span>　" + H.esc(H.fmtDate(a.createdAt)) + "</span>" +
+        '<button class="btn sm ghost" data-delann="' + a._key + '">削除</button></div></div>';
+    }).join("");
+  }
+  function sendAnnounce() {
+    var body = $("an_body").value.trim();
+    if (!body) { H.toast("お知らせの内容を入力してください", "err"); return; }
+    DB.push("companies/" + ck + "/announcements", { body: body, targetTrade: $("an_target").value || "", createdAt: Date.now() }).then(function () {
+      $("an_body").value = ""; H.toast("配信しました", "ok");
+    }).catch(function () {});
+  }
+
+  // ---------- 設定タブ ----------
+  function renderSettings() {
+    var el = $("coName2");
+    if (el && document.activeElement !== el) el.value = (company.profile && company.profile.name) || "";
+    $("adminUrl").textContent = ck ? H.adminLink(ck) : "";
+    $("verLabel").textContent = H.appName + "　v" + (CFG.appVersion || "") + "　(" + (DB.demo ? "体験版" : DB.mode === "local" ? "お試し" : "共有") + ")";
+  }
+
+  // ---------- 業者 追加/編集シート ----------
+  function openPartner(bk) {
+    editingBk = bk || null;
+    var it = bk ? partners()[bk] : {};
+    $("pfTitle").textContent = bk ? "業者を編集" : "業者を追加";
+    $("pf_trade").value = it.trade || (TRADES[0] && TRADES[0].key);
+    togglePfOther();
+    $("pf_other").value = it.tradeOther || "";
+    $("pf_name").value = it.name || ""; $("pf_tel").value = it.tel || ""; $("pf_contact").value = it.contact || "";
+    $("pf_area").value = it.area || ""; $("pf_note").value = it.note || ""; $("pf_fav").checked = !!it.fav;
+    $("pf_delete").style.display = bk ? "block" : "none";
+    show("ovPartner"); setTimeout(function () { $("pf_name").focus(); }, 60);
+  }
+  function togglePfOther() { $("pf_other_wrap").style.display = $("pf_trade").value === "other" ? "block" : "none"; }
+  function savePartner() {
+    var trade = $("pf_trade").value, name = $("pf_name").value.trim(), other = $("pf_other").value.trim();
+    if (!name) { H.toast("業者名を入力してください", "err"); return; }
+    if (trade === "other" && !other) { H.toast("その他の業種名を入力してください", "err"); return; }
+    var now = Date.now();
+    var prev = editingBk ? (partners()[editingBk] || {}) : {};
+    var obj = { trade: trade, tradeOther: trade === "other" ? other : "", name: name, tel: $("pf_tel").value.trim(),
+      contact: $("pf_contact").value.trim(), area: $("pf_area").value.trim(), note: $("pf_note").value.trim(),
+      fav: $("pf_fav").checked, createdAt: prev.createdAt || now, updatedAt: now };
+    var bk = editingBk;
+    var p = bk ? DB.set("companies/" + ck + "/partners/" + bk, obj) : DB.push("companies/" + ck + "/partners", obj);
+    p.then(function () { hide("ovPartner"); H.toast(bk ? "更新しました" : "追加しました", "ok"); }).catch(function () {});
+  }
+  function deletePartner() {
+    if (!editingBk) return;
+    var it = partners()[editingBk];
+    if (!confirm("「" + ((it && it.name) || "この業者") + "」を削除します。よろしいですか？")) return;
+    DB.remove("companies/" + ck + "/partners/" + editingBk).then(function () { hide("ovPartner"); H.toast("削除しました", "ok"); }).catch(function () {});
+  }
+
+  // ---------- 依頼作成シート ----------
+  function openReq(bk) {
+    fillReqPartners(bk);
+    $("rf_titleIn").value = ""; $("rf_site").value = ""; $("rf_date").value = ""; $("rf_body").value = "";
+    show("ovReq"); setTimeout(function () { $("rf_titleIn").focus(); }, 60);
+  }
+  function fillReqPartners(selBk) {
+    var arr = partnersArr().sort(favThenName);
+    if (!arr.length) { $("rf_partner").innerHTML = '<option value="">（先に業者を登録してください）</option>'; return; }
+    $("rf_partner").innerHTML = arr.map(function (it) {
+      var ti = H.tradeInfo(it);
+      return '<option value="' + H.esc(it._key) + '"' + (it._key === selBk ? " selected" : "") + ">" + H.esc("[" + ti.label + "] " + it.name) + "</option>";
+    }).join("");
+  }
+  function saveReq() {
+    var bk = $("rf_partner").value;
+    var title = $("rf_titleIn").value.trim();
+    if (!bk) { H.toast("依頼する業者を選んでください（先に業者登録が必要）", "err"); return; }
+    if (!title) { H.toast("工事名・件名を入力してください", "err"); return; }
+    var p = partners()[bk] || {};
+    var obj = { partnerKey: bk, partnerName: p.name || "", title: title, site: $("rf_site").value.trim(),
+      dateText: $("rf_date").value.trim(), body: $("rf_body").value.trim(), createdAt: Date.now(), reply: null };
+    DB.push("companies/" + ck + "/requests", obj).then(function () {
+      hide("ovReq"); H.toast("依頼を送りました", "ok"); switchTab("requests");
+    }).catch(function () {});
+  }
+
+  // ---------- 操作 ----------
+  function show(id) { $(id).classList.add("on"); document.body.style.overflow = "hidden"; }
+  function hide(id) { $(id).classList.remove("on"); document.body.style.overflow = ""; }
+  function switchTab(name) {
+    ["partners", "requests", "announce", "settings"].forEach(function (n) { $("page-" + n).classList.toggle("on", n === name); });
+    Array.prototype.forEach.call(document.querySelectorAll(".tabbar button"), function (b) { b.classList.toggle("on", b.dataset.tab === name); });
+    $("fabAdd").style.display = name === "partners" ? "flex" : "none";
+    window.scrollTo(0, 0);
+  }
+
+  function bindEvents() {
+    $("gCreate").addEventListener("click", createCompany);
+    $("gName").addEventListener("keydown", function (e) { if (e.key === "Enter") createCompany(); });
+
+    Array.prototype.forEach.call(document.querySelectorAll(".tabbar button"), function (b) { b.addEventListener("click", function () { switchTab(b.dataset.tab); }); });
+    $("fabAdd").addEventListener("click", function () { openPartner(null); });
+
+    $("qP").addEventListener("input", function () { q = this.value; renderChips(); renderPartners(); });
+    $("sortP").addEventListener("change", function () { sort = this.value; renderPartners(); });
+    $("chipsP").addEventListener("click", function (e) { var b = e.target.closest("[data-filter]"); if (!b) return; filter = b.dataset.filter; renderChips(); renderPartners(); });
+
+    $("listP").addEventListener("click", function (e) {
+      var el;
+      if ((el = e.target.closest("[data-edit]"))) return openPartner(el.dataset.edit);
+      if ((el = e.target.closest("[data-req]"))) return openReq(el.dataset.req);
+      if ((el = e.target.closest("[data-invite]"))) return inviteLink(el.dataset.invite);
+      if ((el = e.target.closest("[data-fav]"))) { var bk = el.dataset.fav; var it = partners()[bk]; if (it) DB.update("companies/" + ck + "/partners/" + bk, { fav: !it.fav }); return; }
+      if ((el = e.target.closest("[data-copy]"))) return H.copy(el.dataset.copy, "電話番号をコピーしました");
+    });
+
+    $("btnNewReq").addEventListener("click", function () { openReq(null); });
+    $("reqFilter").addEventListener("change", renderRequests);
+    $("listR").addEventListener("click", function (e) {
+      var el = e.target.closest("[data-delreq]"); if (!el) return;
+      if (!confirm("この依頼を削除しますか？")) return;
+      DB.remove("companies/" + ck + "/requests/" + el.dataset.delreq).then(function () { H.toast("削除しました", "ok"); });
+    });
+
+    $("an_send").addEventListener("click", sendAnnounce);
+    $("listA").addEventListener("click", function (e) {
+      var el = e.target.closest("[data-delann]"); if (!el) return;
+      if (!confirm("このお知らせを削除しますか？")) return;
+      DB.remove("companies/" + ck + "/announcements/" + el.dataset.delann).then(function () { H.toast("削除しました", "ok"); });
+    });
+
+    $("pf_trade").addEventListener("change", togglePfOther);
+    $("pf_save").addEventListener("click", savePartner);
+    $("pf_delete").addEventListener("click", deletePartner);
+    $("pf_cancel").addEventListener("click", function () { hide("ovPartner"); });
+    $("ovPartner").addEventListener("click", function (e) { if (e.target === $("ovPartner")) hide("ovPartner"); });
+
+    $("rf_save").addEventListener("click", saveReq);
+    $("rf_cancel").addEventListener("click", function () { hide("ovReq"); });
+    $("ovReq").addEventListener("click", function (e) { if (e.target === $("ovReq")) hide("ovReq"); });
+
+    $("coName2").addEventListener("input", function () { if (ck) DB.update("companies/" + ck + "/profile", { name: this.value }); $("hSub").textContent = this.value || "(未設定)"; });
+    $("btnAdminCopy").addEventListener("click", function () { H.copy(H.adminLink(ck), "管理リンクをコピーしました"); });
+    $("btnAdminShare").addEventListener("click", function () { H.share("【" + companyName() + "】匠協コネクト 管理リンク\n" + H.adminLink(ck)); });
+  }
+  function inviteLink(bk) {
+    var it = partners()[bk]; if (!it) return;
+    var url = H.partnerLink(ck, bk);
+    H.share("【" + companyName() + "】協力業者アプリの招待です。\n下のリンクを開くと、当社からの作業依頼・お知らせを確認して返信できます（登録不要）。\n" + url);
+  }
+
+  bindEvents();
+  DB.ready.then(boot);
+
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) navigator.serviceWorker.register("sw.js").catch(function () {});
+})();
+</script>
+</body>
+</html>

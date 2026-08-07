@@ -1,0 +1,18 @@
+{
+  "name": "匠協コネクト（協力業者）",
+  "short_name": "匠協コネクト",
+  "description": "取引先の工務店からの作業依頼・お知らせを確認して返信できる、協力業者向けアプリ。",
+  "id": "/4-osero/gyousha/index.html",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fef4ea",
+  "theme_color": "#e8792a",
+  "lang": "ja",
+  "icons": [
+    { "src": "icon-partner-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-partner-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-partner-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
