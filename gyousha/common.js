@@ -122,6 +122,53 @@
       H.toast("この端末では共有できません", "err");
     }
   };
+  // ---- PWA：ホーム画面に追加（アプリにする） ----
+  H._deferred = null;
+  H.setupInstall = function () {
+    window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); H._deferred = e; });
+  };
+  H.isStandalone = function () {
+    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+  };
+  H._sheet = function (innerHTML) {
+    var ov = document.createElement("div"); ov.className = "ov on";
+    ov.innerHTML = '<div class="sheet">' + innerHTML + "</div>";
+    var close = function () { try { document.body.removeChild(ov); } catch (_) {} document.body.style.overflow = ""; };
+    ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
+    document.body.appendChild(ov); document.body.style.overflow = "hidden";
+    return { ov: ov, close: close };
+  };
+  H.showInstall = function (appName, opts) {
+    opts = opts || {};
+    if (H.isStandalone()) { H.toast("すでにアプリとして起動中です", "ok"); return; }
+    if (H._deferred) {
+      H._deferred.prompt();
+      try { H._deferred.userChoice.then(function () { H._deferred = null; }); } catch (_) {}
+      return;
+    }
+    var ua = navigator.userAgent || "", isIOS = /iphone|ipad|ipod/i.test(ua), isAndroid = /android/i.test(ua);
+    var step = function (n, t) { return '<div class="istep"><div class="in">' + n + "</div><div>" + t + "</div></div>"; };
+    var body;
+    if (isIOS) body = "<b>iPhone / iPad（Safari）</b>" + step(1, "画面下の <b>共有ボタン</b>（□に↑）をタップ") + step(2, "少し下にスクロールして <b>「ホーム画面に追加」</b> をタップ") + step(3, "右上の <b>「追加」</b> をタップ");
+    else if (isAndroid) body = "<b>Android（Chrome）</b>" + step(1, "右上の <b>メニュー（⋮）</b> をタップ") + step(2, "<b>「アプリをインストール」</b> または <b>「ホーム画面に追加」</b>") + step(3, "<b>「追加 / インストール」</b> をタップ");
+    else body = "<b>パソコン（Chrome / Edge）</b>" + step(1, "アドレスバー右の <b>インストール（⊞/⊕）</b> アイコン、または右上メニュー") + step(2, "<b>「アプリをインストール」</b> を選ぶ") + step(3, "<b>「インストール」</b> をクリック");
+    var other = "";
+    if (opts.otherUrl) other = '<div class="ihint">👥 ' + H.esc(opts.otherLabel || "もう一方のアプリ") + "も同じスマホに追加できます。下のボタンで開き、その画面で同じ手順（📲アプリ）を行ってください。</div>" +
+      '<button class="btn full ln" id="__otherApp">🔗 ' + H.esc(opts.otherLabel || "開く") + "を開く</button>";
+    var s = H._sheet("<h3>📲 " + H.esc(appName) + " をホーム画面に</h3>" + body +
+      '<div class="ihint">追加すると、アイコンから1タップで全画面のアプリとして開けます（次回からブラウザ不要）。</div>' + other +
+      '<button class="btn full ghost" id="__closeInstall" style="margin-top:8px">閉じる</button>');
+    s.ov.querySelector("#__closeInstall").onclick = s.close;
+    if (opts.otherUrl) s.ov.querySelector("#__otherApp").onclick = function () { window.open(opts.otherUrl, "_blank"); };
+  };
+  H.showHelp = function (title, items) {
+    var body = (items || []).map(function (it) {
+      return '<details class="helpitem"><summary>' + H.esc(it.q) + '</summary><div class="helpa">' + it.a + "</div></details>";
+    }).join("");
+    var s = H._sheet("<h3>❓ " + H.esc(title) + "</h3>" + body + '<button class="btn full ghost" id="__closeHelp" style="margin-top:10px">閉じる</button>');
+    s.ov.querySelector("#__closeHelp").onclick = s.close;
+  };
+
   H.copy = (text, okMsg) => {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(() => H.toast(okMsg || "コピーしました", "ok")).catch(() => H.toast("コピーできませんでした", "err"));

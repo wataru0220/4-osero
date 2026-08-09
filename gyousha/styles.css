@@ -18,6 +18,23 @@ header{
 header h1{margin:0; font-size:18px; font-weight:800; letter-spacing:.02em; display:flex; align-items:center; gap:7px}
 header .role{font-size:11px; font-weight:800; background:rgba(255,255,255,.22); border:1px solid rgba(255,255,255,.4); border-radius:8px; padding:2px 7px}
 header .sub{font-size:12px; opacity:.92; margin-top:3px}
+.hrow{display:flex; justify-content:space-between; align-items:flex-start; gap:8px}
+.hbtns{display:flex; gap:6px; flex:none}
+.hbtn{background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.45); color:#fff; border-radius:10px; padding:6px 9px; font-weight:800; font-size:10px; display:flex; flex-direction:column; align-items:center; gap:1px; cursor:pointer; line-height:1.25}
+.hbtn .ic{font-size:17px; line-height:1}
+.hbtn:active{transform:translateY(1px)}
+/* インストール手順・ヘルプ */
+.istep{display:flex; gap:10px; align-items:flex-start; margin:10px 0}
+.istep .in{flex:none; width:26px; height:26px; border-radius:50%; background:var(--brand); color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center}
+.ihint{font-size:13px; color:var(--sub); background:#f7f9fb; border:1px solid var(--line); border-radius:9px; padding:9px 11px; margin:10px 0; line-height:1.6}
+.helpitem{border:1px solid var(--line); border-radius:10px; margin-bottom:8px; overflow:hidden; background:#fff}
+.helpitem summary{cursor:pointer; font-weight:800; font-size:14px; padding:11px 12px; list-style:none; color:var(--ink)}
+.helpitem summary::-webkit-details-marker{display:none}
+.helpitem summary::before{content:"＋ "; color:var(--brand); font-weight:800}
+.helpitem[open] summary::before{content:"− "}
+.helpitem[open] summary{border-bottom:1px solid var(--line)}
+.helpa{padding:11px 12px; font-size:13px; line-height:1.85; color:var(--ink)}
+.helpa b{color:var(--brand-dark)}
 .wrap{max-width:640px; margin:0 auto; padding:14px}
 .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; box-shadow:0 1px 2px rgba(16,24,40,.04)}
 label{display:block; font-size:12px; font-weight:700; color:var(--sub); margin:0 0 5px}

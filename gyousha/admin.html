@@ -15,16 +15,24 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260806b"></script>
-<script src="data.js?v=20260806b"></script>
-<script src="common.js?v=20260806b"></script>
-<link rel="stylesheet" href="styles.css?v=20260806b">
+<script src="config.js?v=20260810a"></script>
+<script src="data.js?v=20260810a"></script>
+<script src="common.js?v=20260810a"></script>
+<link rel="stylesheet" href="styles.css?v=20260810a">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
 <header>
-  <h1><span>🏗️</span> 匠協コネクト <span class="role">管理</span></h1>
-  <div class="sub" id="hSub">協力業者への依頼・連絡</div>
+  <div class="hrow">
+    <div>
+      <h1><span>🏗️</span> 匠協コネクト <span class="role">管理</span></h1>
+      <div class="sub" id="hSub">協力業者への依頼・連絡</div>
+    </div>
+    <div class="hbtns">
+      <button class="hbtn" id="helpBtn"><span class="ic">❓</span>ヘルプ</button>
+      <button class="hbtn" id="installBtn"><span class="ic">📲</span>アプリ</button>
+    </div>
+  </div>
 </header>
 
 <!-- 会社作成ゲート -->
@@ -482,6 +490,23 @@
     var url = H.partnerLink(ck, bk);
     H.share("【" + companyName() + "】協力業者アプリの招待です。\n下のリンクを開くと、当社からの作業依頼・お知らせを確認して返信できます（登録不要）。\n" + url);
   }
+
+  // ---- アプリにする / ヘルプ ----
+  var ADMIN_HELP = [
+    { q: "① まず何をする？（自社の登録）", a: "初回は<b>自社の工務店名</b>を登録します。登録後、「設定」タブに出る <b>🔑管理リンク</b> をブックマークしておくと、別の端末でも同じ会社の管理画面を開けます（他人には渡さないでください）。" },
+    { q: "② 協力業者を登録する", a: "「業者」タブ右下の <b>＋</b> から、業種・業者名・電話・担当者・メモを登録します。よく使う業者は <b>★</b> を付けると上に表示されます。検索や業種の絞り込みもできます。" },
+    { q: "③ 協力業者に招待リンクを送る", a: "各業者カードの <b>📲招待</b> を押すと、その業者専用のリンクをLINE等で送れます。業者は<b>リンクを開くだけ（登録・ログイン不要）</b>で、あなたからの依頼・お知らせを見て返信できます。" },
+    { q: "④ 作業依頼を送る／返答を見る", a: "業者カードの <b>📨依頼を送る</b>、または「依頼」タブの <b>＋新しい作業依頼</b> から、工事名・現場・希望日・内容を送ります。相手が返信すると「依頼」タブに <b>受ける／不可＋一言</b> が表示されます（タブに新着バッジ）。" },
+    { q: "⑤ 一斉お知らせを送る", a: "「お知らせ」タブから、<b>全員</b>または<b>業種を選んで</b>一斉配信できます。休業日の連絡などにどうぞ。" },
+    { q: "⑥ アプリにする（ホーム画面に追加）", a: "ヘッダーの <b>📲アプリ</b> でホーム画面に追加できます。同じ画面から<b>協力業者アプリ</b>も追加できます（相手に見せる・確認する用）。" },
+    { q: "⑦ 取引先と本番で共有するには", a: "体験版・お試しは設定不要です。実際に協力業者と共有するには、Firebaseで <b>「匿名」認証をON</b> ＋ <b>ルールに takyo を追加</b> が必要です（READMEに手順あり）。" }
+  ];
+  H.setupInstall();
+  if (H.isStandalone()) $("installBtn").style.display = "none";
+  $("installBtn").addEventListener("click", function () {
+    H.showInstall("匠協コネクト（管理）", { otherUrl: H.baseDir() + "index.html", otherLabel: "協力業者アプリ" });
+  });
+  $("helpBtn").addEventListener("click", function () { H.showHelp("使い方（工務店・管理）", ADMIN_HELP); });
 
   bindEvents();
   DB.ready.then(boot);

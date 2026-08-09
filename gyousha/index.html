@@ -15,16 +15,24 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260806b"></script>
-<script src="data.js?v=20260806b"></script>
-<script src="common.js?v=20260806b"></script>
-<link rel="stylesheet" href="styles.css?v=20260806b">
+<script src="config.js?v=20260810a"></script>
+<script src="data.js?v=20260810a"></script>
+<script src="common.js?v=20260810a"></script>
+<link rel="stylesheet" href="styles.css?v=20260810a">
 <style>:root{--brand:#e8792a;--brand-dark:#b8560f;--chip:#fdece0}</style>
 </head>
 <body>
 <header>
-  <h1><span>🤝</span> 匠協コネクト <span class="role">協力業者</span></h1>
-  <div class="sub" id="hSub">工務店からの依頼・お知らせ</div>
+  <div class="hrow">
+    <div>
+      <h1><span>🤝</span> 匠協コネクト <span class="role">協力業者</span></h1>
+      <div class="sub" id="hSub">工務店からの依頼・お知らせ</div>
+    </div>
+    <div class="hbtns">
+      <button class="hbtn" id="helpBtn"><span class="ic">❓</span>ヘルプ</button>
+      <button class="hbtn" id="installBtn"><span class="ic">📲</span>アプリ</button>
+    </div>
+  </div>
 </header>
 
 <!-- 招待リンク未指定のときの案内 -->
@@ -191,6 +199,19 @@
     if ((el = e.target.closest("[data-rereply]"))) { e.preventDefault(); var box = $("resp_" + el.dataset.rereply); if (box) box.style.display = "block"; return; }
     if ((el = e.target.closest(".tabbar button"))) return switchTab(el.dataset.tab);
   });
+
+  // ---- アプリにする / ヘルプ ----
+  var USER_HELP = [
+    { q: "これは何のアプリ？", a: "取引先の<b>工務店から届いた招待リンク</b>で開くアプリです。工務店からの <b>作業依頼</b> や <b>お知らせ</b> を確認して返信できます。<b>登録・ログインは不要</b>です。" },
+    { q: "依頼に返信するには", a: "「依頼」タブで、届いた依頼に <b>✅受ける</b> か <b>✖不可</b> を選び、必要なら一言を添えて送ります。送信後も「変更」から返答をやり直せます。未返信の件数はタブのバッジでわかります。" },
+    { q: "お知らせを見る", a: "「お知らせ」タブに、工務店からの連絡が新しい順に表示されます。" },
+    { q: "アプリにする（ホーム画面に追加）", a: "ヘッダーの <b>📲アプリ</b> を押すと、スマホのホーム画面にアイコンを追加できます。次回からはアイコンを1タップで開けます（ブラウザ不要）。" },
+    { q: "リンクが無効・依頼が見えない", a: "招待リンクが正しいかご確認ください。うまくいかない場合は、取引先の工務店に<b>リンクの再送</b>をご依頼ください。" }
+  ];
+  H.setupInstall();
+  if (H.isStandalone()) document.getElementById("installBtn").style.display = "none";
+  document.getElementById("installBtn").addEventListener("click", function () { H.showInstall("匠協コネクト（協力業者）"); });
+  document.getElementById("helpBtn").addEventListener("click", function () { H.showHelp("使い方（協力業者）", USER_HELP); });
 
   DB.ready.then(boot);
 
