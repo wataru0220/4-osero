@@ -15,10 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260810c"></script>
-<script src="data.js?v=20260810c"></script>
-<script src="common.js?v=20260810c"></script>
-<link rel="stylesheet" href="styles.css?v=20260810c">
+<script src="config.js?v=20260810d"></script>
+<script src="data.js?v=20260810d"></script>
+<script src="common.js?v=20260810d"></script>
+<script src="qrcode.min.js?v=20260810d"></script>
+<link rel="stylesheet" href="styles.css?v=20260810d">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -213,6 +214,22 @@
     <p class="cnote">署名後に内容を変更すると、双方の署名はリセットされます（改ざん防止）。<br>新規作成のときは、前回の「よく使う値」と、依頼から作った場合は依頼内容が自動入力されます。</p>
     <div class="sheet-actions"><button class="btn ghost" id="cf_cancel">キャンセル</button><button class="btn" id="cf_save">保存</button></div>
     <button class="btn danger full" id="cf_delete" style="display:none; margin-top:9px">🗑 この契約を削除</button>
+  </div>
+</div>
+
+<!-- 業者アプリの招待（URL・コピー・LINE・QR） -->
+<div class="ov" id="ovInvite">
+  <div class="sheet">
+    <h3 id="invTitle">📲 業者を招待</h3>
+    <p class="hint" style="margin-top:0">下の<b>リンク</b>または<b>QRコード</b>を協力業者に渡してください。開くだけで、あなたからの<b>依頼・お知らせ・請負契約</b>を確認して返信・署名できます（登録・ログイン不要）。</p>
+    <div class="linkbox"><span class="url" id="invUrl"></span></div>
+    <div class="row" style="margin-top:9px">
+      <button class="btn ghost" id="invCopy">📋 コピー</button>
+      <button class="btn ln" id="invShare">📲 LINE等で送る</button>
+    </div>
+    <div id="invQr" class="qrbox"></div>
+    <p class="hint" style="text-align:center; margin-top:4px">スマホでこのQRを読み取ってもらってもOKです（その業者専用リンクです）。</p>
+    <button class="btn ghost full" id="invClose" style="margin-top:10px">閉じる</button>
   </div>
 </div>
 
@@ -683,11 +700,29 @@
     $("coName2").addEventListener("input", function () { if (ck) DB.update("companies/" + ck + "/profile", { name: this.value }); $("hSub").textContent = this.value || "(未設定)"; });
     $("btnAdminCopy").addEventListener("click", function () { H.copy(H.adminLink(ck), "管理リンクをコピーしました"); });
     $("btnAdminShare").addEventListener("click", function () { H.share("【" + companyName() + "】匠協コネクト 管理リンク\n" + H.adminLink(ck)); });
+    $("invCopy").addEventListener("click", function () { H.copy(inviteUrl, "招待リンクをコピーしました。LINE/メール等に貼り付けて送ってください"); });
+    $("invShare").addEventListener("click", function () { H.share(inviteShareText()); });
+    $("invClose").addEventListener("click", function () { hide("ovInvite"); });
+    $("ovInvite").addEventListener("click", function (e) { if (e.target === $("ovInvite")) hide("ovInvite"); });
   }
+  var inviteUrl = "";
   function inviteLink(bk) {
     var it = partners()[bk]; if (!it) return;
-    var url = H.partnerLink(ck, bk);
-    H.share("【" + companyName() + "】協力業者アプリの招待です。\n下のリンクを開くと、当社からの作業依頼・お知らせを確認して返信できます（登録不要）。\n" + url);
+    inviteUrl = H.partnerLink(ck, bk);
+    $("invTitle").textContent = "📲 " + (it.name || "業者") + " を招待";
+    $("invUrl").textContent = inviteUrl;
+    var box = $("invQr"); box.innerHTML = "";
+    try {
+      if (typeof qrcode === "function") {
+        var qr = qrcode(0, "M"); qr.addData(inviteUrl); qr.make();
+        box.innerHTML = qr.createSvgTag({ cellSize: 5, margin: 2, scalable: true });
+        var svg = box.querySelector("svg"); if (svg) { svg.setAttribute("width", "196"); svg.setAttribute("height", "196"); }
+      }
+    } catch (e) {}
+    show("ovInvite");
+  }
+  function inviteShareText() {
+    return "【" + companyName() + "】協力業者アプリの招待です。\n下のリンクを開くと、当社からの作業依頼・お知らせ・請負契約を確認して返信・署名できます（登録・ログイン不要）。\n" + inviteUrl;
   }
 
   // ---- アプリにする / ヘルプ ----
