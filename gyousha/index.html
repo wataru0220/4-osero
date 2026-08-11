@@ -15,10 +15,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260810d"></script>
-<script src="data.js?v=20260810d"></script>
-<script src="common.js?v=20260810d"></script>
-<link rel="stylesheet" href="styles.css?v=20260810d">
+<script src="config.js?v=20260811a"></script>
+<script src="data.js?v=20260811a"></script>
+<script src="common.js?v=20260811a"></script>
+<link rel="stylesheet" href="styles.css?v=20260811a">
 <style>:root{--brand:#e8792a;--brand-dark:#b8560f;--chip:#fdece0}</style>
 </head>
 <body>
@@ -67,6 +67,15 @@
     </div>
   </section>
 
+  <section id="page-avail" class="page">
+    <div class="wrap">
+      <div class="seclabel">📅 空き状況の登録</div>
+      <p class="hint" style="margin-top:0">日付をタップすると <b>空き → 応相談 → なし</b> の順で切り替わります。登録した空きは、取引先の工務店に表示されます。</p>
+      <div class="callegend"><span><span class="sw" style="background:#1aa260"></span>空き</span><span><span class="sw" style="background:#e0a200"></span>応相談</span><span><span class="sw" style="background:#fff;border:1px solid var(--line)"></span>なし</span></div>
+      <div id="calRoot"></div>
+    </div>
+  </section>
+
   <section id="page-announce" class="page">
     <div class="wrap">
       <div class="seclabel">📢 工務店からのお知らせ</div>
@@ -77,6 +86,7 @@
   <nav class="tabbar">
     <button data-tab="requests" class="on"><span class="ic">📨</span>依頼</button>
     <button data-tab="contracts"><span class="ic">📝</span>契約</button>
+    <button data-tab="avail"><span class="ic">📅</span>空き</button>
     <button data-tab="announce"><span class="ic">📢</span>お知らせ</button>
   </nav>
 </div>
@@ -130,7 +140,19 @@
     });
   }
 
-  function renderAll() { renderHeader(); renderModebar(); renderWho(); renderRequests(); renderContracts(); renderAnnounce(); renderBadge(); renderCBadge(); }
+  function renderAll() { renderHeader(); renderModebar(); renderWho(); renderRequests(); renderContracts(); renderAvail(); renderAnnounce(); renderBadge(); renderCBadge(); }
+  function renderAvail() {
+    var root = $("calRoot"); if (!root) return;
+    if (!me()) { root.innerHTML = emptyBox("この招待リンクは無効です", "工務店にリンクの再送をご依頼ください。"); return; }
+    root.innerHTML = H.calendarHTML((me() || {}).avail, 3);
+  }
+  function setAvail(date) {
+    if (date < H.todayStr()) return;
+    var cur = ((me() || {}).avail || {})[date];
+    var next = cur === "free" ? "maybe" : cur === "maybe" ? null : "free";
+    var o = {}; o[date] = next;
+    DB.update("companies/" + ck + "/partners/" + bk + "/avail", o).catch(function () {});
+  }
   function renderHeader() { $("hSub").textContent = companyName() + " より"; }
   function renderModebar() {
     var el = $("modebar");
@@ -275,7 +297,7 @@
   }
 
   function switchTab(name) {
-    ["requests", "contracts", "announce"].forEach(function (n) { $("page-" + n).classList.toggle("on", n === name); });
+    ["requests", "contracts", "avail", "announce"].forEach(function (n) { $("page-" + n).classList.toggle("on", n === name); });
     Array.prototype.forEach.call(document.querySelectorAll(".tabbar button"), function (b) { b.classList.toggle("on", b.dataset.tab === name); });
     window.scrollTo(0, 0);
   }
@@ -288,6 +310,7 @@
     if ((el = e.target.closest("[data-cview]"))) return openCView(el.dataset.cview);
     if ((el = e.target.closest("[data-cprint]"))) { var c = (company.contracts || {})[el.dataset.cprint]; if (c) H.printContract(c, companyName()); return; }
     if (e.target.closest("#cv_close") || e.target.id === "ovCView") return closeCView();
+    if ((el = e.target.closest(".calcell")) && el.dataset.date && !el.classList.contains("past")) return setAvail(el.dataset.date);
     if ((el = e.target.closest(".tabbar button"))) return switchTab(el.dataset.tab);
   });
 
@@ -296,6 +319,7 @@
     { q: "これは何のアプリ？", a: "取引先の<b>工務店から届いた招待リンク</b>で開くアプリです。工務店からの <b>作業依頼</b> や <b>お知らせ</b> を確認して返信できます。<b>登録・ログインは不要</b>です。" },
     { q: "依頼に返信するには", a: "「依頼」タブで、届いた依頼に <b>✅受ける</b> か <b>✖不可</b> を選び、必要なら一言を添えて送ります。送信後も「変更」から返答をやり直せます。未返信の件数はタブのバッジでわかります。" },
     { q: "請負契約に署名するには", a: "「契約」タブに、工務店からの請負契約が表示されます。<b>📄内容・署名</b> で工事名・請負代金・支払・工期などを確認し、内容に同意できれば <b>「内容に同意して署名する」</b> を押します（会社名・担当者名を入力）。工務店も署名すると締結完了。<b>🖨印刷/PDF</b> で保存できます。相違があれば署名せず工務店へご連絡ください。" },
+    { q: "空き状況を登録するには", a: "「空き」タブで日付をタップすると <b>空き → 応相談 → なし</b> の順で切り替わります。登録した空きは取引先の工務店に表示され、空いている日に依頼・契約が届きやすくなります。3か月先まで登録できます。" },
     { q: "お知らせを見る", a: "「お知らせ」タブに、工務店からの連絡が新しい順に表示されます。" },
     { q: "アプリにする（ホーム画面に追加）", a: "ヘッダーの <b>📲アプリ</b> を押すと、スマホのホーム画面にアイコンを追加できます。次回からはアイコンを1タップで開けます（ブラウザ不要）。" },
     { q: "リンクが無効・依頼が見えない", a: "招待リンクが正しいかご確認ください。うまくいかない場合は、取引先の工務店に<b>リンクの再送</b>をご依頼ください。" }

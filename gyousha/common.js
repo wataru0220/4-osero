@@ -56,12 +56,14 @@
   H.DEMO_BK = "P2"; // 利用者体験は田中大工（未返信の依頼R2あり）に紐づける
   H.demoSeed = function () {
     const now = Date.now();
+    const _d = new Date();
+    const ymd = (off) => { const d = new Date(_d); d.setDate(d.getDate() + off); return d.getFullYear() + "-" + H.pad2(d.getMonth() + 1) + "-" + H.pad2(d.getDate()); };
     return { companies: { DEMO: {
       profile: { name: "（体験）山田工務店", createdAt: now },
       partners: {
-        P1: { trade: "denki", name: "丸山電気工事", tel: "090-1111-2222", contact: "丸山", area: "市内全域", note: "急ぎ対応可。分電盤の増設が得意。", fav: true, createdAt: now - 5000 },
-        P2: { trade: "daiku", name: "田中大工", tel: "080-3333-4444", contact: "田中", area: "", note: "", fav: false, createdAt: now - 4000 },
-        P3: { trade: "tosou", name: "佐藤塗装", tel: "070-5555-6666", contact: "佐藤", area: "△△市周辺", note: "外壁塗装が得意", fav: false, createdAt: now - 3000 },
+        P1: { trade: "denki", name: "丸山電気工事", tel: "090-1111-2222", contact: "丸山", area: "市内全域", note: "急ぎ対応可。分電盤の増設が得意。", fav: true, createdAt: now - 5000, avail: { [ymd(2)]: "free", [ymd(3)]: "free", [ymd(9)]: "maybe" } },
+        P2: { trade: "daiku", name: "田中大工", tel: "080-3333-4444", contact: "田中", area: "", note: "", fav: false, createdAt: now - 4000, avail: { [ymd(4)]: "free", [ymd(5)]: "free", [ymd(6)]: "maybe" } },
+        P3: { trade: "tosou", name: "佐藤塗装", tel: "070-5555-6666", contact: "佐藤", area: "△△市周辺", note: "外壁塗装が得意", fav: false, createdAt: now - 3000, avail: { [ymd(8)]: "free" } },
         P4: { trade: "other", tradeOther: "解体", name: "北解体興業", tel: "090-7777-8888", contact: "", area: "", note: "", fav: false, createdAt: now - 2000 }
       },
       requests: {
@@ -84,6 +86,45 @@
     if (!ts) return "";
     const d = new Date(ts);
     return `${d.getMonth() + 1}/${d.getDate()} ${H.pad2(d.getHours())}:${H.pad2(d.getMinutes())}`;
+  };
+
+  // ---- 空き状況カレンダー ----
+  H.todayStr = () => H.ymd(new Date());
+  H.upcomingFreeDates = (avail) => { const t = H.todayStr(); return Object.keys(avail || {}).filter((d) => avail[d] === "free" && d >= t).sort(); };
+  H.upcomingMaybeDates = (avail) => { const t = H.todayStr(); return Object.keys(avail || {}).filter((d) => avail[d] === "maybe" && d >= t).sort(); };
+  H.mdFromYmd = (s) => { const p = String(s).split("-"); return (+p[1]) + "/" + (+p[2]); };
+  // 3ヶ月ぶんのカレンダーHTML。各セルに data-date。avail[YYYY-MM-DD] = "free"|"maybe"。
+  H.calendarHTML = (avail, months) => {
+    avail = avail || {}; months = months || 3;
+    const wd = ["日", "月", "火", "水", "木", "金", "土"], today = H.todayStr();
+    const base = new Date(); base.setDate(1);
+    let out = "";
+    for (let m = 0; m < months; m++) {
+      const d = new Date(base.getFullYear(), base.getMonth() + m, 1), y = d.getFullYear(), mo = d.getMonth();
+      out += '<div class="calmonth"><div class="mh">' + y + "年 " + (mo + 1) + "月</div><div class=\"calgrid\">";
+      for (let w = 0; w < 7; w++) out += '<div class="wd' + (w === 0 ? " sun" : w === 6 ? " sat" : "") + '">' + wd[w] + "</div>";
+      const first = new Date(y, mo, 1).getDay(), days = new Date(y, mo + 1, 0).getDate();
+      for (let i = 0; i < first; i++) out += '<div class="calcell empty"></div>';
+      for (let day = 1; day <= days; day++) {
+        const ds = y + "-" + H.pad2(mo + 1) + "-" + H.pad2(day), st = avail[ds];
+        let cls = "calcell";
+        if (ds < today) cls += " past";
+        else if (st === "free") cls += " free";
+        else if (st === "maybe") cls += " maybe";
+        out += '<div class="' + cls + '" data-date="' + ds + '">' + day + "</div>";
+      }
+      out += "</div></div>";
+    }
+    return out;
+  };
+  // 空き日を短くまとめた表示（例：8/12, 8/13 +2）
+  H.availSummary = (avail) => {
+    const f = H.upcomingFreeDates(avail), mb = H.upcomingMaybeDates(avail);
+    if (!f.length && !mb.length) return { has: false, html: '<span style="color:#9aa7b5">空き予定なし</span>' };
+    let s = "";
+    if (f.length) s += '<span class="availtag free">🟢 空き ' + f.slice(0, 3).map(H.mdFromYmd).join("・") + (f.length > 3 ? " +" + (f.length - 3) : "") + "</span>";
+    if (mb.length) s += '<span class="availtag maybe">🟡 応相談 ' + mb.slice(0, 2).map(H.mdFromYmd).join("・") + (mb.length > 2 ? " +" + (mb.length - 2) : "") + "</span>";
+    return { has: f.length > 0, html: s };
   };
 
   // 依頼の状態ラベル
