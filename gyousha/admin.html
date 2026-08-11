@@ -15,10 +15,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260810b"></script>
-<script src="data.js?v=20260810b"></script>
-<script src="common.js?v=20260810b"></script>
-<link rel="stylesheet" href="styles.css?v=20260810b">
+<script src="config.js?v=20260810c"></script>
+<script src="data.js?v=20260810c"></script>
+<script src="common.js?v=20260810c"></script>
+<link rel="stylesheet" href="styles.css?v=20260810c">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -209,7 +209,8 @@
     <div class="field"><label for="c_handover">検査・引渡し</label><input id="c_handover" type="text" placeholder="例）完成後、注文者立会いで検査のうえ引渡し"></div>
     <div class="field"><label for="c_super">作業指示者（受注者側の担当者）</label><input id="c_super" type="text" placeholder="下請けの職人へ指示する担当者（空欄可）"></div>
     <div class="field"><label for="c_note">備考</label><textarea id="c_note" placeholder="その他の取り決めなど"></textarea></div>
-    <p class="cnote">署名後に内容を変更すると、双方の署名はリセットされます（改ざん防止）。</p>
+    <button class="btn ghost full" id="cf_savetpl" style="margin-bottom:8px">💾 支払・検査・税率を「よく使う値」として保存</button>
+    <p class="cnote">署名後に内容を変更すると、双方の署名はリセットされます（改ざん防止）。<br>新規作成のときは、前回の「よく使う値」と、依頼から作った場合は依頼内容が自動入力されます。</p>
     <div class="sheet-actions"><button class="btn ghost" id="cf_cancel">キャンセル</button><button class="btn" id="cf_save">保存</button></div>
     <button class="btn danger full" id="cf_delete" style="display:none; margin-top:9px">🗑 この契約を削除</button>
   </div>
@@ -388,7 +389,7 @@
       (r.body ? '<div class="req-body">' + H.esc(r.body) + "</div>" : "") +
       band +
       '<div class="req-date">送信 ' + H.esc(H.fmtDate(r.createdAt)) + (r.repliedAt ? "／返答 " + H.esc(H.fmtDate(r.repliedAt)) : "") + '</div>' +
-      '<div class="gc-actions"><button class="btn sm ghost" data-delreq="' + r._key + '">削除</button></div>' +
+      '<div class="gc-actions"><button class="btn sm" data-tocontract="' + r._key + '">📝 契約にする</button><button class="btn sm ghost" data-delreq="' + r._key + '">削除</button></div>' +
       "</div>";
   }
 
@@ -516,18 +517,28 @@
     var amt = Number($("c_amount").value) || 0, rate = Number($("c_tax").value) || 0, tax = Math.round(amt * rate / 100);
     $("c_taxview").innerHTML = amt ? ("消費税 " + H.yen(tax) + " ／ <b>税込 " + H.yen(amt + tax) + "</b>") : "";
   }
-  function openContract(bk, cid) {
+  function openContract(bk, cid, prefill) {
     fillContractPartners(bk);
     editingCid = cid || null;
     var c = cid ? (company.contracts || {})[cid] : {};
+    var tpl = (!cid && company.contractTemplate) ? company.contractTemplate : {};
+    prefill = prefill || {};
     $("cfTitle").textContent = cid ? "請負契約を編集" : "請負契約を作成";
-    if (cid && c.partnerKey) $("c_partner").value = c.partnerKey;
-    $("c_title").value = c.title || ""; $("c_site").value = c.site || ""; $("c_content").value = c.content || "";
-    $("c_amount").value = c.amount != null ? c.amount : ""; $("c_tax").value = c.taxRate != null ? c.taxRate : 10;
-    $("c_pay").value = c.payTerm || ""; $("c_start").value = c.startDate || ""; $("c_end").value = c.endDate || "";
-    $("c_handover").value = c.handover || ""; $("c_super").value = c.supervisor || ""; $("c_note").value = c.note || "";
+    if (cid && c.partnerKey) $("c_partner").value = c.partnerKey; else if (bk) $("c_partner").value = bk;
+    $("c_title").value = c.title || prefill.title || ""; $("c_site").value = c.site || prefill.site || ""; $("c_content").value = c.content || prefill.content || "";
+    $("c_amount").value = c.amount != null ? c.amount : ""; $("c_tax").value = c.taxRate != null ? c.taxRate : (tpl.taxRate != null ? tpl.taxRate : 10);
+    $("c_pay").value = c.payTerm || tpl.payTerm || ""; $("c_start").value = c.startDate || prefill.startDate || ""; $("c_end").value = c.endDate || "";
+    $("c_handover").value = c.handover || tpl.handover || ""; $("c_super").value = c.supervisor || ""; $("c_note").value = c.note || "";
     $("cf_delete").style.display = cid ? "block" : "none";
     taxView(); show("ovContract"); setTimeout(function () { $("c_title").focus(); }, 60);
+  }
+  function openContractFromReq(rid) {
+    var r = (company.requests || {})[rid]; if (!r) return;
+    openContract(r.partnerKey, null, { title: r.title, site: r.site, content: r.body, startDate: r.dateText });
+  }
+  function saveTemplate() {
+    DB.update("companies/" + ck + "/contractTemplate", { taxRate: Number($("c_tax").value) || 0, payTerm: $("c_pay").value.trim(), handover: $("c_handover").value.trim() })
+      .then(function () { H.toast("よく使う値を保存しました（次回の新規作成で自動入力されます）", "ok"); }).catch(function () {});
   }
   function saveContract() {
     var bk = $("c_partner").value, title = $("c_title").value.trim(), amount = Number($("c_amount").value) || 0;
@@ -626,7 +637,9 @@
     $("btnNewReq").addEventListener("click", function () { openReq(null); });
     $("reqFilter").addEventListener("change", renderRequests);
     $("listR").addEventListener("click", function (e) {
-      var el = e.target.closest("[data-delreq]"); if (!el) return;
+      var el;
+      if ((el = e.target.closest("[data-tocontract]"))) return openContractFromReq(el.dataset.tocontract);
+      if (!(el = e.target.closest("[data-delreq]"))) return;
       if (!confirm("この依頼を削除しますか？")) return;
       DB.remove("companies/" + ck + "/requests/" + el.dataset.delreq).then(function () { H.toast("削除しました", "ok"); });
     });
@@ -650,6 +663,7 @@
     $("c_amount").addEventListener("input", taxView);
     $("c_tax").addEventListener("input", taxView);
     $("cf_save").addEventListener("click", saveContract);
+    $("cf_savetpl").addEventListener("click", saveTemplate);
     $("cf_cancel").addEventListener("click", function () { hide("ovContract"); });
     $("cf_delete").addEventListener("click", deleteContract);
     $("ovContract").addEventListener("click", function (e) { if (e.target === $("ovContract")) hide("ovContract"); });
