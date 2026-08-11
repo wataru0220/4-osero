@@ -1037,7 +1037,7 @@ function showGate(mode){
       <div class="gsub" style="margin:0 0 8px">以前ご利用いただいていた方（退会・利用停止等で会員権限が外れた方）はこちら。</div>
       <button class="btn full" id="gToRejoin" style="margin-bottom:10px">🔁 再入会する（以前ご利用の方）</button>
       <div class="gsub" style="margin:0 0 8px">まだ一度もご利用でない方（工務店）は、入会をご申請ください。事務局の審査後にご利用いただけます。</div>
-      <button class="btn ghost full" id="gToApply">✍️ 新規に入会を申請する</button>
+      <button class="btn ghost full" id="gToApply">✍️ 新規のお申し込み（申込フォーム）</button>
       ${pricePlanHTML()}
       ${officeContactHTML()}`;
     document.getElementById('gLoginBtn').onclick=gateLogin;
@@ -1049,26 +1049,12 @@ function showGate(mode){
   }
   if(mode==='apply'){
     b.innerHTML=head+`
-      <h2>✍️ 新規に入会を申請</h2>
-      <div class="gsub">初めてご利用の工務店様向けです。<b>この1回の入力で、会員登録と工務店（会社・最初の大工）の登録がまとめて完了</b>します。事務局の承認後、そのままログインしてご利用いただけます。<br>※以前ご利用中に会員権限が外れた方は、<a class="deallink" id="aToRejoin" style="cursor:pointer">こちら（再入会）</a>の方が簡単です。</div>
-      <div class="field"><label>メールアドレス（ログインID）</label><input type="email" id="aEmail" autocomplete="username" placeholder="you@example.com"></div>
-      <div class="field"><label>パスワード（6文字以上）</label><input type="password" id="aPass" autocomplete="new-password" placeholder="ログイン用パスワードを決めてください"></div>
-      <div class="field"><label class="req">工務店名</label><input type="text" id="aCompany" placeholder="例）山田工務店"></div>
-      <div class="field"><label>ふりがな</label><input type="text" id="aNameKana" placeholder="例）やまだこうむてん"></div>
-      <div class="field"><label>ご担当者名</label><input type="text" id="aContact" placeholder="例）山田 太郎"></div>
-      <div class="field"><label>電話番号</label><input type="tel" id="aTel" placeholder="例）022-000-0000"></div>
-      <div class="field"><label>対応エリア</label><input type="text" id="aArea" placeholder="例）宮城県／仙台市"></div>
-      <div class="firstcraft-head">最初の自社大工（1名以上の登録が必須です）</div>
-      <div class="field"><label class="req">大工の氏名</label><input type="text" id="aCkName" placeholder="例）田中 一郎"></div>
-      <div class="field"><label>日給（税込）</label><input type="number" id="aCkPrice" min="0" placeholder="例）22000（円/日・税込）"></div>
-      <div class="count">※ 得意作業・年齢・性別・資格などの詳細は、承認後ログインしてから「✏️情報を編集」で追加できます。</div>
+      <h2>✍️ 新規のお申し込み</h2>
+      <div class="gsub">初めてご利用の工務店様は、<b>下記の申込フォーム</b>からお申し込みください。事務局で内容を確認のうえ、<b>会員アカウント（メール・パスワード）を発行</b>してご連絡します。発行後は「ログイン」からすぐにご利用いただけます。<br>※以前ご利用中に会員権限が外れた方は、<a class="deallink" id="aToRejoin" style="cursor:pointer">こちら（再入会）</a>から簡単に手続きできます。</div>
+      ${OFFICE.applyUrl ? '<a class="btn full" href="'+H.esc(OFFICE.applyUrl)+'" target="_blank" rel="noopener" style="text-decoration:none;margin-top:8px">📝 申込フォームを開く</a>' : ''}
       ${pricePlanHTML()}
-      <label class="gsub" style="display:flex;align-items:flex-start;gap:8px;margin:8px 0"><input type="checkbox" id="aPriceAgree" style="margin-top:3px"><span>上記のご利用料金（3か月お試し 10,000円／年間本契約 120,000円・いずれも税込）と、<a href="tokushoho.html" target="_blank" rel="noopener">特定商取引法に基づく表記</a>・<a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>を確認し、同意します。（正式な契約内容は事務局の個別ご案内時に確認します）</span></label>
-      <div class="row"><button class="btn full" id="aSubmit">この内容で入会を申請する</button></div>
-      <div class="gerr" id="gErr"></div>
       ${officeContactHTML()}
       <div style="margin-top:12px"><a class="deallink" id="aBack" style="cursor:pointer">← ログインに戻る</a></div>`;
-    document.getElementById('aSubmit').onclick=gateApply;
     document.getElementById('aBack').onclick=()=>showGate('login');
     document.getElementById('aToRejoin').onclick=()=>showGate('rejoin');
     return;
@@ -1138,50 +1124,8 @@ function gateReset(){
   if(!email){ gateErr('メールアドレスを入力してから押してください'); return; }
   DB.auth.resetPassword(email).then(()=>H.toast('パスワード再設定メールを送信しました','ok')).catch(e=>gateErr((e&&e.message)||String(e)));
 }
-function gateApply(){
-  const email=(document.getElementById('aEmail').value||'').trim();
-  const pass=(document.getElementById('aPass').value||'');
-  const company=(document.getElementById('aCompany').value||'').trim();
-  const nameKana=(document.getElementById('aNameKana').value||'').trim();
-  const contact=(document.getElementById('aContact').value||'').trim();
-  const tel=(document.getElementById('aTel').value||'').trim();
-  const area=(document.getElementById('aArea').value||'').trim();
-  const ckName=(document.getElementById('aCkName').value||'').trim();
-  const ckPrice=+document.getElementById('aCkPrice').value||null;
-  const priceAgree=!!(document.getElementById('aPriceAgree')||{}).checked;
-  if(!email||pass.length<6){ gateErr('メールと6文字以上のパスワードを入力してください'); return; }
-  if(!priceAgree){ gateErr('ご利用料金・特商法表記・プライバシーポリシーへの同意にチェックしてください'); return; }
-  const btn=document.getElementById('aSubmit'); if(btn){ btn.disabled=true; }
-  // まず「既にログインアカウントを持っている」前提でサインインを試す（退会・呼び戻し等で
-  // 会員権限だけが外れた方の再申請）。成功すれば工務店名などの入力は不要＝登録済みの
-  // 会社データ（companies）がそのまま残る。サインインに失敗した場合だけ、真の新規登録
-  // とみなして signUp に進む（この場合のみ工務店名・最初の大工の氏名が必須＝
-  // 会員登録と工務店登録を1回の申請に集約している）。
-  DB.auth.signIn(email,pass).catch(()=>{
-    if(!company){ return Promise.reject({code:'need-company'}); }
-    if(!ckName){ return Promise.reject({code:'need-craftsman'}); }
-    return DB.auth.signUp(email,pass);
-  }).then(()=>{
-    const u=DB.auth.user;
-    const app={ email:email, company:company, contact:contact, tel:tel, at:Date.now(),
-      priceAgreed:true, priceAgreedPlan:'trial:10000/year:120000', priceAgreedAt:Date.now(), termsVersionAtApply:TERMS_VERSION };
-    if(nameKana) app.nameKana=nameKana;
-    if(area) app.area=area;
-    if(ckName) app.craftsman={ name:ckName, price:ckPrice };
-    return DB.set('memberApplications/'+u.uid, app);
-  }).then(()=>{
-    H.toast('入会申請を送信しました。事務局の審査をお待ちください（承認されると工務店・大工の登録も完了した状態でご利用いただけます）','ok');
-    applyGate();
-  }).catch(e=>{
-    if(btn) btn.disabled=false;
-    let msg;
-    if(e && e.code==='need-company') msg='ログインできませんでした。初めて申請する方は工務店名を入力してください。既にアカウントをお持ちの方はパスワードをご確認ください（お忘れの場合は「パスワードを忘れた方はこちら」）。';
-    else if(e && e.code==='need-craftsman') msg='最初の自社大工の氏名を入力してください（工務店登録には大工が1名以上必要です）。';
-    else if(e && e.code==='auth/email-already-in-use') msg='このメールは既に登録されています。パスワードが違うようです。ログイン画面の「パスワードを忘れた方はこちら」からリセットしてください。';
-    else msg=(H.authErrMsg?H.authErrMsg(e):((e&&e.message)||String(e)));
-    gateErr(msg);
-  });
-}
+// 新規のお申し込みは申込フォーム(OFFICE.applyUrl)に一本化したため、アプリ内の入会申請
+// （gateApply）は廃止。新規申込→事務局が内容確認→会員アカウント発行→ログイン、の流れ。
 // 再入会：既存アカウントへのサインインのみを行う（新規登録はしない）。
 // 会社情報は登録済みのデータがそのまま残るため、入力を求めない。
 function gateRejoin(){
