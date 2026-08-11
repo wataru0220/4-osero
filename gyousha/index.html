@@ -15,10 +15,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260810a"></script>
-<script src="data.js?v=20260810a"></script>
-<script src="common.js?v=20260810a"></script>
-<link rel="stylesheet" href="styles.css?v=20260810a">
+<script src="config.js?v=20260810b"></script>
+<script src="data.js?v=20260810b"></script>
+<script src="common.js?v=20260810b"></script>
+<link rel="stylesheet" href="styles.css?v=20260810b">
 <style>:root{--brand:#e8792a;--brand-dark:#b8560f;--chip:#fdece0}</style>
 </head>
 <body>
@@ -60,6 +60,13 @@
     </div>
   </section>
 
+  <section id="page-contracts" class="page">
+    <div class="wrap">
+      <div class="seclabel">📝 請負契約</div>
+      <div id="listC"></div>
+    </div>
+  </section>
+
   <section id="page-announce" class="page">
     <div class="wrap">
       <div class="seclabel">📢 工務店からのお知らせ</div>
@@ -69,8 +76,18 @@
 
   <nav class="tabbar">
     <button data-tab="requests" class="on"><span class="ic">📨</span>依頼</button>
+    <button data-tab="contracts"><span class="ic">📝</span>契約</button>
     <button data-tab="announce"><span class="ic">📢</span>お知らせ</button>
   </nav>
+</div>
+
+<!-- 請負契約 詳細/署名 -->
+<div class="ov" id="ovCView">
+  <div class="sheet">
+    <h3>請負契約</h3>
+    <div id="cvBody"></div>
+    <div class="sheet-actions" style="margin-top:12px"><button class="btn ghost full" id="cv_close">閉じる</button></div>
+  </div>
 </div>
 
 <script>
@@ -113,7 +130,7 @@
     });
   }
 
-  function renderAll() { renderHeader(); renderModebar(); renderWho(); renderRequests(); renderAnnounce(); renderBadge(); }
+  function renderAll() { renderHeader(); renderModebar(); renderWho(); renderRequests(); renderContracts(); renderAnnounce(); renderBadge(); renderCBadge(); }
   function renderHeader() { $("hSub").textContent = companyName() + " より"; }
   function renderModebar() {
     var el = $("modebar");
@@ -186,8 +203,79 @@
     }).join("");
   }
 
+  // ---- 請負契約 ----
+  function myContracts() {
+    var r = (company && company.contracts) || {};
+    return Object.keys(r).map(function (k) { var o = r[k]; o._key = k; return o; })
+      .filter(function (o) { return o.partnerKey === bk; })
+      .sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+  }
+  function renderCBadge() {
+    var need = myContracts().filter(function (c) { return c.fromSign && c.fromSign.at && !(c.toSign && c.toSign.at); }).length;
+    var btn = document.querySelector('.tabbar button[data-tab="contracts"]'); if (!btn) return;
+    var b = btn.querySelector(".tabbadge");
+    if (need > 0) { if (!b) { b = document.createElement("span"); b.className = "tabbadge"; btn.appendChild(b); } b.textContent = need; }
+    else if (b) b.remove();
+  }
+  function renderContracts() {
+    var list = myContracts(), root = $("listC");
+    if (!me()) { root.innerHTML = emptyBox("この招待リンクは無効です", "工務店にリンクの再送をご依頼ください。"); return; }
+    if (!list.length) { root.innerHTML = emptyBox("まだ請負契約はありません", "工務店から請負契約が届くと、ここに表示されます。内容を確認して署名できます。"); return; }
+    root.innerHTML = list.map(ccard).join("");
+  }
+  function ccard(c) {
+    var st = H.contractStatus(c);
+    return '<div class="ccard">' +
+      '<div class="cc-top"><div class="cc-title">' + H.esc(c.title || "(工事名なし)") + "</div>" +
+      '<span class="cstat" style="color:' + st.color + ";background:" + st.bg + '">' + st.text + "</span></div>" +
+      '<div class="cc-amt">' + H.yen(H.inclOf(c)) + ' <small>(税込)</small></div>' +
+      '<div class="cc-actions"><button class="btn sm" data-cview="' + c._key + '">📄 内容・署名</button>' +
+      '<button class="btn sm ghost" data-cprint="' + c._key + '">🖨 印刷/PDF</button></div></div>';
+  }
+  function crow(k, v) { return v ? '<div class="crow"><div class="k">' + H.esc(k) + '</div><div class="v">' + H.esc(v) + "</div></div>" : ""; }
+  function cviewHTML(cid, c) {
+    var st = H.contractStatus(c), tax = H.taxOf(c), amt = Number(c.amount) || 0, m = me() || {};
+    var h = '<div style="text-align:center;margin-bottom:6px"><span class="cstat" style="color:' + st.color + ";background:" + st.bg + '">' + st.text + "</span></div>";
+    h += '<div class="cc-title" style="text-align:center">' + H.esc(c.title || "") + "</div>";
+    h += '<div class="cc-to" style="text-align:center;margin-bottom:8px">注文者：' + H.esc(companyName()) + "　／　請負者：" + H.esc(c.partnerName || m.name || "") + "</div>";
+    h += crow("工事場所", c.site) + crow("工事内容", c.content);
+    h += '<div class="camt"><div class="big">税込 ' + H.yen(amt + tax) + '</div><div class="brk">税抜 ' + H.yen(amt) + " ＋ 消費税 " + H.yen(tax) + "（" + (Number(c.taxRate) || 0) + "%）</div></div>";
+    h += crow("支払方法・時期", c.payTerm) + crow("工期", ((c.startDate || "") + (c.endDate ? " 〜 " + c.endDate : "")).trim());
+    h += crow("検査・引渡し", c.handover) + crow("作業指示者", c.supervisor) + crow("備考", c.note);
+    h += '<div class="crow"><div class="k">注文者署名</div><div class="v">' + (c.fromSign && c.fromSign.at ? "✅ " + H.esc(c.fromSign.companyName || "") + " " + H.esc(c.fromSign.name || "") + "（" + H.fmtDate(c.fromSign.at) + "）" : "未署名") + "</div></div>";
+    h += '<div class="crow"><div class="k">あなた（請負者）署名</div><div class="v">' + (c.toSign && c.toSign.at ? "✅ " + H.esc(c.toSign.companyName || "") + " " + H.esc(c.toSign.name || "") + "（" + H.fmtDate(c.toSign.at) + "）" : "未署名") + "</div></div>";
+    if (c.toSign && c.toSign.at) { h += '<div class="signdone">✅ あなた（請負者）は署名済みです</div>'; }
+    else {
+      h += '<div class="signbox"><div class="st">✍️ 請負者（あなた）として署名する</div>' +
+        '<div class="field"><label>作業指示者（自社の職人へ指示する担当者）</label><input id="cv_sup" type="text" value="' + H.esc(c.supervisor || "") + '" placeholder="例）田中"></div>' +
+        '<div class="field"><label>会社名（屋号）</label><input id="cv_co" type="text" value="' + H.esc(m.name || "") + '"></div>' +
+        '<div class="field"><label>担当者名</label><input id="cv_nm" type="text" placeholder="例）田中 一郎"></div>' +
+        '<button class="btn full" id="cv_signBtn">内容に同意して署名する</button>' +
+        '<p class="hint">内容に相違がある場合は署名せず、工務店にご連絡ください。</p></div>';
+    }
+    if (c.fromSign && c.fromSign.at && c.toSign && c.toSign.at) h += '<div class="cnote">両者の署名がそろい、契約は締結済みです。「印刷/PDF」で保存して保管してください。</div>';
+    h += '<div class="cc-actions" style="margin-top:12px"><button class="btn sm" id="cv_printBtn">🖨 印刷/PDF</button></div>';
+    return h;
+  }
+  function openCView(cid) {
+    var c = (company.contracts || {})[cid]; if (!c) return;
+    $("cvBody").innerHTML = cviewHTML(cid, c);
+    $("ovCView").classList.add("on"); document.body.style.overflow = "hidden";
+    var sb = document.getElementById("cv_signBtn"); if (sb) sb.onclick = function () { signTo(cid); };
+    var pb = document.getElementById("cv_printBtn"); if (pb) pb.onclick = function () { H.printContract((company.contracts || {})[cid], companyName()); };
+  }
+  function closeCView() { $("ovCView").classList.remove("on"); document.body.style.overflow = ""; }
+  function signTo(cid) {
+    var co = ($("cv_co").value || "").trim(), nm = ($("cv_nm").value || "").trim();
+    if (!nm) { H.toast("担当者名を入力してください", "err"); return; }
+    var upd = { toSign: { companyName: co, name: nm, at: Date.now() }, updatedAt: Date.now() };
+    if ($("cv_sup")) upd.supervisor = $("cv_sup").value.trim();
+    DB.update("companies/" + ck + "/contracts/" + cid, upd)
+      .then(function () { H.toast("署名しました。契約が締結されました", "ok"); setTimeout(function () { openCView(cid); }, 60); }).catch(function () {});
+  }
+
   function switchTab(name) {
-    ["requests", "announce"].forEach(function (n) { $("page-" + n).classList.toggle("on", n === name); });
+    ["requests", "contracts", "announce"].forEach(function (n) { $("page-" + n).classList.toggle("on", n === name); });
     Array.prototype.forEach.call(document.querySelectorAll(".tabbar button"), function (b) { b.classList.toggle("on", b.dataset.tab === name); });
     window.scrollTo(0, 0);
   }
@@ -197,6 +285,9 @@
     if ((el = e.target.closest("[data-accept]"))) return reply(el.dataset.accept, "accept");
     if ((el = e.target.closest("[data-decline]"))) return reply(el.dataset.decline, "decline");
     if ((el = e.target.closest("[data-rereply]"))) { e.preventDefault(); var box = $("resp_" + el.dataset.rereply); if (box) box.style.display = "block"; return; }
+    if ((el = e.target.closest("[data-cview]"))) return openCView(el.dataset.cview);
+    if ((el = e.target.closest("[data-cprint]"))) { var c = (company.contracts || {})[el.dataset.cprint]; if (c) H.printContract(c, companyName()); return; }
+    if (e.target.closest("#cv_close") || e.target.id === "ovCView") return closeCView();
     if ((el = e.target.closest(".tabbar button"))) return switchTab(el.dataset.tab);
   });
 
@@ -204,6 +295,7 @@
   var USER_HELP = [
     { q: "これは何のアプリ？", a: "取引先の<b>工務店から届いた招待リンク</b>で開くアプリです。工務店からの <b>作業依頼</b> や <b>お知らせ</b> を確認して返信できます。<b>登録・ログインは不要</b>です。" },
     { q: "依頼に返信するには", a: "「依頼」タブで、届いた依頼に <b>✅受ける</b> か <b>✖不可</b> を選び、必要なら一言を添えて送ります。送信後も「変更」から返答をやり直せます。未返信の件数はタブのバッジでわかります。" },
+    { q: "請負契約に署名するには", a: "「契約」タブに、工務店からの請負契約が表示されます。<b>📄内容・署名</b> で工事名・請負代金・支払・工期などを確認し、内容に同意できれば <b>「内容に同意して署名する」</b> を押します（会社名・担当者名を入力）。工務店も署名すると締結完了。<b>🖨印刷/PDF</b> で保存できます。相違があれば署名せず工務店へご連絡ください。" },
     { q: "お知らせを見る", a: "「お知らせ」タブに、工務店からの連絡が新しい順に表示されます。" },
     { q: "アプリにする（ホーム画面に追加）", a: "ヘッダーの <b>📲アプリ</b> を押すと、スマホのホーム画面にアイコンを追加できます。次回からはアイコンを1タップで開けます（ブラウザ不要）。" },
     { q: "リンクが無効・依頼が見えない", a: "招待リンクが正しいかご確認ください。うまくいかない場合は、取引先の工務店に<b>リンクの再送</b>をご依頼ください。" }

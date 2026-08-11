@@ -35,6 +35,27 @@ header .sub{font-size:12px; opacity:.92; margin-top:3px}
 .helpitem[open] summary{border-bottom:1px solid var(--line)}
 .helpa{padding:11px 12px; font-size:13px; line-height:1.85; color:var(--ink)}
 .helpa b{color:var(--brand-dark)}
+
+/* 電子請負契約 */
+.ccard{border:1px solid var(--line); border-radius:13px; padding:13px; margin-bottom:11px; background:#fff; box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.cc-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px}
+.cc-title{font-size:16px; font-weight:800}
+.cc-to{font-size:12px; color:var(--sub); margin-top:2px}
+.cstat{display:inline-flex; align-items:center; padding:4px 10px; border-radius:20px; font-weight:800; font-size:12px; white-space:nowrap}
+.cc-amt{font-size:15px; font-weight:800; color:var(--brand-dark); margin-top:8px}
+.cc-amt small{font-size:12px; color:var(--sub); font-weight:600}
+.cc-actions{display:flex; gap:8px; margin-top:11px; flex-wrap:wrap}
+.cc-actions .btn{flex:1; min-width:calc(50% - 4px)}
+.crow{display:flex; gap:8px; font-size:14px; padding:8px 0; border-bottom:1px solid var(--line)}
+.crow .k{flex:none; width:104px; color:var(--sub); font-weight:700; font-size:13px}
+.crow .v{flex:1; white-space:pre-wrap; word-break:break-word}
+.camt{background:#f7f9fb; border:1px solid var(--line); border-radius:10px; padding:11px 13px; margin:12px 0}
+.camt .big{font-size:22px; font-weight:800; color:var(--ink)}
+.camt .brk{font-size:12px; color:var(--sub); margin-top:2px}
+.signbox{border:1.5px solid var(--brand); border-radius:12px; padding:12px; margin-top:12px; background:#fff}
+.signbox .st{font-weight:800; color:var(--brand-dark); margin-bottom:8px}
+.signdone{display:flex; gap:8px; align-items:center; background:#eafaf0; border:1px solid #b6e6c8; color:#1a7a45; border-radius:10px; padding:10px 12px; margin-top:12px; font-weight:700; font-size:13px}
+.cnote{font-size:12px; color:var(--sub); line-height:1.7; background:#fff9ec; border:1px solid #ffe1a8; border-radius:9px; padding:9px 11px; margin-top:12px}
 .wrap{max-width:640px; margin:0 auto; padding:14px}
 .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; box-shadow:0 1px 2px rgba(16,24,40,.04)}
 label{display:block; font-size:12px; font-weight:700; color:var(--sub); margin:0 0 5px}

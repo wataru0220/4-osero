@@ -70,6 +70,9 @@
       },
       announcements: {
         A1: { body: "年末年始は12/29〜1/4を休業とします。ご協力よろしくお願いします。", targetTrade: "", createdAt: now - 30000 }
+      },
+      contracts: {
+        C1: { partnerKey: "P2", partnerName: "田中大工", title: "△△マンション 改修 内装工事", site: "□□市 本町2-5", content: "内部造作・ボード張り一式（1〜2階）", amount: 350000, taxRate: 10, payTerm: "完成・引渡し後、翌月末支払い（銀行振込）", startDate: "来週 月曜", endDate: "再来週 金曜", handover: "完成後、注文者立会いで検査のうえ引渡し", supervisor: "", note: "", fromSign: { companyName: "（体験）山田工務店", name: "山田 太郎", at: now - 40000 }, toSign: null, createdAt: now - 45000, updatedAt: now - 40000 }
       }
     } } };
   };
@@ -173,6 +176,62 @@
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(() => H.toast(okMsg || "コピーしました", "ok")).catch(() => H.toast("コピーできませんでした", "err"));
     } else { H.toast("この端末ではコピーできません", "err"); }
+  };
+
+  // ---- 電子請負契約（簡易版） ----
+  H.yen = function (n) { return "¥" + (Number(n) || 0).toLocaleString("ja-JP"); };
+  H.taxOf = function (c) { return Math.round((Number(c.amount) || 0) * (Number(c.taxRate) || 0) / 100); };
+  H.inclOf = function (c) { return (Number(c.amount) || 0) + H.taxOf(c); };
+  H.contractStatus = function (c) {
+    var f = c && c.fromSign && c.fromSign.at, t = c && c.toSign && c.toSign.at;
+    if (f && t) return { key: "done", text: "締結済み", color: "#1a7a45", bg: "#eafaf0" };
+    if (f || t) return { key: "wait", text: "署名待ち", color: "#8a5a00", bg: "#fff4e5" };
+    return { key: "draft", text: "下書き", color: "#5d6b7c", bg: "#eef1f4" };
+  };
+  // 印刷/PDF用：工事請負契約書のHTML文書を組み立てる
+  H.contractDocHTML = function (c, koumutenName) {
+    var e = H.esc, tax = H.taxOf(c), amt = Number(c.amount) || 0, incl = amt + tax;
+    var fromCo = (c.fromSign && c.fromSign.companyName) || koumutenName || "";
+    var toCo = (c.toSign && c.toSign.companyName) || c.partnerName || "";
+    var sig = function (role, s, coFallback) {
+      return '<div class="sig"><div class="r">' + role + "</div>" +
+        '<div class="l">会社名：<span>' + (s && s.companyName ? e(s.companyName) : (coFallback ? e(coFallback) : "")) + "</span></div>" +
+        '<div class="l">担当者：<span>' + (s && s.name ? e(s.name) : "") + "</span>　㊞</div>" +
+        '<div class="d">' + (s && s.at ? "署名日：" + H.ymd(new Date(s.at)) : "署名日：　　　年　　月　　日") + "</div></div>";
+    };
+    var row = function (label, val) { return "<tr><th>" + e(label) + "</th><td>" + (val ? e(val) : "—") + "</td></tr>"; };
+    return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>工事請負契約書</title><style>' +
+      'body{font-family:"Yu Gothic","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;color:#1b2430;margin:0;padding:24px;font-size:13px;line-height:1.7}' +
+      '.doc{max-width:720px;margin:0 auto}h1{text-align:center;font-size:22px;letter-spacing:.3em;margin:0 0 4px}' +
+      '.sub{text-align:center;color:#5d6b7c;font-size:12px;margin-bottom:18px}' +
+      '.parties{display:flex;gap:14px;margin-bottom:14px}.party{flex:1;border:1px solid #cbd2da;border-radius:8px;padding:10px 12px}' +
+      '.party .cap{font-size:11px;color:#5d6b7c}.party .nm{font-size:15px;font-weight:800;margin-top:2px}' +
+      'table{width:100%;border-collapse:collapse;margin:6px 0 14px}th,td{border:1px solid #cbd2da;padding:8px 10px;text-align:left;vertical-align:top}' +
+      'th{background:#f2f4f7;width:132px;font-weight:700}.amount b{font-size:20px;color:#111}' +
+      '.sigs{display:flex;gap:14px;margin-top:18px}.sig{flex:1;border:1px solid #cbd2da;border-radius:8px;padding:12px}' +
+      '.sig .r{font-weight:800;margin-bottom:8px}.sig .l{margin:6px 0}.sig .l span{border-bottom:1px solid #99a2ad;padding:0 4px;min-width:120px;display:inline-block}' +
+      '.sig .d{color:#5d6b7c;font-size:12px;margin-top:6px}' +
+      '.note{font-size:11px;color:#5d6b7c;line-height:1.7;margin-top:16px;border-top:1px solid #e4e8ee;padding-top:10px}' +
+      '@media print{body{padding:0}.doc{max-width:none}}</style></head><body><div class="doc">' +
+      "<h1>工事請負契約書</h1>" +
+      '<div class="sub">下記の工事について、注文者（発注者）と請負者（受注者）が請負契約を締結します。</div>' +
+      '<div class="parties"><div class="party"><div class="cap">注文者（発注者・元請）</div><div class="nm">' + e(fromCo || "—") + "</div></div>" +
+      '<div class="party"><div class="cap">請負者（受注者・下請）</div><div class="nm">' + e(toCo || "—") + "</div></div></div>" +
+      "<table>" + row("工事名", c.title) + row("工事場所", c.site) + row("工事内容", c.content) +
+      '<tr><th>請負代金</th><td class="amount">税抜 ' + H.yen(amt) + "　＋　消費税 " + H.yen(tax) + "（" + (Number(c.taxRate) || 0) + "%）<br><b>税込 " + H.yen(incl) + "</b></td></tr>" +
+      row("支払方法・時期", c.payTerm) + row("工期", ((c.startDate || "") + (c.endDate ? " 〜 " + c.endDate : "")).trim()) +
+      row("検査・引渡し", c.handover) + row("作業指示者（受注者側）", c.supervisor) + row("備考", c.note) + "</table>" +
+      '<div class="sigs">' + sig("注文者（発注者）", c.fromSign, fromCo) + sig("請負者（受注者）", c.toSign, toCo) + "</div>" +
+      '<div class="note">・本工事は請負契約（業務委託）であり、労働者派遣ではありません。請負者の職人への作業指示・労務管理は、請負者（受注者）が行います。<br>' +
+      "・本書面の電子署名は、双方の合意内容と日時を記録するものです。書面交付義務など法的要件の詳細は専門家にご確認ください。<br>" +
+      "・本契約書は、注文者・請負者の双方で保管してください。</div></div></body></html>";
+  };
+  H.printContract = function (c, koumutenName) {
+    var w = window.open("", "_blank");
+    if (!w) { H.toast("印刷ウィンドウを開けませんでした（ポップアップを許可してください）", "err"); return; }
+    w.document.write(H.contractDocHTML(c, koumutenName));
+    w.document.close(); w.focus();
+    setTimeout(function () { try { w.print(); } catch (_) {} }, 500);
   };
 
   // 書き込み失敗（Firebase権限エラー等）を必ず画面に表示する
