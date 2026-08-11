@@ -651,12 +651,10 @@ const PRICE_TRIAL = '3か月お試しプラン：10,000円（税込）';
 const PRICE_YEAR  = '年間本契約：120,000円（税込）';
 // 事務局の連絡先ブロック（ログイン・審査中・体験モード等で共通表示）
 function officeContactHTML(){
-  const apply = OFFICE.applyUrl ? '<br>📝 お申し込みフォーム：<a href="'+H.esc(OFFICE.applyUrl)+'" target="_blank" rel="noopener">'+H.esc(OFFICE.applyUrl)+'</a>' : '';
+  if(!OFFICE.applyUrl) return '';
   return '<div class="termsbox" style="margin-top:10px;font-size:12.5px;text-align:left">'
-    +'<b>お問い合わせ・お申し込み（'+H.esc(OFFICE.name)+'）</b><br>'
-    +'📞 電話：'+H.esc(OFFICE.tel)+'<br>'
-    +'✉️ メール：'+H.esc(OFFICE.email)+'<br>'
-    +'💬 LINE：'+H.esc(OFFICE.line)+apply
+    +'<b>お申し込み（'+H.esc(OFFICE.name)+'）</b><br>'
+    +'📝 お申し込みフォーム：<a href="'+H.esc(OFFICE.applyUrl)+'" target="_blank" rel="noopener">'+H.esc(OFFICE.applyUrl)+'</a>'
     +'</div>';
 }
 // 料金プランの表示ブロック
