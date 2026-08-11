@@ -15,10 +15,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260811a"></script>
-<script src="data.js?v=20260811a"></script>
-<script src="common.js?v=20260811a"></script>
-<link rel="stylesheet" href="styles.css?v=20260811a">
+<script src="config.js?v=20260811b"></script>
+<script src="data.js?v=20260811b"></script>
+<script src="common.js?v=20260811b"></script>
+<link rel="stylesheet" href="styles.css?v=20260811b">
 <style>:root{--brand:#e8792a;--brand-dark:#b8560f;--chip:#fdece0}</style>
 </head>
 <body>
@@ -29,6 +29,7 @@
       <div class="sub" id="hSub">工務店からの依頼・お知らせ</div>
     </div>
     <div class="hbtns">
+      <button class="hbtn" id="reloadBtn"><span class="ic">🔄</span>更新</button>
       <button class="hbtn" id="helpBtn"><span class="ic">❓</span>ヘルプ</button>
       <button class="hbtn" id="installBtn"><span class="ic">📲</span>アプリ</button>
     </div>
@@ -328,6 +329,7 @@
   if (H.isStandalone()) document.getElementById("installBtn").style.display = "none";
   document.getElementById("installBtn").addEventListener("click", function () { H.showInstall("匠協コネクト（協力業者）"); });
   document.getElementById("helpBtn").addEventListener("click", function () { H.showHelp("使い方（協力業者）", USER_HELP); });
+  document.getElementById("reloadBtn").addEventListener("click", function () { H.toast("最新に更新しています…", "ok"); setTimeout(function () { location.reload(); }, 250); });
 
   DB.ready.then(boot);
 

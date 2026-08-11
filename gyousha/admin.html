@@ -15,11 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260811a"></script>
-<script src="data.js?v=20260811a"></script>
-<script src="common.js?v=20260811a"></script>
-<script src="qrcode.min.js?v=20260811a"></script>
-<link rel="stylesheet" href="styles.css?v=20260811a">
+<script src="config.js?v=20260811b"></script>
+<script src="data.js?v=20260811b"></script>
+<script src="common.js?v=20260811b"></script>
+<script src="qrcode.min.js?v=20260811b"></script>
+<link rel="stylesheet" href="styles.css?v=20260811b">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -30,6 +30,7 @@
       <div class="sub" id="hSub">協力業者への依頼・連絡</div>
     </div>
     <div class="hbtns">
+      <button class="hbtn" id="reloadBtn"><span class="ic">🔄</span>更新</button>
       <button class="hbtn" id="helpBtn"><span class="ic">❓</span>ヘルプ</button>
       <button class="hbtn" id="installBtn"><span class="ic">📲</span>アプリ</button>
     </div>
@@ -768,6 +769,7 @@
     H.showInstall("匠協コネクト（管理）", { otherUrl: H.baseDir() + "index.html", otherLabel: "協力業者アプリ" });
   });
   $("helpBtn").addEventListener("click", function () { H.showHelp("使い方（工務店・管理）", ADMIN_HELP); });
+  $("reloadBtn").addEventListener("click", function () { H.toast("最新に更新しています…", "ok"); setTimeout(function () { location.reload(); }, 250); });
 
   bindEvents();
   DB.ready.then(boot);
