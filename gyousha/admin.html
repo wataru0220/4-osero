@@ -15,11 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260811b"></script>
-<script src="data.js?v=20260811b"></script>
-<script src="common.js?v=20260811b"></script>
-<script src="qrcode.min.js?v=20260811b"></script>
-<link rel="stylesheet" href="styles.css?v=20260811b">
+<script src="config.js?v=20260811c"></script>
+<script src="data.js?v=20260811c"></script>
+<script src="common.js?v=20260811c"></script>
+<script src="qrcode.min.js?v=20260811c"></script>
+<link rel="stylesheet" href="styles.css?v=20260811c">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -69,6 +69,15 @@
         </select>
       </div>
       <div id="listP"></div>
+    </div>
+  </section>
+
+  <!-- 招待 -->
+  <section id="page-invite" class="page">
+    <div class="wrap">
+      <p class="hint" style="margin-top:0">各協力業者に、その業者<b>専用のリンク／QRコード</b>を送って招待します。相手はリンク／QRを開くだけ（登録・ログイン不要）で、依頼・お知らせ・請負契約の確認と返信・署名ができます。</p>
+      <div class="listtools"><span class="countlabel" id="countI">0 件</span></div>
+      <div id="listI"></div>
     </div>
   </section>
 
@@ -152,6 +161,7 @@
 
   <nav class="tabbar">
     <button data-tab="partners" class="on"><span class="ic">👷</span>業者</button>
+    <button data-tab="invite"><span class="ic">📲</span>招待</button>
     <button data-tab="requests"><span class="ic">📨</span>依頼</button>
     <button data-tab="contracts"><span class="ic">📝</span>契約</button>
     <button data-tab="announce"><span class="ic">📢</span>お知らせ</button>
@@ -297,7 +307,69 @@
   }
 
   // ---------- 共通描画 ----------
-  function renderAll() { renderHeader(); renderModebar(); renderChips(); renderPartners(); renderRequests(); renderContracts(); renderAnnounce(); renderSettings(); renderTabBadges(); }
+  function renderAll() { renderHeader(); renderModebar(); renderChips(); renderPartners(); renderInvite(); renderRequests(); renderContracts(); renderAnnounce(); renderSettings(); renderTabBadges(); }
+
+  // ---------- 招待タブ ----------
+  function renderInvite() {
+    var arr = partnersArr().sort(favThenName);
+    $("countI").textContent = arr.length + " 件";
+    var root = $("listI");
+    if (!arr.length) { root.innerHTML = emptyBox("まだ協力業者がいません", "「業者」タブの <b>＋</b> から登録すると、ここに招待リンク・QRが出ます。"); return; }
+    root.innerHTML = arr.map(icard).join("");
+    arr.forEach(function (it) {
+      var box = document.getElementById("iqr_" + it._key); if (!box || typeof qrcode !== "function") return;
+      try {
+        var qr = qrcode(0, "M"); qr.addData(H.partnerLink(ck, it._key)); qr.make();
+        box.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+        var svg = box.querySelector("svg"); if (svg) { svg.setAttribute("width", "150"); svg.setAttribute("height", "150"); }
+      } catch (e) {}
+    });
+  }
+  function icard(it) {
+    var ti = H.tradeInfo(it), url = H.partnerLink(ck, it._key);
+    return '<div class="invcard">' +
+      '<div class="invhd"><span class="badge" style="background:' + ti.color + '">' + H.esc(ti.icon + " " + ti.label) + "</span> <b>" + H.esc(it.name || "") + "</b></div>" +
+      '<div class="linkbox"><span class="url">' + H.esc(url) + "</span></div>" +
+      '<div class="invqr" id="iqr_' + it._key + '"></div>' +
+      '<div class="invbtns">' +
+        '<button class="btn sm ghost" data-icopy="' + it._key + '">📋 URLをコピー</button>' +
+        '<button class="btn sm ghost" data-iqrcopy="' + it._key + '">🖼 QRをコピー</button>' +
+        '<button class="btn sm ghost" data-iqrsave="' + it._key + '">💾 QRを保存</button>' +
+        '<button class="btn sm ln" data-iline="' + it._key + '">📲 LINE</button>' +
+      "</div></div>";
+  }
+  function qrCanvas(url, size, cb) {
+    if (typeof qrcode !== "function") { cb(null); return; }
+    var qr = qrcode(0, "M"); qr.addData(url); qr.make();
+    var img = new Image();
+    img.onload = function () {
+      var c = document.createElement("canvas"); c.width = size; c.height = size;
+      var ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, size, size); ctx.imageSmoothingEnabled = false; ctx.drawImage(img, 0, 0, size, size); cb(c);
+    };
+    img.onerror = function () { cb(null); };
+    img.src = qr.createDataURL(8, 4);
+  }
+  function dlBlob(blob, name) { var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 500); }
+  function copyQR(bk) {
+    var it = partners()[bk]; if (!it) return;
+    qrCanvas(H.partnerLink(ck, bk), 480, function (c) {
+      if (!c) { H.toast("QRの生成に失敗しました", "err"); return; }
+      c.toBlob(function (blob) {
+        if (navigator.clipboard && window.ClipboardItem) {
+          navigator.clipboard.write([new ClipboardItem({ "image/png": blob })])
+            .then(function () { H.toast("QRコードをコピーしました（LINE等に貼り付けできます）", "ok"); })
+            .catch(function () { dlBlob(blob, (it.name || "業者") + "_QR.png"); H.toast("コピー非対応のため画像で保存しました", "ok"); });
+        } else { dlBlob(blob, (it.name || "業者") + "_QR.png"); H.toast("QRを画像で保存しました", "ok"); }
+      }, "image/png");
+    });
+  }
+  function saveQR(bk) {
+    var it = partners()[bk]; if (!it) return;
+    qrCanvas(H.partnerLink(ck, bk), 700, function (c) {
+      if (!c) { H.toast("QRの生成に失敗しました", "err"); return; }
+      c.toBlob(function (blob) { dlBlob(blob, (it.name || "業者") + "_QR.png"); H.toast("QRコードを保存しました", "ok"); }, "image/png");
+    });
+  }
   function renderHeader() { $("hSub").textContent = companyName(); }
   function renderModebar() {
     var el = $("modebar"), m = DB.mode;
@@ -640,7 +712,7 @@
   function show(id) { $(id).classList.add("on"); document.body.style.overflow = "hidden"; }
   function hide(id) { $(id).classList.remove("on"); document.body.style.overflow = ""; }
   function switchTab(name) {
-    ["partners", "requests", "contracts", "announce", "settings"].forEach(function (n) { $("page-" + n).classList.toggle("on", n === name); });
+    ["partners", "invite", "requests", "contracts", "announce", "settings"].forEach(function (n) { $("page-" + n).classList.toggle("on", n === name); });
     Array.prototype.forEach.call(document.querySelectorAll(".tabbar button"), function (b) { b.classList.toggle("on", b.dataset.tab === name); });
     $("fabAdd").style.display = name === "partners" ? "flex" : "none";
     window.scrollTo(0, 0);
@@ -666,6 +738,14 @@
       if ((el = e.target.closest("[data-invite]"))) return inviteLink(el.dataset.invite);
       if ((el = e.target.closest("[data-fav]"))) { var bk = el.dataset.fav; var it = partners()[bk]; if (it) DB.update("companies/" + ck + "/partners/" + bk, { fav: !it.fav }); return; }
       if ((el = e.target.closest("[data-copy]"))) return H.copy(el.dataset.copy, "電話番号をコピーしました");
+    });
+
+    $("listI").addEventListener("click", function (e) {
+      var el;
+      if ((el = e.target.closest("[data-icopy]"))) return H.copy(H.partnerLink(ck, el.dataset.icopy), "招待リンク（URL）をコピーしました");
+      if ((el = e.target.closest("[data-iqrcopy]"))) return copyQR(el.dataset.iqrcopy);
+      if ((el = e.target.closest("[data-iqrsave]"))) return saveQR(el.dataset.iqrsave);
+      if ((el = e.target.closest("[data-iline]"))) { inviteUrl = H.partnerLink(ck, el.dataset.iline); H.share(inviteShareText()); return; }
     });
 
     $("btnNewReq").addEventListener("click", function () { openReq(null); });
