@@ -74,7 +74,7 @@
         A1: { body: "年末年始は12/29〜1/4を休業とします。ご協力よろしくお願いします。", targetTrade: "", createdAt: now - 30000 }
       },
       contracts: {
-        C1: { partnerKey: "P2", partnerName: "田中大工", title: "△△マンション 改修 内装工事", site: "□□市 本町2-5", content: "内部造作・ボード張り一式（1〜2階）", amount: 350000, taxRate: 10, payTerm: "完成・引渡し後、翌月末支払い（銀行振込）", startDate: "来週 月曜", endDate: "再来週 金曜", handover: "完成後、注文者立会いで検査のうえ引渡し", advance: "", nowork: "日曜・祝日は施工しない", note: "", fromSign: { companyName: "（体験）山田工務店", name: "山田 太郎", at: now - 40000 }, toSign: null, createdAt: now - 45000, updatedAt: now - 40000 }
+        C1: { partnerKey: "P2", partnerName: "田中大工", title: "△△マンション 改修 内装工事", site: "□□市 本町2-5", content: "内部造作・ボード張り一式（1〜2階）", amount: 350000, taxRate: 10, payTerm: "完成・引渡し後、翌月末支払い（銀行振込）", startDate: "来週 月曜", endDate: "再来週 金曜", handover: "完成後、注文者立会いで検査のうえ引渡し", advance: "", nowork: "日曜・祝日は施工しない", note: "", fromSign: null, toSign: { companyName: "田中大工", name: "田中 一郎", at: now - 40000 }, createdAt: now - 45000, updatedAt: now - 40000 }
       }
     } } };
   };
@@ -224,9 +224,11 @@
   H.yen = function (n) { return "¥" + (Number(n) || 0).toLocaleString("ja-JP"); };
   H.taxOf = function (c) { return Math.round((Number(c.amount) || 0) * (Number(c.taxRate) || 0) / 100); };
   H.inclOf = function (c) { return (Number(c.amount) || 0) + H.taxOf(c); };
+  // 成立＝両者署名（受注者の注文請書＋工務店の確定署名）。工務店の署名が「確定＝成立」の操作。
   H.contractStatus = function (c) {
     var f = c && c.fromSign && c.fromSign.at, t = c && c.toSign && c.toSign.at;
-    if (t) return { key: "done", text: "成立（請書受領）", color: "#1a7a45", bg: "#eafaf0" };
+    if (f && t) return { key: "done", text: "成立", color: "#1a7a45", bg: "#eafaf0" };
+    if (t) return { key: "wait", text: "工務店の確定待ち", color: "#8a5a00", bg: "#fff4e5" };
     if (f) return { key: "wait", text: "請書待ち", color: "#8a5a00", bg: "#fff4e5" };
     return { key: "draft", text: "下書き", color: "#5d6b7c", bg: "#eef1f4" };
   };
