@@ -15,11 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813e"></script>
-<script src="data.js?v=20260813e"></script>
-<script src="common.js?v=20260813e"></script>
-<script src="qrcode.min.js?v=20260813e"></script>
-<link rel="stylesheet" href="styles.css?v=20260813e">
+<script src="config.js?v=20260813f"></script>
+<script src="data.js?v=20260813f"></script>
+<script src="common.js?v=20260813f"></script>
+<script src="qrcode.min.js?v=20260813f"></script>
+<link rel="stylesheet" href="styles.css?v=20260813f">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -246,7 +246,7 @@
     <div class="linkbox"><span class="url" id="invUrl"></span></div>
     <div class="row" style="margin-top:9px">
       <button class="btn ghost" id="invCopy">📋 コピー</button>
-      <button class="btn ln" id="invShare">📲 LINE等で送る</button>
+      <button class="btn ln" id="invShare">📲 LINEで送る</button>
     </div>
     <div id="invQr" class="qrbox"></div>
     <p class="hint" style="text-align:center; margin-top:4px">スマホでこのQRを読み取ってもらってもOKです（その業者専用リンクです）。</p>
@@ -766,7 +766,7 @@
       if ((el = e.target.closest("[data-icopy]"))) return H.copy(H.partnerLink(ck, el.dataset.icopy), "招待リンク（URL）をコピーしました");
       if ((el = e.target.closest("[data-iqrcopy]"))) return copyQR(el.dataset.iqrcopy);
       if ((el = e.target.closest("[data-iqrsave]"))) return saveQR(el.dataset.iqrsave);
-      if ((el = e.target.closest("[data-iline]"))) { inviteUrl = H.partnerLink(ck, el.dataset.iline); H.share(inviteShareText()); return; }
+      if ((el = e.target.closest("[data-iline]"))) { inviteUrl = H.partnerLink(ck, el.dataset.iline); H.shareLine(inviteShareText()); return; }
     });
 
     $("btnNewReq").addEventListener("click", function () { openReq(null); });
@@ -824,7 +824,7 @@
     $("btnAdminCopy").addEventListener("click", function () { H.copy(H.adminLink(ck), "管理リンクをコピーしました"); });
     $("btnAdminShare").addEventListener("click", function () { H.share("【" + companyName() + "】匠協コネクト 管理リンク\n" + H.adminLink(ck)); });
     $("invCopy").addEventListener("click", function () { H.copy(inviteUrl, "招待リンクをコピーしました。LINE/メール等に貼り付けて送ってください"); });
-    $("invShare").addEventListener("click", function () { H.share(inviteShareText()); });
+    $("invShare").addEventListener("click", function () { H.shareLine(inviteShareText()); });
     $("invClose").addEventListener("click", function () { hide("ovInvite"); });
     $("avClose").addEventListener("click", function () { hide("ovAvail"); });
     $("ovAvail").addEventListener("click", function (e) { if (e.target === $("ovAvail")) hide("ovAvail"); });

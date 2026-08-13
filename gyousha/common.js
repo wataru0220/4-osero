@@ -166,6 +166,15 @@
       H.toast("この端末では共有できません", "err");
     }
   };
+  // LINEで送る：LINEの「送信先（友だち）を選ぶ」画面を直接開く。
+  // PCの共有シート（LINEが出ない）を避け、スマホ・PCともLINEに送れる。
+  H.shareLine = (text) => {
+    var url = "https://line.me/R/msg/text/?" + encodeURIComponent(text || "");
+    var w = window.open(url, "_blank");
+    if (!w) { // ポップアップがブロックされた場合は現在のタブで開く
+      try { location.href = url; } catch (_) { H.toast("LINEを開けませんでした", "err"); }
+    }
+  };
   // ---- PWA：ホーム画面に追加（アプリにする） ----
   H._deferred = null;
   H.setupInstall = function () {
