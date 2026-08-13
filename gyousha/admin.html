@@ -15,11 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813g"></script>
-<script src="data.js?v=20260813g"></script>
-<script src="common.js?v=20260813g"></script>
-<script src="qrcode.min.js?v=20260813g"></script>
-<link rel="stylesheet" href="styles.css?v=20260813g">
+<script src="config.js?v=20260813h"></script>
+<script src="data.js?v=20260813h"></script>
+<script src="common.js?v=20260813h"></script>
+<script src="qrcode.min.js?v=20260813h"></script>
+<link rel="stylesheet" href="styles.css?v=20260813h">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -222,10 +222,14 @@
     <div id="c_taxview" class="hint" style="margin-top:-4px"></div>
     <div class="field"><label for="c_pay">支払方法・時期</label><input id="c_pay" type="text" placeholder="例）完成・引渡し後、翌月末 銀行振込"></div>
     <div style="font-weight:700;font-size:12.5px;margin:8px 0 2px">工事日程（カレンダーから選択）</div>
-    <div class="row">
-      <div class="field"><label for="c_start">着工予定</label><input id="c_start" type="date"></div>
-      <div class="field"><label for="c_end">完成予定</label><input id="c_end" type="date"></div>
+    <div class="callegend" style="margin:2px 0 6px">
+      <span><span class="sw" style="background:#1aa260"></span>業者の空き</span>
+      <span><span class="sw" style="background:#e0a200"></span>応相談</span>
+      <span><span class="sw" style="background:#fff;box-shadow:inset 0 0 0 3px var(--brand)"></span>着工〜完成</span>
     </div>
+    <div class="schedbar"><span class="hint" id="c_schedLabel" style="margin:0"></span><button type="button" class="btn ghost sm" id="c_schedClear">クリア</button></div>
+    <p class="hint" style="margin:2px 0 6px">着工日 → 完成日 の順にタップ。緑／黄は業者が登録した空き状況です。</p>
+    <div id="c_calWrap" class="calpick"></div>
     <div style="font-weight:700;font-size:12.5px;margin:10px 0 2px">建設業法の記載事項（必要に応じて）</div>
     <div class="field"><label for="c_handover">検査・引渡しの時期／方法</label><input id="c_handover" type="text" placeholder="例）完成後、注文者立会いで検査のうえ引渡し"></div>
     <div class="field"><label for="c_advance">前払金・部分払（出来形払）の定め</label><input id="c_advance" type="text" placeholder="例）着手時に30%前払（定めがなければ空欄）"></div>
@@ -603,6 +607,22 @@
 
   // ---------- 注文書タブ（注文書／注文請書） ----------
   var editingCid = null;
+  var cStart = "", cEnd = ""; // 工事日程の選択（YYYY-MM-DD）
+  function schedAvail() { var p = partners()[$("c_partner").value] || {}; return p.avail || {}; }
+  function renderSchedCal() { $("c_calWrap").innerHTML = H.calendarHTML(schedAvail(), 3); paintSchedSel(); updateSchedLabel(); }
+  function paintSchedSel() {
+    Array.prototype.forEach.call($("c_calWrap").querySelectorAll(".calcell[data-date]"), function (el) {
+      var d = el.dataset.date; el.classList.remove("sel-start", "sel-end", "sel-range");
+      if (!cStart) return;
+      if (d === cStart) el.classList.add("sel-start");
+      else if (cEnd && d === cEnd) el.classList.add("sel-end");
+      else if (cEnd && d > cStart && d < cEnd) el.classList.add("sel-range");
+    });
+  }
+  function updateSchedLabel() {
+    $("c_schedLabel").innerHTML = (cStart ? "着工：<b>" + H.esc(H.fmtYmd(cStart)) + "</b>" : "着工：<span style=\"color:var(--warn)\">未選択</span>")
+      + "　／　" + (cEnd ? "完成：<b>" + H.esc(H.fmtYmd(cEnd)) + "</b>" : "完成：未選択");
+  }
   function contractsArr() { var r = (company && company.contracts) || {}; return Object.keys(r).map(function (k) { var o = r[k]; o._key = k; return o; }); }
   function renderContracts() {
     var f = $("cFilter").value;
@@ -647,11 +667,12 @@
     if (cid && c.partnerKey) $("c_partner").value = c.partnerKey; else if (bk) $("c_partner").value = bk;
     $("c_title").value = c.title || prefill.title || ""; $("c_site").value = c.site || prefill.site || ""; $("c_content").value = c.content || prefill.content || "";
     $("c_amount").value = c.amount != null ? c.amount : ""; $("c_tax").value = c.taxRate != null ? c.taxRate : (tpl.taxRate != null ? tpl.taxRate : 10);
-    $("c_pay").value = c.payTerm || tpl.payTerm || ""; $("c_start").value = c.startDate || prefill.startDate || ""; $("c_end").value = c.endDate || ""; $("c_end").min = $("c_start").value || "";
+    $("c_pay").value = c.payTerm || tpl.payTerm || "";
+    cStart = /^\d{4}-\d{2}-\d{2}$/.test(c.startDate || "") ? c.startDate : ""; cEnd = /^\d{4}-\d{2}-\d{2}$/.test(c.endDate || "") ? c.endDate : "";
     $("c_handover").value = c.handover || tpl.handover || ""; $("c_advance").value = c.advance || tpl.advance || ""; $("c_nowork").value = c.nowork || tpl.nowork || "";
     $("c_note").value = c.note || "";
     $("cf_delete").style.display = cid ? "block" : "none";
-    taxView(); show("ovContract"); setTimeout(function () { $("c_title").focus(); }, 60);
+    taxView(); renderSchedCal(); show("ovContract"); setTimeout(function () { $("c_title").focus(); }, 60);
   }
   function openContractFromReq(rid) {
     var r = (company.requests || {})[rid]; if (!r) return;
@@ -672,7 +693,7 @@
     var obj = {
       partnerKey: bk, partnerName: p.name || "", title: title, site: $("c_site").value.trim(), content: $("c_content").value.trim(),
       amount: amount, taxRate: Number($("c_tax").value) || 0, payTerm: $("c_pay").value.trim(),
-      startDate: $("c_start").value.trim(), endDate: $("c_end").value.trim(),
+      startDate: cStart, endDate: cEnd,
       handover: $("c_handover").value.trim(), advance: $("c_advance").value.trim(), nowork: $("c_nowork").value.trim(), note: $("c_note").value.trim(),
       fromSign: hadSign ? null : (prev.fromSign || null), toSign: hadSign ? null : (prev.toSign || null),
       createdAt: prev.createdAt || Date.now(), updatedAt: Date.now()
@@ -797,7 +818,17 @@
     });
     $("c_amount").addEventListener("input", taxView);
     $("c_tax").addEventListener("input", taxView);
-    $("c_start").addEventListener("change", function () { $("c_end").min = this.value || ""; if ($("c_end").value && this.value && $("c_end").value < this.value) $("c_end").value = this.value; });
+    $("c_partner").addEventListener("change", renderSchedCal);
+    $("c_schedClear").addEventListener("click", function () { cStart = ""; cEnd = ""; paintSchedSel(); updateSchedLabel(); });
+    $("c_calWrap").addEventListener("click", function (e) {
+      var el = e.target.closest(".calcell[data-date]");
+      if (!el || el.classList.contains("past") || el.classList.contains("empty")) return;
+      var d = el.dataset.date;
+      if (!cStart || cEnd) { cStart = d; cEnd = ""; }        // 新規に着工日を選ぶ
+      else if (d < cStart) { cStart = d; }                    // 着工より前 → 着工を選び直し
+      else { cEnd = d; }                                      // 完成日を選ぶ
+      paintSchedSel(); updateSchedLabel();
+    });
     $("cf_save").addEventListener("click", saveContract);
     $("cf_savetpl").addEventListener("click", saveTemplate);
     $("cf_cancel").addEventListener("click", function () { hide("ovContract"); });
