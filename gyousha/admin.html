@@ -15,11 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813d"></script>
-<script src="data.js?v=20260813d"></script>
-<script src="common.js?v=20260813d"></script>
-<script src="qrcode.min.js?v=20260813d"></script>
-<link rel="stylesheet" href="styles.css?v=20260813d">
+<script src="config.js?v=20260813e"></script>
+<script src="data.js?v=20260813e"></script>
+<script src="common.js?v=20260813e"></script>
+<script src="qrcode.min.js?v=20260813e"></script>
+<link rel="stylesheet" href="styles.css?v=20260813e">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -144,11 +144,9 @@
       <div class="card">
         <div class="seclabel">📑 契約約款の設定（建設業法しっかり版）</div>
         <p class="hint" style="margin-top:0">印刷/PDFに添付される「工事下請基本契約約款」で使う値です。通常は既定のままで問題ありません。</p>
-        <div class="row">
-          <div class="field"><label for="s_defect">契約不適合責任の期間（引渡しから・年）</label><input id="s_defect" type="tel" inputmode="decimal" placeholder="2"></div>
-          <div class="field"><label for="s_late">遅延損害金の年利率（％）</label><input id="s_late" type="tel" inputmode="decimal" placeholder="14.6"></div>
-        </div>
+        <div class="field"><label for="s_defect">契約不適合責任の期間（引渡しから・年）</label><input id="s_defect" type="tel" inputmode="decimal" placeholder="2"></div>
         <div class="field"><label for="s_court">合意管轄裁判所</label><input id="s_court" type="text" placeholder="注文者の主たる営業所の所在地を管轄する地方裁判所"></div>
+        <p class="hint" style="margin-top:-2px">※遅延損害金は「両者が協議のうえ定める」条項です（利率の事前設定なし）。</p>
         <button class="btn ghost full" id="btnSaveTerms" style="margin-top:8px">💾 約款の設定を保存</button>
       </div>
       <div class="card">
@@ -535,7 +533,7 @@
     var el = $("coName2");
     if (el && document.activeElement !== el) el.value = (company.profile && company.profile.name) || "";
     var t = contractTerms(), D = H.contractTermsDefault;
-    [["s_defect", t.defectYears, D.defectYears], ["s_late", t.lateRate, D.lateRate], ["s_court", t.court, D.court]].forEach(function (r) {
+    [["s_defect", t.defectYears, D.defectYears], ["s_court", t.court, D.court]].forEach(function (r) {
       var f = $(r[0]); if (f && document.activeElement !== f) f.value = (r[1] != null && r[1] !== "") ? r[1] : "";
     });
     $("adminUrl").textContent = ck ? H.adminLink(ck) : "";
@@ -820,7 +818,7 @@
     $("coName2").addEventListener("input", function () { if (ck) DB.update("companies/" + ck + "/profile", { name: this.value }); $("hSub").textContent = this.value || "(未設定)"; });
     $("btnSaveTerms").addEventListener("click", function () {
       if (!ck) return;
-      var terms = { defectYears: $("s_defect").value.trim() || H.contractTermsDefault.defectYears, lateRate: $("s_late").value.trim() || H.contractTermsDefault.lateRate, court: $("s_court").value.trim() || H.contractTermsDefault.court };
+      var terms = { defectYears: $("s_defect").value.trim() || H.contractTermsDefault.defectYears, court: $("s_court").value.trim() || H.contractTermsDefault.court };
       DB.update("companies/" + ck + "/profile", { terms: terms }).then(function () { H.toast("約款の設定を保存しました", "ok"); }).catch(function () {});
     });
     $("btnAdminCopy").addEventListener("click", function () { H.copy(H.adminLink(ck), "管理リンクをコピーしました"); });
@@ -866,7 +864,7 @@
     { q: "③ 協力業者に招待リンクを送る", a: "各業者カードの <b>📲招待</b> を押すと、その業者専用のリンクをLINE等で送れます。業者は<b>リンクを開くだけ（登録・ログイン不要）</b>で、あなたからの注文・お知らせを見て返信できます。" },
     { q: "④ 協力業者に仕事を頼むには", a: "このアプリでは、仕事の依頼は <b>注文書</b> として送ります（下記⑤）。各業者カードの <b>📝注文書</b>、または「注文」タブから作成・送信すると、相手のアプリの「注文」タブに届きます。（以前の「依頼」タブは注文書に一本化しました）" },
     { q: "空き状況を見る／空いてる業者を探す", a: "各協力業者が自分で空き（空き／応相談）を登録します。業者カードに直近の空きが表示され、<b>📅空き</b> でカレンダーを確認できます。上の <b>🟢空きあり</b> で空いている業者だけに絞り込めます。" },
-    { q: "⑤ 注文書で契約する（このアプリの中心）", a: "「業者」タブの各業者の <b>📝注文書</b>、または「注文」タブの <b>＋新しい注文書を作成</b> から作成します。工事名・工事場所（住所）・作業内容・工事日程・支払方法・<b>注文金額（税抜→税込を自動計算）</b>を入力（必要に応じて検査・引渡し／前払・部分払／施工しない日も）して業者へ送信 → 受注者（協力業者）が招待リンクのアプリで内容を確認して署名（＝<b>注文請書</b>）→ <b>あなた（注文者）が内容を確認して署名＝確定</b> → <b>契約成立</b>（成立はあなたの署名がトリガー。業者が署名すると「注文」タブにバッジが出ます）。<b>🖨印刷/PDF</b>には <b>注文書 兼 注文請書＋工事下請基本契約約款</b>（建設業法第19条 各号に対応）が付き、双方で保管できます。約款の一部（契約不適合責任の期間・遅延損害金の利率・合意管轄）は「設定」で調整できます。※押印は不要（担当者名の電子署名）。職人への指示は受注者（協力業者）が行う請負契約です。<br><span style=\"color:#8a5a00\">※本約款は標準約款を参考にした簡易ひな型です。実運用前に専門家（行政書士・弁護士等）にご確認ください。</span>" },
+    { q: "⑤ 注文書で契約する（このアプリの中心）", a: "「業者」タブの各業者の <b>📝注文書</b>、または「注文」タブの <b>＋新しい注文書を作成</b> から作成します。工事名・工事場所（住所）・作業内容・工事日程・支払方法・<b>注文金額（税抜→税込を自動計算）</b>を入力（必要に応じて検査・引渡し／前払・部分払／施工しない日も）して業者へ送信 → 受注者（協力業者）が招待リンクのアプリで内容を確認して署名（＝<b>注文請書</b>）→ <b>あなた（注文者）が内容を確認して署名＝確定</b> → <b>契約成立</b>（成立はあなたの署名がトリガー。業者が署名すると「注文」タブにバッジが出ます）。<b>🖨印刷/PDF</b>には <b>注文書 兼 注文請書＋工事下請基本契約約款</b>（建設業法第19条 各号に対応）が付き、双方で保管できます。約款の一部（契約不適合責任の期間・合意管轄）は「設定」で調整できます（遅延損害金は協議のうえ定める条項です）。※押印は不要（担当者名の電子署名）。職人への指示は受注者（協力業者）が行う請負契約です。<br><span style=\"color:#8a5a00\">※本約款は標準約款を参考にした簡易ひな型です。実運用前に専門家（行政書士・弁護士等）にご確認ください。</span>" },
     { q: "⑥ 一斉お知らせを送る", a: "「お知らせ」タブから、<b>全員</b>または<b>業種を選んで</b>一斉配信できます。休業日の連絡などにどうぞ。" },
     { q: "⑦ アプリにする（ホーム画面に追加）", a: "ヘッダーの <b>📲アプリ</b> でホーム画面に追加できます。同じ画面から<b>協力業者アプリ</b>も追加できます（相手に見せる・確認する用）。" },
     { q: "⑧ 取引先と本番で共有するには", a: "体験版・お試しは設定不要です。実際に協力業者と共有するには、Firebaseで <b>「匿名」認証をON</b> ＋ <b>ルールに takyo を追加</b> が必要です（READMEに手順あり）。" }

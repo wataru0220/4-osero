@@ -59,7 +59,7 @@
     const _d = new Date();
     const ymd = (off) => { const d = new Date(_d); d.setDate(d.getDate() + off); return d.getFullYear() + "-" + H.pad2(d.getMonth() + 1) + "-" + H.pad2(d.getDate()); };
     return { companies: { DEMO: {
-      profile: { name: "（体験）山田工務店", createdAt: now, terms: { defectYears: "2", lateRate: "14.6", court: "注文者の主たる営業所の所在地を管轄する地方裁判所" } },
+      profile: { name: "（体験）山田工務店", createdAt: now, terms: { defectYears: "2", court: "注文者の主たる営業所の所在地を管轄する地方裁判所" } },
       partners: {
         P1: { trade: "denki", name: "丸山電気工事", tel: "090-1111-2222", contact: "丸山", area: "市内全域", note: "急ぎ対応可。分電盤の増設が得意。", fav: true, createdAt: now - 5000, avail: { [ymd(2)]: "free", [ymd(3)]: "free", [ymd(9)]: "maybe" } },
         P2: { trade: "daiku", name: "田中大工", tel: "080-3333-4444", contact: "田中", area: "", note: "", fav: false, createdAt: now - 4000, avail: { [ymd(4)]: "free", [ymd(5)]: "free", [ymd(6)]: "maybe" } },
@@ -233,12 +233,11 @@
     return { key: "draft", text: "下書き", color: "#5d6b7c", bg: "#eef1f4" };
   };
   // 工事下請基本契約約款（建設業法第19条 各号に対応する簡易ひな型・会社設定で一部を調整可）
-  H.contractTermsDefault = { defectYears: "2", lateRate: "14.6", court: "注文者の主たる営業所の所在地を管轄する地方裁判所" };
+  H.contractTermsDefault = { defectYears: "2", court: "注文者の主たる営業所の所在地を管轄する地方裁判所" };
   H.yakkanHTML = function (terms) {
     terms = terms || {};
     var e = H.esc;
     var yrs = String(terms.defectYears || H.contractTermsDefault.defectYears);
-    var rate = String(terms.lateRate || H.contractTermsDefault.lateRate);
     var court = terms.court || H.contractTermsDefault.court;
     var arts = [
       ["第1条（総則）", "本契約は請負契約とし、注文者及び受注者は、信義に従い誠実にこれを履行する。本工事は労働者派遣ではなく、受注者は自己の責任と裁量により施工し、その使用する労働者・職人に対する指揮命令、労務管理及び安全衛生管理を自ら行う。"],
@@ -252,7 +251,7 @@
       ["第9条（完成・検査・引渡し）", "受注者は、工事を完成したときは注文者に通知し、注文者は、注文書に定める時期及び方法（定めのないときは通知後遅滞なく）により検査を行う。検査に合格したときは、受注者は目的物を引き渡し、注文者はこれを受領する。（同項第11号）"],
       ["第10条（請負代金の支払）", "請負代金は、注文書に定める支払時期及び方法により支払う。前払金又は部分払（出来形払）の定めがあるときは、その定めによる。（同項第5号・第12号）"],
       ["第11条（契約不適合責任）", "引き渡された目的物が種類又は品質に関して契約の内容に適合しないときは、注文者は、引渡しの日から" + yrs + "年以内にその旨を通知することにより、受注者に対し、履行の追完（修補等）、代金の減額、損害の賠償又は契約の解除を請求することができる。（同項第13号）"],
-      ["第12条（履行遅滞・遅延損害金）", "当事者が支払を遅延したときは、遅延した額につき年" + rate + "％の割合による遅延損害金を相手方に支払う。受注者が工期内に工事を完成できない等その債務を履行しないときも、これによって生じた損害を負担する。（同項第14号）"],
+      ["第12条（履行遅滞・遅延損害金）", "当事者がその債務の履行を遅滞したときは、遅延損害金その他これによって生じた損害の負担及びその額は、両者が協議のうえ定める。（同項第14号）"],
       ["第13条（契約の解除）", "当事者の一方が本契約に違反し、相手方が相当の期間を定めて催告してもその期間内に是正されないときは、相手方は本契約を解除することができる。"],
       ["第14条（法令の遵守等）", "両者は、建設業法、労働安全衛生法、社会保険及び労働保険に関する法令その他の関係法令を遵守する。"],
       ["第15条（紛争の解決・合意管轄）", "本契約に関して紛争が生じたときは、両者は誠実に協議して解決を図る。協議が調わないときは、" + court + "を第一審の専属的合意管轄裁判所とする。（同項第15号）"],
