@@ -15,11 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813c"></script>
-<script src="data.js?v=20260813c"></script>
-<script src="common.js?v=20260813c"></script>
-<script src="qrcode.min.js?v=20260813c"></script>
-<link rel="stylesheet" href="styles.css?v=20260813c">
+<script src="config.js?v=20260813d"></script>
+<script src="data.js?v=20260813d"></script>
+<script src="common.js?v=20260813d"></script>
+<script src="qrcode.min.js?v=20260813d"></script>
+<link rel="stylesheet" href="styles.css?v=20260813d">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -104,10 +104,9 @@
       <div class="listtools">
         <span class="countlabel" id="countC">0 件</span>
         <select id="cFilter" aria-label="絞り込み">
-          <option value="all">すべて</option>
-          <option value="draft">下書き</option>
-          <option value="wait">署名待ち</option>
+          <option value="active">進行中</option>
           <option value="done">成立</option>
+          <option value="all">すべて</option>
         </select>
       </div>
       <div id="listC"></div>
@@ -172,7 +171,6 @@
   <nav class="tabbar">
     <button data-tab="partners" class="on"><span class="ic">👷</span>業者</button>
     <button data-tab="invite"><span class="ic">📲</span>招待</button>
-    <button data-tab="requests"><span class="ic">📨</span>依頼</button>
     <button data-tab="contracts"><span class="ic">📝</span>注文</button>
     <button data-tab="announce"><span class="ic">📢</span>お知らせ</button>
     <button data-tab="settings"><span class="ic">⚙️</span>設定</button>
@@ -393,13 +391,7 @@
     else { el.className = "modebar live"; el.innerHTML = "🔗 <b>共有中</b>：招待リンクを送った協力業者とリアルタイムでつながります。"; }
   }
   function renderTabBadges() {
-    var pending = requestsArr().filter(function (r) { return r.reply === "accept" || r.reply === "decline"; });
-    // 依頼タブに「返信あり」の件数バッジ
-    var answered = requestsArr().filter(function (r) { return r.reply; }).length;
-    var btn = document.querySelector('.tabbar button[data-tab="requests"]');
-    var b = btn.querySelector(".tabbadge");
-    if (answered > 0) { if (!b) { b = document.createElement("span"); b.className = "tabbadge"; btn.appendChild(b); } b.textContent = answered; }
-    else if (b) b.remove();
+    // 依頼タブは工務店側では廃止（注文フローに一本化）。
     // 注文タブに「工務店の確定待ち（受注者が注文請書に署名済み・未確定）」の件数バッジ
     var needConfirm = contractsArr().filter(function (c) { return c.toSign && c.toSign.at && !(c.fromSign && c.fromSign.at); }).length;
     var cbtn = document.querySelector('.tabbar button[data-tab="contracts"]');
@@ -477,7 +469,6 @@
       '<div style="margin-top:8px">' + H.availSummary(it.avail).html + "</div>" +
       '<div class="gc-actions">' +
         '<button class="btn sm" data-contract="' + it._key + '">📝 注文書</button>' +
-        '<button class="btn sm ghost" data-req="' + it._key + '">📨 依頼</button>' +
         '<button class="btn sm ghost" data-cal="' + it._key + '">📅 空き</button>' +
         '<button class="btn sm ln" data-invite="' + it._key + '">📲 招待</button>' +
         '<button class="btn sm ghost" data-edit="' + it._key + '">✏️ 編集</button>' +
@@ -618,11 +609,12 @@
   function renderContracts() {
     var f = $("cFilter").value;
     var list = contractsArr().sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
-    if (f !== "all") list = list.filter(function (c) { return H.contractStatus(c).key === f; });
+    if (f === "active") list = list.filter(function (c) { return H.contractStatus(c).key !== "done"; });
+    else if (f !== "all") list = list.filter(function (c) { return H.contractStatus(c).key === f; });
     $("countC").textContent = list.length + " 件";
     var root = $("listC");
     if (contractsArr().length === 0) { root.innerHTML = emptyBox("まだ注文書はありません", "「業者」タブの各業者の <b>📝注文書</b>、または上の「＋新しい注文書を作成」から作成できます。"); return; }
-    if (!list.length) { root.innerHTML = emptyBox("該当する契約がありません", ""); return; }
+    if (!list.length) { root.innerHTML = emptyBox(f === "done" ? "成立した注文書はありません" : "進行中の注文書はありません", f === "active" ? "成立した注文書は、絞り込みの「成立」で確認できます。" : ""); return; }
     root.innerHTML = list.map(ccard).join("");
   }
   function ccard(c) {
@@ -743,7 +735,7 @@
   function show(id) { $(id).classList.add("on"); document.body.style.overflow = "hidden"; }
   function hide(id) { $(id).classList.remove("on"); document.body.style.overflow = ""; }
   function switchTab(name) {
-    ["partners", "invite", "requests", "contracts", "announce", "settings"].forEach(function (n) { $("page-" + n).classList.toggle("on", n === name); });
+    ["partners", "invite", "contracts", "announce", "settings"].forEach(function (n) { $("page-" + n).classList.toggle("on", n === name); });
     Array.prototype.forEach.call(document.querySelectorAll(".tabbar button"), function (b) { b.classList.toggle("on", b.dataset.tab === name); });
     $("fabAdd").style.display = name === "partners" ? "flex" : "none";
     window.scrollTo(0, 0);
@@ -871,8 +863,8 @@
   var ADMIN_HELP = [
     { q: "① まず何をする？（自社の登録）", a: "初回は<b>自社の工務店名</b>を登録します。登録後、「設定」タブに出る <b>🔑管理リンク</b> をブックマークしておくと、別の端末でも同じ会社の管理画面を開けます（他人には渡さないでください）。" },
     { q: "② 協力業者を登録する", a: "「業者」タブ右下の <b>＋</b> から、業種・業者名・電話・担当者・メモを登録します。よく使う業者は <b>★</b> を付けると上に表示されます。検索や業種の絞り込みもできます。" },
-    { q: "③ 協力業者に招待リンクを送る", a: "各業者カードの <b>📲招待</b> を押すと、その業者専用のリンクをLINE等で送れます。業者は<b>リンクを開くだけ（登録・ログイン不要）</b>で、あなたからの依頼・お知らせを見て返信できます。" },
-    { q: "④ 作業依頼を送る／返答を見る", a: "業者カードの <b>📨依頼を送る</b>、または「依頼」タブの <b>＋新しい作業依頼</b> から、工事名・現場・希望日・内容を送ります。相手が返信すると「依頼」タブに <b>受ける／不可＋一言</b> が表示されます（タブに新着バッジ）。" },
+    { q: "③ 協力業者に招待リンクを送る", a: "各業者カードの <b>📲招待</b> を押すと、その業者専用のリンクをLINE等で送れます。業者は<b>リンクを開くだけ（登録・ログイン不要）</b>で、あなたからの注文・お知らせを見て返信できます。" },
+    { q: "④ 協力業者に仕事を頼むには", a: "このアプリでは、仕事の依頼は <b>注文書</b> として送ります（下記⑤）。各業者カードの <b>📝注文書</b>、または「注文」タブから作成・送信すると、相手のアプリの「注文」タブに届きます。（以前の「依頼」タブは注文書に一本化しました）" },
     { q: "空き状況を見る／空いてる業者を探す", a: "各協力業者が自分で空き（空き／応相談）を登録します。業者カードに直近の空きが表示され、<b>📅空き</b> でカレンダーを確認できます。上の <b>🟢空きあり</b> で空いている業者だけに絞り込めます。" },
     { q: "⑤ 注文書で契約する（このアプリの中心）", a: "「業者」タブの各業者の <b>📝注文書</b>、または「注文」タブの <b>＋新しい注文書を作成</b> から作成します。工事名・工事場所（住所）・作業内容・工事日程・支払方法・<b>注文金額（税抜→税込を自動計算）</b>を入力（必要に応じて検査・引渡し／前払・部分払／施工しない日も）して業者へ送信 → 受注者（協力業者）が招待リンクのアプリで内容を確認して署名（＝<b>注文請書</b>）→ <b>あなた（注文者）が内容を確認して署名＝確定</b> → <b>契約成立</b>（成立はあなたの署名がトリガー。業者が署名すると「注文」タブにバッジが出ます）。<b>🖨印刷/PDF</b>には <b>注文書 兼 注文請書＋工事下請基本契約約款</b>（建設業法第19条 各号に対応）が付き、双方で保管できます。約款の一部（契約不適合責任の期間・遅延損害金の利率・合意管轄）は「設定」で調整できます。※押印は不要（担当者名の電子署名）。職人への指示は受注者（協力業者）が行う請負契約です。<br><span style=\"color:#8a5a00\">※本約款は標準約款を参考にした簡易ひな型です。実運用前に専門家（行政書士・弁護士等）にご確認ください。</span>" },
     { q: "⑥ 一斉お知らせを送る", a: "「お知らせ」タブから、<b>全員</b>または<b>業種を選んで</b>一斉配信できます。休業日の連絡などにどうぞ。" },

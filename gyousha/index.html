@@ -15,10 +15,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813c"></script>
-<script src="data.js?v=20260813c"></script>
-<script src="common.js?v=20260813c"></script>
-<link rel="stylesheet" href="styles.css?v=20260813c">
+<script src="config.js?v=20260813d"></script>
+<script src="data.js?v=20260813d"></script>
+<script src="common.js?v=20260813d"></script>
+<link rel="stylesheet" href="styles.css?v=20260813d">
 <style>:root{--brand:#e8792a;--brand-dark:#b8560f;--chip:#fdece0}</style>
 </head>
 <body>
@@ -64,6 +64,14 @@
   <section id="page-contracts" class="page">
     <div class="wrap">
       <div class="seclabel">📝 注文書 / 注文請書</div>
+      <div class="listtools">
+        <span class="countlabel" id="countCU">0 件</span>
+        <select id="cFilterU" aria-label="絞り込み">
+          <option value="active">進行中</option>
+          <option value="done">成立</option>
+          <option value="all">すべて</option>
+        </select>
+      </div>
       <div id="listC"></div>
     </div>
   </section>
@@ -241,9 +249,15 @@
     else if (b) b.remove();
   }
   function renderContracts() {
-    var list = myContracts(), root = $("listC");
+    var all = myContracts(), root = $("listC");
     if (!me()) { root.innerHTML = emptyBox("この招待リンクは無効です", "工務店にリンクの再送をご依頼ください。"); return; }
-    if (!list.length) { root.innerHTML = emptyBox("まだ注文書はありません", "工務店から注文書が届くと、ここに表示されます。内容を確認して注文を請けられます。"); return; }
+    var f = $("cFilterU") ? $("cFilterU").value : "active";
+    var list = all.slice();
+    if (f === "active") list = list.filter(function (c) { return H.contractStatus(c).key !== "done"; });
+    else if (f !== "all") list = list.filter(function (c) { return H.contractStatus(c).key === f; });
+    if ($("countCU")) $("countCU").textContent = list.length + " 件";
+    if (!all.length) { root.innerHTML = emptyBox("まだ注文書はありません", "工務店から注文書が届くと、ここに表示されます。内容を確認して注文を請けられます。"); return; }
+    if (!list.length) { root.innerHTML = emptyBox(f === "done" ? "成立した注文書はありません" : "進行中の注文書はありません", f === "active" ? "成立した注文書は、絞り込みの「成立」で確認できます。" : ""); return; }
     root.innerHTML = list.map(ccard).join("");
   }
   function ccard(c) {
@@ -332,6 +346,7 @@
   document.getElementById("installBtn").addEventListener("click", function () { H.showInstall("匠協コネクト（協力業者）"); });
   document.getElementById("helpBtn").addEventListener("click", function () { H.showHelp("使い方（協力業者）", USER_HELP); });
   document.getElementById("reloadBtn").addEventListener("click", function () { H.toast("最新に更新しています…", "ok"); setTimeout(function () { location.reload(); }, 250); });
+  (function () { var cf = document.getElementById("cFilterU"); if (cf) cf.addEventListener("change", renderContracts); })();
 
   DB.ready.then(boot);
 
