@@ -15,11 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260811c"></script>
-<script src="data.js?v=20260811c"></script>
-<script src="common.js?v=20260811c"></script>
-<script src="qrcode.min.js?v=20260811c"></script>
-<link rel="stylesheet" href="styles.css?v=20260811c">
+<script src="config.js?v=20260813a"></script>
+<script src="data.js?v=20260813a"></script>
+<script src="common.js?v=20260813a"></script>
+<script src="qrcode.min.js?v=20260813a"></script>
+<link rel="stylesheet" href="styles.css?v=20260813a">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -75,7 +75,7 @@
   <!-- 招待 -->
   <section id="page-invite" class="page">
     <div class="wrap">
-      <p class="hint" style="margin-top:0">各協力業者に、その業者<b>専用のリンク／QRコード</b>を送って招待します。相手はリンク／QRを開くだけ（登録・ログイン不要）で、依頼・お知らせ・請負契約の確認と返信・署名ができます。</p>
+      <p class="hint" style="margin-top:0">各協力業者に、その業者<b>専用のリンク／QRコード</b>を送って招待します。相手はリンク／QRを開くだけ（登録・ログイン不要）で、依頼・お知らせ・注文書の確認と返信・署名ができます。</p>
       <div class="listtools"><span class="countlabel" id="countI">0 件</span></div>
       <div id="listI"></div>
     </div>
@@ -100,14 +100,14 @@
   <!-- ③ 契約 -->
   <section id="page-contracts" class="page">
     <div class="wrap">
-      <button class="btn full" id="btnNewContract">＋ 新しい請負契約を作成</button>
+      <button class="btn full" id="btnNewContract">＋ 新しい注文書を作成</button>
       <div class="listtools">
         <span class="countlabel" id="countC">0 件</span>
         <select id="cFilter" aria-label="絞り込み">
           <option value="all">すべて</option>
           <option value="draft">下書き</option>
-          <option value="wait">署名待ち</option>
-          <option value="done">締結済み</option>
+          <option value="wait">請書待ち</option>
+          <option value="done">成立</option>
         </select>
       </div>
       <div id="listC"></div>
@@ -163,7 +163,7 @@
     <button data-tab="partners" class="on"><span class="ic">👷</span>業者</button>
     <button data-tab="invite"><span class="ic">📲</span>招待</button>
     <button data-tab="requests"><span class="ic">📨</span>依頼</button>
-    <button data-tab="contracts"><span class="ic">📝</span>契約</button>
+    <button data-tab="contracts"><span class="ic">📝</span>注文</button>
     <button data-tab="announce"><span class="ic">📢</span>お知らせ</button>
     <button data-tab="settings"><span class="ic">⚙️</span>設定</button>
   </nav>
@@ -203,26 +203,26 @@
 <!-- 請負契約 作成/編集 -->
 <div class="ov" id="ovContract">
   <div class="sheet">
-    <h3 id="cfTitle">請負契約を作成</h3>
-    <div class="field"><label for="c_partner">請負者（下請け業者）</label><select id="c_partner"></select></div>
+    <h3 id="cfTitle">注文書を作成</h3>
+    <p class="hint" style="margin-top:-2px">工務店（発注者）が下記を記入して発行します。受注者（協力業者）はアプリで内容を確認し、注文請書として署名します。</p>
+    <div class="field"><label for="c_partner">受注者（協力業者）＝送り先</label><select id="c_partner"></select></div>
     <div class="field"><label for="c_title">工事名<span style="color:var(--warn)">＊</span></label><input id="c_title" type="text" placeholder="例）〇〇邸 新築 内装工事"></div>
-    <div class="field"><label for="c_site">工事場所</label><input id="c_site" type="text" placeholder="例）市内△△町3-1"></div>
-    <div class="field"><label for="c_content">工事内容（請負内容）</label><textarea id="c_content" placeholder="例）内部造作・ボード張り一式"></textarea></div>
+    <div class="field"><label for="c_site">工事場所（住所）</label><input id="c_site" type="text" placeholder="例）市内△△町3-1"></div>
+    <div class="field"><label for="c_content">作業内容</label><textarea id="c_content" placeholder="例）内部造作・ボード張り一式"></textarea></div>
     <div class="row">
-      <div class="field"><label for="c_amount">請負代金（税抜・円）<span style="color:var(--warn)">＊</span></label><input id="c_amount" type="tel" inputmode="numeric" placeholder="例）350000"></div>
+      <div class="field"><label for="c_amount">注文金額（税抜・円）<span style="color:var(--warn)">＊</span></label><input id="c_amount" type="tel" inputmode="numeric" placeholder="例）350000"></div>
       <div class="field" style="max-width:110px"><label for="c_tax">消費税率(%)</label><input id="c_tax" type="tel" inputmode="numeric" value="10"></div>
     </div>
     <div id="c_taxview" class="hint" style="margin-top:-4px"></div>
     <div class="field"><label for="c_pay">支払方法・時期</label><input id="c_pay" type="text" placeholder="例）完成・引渡し後、翌月末 銀行振込"></div>
+    <div style="font-weight:700;font-size:12.5px;margin:8px 0 2px">工事日程</div>
     <div class="row">
       <div class="field"><label for="c_start">着工予定</label><input id="c_start" type="text" placeholder="例）来週 月曜"></div>
       <div class="field"><label for="c_end">完成予定</label><input id="c_end" type="text" placeholder="例）今月末"></div>
     </div>
-    <div class="field"><label for="c_handover">検査・引渡し</label><input id="c_handover" type="text" placeholder="例）完成後、注文者立会いで検査のうえ引渡し"></div>
-    <div class="field"><label for="c_super">作業指示者（受注者側の担当者）</label><input id="c_super" type="text" placeholder="下請けの職人へ指示する担当者（空欄可）"></div>
-    <div class="field"><label for="c_note">備考</label><textarea id="c_note" placeholder="その他の取り決めなど"></textarea></div>
-    <button class="btn ghost full" id="cf_savetpl" style="margin-bottom:8px">💾 支払・検査・税率を「よく使う値」として保存</button>
-    <p class="cnote">署名後に内容を変更すると、双方の署名はリセットされます（改ざん防止）。<br>新規作成のときは、前回の「よく使う値」と、依頼から作った場合は依頼内容が自動入力されます。</p>
+    <div class="field"><label for="c_note">備考</label><textarea id="c_note" placeholder="その他の取り決めなど（任意）"></textarea></div>
+    <button class="btn ghost full" id="cf_savetpl" style="margin-bottom:8px">💾 支払方法・税率を「よく使う値」として保存</button>
+    <p class="cnote">発行（署名）後に内容を変更すると、双方の署名はリセットされます（改ざん防止）。<br>新規作成のときは、前回の「よく使う値」と、依頼から作った場合は依頼内容が自動入力されます。</p>
     <div class="sheet-actions"><button class="btn ghost" id="cf_cancel">キャンセル</button><button class="btn" id="cf_save">保存</button></div>
     <button class="btn danger full" id="cf_delete" style="display:none; margin-top:9px">🗑 この契約を削除</button>
   </div>
@@ -232,7 +232,7 @@
 <div class="ov" id="ovInvite">
   <div class="sheet">
     <h3 id="invTitle">📲 業者を招待</h3>
-    <p class="hint" style="margin-top:0">下の<b>リンク</b>または<b>QRコード</b>を協力業者に渡してください。開くだけで、あなたからの<b>依頼・お知らせ・請負契約</b>を確認して返信・署名できます（登録・ログイン不要）。</p>
+    <p class="hint" style="margin-top:0">下の<b>リンク</b>または<b>QRコード</b>を協力業者に渡してください。開くだけで、あなたからの<b>依頼・お知らせ・注文書</b>を確認して返信・署名できます（登録・ログイン不要）。</p>
     <div class="linkbox"><span class="url" id="invUrl"></span></div>
     <div class="row" style="margin-top:9px">
       <button class="btn ghost" id="invCopy">📋 コピー</button>
@@ -255,10 +255,10 @@
   </div>
 </div>
 
-<!-- 請負契約 詳細/署名 -->
+<!-- 注文書／注文請書 詳細/署名 -->
 <div class="ov" id="ovCView">
   <div class="sheet">
-    <h3>請負契約</h3>
+    <h3>注文書 / 注文請書</h3>
     <div id="cvBody"></div>
     <div class="sheet-actions" style="margin-top:12px"><button class="btn ghost full" id="cv_close">閉じる</button></div>
   </div>
@@ -455,7 +455,7 @@
       (it.note ? '<div class="gc-note">' + H.esc(it.note) + "</div>" : "") +
       '<div style="margin-top:8px">' + H.availSummary(it.avail).html + "</div>" +
       '<div class="gc-actions">' +
-        '<button class="btn sm" data-contract="' + it._key + '">📝 請負契約</button>' +
+        '<button class="btn sm" data-contract="' + it._key + '">📝 注文書</button>' +
         '<button class="btn sm ghost" data-req="' + it._key + '">📨 依頼</button>' +
         '<button class="btn sm ghost" data-cal="' + it._key + '">📅 空き</button>' +
         '<button class="btn sm ln" data-invite="' + it._key + '">📲 招待</button>' +
@@ -587,7 +587,7 @@
     }).catch(function () {});
   }
 
-  // ---------- 請負契約タブ ----------
+  // ---------- 注文書タブ（注文書／注文請書） ----------
   var editingCid = null;
   function contractsArr() { var r = (company && company.contracts) || {}; return Object.keys(r).map(function (k) { var o = r[k]; o._key = k; return o; }); }
   function renderContracts() {
@@ -596,7 +596,7 @@
     if (f !== "all") list = list.filter(function (c) { return H.contractStatus(c).key === f; });
     $("countC").textContent = list.length + " 件";
     var root = $("listC");
-    if (contractsArr().length === 0) { root.innerHTML = emptyBox("まだ請負契約はありません", "「業者」タブの各業者の <b>📝請負契約</b>、または上の「＋新しい請負契約」から作成できます。"); return; }
+    if (contractsArr().length === 0) { root.innerHTML = emptyBox("まだ注文書はありません", "「業者」タブの各業者の <b>📝注文書</b>、または上の「＋新しい注文書を作成」から作成できます。"); return; }
     if (!list.length) { root.innerHTML = emptyBox("該当する契約がありません", ""); return; }
     root.innerHTML = list.map(ccard).join("");
   }
@@ -628,12 +628,12 @@
     var c = cid ? (company.contracts || {})[cid] : {};
     var tpl = (!cid && company.contractTemplate) ? company.contractTemplate : {};
     prefill = prefill || {};
-    $("cfTitle").textContent = cid ? "請負契約を編集" : "請負契約を作成";
+    $("cfTitle").textContent = cid ? "注文書を編集" : "注文書を作成";
     if (cid && c.partnerKey) $("c_partner").value = c.partnerKey; else if (bk) $("c_partner").value = bk;
     $("c_title").value = c.title || prefill.title || ""; $("c_site").value = c.site || prefill.site || ""; $("c_content").value = c.content || prefill.content || "";
     $("c_amount").value = c.amount != null ? c.amount : ""; $("c_tax").value = c.taxRate != null ? c.taxRate : (tpl.taxRate != null ? tpl.taxRate : 10);
     $("c_pay").value = c.payTerm || tpl.payTerm || ""; $("c_start").value = c.startDate || prefill.startDate || ""; $("c_end").value = c.endDate || "";
-    $("c_handover").value = c.handover || tpl.handover || ""; $("c_super").value = c.supervisor || ""; $("c_note").value = c.note || "";
+    $("c_note").value = c.note || "";
     $("cf_delete").style.display = cid ? "block" : "none";
     taxView(); show("ovContract"); setTimeout(function () { $("c_title").focus(); }, 60);
   }
@@ -642,31 +642,30 @@
     openContract(r.partnerKey, null, { title: r.title, site: r.site, content: r.body, startDate: r.dateText });
   }
   function saveTemplate() {
-    DB.update("companies/" + ck + "/contractTemplate", { taxRate: Number($("c_tax").value) || 0, payTerm: $("c_pay").value.trim(), handover: $("c_handover").value.trim() })
+    DB.update("companies/" + ck + "/contractTemplate", { taxRate: Number($("c_tax").value) || 0, payTerm: $("c_pay").value.trim() })
       .then(function () { H.toast("よく使う値を保存しました（次回の新規作成で自動入力されます）", "ok"); }).catch(function () {});
   }
   function saveContract() {
     var bk = $("c_partner").value, title = $("c_title").value.trim(), amount = Number($("c_amount").value) || 0;
-    if (!bk) { H.toast("請負者（業者）を選んでください（先に業者登録が必要）", "err"); return; }
+    if (!bk) { H.toast("受注者（業者）を選んでください（先に業者登録が必要）", "err"); return; }
     if (!title) { H.toast("工事名を入力してください", "err"); return; }
-    if (!amount) { H.toast("請負代金（税抜）を入力してください", "err"); return; }
+    if (!amount) { H.toast("注文金額（税抜）を入力してください", "err"); return; }
     var p = partners()[bk] || {}, prev = editingCid ? ((company.contracts || {})[editingCid] || {}) : {};
     var hadSign = !!(prev.fromSign || prev.toSign);
     if (hadSign && !confirm("署名済みの内容を変更します。双方の署名はリセットされます。よろしいですか？")) return;
     var obj = {
       partnerKey: bk, partnerName: p.name || "", title: title, site: $("c_site").value.trim(), content: $("c_content").value.trim(),
       amount: amount, taxRate: Number($("c_tax").value) || 0, payTerm: $("c_pay").value.trim(),
-      startDate: $("c_start").value.trim(), endDate: $("c_end").value.trim(), handover: $("c_handover").value.trim(),
-      supervisor: $("c_super").value.trim(), note: $("c_note").value.trim(),
+      startDate: $("c_start").value.trim(), endDate: $("c_end").value.trim(), note: $("c_note").value.trim(),
       fromSign: hadSign ? null : (prev.fromSign || null), toSign: hadSign ? null : (prev.toSign || null),
       createdAt: prev.createdAt || Date.now(), updatedAt: Date.now()
     };
     var save = editingCid ? DB.set("companies/" + ck + "/contracts/" + editingCid, obj) : DB.push("companies/" + ck + "/contracts", obj);
-    save.then(function () { hide("ovContract"); H.toast(editingCid ? "更新しました" : "契約を作成しました", "ok"); switchTab("contracts"); }).catch(function () {});
+    save.then(function () { hide("ovContract"); H.toast(editingCid ? "更新しました" : "注文書を作成しました", "ok"); switchTab("contracts"); }).catch(function () {});
   }
   function deleteContract() {
     if (!editingCid) return;
-    if (!confirm("この請負契約を削除します。よろしいですか？")) return;
+    if (!confirm("この注文書を削除します。よろしいですか？")) return;
     DB.remove("companies/" + ck + "/contracts/" + editingCid).then(function () { hide("ovContract"); H.toast("削除しました", "ok"); }).catch(function () {});
   }
   function crow(k, v) { return v ? '<div class="crow"><div class="k">' + H.esc(k) + '</div><div class="v">' + H.esc(v) + "</div></div>" : ""; }
@@ -674,22 +673,22 @@
     var st = H.contractStatus(c), tax = H.taxOf(c), amt = Number(c.amount) || 0;
     var h = '<div style="text-align:center;margin-bottom:6px"><span class="cstat" style="color:' + st.color + ";background:" + st.bg + '">' + st.text + "</span></div>";
     h += '<div class="cc-title" style="text-align:center">' + H.esc(c.title || "") + "</div>";
-    h += '<div class="cc-to" style="text-align:center;margin-bottom:8px">注文者：' + H.esc(companyName()) + "　／　請負者：" + H.esc(c.partnerName || "") + "</div>";
-    h += crow("工事場所", c.site) + crow("工事内容", c.content);
+    h += '<div class="cc-to" style="text-align:center;margin-bottom:8px">注文者：' + H.esc(companyName()) + "　／　受注者：" + H.esc(c.partnerName || "") + "</div>";
+    h += crow("工事場所（住所）", c.site) + crow("作業内容", c.content);
     h += '<div class="camt"><div class="big">税込 ' + H.yen(amt + tax) + '</div><div class="brk">税抜 ' + H.yen(amt) + " ＋ 消費税 " + H.yen(tax) + "（" + (Number(c.taxRate) || 0) + "%）</div></div>";
-    h += crow("支払方法・時期", c.payTerm) + crow("工期", ((c.startDate || "") + (c.endDate ? " 〜 " + c.endDate : "")).trim());
-    h += crow("検査・引渡し", c.handover) + crow("作業指示者", c.supervisor) + crow("備考", c.note);
-    h += '<div class="crow"><div class="k">注文者署名</div><div class="v">' + (c.fromSign && c.fromSign.at ? "✅ " + H.esc(c.fromSign.companyName || "") + " " + H.esc(c.fromSign.name || "") + "（" + H.fmtDate(c.fromSign.at) + "）" : "未署名") + "</div></div>";
-    h += '<div class="crow"><div class="k">請負者署名</div><div class="v">' + (c.toSign && c.toSign.at ? "✅ " + H.esc(c.toSign.companyName || "") + " " + H.esc(c.toSign.name || "") + "（" + H.fmtDate(c.toSign.at) + "）" : "未署名（相手の署名待ち）") + "</div></div>";
-    if (c.fromSign && c.fromSign.at) { h += '<div class="signdone">✅ あなた（注文者）は署名済みです</div>'; }
+    h += crow("支払方法・時期", c.payTerm) + crow("工事日程", ((c.startDate || "") + (c.endDate ? " 〜 " + c.endDate : "")).trim());
+    h += crow("備考", c.note);
+    h += '<div class="crow"><div class="k">注文者（発行）</div><div class="v">' + (c.fromSign && c.fromSign.at ? "✅ " + H.esc(c.fromSign.companyName || "") + " " + H.esc(c.fromSign.name || "") + "（" + H.fmtDate(c.fromSign.at) + "）" : "未発行") + "</div></div>";
+    h += '<div class="crow"><div class="k">受注者（注文請書）</div><div class="v">' + (c.toSign && c.toSign.at ? "✅ " + H.esc(c.toSign.companyName || "") + " " + H.esc(c.toSign.name || "") + "（" + H.fmtDate(c.toSign.at) + "）" : "未署名（受注者の請書待ち）") + "</div></div>";
+    if (c.fromSign && c.fromSign.at) { h += '<div class="signdone">✅ あなた（注文者）は注文書を発行済みです</div>'; }
     else {
-      h += '<div class="signbox"><div class="st">✍️ 注文者（あなた）として署名する</div>' +
+      h += '<div class="signbox"><div class="st">✍️ 注文者として署名し、注文書を発行する</div>' +
         '<div class="field"><label>会社名</label><input id="cv_co" type="text" value="' + H.esc(companyName()) + '"></div>' +
         '<div class="field"><label>担当者名</label><input id="cv_nm" type="text" placeholder="例）山田 太郎"></div>' +
-        '<button class="btn full" id="cv_signBtn">この内容で署名する</button></div>';
+        '<button class="btn full" id="cv_signBtn">注文書を発行する（署名）</button></div>';
     }
-    if (c.fromSign && c.fromSign.at && c.toSign && c.toSign.at) h += '<div class="cnote">両者の署名がそろい、契約は締結済みです。「印刷/PDF」で保存し、双方で保管してください。</div>';
-    else h += '<div class="cnote">請負者（下請け）は招待リンクから開いたアプリの「契約」タブで内容を確認し、署名できます。</div>';
+    if (c.fromSign && c.fromSign.at && c.toSign && c.toSign.at) h += '<div class="cnote">受注者から注文請書を受領し、契約が成立しました。「印刷/PDF」で保存し、双方で保管してください。</div>';
+    else h += '<div class="cnote">受注者（協力業者）は招待リンクから開いたアプリの「注文」タブで内容を確認し、注文請書として署名できます。</div>';
     h += '<div class="cc-actions" style="margin-top:12px"><button class="btn sm" id="cv_printBtn">🖨 印刷/PDF</button><button class="btn sm ghost" id="cv_editBtn">✏️ 編集</button></div>';
     return h;
   }
@@ -705,7 +704,7 @@
     var co = ($("cv_co").value || "").trim(), nm = ($("cv_nm").value || "").trim();
     if (!nm) { H.toast("担当者名を入力してください", "err"); return; }
     DB.update("companies/" + ck + "/contracts/" + cid, { fromSign: { companyName: co, name: nm, at: Date.now() }, updatedAt: Date.now() })
-      .then(function () { H.toast("署名しました", "ok"); setTimeout(function () { openCView(cid); }, 60); }).catch(function () {});
+      .then(function () { H.toast("注文書を発行しました（署名）", "ok"); setTimeout(function () { openCView(cid); }, 60); }).catch(function () {});
   }
 
   // ---------- 操作 ----------
@@ -821,7 +820,7 @@
     show("ovInvite");
   }
   function inviteShareText() {
-    return "【" + companyName() + "】協力業者アプリの招待です。\n下のリンクを開くと、当社からの作業依頼・お知らせ・請負契約を確認して返信・署名できます（登録・ログイン不要）。\n" + inviteUrl;
+    return "【" + companyName() + "】協力業者アプリの招待です。\n下のリンクを開くと、当社からの作業依頼・お知らせ・注文書を確認して返信・署名できます（登録・ログイン不要）。\n" + inviteUrl;
   }
   function openAvail(bk) {
     var it = partners()[bk]; if (!it) return;
@@ -838,7 +837,7 @@
     { q: "③ 協力業者に招待リンクを送る", a: "各業者カードの <b>📲招待</b> を押すと、その業者専用のリンクをLINE等で送れます。業者は<b>リンクを開くだけ（登録・ログイン不要）</b>で、あなたからの依頼・お知らせを見て返信できます。" },
     { q: "④ 作業依頼を送る／返答を見る", a: "業者カードの <b>📨依頼を送る</b>、または「依頼」タブの <b>＋新しい作業依頼</b> から、工事名・現場・希望日・内容を送ります。相手が返信すると「依頼」タブに <b>受ける／不可＋一言</b> が表示されます（タブに新着バッジ）。" },
     { q: "空き状況を見る／空いてる業者を探す", a: "各協力業者が自分で空き（空き／応相談）を登録します。業者カードに直近の空きが表示され、<b>📅空き</b> でカレンダーを確認できます。上の <b>🟢空きあり</b> で空いている業者だけに絞り込めます。" },
-    { q: "⑤ 請負契約を結ぶ（このアプリの中心）", a: "「業者」タブの各業者の <b>📝請負契約</b>、または「契約」タブの <b>＋新しい請負契約</b> から作成します。工事名・工事場所・工事内容・<b>請負代金（税抜→税込を自動計算）</b>・支払・工期・作業指示者を入力 → <b>あなた（注文者）が署名</b> → 下請けが招待リンクのアプリで内容確認して署名 → <b>締結</b>。<b>🖨印刷/PDF</b> で双方保管できます。※職人への指示は請負者（下請け）が行う請負契約です。" },
+    { q: "⑤ 注文書を発行して契約する（このアプリの中心）", a: "「業者」タブの各業者の <b>📝注文書</b>、または「注文」タブの <b>＋新しい注文書を作成</b> から作成します。工事名・工事場所（住所）・作業内容・工事日程・支払方法・<b>注文金額（税抜→税込を自動計算）</b>を入力 → <b>あなた（注文者）が署名して注文書を発行</b> → 受注者（協力業者）が招待リンクのアプリで内容を確認して署名（＝<b>注文請書</b>）→ <b>契約成立</b>。<b>🖨印刷/PDF</b>（注文書 兼 注文請書）で双方保管できます。※職人への指示は受注者（協力業者）が行う請負契約です。" },
     { q: "⑥ 一斉お知らせを送る", a: "「お知らせ」タブから、<b>全員</b>または<b>業種を選んで</b>一斉配信できます。休業日の連絡などにどうぞ。" },
     { q: "⑦ アプリにする（ホーム画面に追加）", a: "ヘッダーの <b>📲アプリ</b> でホーム画面に追加できます。同じ画面から<b>協力業者アプリ</b>も追加できます（相手に見せる・確認する用）。" },
     { q: "⑧ 取引先と本番で共有するには", a: "体験版・お試しは設定不要です。実際に協力業者と共有するには、Firebaseで <b>「匿名」認証をON</b> ＋ <b>ルールに takyo を追加</b> が必要です（READMEに手順あり）。" }
