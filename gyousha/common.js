@@ -59,7 +59,7 @@
     const _d = new Date();
     const ymd = (off) => { const d = new Date(_d); d.setDate(d.getDate() + off); return d.getFullYear() + "-" + H.pad2(d.getMonth() + 1) + "-" + H.pad2(d.getDate()); };
     return { companies: { DEMO: {
-      profile: { name: "（体験）山田工務店", createdAt: now },
+      profile: { name: "（体験）山田工務店", createdAt: now, terms: { defectYears: "2", lateRate: "14.6", court: "注文者の主たる営業所の所在地を管轄する地方裁判所" } },
       partners: {
         P1: { trade: "denki", name: "丸山電気工事", tel: "090-1111-2222", contact: "丸山", area: "市内全域", note: "急ぎ対応可。分電盤の増設が得意。", fav: true, createdAt: now - 5000, avail: { [ymd(2)]: "free", [ymd(3)]: "free", [ymd(9)]: "maybe" } },
         P2: { trade: "daiku", name: "田中大工", tel: "080-3333-4444", contact: "田中", area: "", note: "", fav: false, createdAt: now - 4000, avail: { [ymd(4)]: "free", [ymd(5)]: "free", [ymd(6)]: "maybe" } },
@@ -74,7 +74,7 @@
         A1: { body: "年末年始は12/29〜1/4を休業とします。ご協力よろしくお願いします。", targetTrade: "", createdAt: now - 30000 }
       },
       contracts: {
-        C1: { partnerKey: "P2", partnerName: "田中大工", title: "△△マンション 改修 内装工事", site: "□□市 本町2-5", content: "内部造作・ボード張り一式（1〜2階）", amount: 350000, taxRate: 10, payTerm: "完成・引渡し後、翌月末支払い（銀行振込）", startDate: "来週 月曜", endDate: "再来週 金曜", note: "", fromSign: { companyName: "（体験）山田工務店", name: "山田 太郎", at: now - 40000 }, toSign: null, createdAt: now - 45000, updatedAt: now - 40000 }
+        C1: { partnerKey: "P2", partnerName: "田中大工", title: "△△マンション 改修 内装工事", site: "□□市 本町2-5", content: "内部造作・ボード張り一式（1〜2階）", amount: 350000, taxRate: 10, payTerm: "完成・引渡し後、翌月末支払い（銀行振込）", startDate: "来週 月曜", endDate: "再来週 金曜", handover: "完成後、注文者立会いで検査のうえ引渡し", advance: "", nowork: "日曜・祝日は施工しない", note: "", fromSign: { companyName: "（体験）山田工務店", name: "山田 太郎", at: now - 40000 }, toSign: null, createdAt: now - 45000, updatedAt: now - 40000 }
       }
     } } };
   };
@@ -230,18 +230,48 @@
     if (f) return { key: "wait", text: "請書待ち", color: "#8a5a00", bg: "#fff4e5" };
     return { key: "draft", text: "下書き", color: "#5d6b7c", bg: "#eef1f4" };
   };
-  // 印刷/PDF用：工事請負契約書のHTML文書を組み立てる
-  H.contractDocHTML = function (c, koumutenName) {
+  // 工事下請基本契約約款（建設業法第19条 各号に対応する簡易ひな型・会社設定で一部を調整可）
+  H.contractTermsDefault = { defectYears: "2", lateRate: "14.6", court: "注文者の主たる営業所の所在地を管轄する地方裁判所" };
+  H.yakkanHTML = function (terms) {
+    terms = terms || {};
+    var e = H.esc;
+    var yrs = String(terms.defectYears || H.contractTermsDefault.defectYears);
+    var rate = String(terms.lateRate || H.contractTermsDefault.lateRate);
+    var court = terms.court || H.contractTermsDefault.court;
+    var arts = [
+      ["第1条（総則）", "本契約は請負契約とし、注文者及び受注者は、信義に従い誠実にこれを履行する。本工事は労働者派遣ではなく、受注者は自己の責任と裁量により施工し、その使用する労働者・職人に対する指揮命令、労務管理及び安全衛生管理を自ら行う。"],
+      ["第2条（権利義務の譲渡等の制限）", "当事者は、相手方の書面による承諾を得なければ、本契約上の地位又は本契約から生じる権利義務を第三者に譲渡し、承継させ、又は担保に供してはならない。"],
+      ["第3条（一括下請負の禁止）", "受注者は、建設業法第22条の定めに従い、本工事の全部又はその主たる部分を、一括して他人に請け負わせてはならない。"],
+      ["第4条（支給材料・貸与機械）", "注文者が材料を支給し、又は建設機械その他の機械器具を貸与する場合の品目、数量、時期、場所、費用の負担及び返還方法は、注文書の記載又は別途両者の書面による合意による。（建設業法第19条第1項第10号）"],
+      ["第5条（施工・第三者に対する損害）", "受注者は、関係法令及び工事の安全基準を遵守して施工する。工事の施工について第三者に損害を及ぼしたときは、その賠償は、責めに帰すべき事由のある当事者が負担する。（同項第9号）"],
+      ["第6条（設計変更・工期の変更等）", "注文者が設計の変更、工事着手の延期又は工事の全部若しくは一部の中止を求めたときは、両者は協議のうえ、工期の変更、請負代金の額の変更又は損害の負担及びその額の算定方法を定める。（同項第6号）"],
+      ["第7条（不可抗力）", "天災地変その他両者の責めに帰することができない事由により、工期の変更又は損害が生じたときは、両者は協議のうえ、その損害の負担及び額を定める。（同項第7号）"],
+      ["第8条（物価の変動）", "工期内に賃金水準又は物価の著しい変動が生じ、請負代金の額が不適当となったときは、両者は協議のうえ、請負代金の額を変更することができる。（同項第8号）"],
+      ["第9条（完成・検査・引渡し）", "受注者は、工事を完成したときは注文者に通知し、注文者は、注文書に定める時期及び方法（定めのないときは通知後遅滞なく）により検査を行う。検査に合格したときは、受注者は目的物を引き渡し、注文者はこれを受領する。（同項第11号）"],
+      ["第10条（請負代金の支払）", "請負代金は、注文書に定める支払時期及び方法により支払う。前払金又は部分払（出来形払）の定めがあるときは、その定めによる。（同項第5号・第12号）"],
+      ["第11条（契約不適合責任）", "引き渡された目的物が種類又は品質に関して契約の内容に適合しないときは、注文者は、引渡しの日から" + yrs + "年以内にその旨を通知することにより、受注者に対し、履行の追完（修補等）、代金の減額、損害の賠償又は契約の解除を請求することができる。（同項第13号）"],
+      ["第12条（履行遅滞・遅延損害金）", "当事者が支払を遅延したときは、遅延した額につき年" + rate + "％の割合による遅延損害金を相手方に支払う。受注者が工期内に工事を完成できない等その債務を履行しないときも、これによって生じた損害を負担する。（同項第14号）"],
+      ["第13条（契約の解除）", "当事者の一方が本契約に違反し、相手方が相当の期間を定めて催告してもその期間内に是正されないときは、相手方は本契約を解除することができる。"],
+      ["第14条（法令の遵守等）", "両者は、建設業法、労働安全衛生法、社会保険及び労働保険に関する法令その他の関係法令を遵守する。"],
+      ["第15条（紛争の解決・合意管轄）", "本契約に関して紛争が生じたときは、両者は誠実に協議して解決を図る。協議が調わないときは、" + court + "を第一審の専属的合意管轄裁判所とする。（同項第15号）"],
+      ["第16条（定めのない事項）", "本契約及び本約款に定めのない事項は、建設業法その他の関係法令及び中央建設業審議会が定める標準下請契約約款の趣旨に従い、両者が協議して定める。（同項第16号）"]
+    ];
+    return '<div class="yakkan"><h2>工事下請基本契約約款</h2>' +
+      arts.map(function (a) { return '<div class="art"><b>' + e(a[0]) + "</b>" + e(a[1]) + "</div>"; }).join("") + "</div>";
+  };
+  // 印刷/PDF用：注文書／注文請書（＋工事下請基本契約約款）のHTML文書を組み立てる
+  H.contractDocHTML = function (c, koumutenName, terms) {
     var e = H.esc, tax = H.taxOf(c), amt = Number(c.amount) || 0, incl = amt + tax;
     var fromCo = (c.fromSign && c.fromSign.companyName) || koumutenName || "";
     var toCo = (c.toSign && c.toSign.companyName) || c.partnerName || "";
     var sig = function (role, s, coFallback) {
       return '<div class="sig"><div class="r">' + role + "</div>" +
         '<div class="l">会社名：<span>' + (s && s.companyName ? e(s.companyName) : (coFallback ? e(coFallback) : "")) + "</span></div>" +
-        '<div class="l">担当者：<span>' + (s && s.name ? e(s.name) : "") + "</span>　㊞</div>" +
+        '<div class="l">担当者（電子署名）：<span>' + (s && s.name ? e(s.name) : "") + "</span></div>" +
         '<div class="d">' + (s && s.at ? "署名日：" + H.ymd(new Date(s.at)) : "署名日：　　　年　　月　　日") + "</div></div>";
     };
     var row = function (label, val) { return "<tr><th>" + e(label) + "</th><td>" + (val ? e(val) : "—") + "</td></tr>"; };
+    var rowIf = function (label, val) { return val ? row(label, val) : ""; };
     var signed = !!(c.toSign && c.toSign.at);
     var docTitle = signed ? "注文書 兼 注文請書" : "注文書";
     return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>' + docTitle + '</title><style>' +
@@ -256,25 +286,31 @@
       '.sig .r{font-weight:800;margin-bottom:8px}.sig .l{margin:6px 0}.sig .l span{border-bottom:1px solid #99a2ad;padding:0 4px;min-width:120px;display:inline-block}' +
       '.sig .d{color:#5d6b7c;font-size:12px;margin-top:6px}' +
       '.note{font-size:11px;color:#5d6b7c;line-height:1.7;margin-top:16px;border-top:1px solid #e4e8ee;padding-top:10px}' +
-      '@media print{body{padding:0}.doc{max-width:none}}</style></head><body><div class="doc">' +
+      '.yakkan{margin-top:22px;border-top:2px solid #cbd2da;padding-top:12px}.yakkan h2{font-size:15px;text-align:center;letter-spacing:.2em;margin:0 0 10px}' +
+      '.yakkan .art{margin:6px 0;font-size:11px;line-height:1.65}.yakkan .art b{font-weight:800;margin-right:4px}' +
+      '@media print{body{padding:0}.doc{max-width:none}.yakkan{page-break-before:always}}</style></head><body><div class="doc">' +
       "<h1>" + docTitle + "</h1>" +
-      '<div class="sub">下記のとおり工事を注文します。受注者は内容を確認のうえ、注文請書として署名（電子サイン）してください。</div>' +
+      '<div class="sub">下記のとおり工事を注文します。受注者は内容を確認のうえ、注文請書として署名（電子サイン）してください。本注文書・注文請書は、末尾の「工事下請基本契約約款」と一体で本工事の請負契約を構成します。</div>' +
       '<div class="parties"><div class="party"><div class="cap">注文者（発注者・元請）</div><div class="nm">' + e(fromCo || "—") + "</div></div>" +
       '<div class="party"><div class="cap">請負者（受注者・協力業者）</div><div class="nm">' + e(toCo || "—") + "</div></div></div>" +
       "<table>" + row("工事名", c.title) + row("工事場所（住所）", c.site) + row("作業内容", c.content) +
       row("工事日程（工期）", ((c.startDate || "") + (c.endDate ? " 〜 " + c.endDate : "")).trim()) +
       '<tr><th>注文金額（請負代金）</th><td class="amount">税抜 ' + H.yen(amt) + "　＋　消費税 " + H.yen(tax) + "（" + (Number(c.taxRate) || 0) + "%）<br><b>税込 " + H.yen(incl) + "</b></td></tr>" +
-      row("支払方法・時期", c.payTerm) + row("備考", c.note) + "</table>" +
+      row("支払方法・時期", c.payTerm) + rowIf("前払金・部分払", c.advance) + row("検査・引渡し", c.handover) +
+      rowIf("施工しない日・時間帯", c.nowork) + rowIf("備考", c.note) + "</table>" +
       '<div class="sigs">' + sig("注文者（発注者）", c.fromSign, fromCo) + sig("請負者（受注者）＝注文請書", c.toSign, toCo) + "</div>" +
-      '<div class="note">・本注文書に受注者が署名（注文請書）した時点で、本工事の請負契約が成立します。<br>' +
+      H.yakkanHTML(terms) +
+      '<div class="note">・本注文書・注文請書及び末尾の「工事下請基本契約約款」は一体として本工事の請負契約を構成し、建設業法第19条第1項各号に掲げる事項を定めるものです。<br>' +
+      "・本注文書に受注者が署名（注文請書）した時点で、本工事の請負契約が成立します。<br>" +
       "・本工事は請負契約であり、労働者派遣ではありません。受注者の職人への作業指示・労務管理は、受注者（協力業者）が行います。<br>" +
-      "・電子署名は、双方の合意内容と署名日時を記録するものです。書面交付義務など法的要件の詳細は専門家にご確認ください。<br>" +
-      "・注文書・注文請書は、注文者・受注者の双方で保管してください。</div></div></body></html>";
+      "・電子署名は、双方の合意内容と署名日時を記録するものです（押印は不要です）。<br>" +
+      "・本約款は、中央建設業審議会の標準下請契約約款等を参考にした簡易なひな型です。個別の取引や法改正への適合は、行政書士・弁護士等の専門家にご確認ください。<br>" +
+      "・注文書・注文請書・約款は、注文者・受注者の双方で保管してください。</div></div></body></html>";
   };
-  H.printContract = function (c, koumutenName) {
+  H.printContract = function (c, koumutenName, terms) {
     var w = window.open("", "_blank");
     if (!w) { H.toast("印刷ウィンドウを開けませんでした（ポップアップを許可してください）", "err"); return; }
-    w.document.write(H.contractDocHTML(c, koumutenName));
+    w.document.write(H.contractDocHTML(c, koumutenName, terms));
     w.document.close(); w.focus();
     setTimeout(function () { try { w.print(); } catch (_) {} }, 500);
   };

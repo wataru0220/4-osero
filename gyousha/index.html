@@ -15,10 +15,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813a"></script>
-<script src="data.js?v=20260813a"></script>
-<script src="common.js?v=20260813a"></script>
-<link rel="stylesheet" href="styles.css?v=20260813a">
+<script src="config.js?v=20260813b"></script>
+<script src="data.js?v=20260813b"></script>
+<script src="common.js?v=20260813b"></script>
+<link rel="stylesheet" href="styles.css?v=20260813b">
 <style>:root{--brand:#e8792a;--brand-dark:#b8560f;--chip:#fdece0}</style>
 </head>
 <body>
@@ -264,9 +264,10 @@
     h += crow("工事場所（住所）", c.site) + crow("作業内容", c.content);
     h += '<div class="camt"><div class="big">税込 ' + H.yen(amt + tax) + '</div><div class="brk">税抜 ' + H.yen(amt) + " ＋ 消費税 " + H.yen(tax) + "（" + (Number(c.taxRate) || 0) + "%）</div></div>";
     h += crow("支払方法・時期", c.payTerm) + crow("工事日程", ((c.startDate || "") + (c.endDate ? " 〜 " + c.endDate : "")).trim());
-    h += crow("備考", c.note);
+    h += crow("前払金・部分払", c.advance) + crow("検査・引渡し", c.handover) + crow("施工しない日・時間帯", c.nowork) + crow("備考", c.note);
     h += '<div class="crow"><div class="k">注文者（発行）</div><div class="v">' + (c.fromSign && c.fromSign.at ? "✅ " + H.esc(c.fromSign.companyName || "") + " " + H.esc(c.fromSign.name || "") + "（" + H.fmtDate(c.fromSign.at) + "）" : "未発行") + "</div></div>";
     h += '<div class="crow"><div class="k">あなた（受注者・注文請書）</div><div class="v">' + (c.toSign && c.toSign.at ? "✅ " + H.esc(c.toSign.companyName || "") + " " + H.esc(c.toSign.name || "") + "（" + H.fmtDate(c.toSign.at) + "）" : "未署名") + "</div></div>";
+    h += '<p class="hint" style="margin:8px 0">この注文書には「<b>工事下請基本契約約款</b>」（建設業法第19条 各号対応）が付きます。署名は約款を含む内容への同意です。全文は <b>🖨印刷/PDF</b> でご確認いただけます。</p>';
     if (c.toSign && c.toSign.at) { h += '<div class="signdone">✅ あなた（受注者）は注文請書に署名済みです</div>'; }
     else {
       h += '<div class="signbox"><div class="st">✍️ 内容を確認し、注文請書として署名する</div>' +
@@ -284,7 +285,7 @@
     $("cvBody").innerHTML = cviewHTML(cid, c);
     $("ovCView").classList.add("on"); document.body.style.overflow = "hidden";
     var sb = document.getElementById("cv_signBtn"); if (sb) sb.onclick = function () { signTo(cid); };
-    var pb = document.getElementById("cv_printBtn"); if (pb) pb.onclick = function () { H.printContract((company.contracts || {})[cid], companyName()); };
+    var pb = document.getElementById("cv_printBtn"); if (pb) pb.onclick = function () { H.printContract((company.contracts || {})[cid], companyName(), (company.profile && company.profile.terms) || {}); };
   }
   function closeCView() { $("ovCView").classList.remove("on"); document.body.style.overflow = ""; }
   function signTo(cid) {
@@ -317,7 +318,7 @@
   var USER_HELP = [
     { q: "これは何のアプリ？", a: "取引先の<b>工務店から届いた招待リンク</b>で開くアプリです。工務店からの <b>作業依頼</b> や <b>お知らせ</b> を確認して返信できます。<b>登録・ログインは不要</b>です。" },
     { q: "依頼に返信するには", a: "「依頼」タブで、届いた依頼に <b>✅受ける</b> か <b>✖不可</b> を選び、必要なら一言を添えて送ります。送信後も「変更」から返答をやり直せます。未返信の件数はタブのバッジでわかります。" },
-    { q: "注文書に署名するには（注文請書）", a: "「注文」タブに、工務店からの注文書が表示されます。<b>📄内容・署名</b> で工事名・作業内容・工事日程・支払方法・金額などを確認し、内容に同意できれば <b>「内容に同意して署名する（注文請書）」</b> を押します（会社名・担当者名を入力）。これで契約が成立します。<b>🖨印刷/PDF</b>（注文書 兼 注文請書）で保存できます。相違があれば署名せず工務店へご連絡ください。" },
+    { q: "注文書に署名するには（注文請書）", a: "「注文」タブに、工務店からの注文書が表示されます。<b>📄内容・署名</b> で工事名・作業内容・工事日程・支払方法・金額などを確認し、内容に同意できれば <b>「内容に同意して署名する（注文請書）」</b> を押します（会社名・担当者名を入力。<b>押印は不要</b>で、担当者名の入力が電子署名になります）。これで契約が成立します。この注文書には「<b>工事下請基本契約約款</b>」（建設業法第19条 各号対応）が付き、署名は約款を含む内容への同意になります。全文は <b>🖨印刷/PDF</b>（注文書 兼 注文請書＋約款）でご確認・保存できます。相違があれば署名せず工務店へご連絡ください。" },
     { q: "空き状況を登録するには", a: "「空き」タブで日付をタップすると <b>空き → 応相談 → なし</b> の順で切り替わります。登録した空きは取引先の工務店に表示され、空いている日に依頼・契約が届きやすくなります。3か月先まで登録できます。" },
     { q: "お知らせを見る", a: "「お知らせ」タブに、工務店からの連絡が新しい順に表示されます。" },
     { q: "アプリにする（ホーム画面に追加）", a: "ヘッダーの <b>📲アプリ</b> を押すと、スマホのホーム画面にアイコンを追加できます。次回からはアイコンを1タップで開けます（ブラウザ不要）。" },

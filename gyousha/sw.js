@@ -1,5 +1,5 @@
 // ===== 匠協コネクト Service Worker =====
-// SW_VERSION: 2026-08-13a（このファイルを更新したら版を変える）
+// SW_VERSION: 2026-08-13b（このファイルを更新したら版を変える）
 // 役割：ホーム画面アプリ化（PWA・管理/協力業者の両方）と、本体ファイルを常に最新で取得すること。
 
 self.addEventListener('install', function () { self.skipWaiting(); });
