@@ -15,11 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813f"></script>
-<script src="data.js?v=20260813f"></script>
-<script src="common.js?v=20260813f"></script>
-<script src="qrcode.min.js?v=20260813f"></script>
-<link rel="stylesheet" href="styles.css?v=20260813f">
+<script src="config.js?v=20260813g"></script>
+<script src="data.js?v=20260813g"></script>
+<script src="common.js?v=20260813g"></script>
+<script src="qrcode.min.js?v=20260813g"></script>
+<link rel="stylesheet" href="styles.css?v=20260813g">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -221,10 +221,10 @@
     </div>
     <div id="c_taxview" class="hint" style="margin-top:-4px"></div>
     <div class="field"><label for="c_pay">支払方法・時期</label><input id="c_pay" type="text" placeholder="例）完成・引渡し後、翌月末 銀行振込"></div>
-    <div style="font-weight:700;font-size:12.5px;margin:8px 0 2px">工事日程</div>
+    <div style="font-weight:700;font-size:12.5px;margin:8px 0 2px">工事日程（カレンダーから選択）</div>
     <div class="row">
-      <div class="field"><label for="c_start">着工予定</label><input id="c_start" type="text" placeholder="例）来週 月曜"></div>
-      <div class="field"><label for="c_end">完成予定</label><input id="c_end" type="text" placeholder="例）今月末"></div>
+      <div class="field"><label for="c_start">着工予定</label><input id="c_start" type="date"></div>
+      <div class="field"><label for="c_end">完成予定</label><input id="c_end" type="date"></div>
     </div>
     <div style="font-weight:700;font-size:12.5px;margin:10px 0 2px">建設業法の記載事項（必要に応じて）</div>
     <div class="field"><label for="c_handover">検査・引渡しの時期／方法</label><input id="c_handover" type="text" placeholder="例）完成後、注文者立会いで検査のうえ引渡し"></div>
@@ -647,7 +647,7 @@
     if (cid && c.partnerKey) $("c_partner").value = c.partnerKey; else if (bk) $("c_partner").value = bk;
     $("c_title").value = c.title || prefill.title || ""; $("c_site").value = c.site || prefill.site || ""; $("c_content").value = c.content || prefill.content || "";
     $("c_amount").value = c.amount != null ? c.amount : ""; $("c_tax").value = c.taxRate != null ? c.taxRate : (tpl.taxRate != null ? tpl.taxRate : 10);
-    $("c_pay").value = c.payTerm || tpl.payTerm || ""; $("c_start").value = c.startDate || prefill.startDate || ""; $("c_end").value = c.endDate || "";
+    $("c_pay").value = c.payTerm || tpl.payTerm || ""; $("c_start").value = c.startDate || prefill.startDate || ""; $("c_end").value = c.endDate || ""; $("c_end").min = $("c_start").value || "";
     $("c_handover").value = c.handover || tpl.handover || ""; $("c_advance").value = c.advance || tpl.advance || ""; $("c_nowork").value = c.nowork || tpl.nowork || "";
     $("c_note").value = c.note || "";
     $("cf_delete").style.display = cid ? "block" : "none";
@@ -693,7 +693,7 @@
     h += '<div class="cc-to" style="text-align:center;margin-bottom:8px">注文者：' + H.esc(companyName()) + "　／　受注者：" + H.esc(c.partnerName || "") + "</div>";
     h += crow("工事場所（住所）", c.site) + crow("作業内容", c.content);
     h += '<div class="camt"><div class="big">税込 ' + H.yen(amt + tax) + '</div><div class="brk">税抜 ' + H.yen(amt) + " ＋ 消費税 " + H.yen(tax) + "（" + (Number(c.taxRate) || 0) + "%）</div></div>";
-    h += crow("支払方法・時期", c.payTerm) + crow("工事日程", ((c.startDate || "") + (c.endDate ? " 〜 " + c.endDate : "")).trim());
+    h += crow("支払方法・時期", c.payTerm) + crow("工事日程", H.fmtDateRange(c.startDate, c.endDate));
     h += crow("前払金・部分払", c.advance) + crow("検査・引渡し", c.handover) + crow("施工しない日・時間帯", c.nowork) + crow("備考", c.note);
     var fSigned = !!(c.fromSign && c.fromSign.at), tSigned = !!(c.toSign && c.toSign.at);
     h += '<div class="crow"><div class="k">受注者（注文請書）</div><div class="v">' + (tSigned ? "✅ " + H.esc(c.toSign.companyName || "") + " " + H.esc(c.toSign.name || "") + "（" + H.fmtDate(c.toSign.at) + "）" : "未署名（受注者の請書待ち）") + "</div></div>";
@@ -797,6 +797,7 @@
     });
     $("c_amount").addEventListener("input", taxView);
     $("c_tax").addEventListener("input", taxView);
+    $("c_start").addEventListener("change", function () { $("c_end").min = this.value || ""; if ($("c_end").value && this.value && $("c_end").value < this.value) $("c_end").value = this.value; });
     $("cf_save").addEventListener("click", saveContract);
     $("cf_savetpl").addEventListener("click", saveTemplate);
     $("cf_cancel").addEventListener("click", function () { hide("ovContract"); });

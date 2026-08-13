@@ -15,10 +15,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813f"></script>
-<script src="data.js?v=20260813f"></script>
-<script src="common.js?v=20260813f"></script>
-<link rel="stylesheet" href="styles.css?v=20260813f">
+<script src="config.js?v=20260813g"></script>
+<script src="data.js?v=20260813g"></script>
+<script src="common.js?v=20260813g"></script>
+<link rel="stylesheet" href="styles.css?v=20260813g">
 <style>:root{--brand:#e8792a;--brand-dark:#b8560f;--chip:#fdece0}</style>
 </head>
 <body>
@@ -277,7 +277,7 @@
     h += '<div class="cc-to" style="text-align:center;margin-bottom:8px">注文者：' + H.esc(companyName()) + "　／　受注者：" + H.esc(c.partnerName || m.name || "") + "</div>";
     h += crow("工事場所（住所）", c.site) + crow("作業内容", c.content);
     h += '<div class="camt"><div class="big">税込 ' + H.yen(amt + tax) + '</div><div class="brk">税抜 ' + H.yen(amt) + " ＋ 消費税 " + H.yen(tax) + "（" + (Number(c.taxRate) || 0) + "%）</div></div>";
-    h += crow("支払方法・時期", c.payTerm) + crow("工事日程", ((c.startDate || "") + (c.endDate ? " 〜 " + c.endDate : "")).trim());
+    h += crow("支払方法・時期", c.payTerm) + crow("工事日程", H.fmtDateRange(c.startDate, c.endDate));
     h += crow("前払金・部分払", c.advance) + crow("検査・引渡し", c.handover) + crow("施工しない日・時間帯", c.nowork) + crow("備考", c.note);
     var fSigned = !!(c.fromSign && c.fromSign.at), tSigned = !!(c.toSign && c.toSign.at);
     h += '<div class="crow"><div class="k">あなた（受注者・注文請書）</div><div class="v">' + (tSigned ? "✅ " + H.esc(c.toSign.companyName || "") + " " + H.esc(c.toSign.name || "") + "（" + H.fmtDate(c.toSign.at) + "）" : "未署名") + "</div></div>";

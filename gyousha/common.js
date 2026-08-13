@@ -74,7 +74,7 @@
         A1: { body: "年末年始は12/29〜1/4を休業とします。ご協力よろしくお願いします。", targetTrade: "", createdAt: now - 30000 }
       },
       contracts: {
-        C1: { partnerKey: "P2", partnerName: "田中大工", title: "△△マンション 改修 内装工事", site: "□□市 本町2-5", content: "内部造作・ボード張り一式（1〜2階）", amount: 350000, taxRate: 10, payTerm: "完成・引渡し後、翌月末支払い（銀行振込）", startDate: "来週 月曜", endDate: "再来週 金曜", handover: "完成後、注文者立会いで検査のうえ引渡し", advance: "", nowork: "日曜・祝日は施工しない", note: "", fromSign: null, toSign: { companyName: "田中大工", name: "田中 一郎", at: now - 40000 }, createdAt: now - 45000, updatedAt: now - 40000 }
+        C1: { partnerKey: "P2", partnerName: "田中大工", title: "△△マンション 改修 内装工事", site: "□□市 本町2-5", content: "内部造作・ボード張り一式（1〜2階）", amount: 350000, taxRate: 10, payTerm: "完成・引渡し後、翌月末支払い（銀行振込）", startDate: ymd(3), endDate: ymd(7), handover: "完成後、注文者立会いで検査のうえ引渡し", advance: "", nowork: "日曜・祝日は施工しない", note: "", fromSign: null, toSign: { companyName: "田中大工", name: "田中 一郎", at: now - 40000 }, createdAt: now - 45000, updatedAt: now - 40000 }
       }
     } } };
   };
@@ -86,6 +86,23 @@
     if (!ts) return "";
     const d = new Date(ts);
     return `${d.getMonth() + 1}/${d.getDate()} ${H.pad2(d.getHours())}:${H.pad2(d.getMinutes())}`;
+  };
+  // "YYYY-MM-DD" を「YYYY年M月D日」に。日付形式でなければそのまま返す（旧・自由入力対応）。
+  H.fmtYmd = (s) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || "").trim());
+    return m ? (+m[1] + "年" + (+m[2]) + "月" + (+m[3]) + "日") : (s || "");
+  };
+  // 工期などの範囲表示。同年は末尾の年を、同年同月はさらに月も省いて短く。
+  H.fmtDateRange = (start, end) => {
+    const s = String(start || "").trim(), e = String(end || "").trim();
+    const ms = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s), me = /^(\d{4})-(\d{2})-(\d{2})$/.exec(e);
+    const fs = H.fmtYmd(s), fe = H.fmtYmd(e);
+    if (ms && me) {
+      if (ms[1] === me[1] && ms[2] === me[2]) return fs + "〜" + (+me[3]) + "日";
+      if (ms[1] === me[1]) return fs + " 〜 " + (+me[2]) + "月" + (+me[3]) + "日";
+      return fs + " 〜 " + fe;
+    }
+    return (fs + (fe ? " 〜 " + fe : "")).trim();
   };
 
   // ---- 空き状況カレンダー ----
@@ -304,7 +321,7 @@
       '<div class="parties"><div class="party"><div class="cap">注文者（発注者・元請）</div><div class="nm">' + e(fromCo || "—") + "</div></div>" +
       '<div class="party"><div class="cap">請負者（受注者・協力業者）</div><div class="nm">' + e(toCo || "—") + "</div></div></div>" +
       "<table>" + row("工事名", c.title) + row("工事場所（住所）", c.site) + row("作業内容", c.content) +
-      row("工事日程（工期）", ((c.startDate || "") + (c.endDate ? " 〜 " + c.endDate : "")).trim()) +
+      row("工事日程（工期）", H.fmtDateRange(c.startDate, c.endDate)) +
       '<tr><th>注文金額（請負代金）</th><td class="amount">税抜 ' + H.yen(amt) + "　＋　消費税 " + H.yen(tax) + "（" + (Number(c.taxRate) || 0) + "%）<br><b>税込 " + H.yen(incl) + "</b></td></tr>" +
       row("支払方法・時期", c.payTerm) + rowIf("前払金・部分払", c.advance) + row("検査・引渡し", c.handover) +
       rowIf("施工しない日・時間帯", c.nowork) + rowIf("備考", c.note) + "</table>" +
