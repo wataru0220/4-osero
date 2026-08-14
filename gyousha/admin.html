@@ -15,11 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813n"></script>
-<script src="data.js?v=20260813n"></script>
-<script src="common.js?v=20260813n"></script>
-<script src="qrcode.min.js?v=20260813n"></script>
-<link rel="stylesheet" href="styles.css?v=20260813n">
+<script src="config.js?v=20260813o"></script>
+<script src="data.js?v=20260813o"></script>
+<script src="common.js?v=20260813o"></script>
+<script src="qrcode.min.js?v=20260813o"></script>
+<link rel="stylesheet" href="styles.css?v=20260813o">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -331,7 +331,25 @@
   }
 
   // ---------- 共通描画 ----------
-  function renderAll() { renderHeader(); renderModebar(); renderChips(); renderPartners(); renderInvite(); renderRequests(); renderContracts(); renderAnnounce(); renderSettings(); renderTabBadges(); }
+  function renderAll() { autoCompletePastJobs(); renderHeader(); renderModebar(); renderChips(); renderPartners(); renderInvite(); renderRequests(); renderContracts(); renderAnnounce(); renderSettings(); renderTabBadges(); }
+  // 工事日程（工事日）が全て過ぎた成立案件を自動で「完了」にする。完了日＝最終工事日。
+  var _autoCompleting = {};
+  function autoCompletePastJobs() {
+    if (!ck) return;
+    var today = H.todayStr();
+    contractsArr().forEach(function (c) {
+      if (c.completedAt || c.noAutoComplete || _autoCompleting[c._key]) return;
+      if (!(c.fromSign && c.fromSign.at && c.toSign && c.toSign.at)) return; // 成立のみ
+      var ds = H.contractDates(c); if (!ds.length) return;
+      var last = ds.slice().sort().pop();
+      if (last < today) {
+        _autoCompleting[c._key] = true;
+        var at = new Date(last + "T23:59:59").getTime();
+        DB.update("companies/" + ck + "/contracts/" + c._key, { completedAt: at, autoCompleted: true, updatedAt: Date.now() })
+          .then(function () { delete _autoCompleting[c._key]; }).catch(function () { delete _autoCompleting[c._key]; });
+      }
+    });
+  }
 
   // ---------- 招待タブ ----------
   function renderInvite() {
@@ -752,7 +770,7 @@
     }
     if (c.completedAt) {
       var cd = H.fmtYmd(H.ymd(new Date(c.completedAt))), ru = H.retentionUntil(c);
-      h += '<div class="cnote" style="background:#eef2ff;border-color:#c7d2fe;color:#3730a3">✅ この工事は <b>完了</b> です（完了日：' + H.esc(cd) + '）。記録として <b>' + H.retentionYears + '年間</b> 保存します（保存期限：<b>' + H.esc(H.fmtYmd(H.ymd(ru))) + '</b>）。<br>※建設業法などの帳簿・書類の保存にご留意ください。「印刷/PDF」でも保管できます。</div>';
+      h += '<div class="cnote" style="background:#eef2ff;border-color:#c7d2fe;color:#3730a3">✅ この工事は <b>完了</b> です（完了日：' + H.esc(cd) + '）' + (c.autoCompleted ? "<br><b>※工事日程が過ぎたため自動で完了にしました</b>（違う場合は下の「完了を取り消す」で戻せます）。" : "") + '<br>記録として <b>' + H.retentionYears + '年間</b> 保存します（保存期限：<b>' + H.esc(H.fmtYmd(H.ymd(ru))) + '</b>）。<br>※建設業法などの帳簿・書類の保存にご留意ください。「印刷/PDF」でも保管できます。</div>';
     }
     else if (fSigned && tSigned) h += '<div class="cnote">両者の署名がそろい、契約が成立しました。「印刷/PDF」で保存し、双方で保管してください。<br>内容を変更するときは下の <b>✏️ 編集</b> から。変更すると署名がリセットされ、業者の<b>再署名（注文を請ける）→ あなたの注文（署名）</b>で再び成立します。</div>';
     else if (tSigned) h += '<div class="cnote">受注者が注文を請けました。あなたが「注文する（署名）」と契約が成立します。</div>';
@@ -782,7 +800,7 @@
   }
   function uncompleteContract(cid) {
     if (!confirm("完了を取り消して「成立」に戻します。よろしいですか？")) return;
-    DB.update("companies/" + ck + "/contracts/" + cid, { completedAt: null, updatedAt: Date.now() })
+    DB.update("companies/" + ck + "/contracts/" + cid, { completedAt: null, autoCompleted: null, noAutoComplete: true, updatedAt: Date.now() })
       .then(function () { H.toast("完了を取り消しました", "ok"); setTimeout(function () { openCView(cid); }, 60); }).catch(function () {});
   }
   function signFrom(cid) {
