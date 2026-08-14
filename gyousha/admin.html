@@ -15,11 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813i"></script>
-<script src="data.js?v=20260813i"></script>
-<script src="common.js?v=20260813i"></script>
-<script src="qrcode.min.js?v=20260813i"></script>
-<link rel="stylesheet" href="styles.css?v=20260813i">
+<script src="config.js?v=20260813j"></script>
+<script src="data.js?v=20260813j"></script>
+<script src="common.js?v=20260813j"></script>
+<script src="qrcode.min.js?v=20260813j"></script>
+<link rel="stylesheet" href="styles.css?v=20260813j">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -215,8 +215,9 @@
     <div class="field"><label for="c_title">工事名<span style="color:var(--warn)">＊</span></label><input id="c_title" type="text" placeholder="例）〇〇邸 新築 内装工事"></div>
     <div class="field"><label for="c_site">工事場所（住所）</label><input id="c_site" type="text" placeholder="例）市内△△町3-1"></div>
     <div class="field"><label for="c_content">作業内容</label><textarea id="c_content" placeholder="例）内部造作・ボード張り一式"></textarea></div>
+    <div class="field"><label for="c_amount">注文金額（円）<span style="color:var(--warn)">＊</span></label><input id="c_amount" type="tel" inputmode="numeric" placeholder="例）350000"></div>
     <div class="row">
-      <div class="field"><label for="c_amount">注文金額（税抜・円）<span style="color:var(--warn)">＊</span></label><input id="c_amount" type="tel" inputmode="numeric" placeholder="例）350000"></div>
+      <div class="field"><label for="c_taxmode">入力した金額は</label><select id="c_taxmode"><option value="excl">税抜（別途消費税）</option><option value="incl">税込</option></select></div>
       <div class="field" style="max-width:110px"><label for="c_tax">消費税率(%)</label><input id="c_tax" type="tel" inputmode="numeric" value="10"></div>
     </div>
     <div id="c_taxview" class="hint" style="margin-top:-4px"></div>
@@ -666,8 +667,9 @@
     $("c_partner").innerHTML = arr.map(function (it) { var ti = H.tradeInfo(it); return '<option value="' + H.esc(it._key) + '"' + (it._key === selBk ? " selected" : "") + ">" + H.esc("[" + ti.label + "] " + it.name) + "</option>"; }).join("");
   }
   function taxView() {
-    var amt = Number($("c_amount").value) || 0, rate = Number($("c_tax").value) || 0, tax = Math.round(amt * rate / 100);
-    $("c_taxview").innerHTML = amt ? ("消費税 " + H.yen(tax) + " ／ <b>税込 " + H.yen(amt + tax) + "</b>") : "";
+    var amt = Number($("c_amount").value) || 0;
+    var c = { amount: amt, taxRate: Number($("c_tax").value) || 0, taxMode: $("c_taxmode").value };
+    $("c_taxview").innerHTML = amt ? ("税抜 " + H.yen(H.exclOf(c)) + " ＋ 消費税 " + H.yen(H.taxOf(c)) + " ／ <b>税込 " + H.yen(H.inclOf(c)) + "</b>") : "";
   }
   function openContract(bk, cid, prefill) {
     fillContractPartners(bk);
@@ -679,6 +681,7 @@
     if (cid && c.partnerKey) $("c_partner").value = c.partnerKey; else if (bk) $("c_partner").value = bk;
     $("c_title").value = c.title || prefill.title || ""; $("c_site").value = c.site || prefill.site || ""; $("c_content").value = c.content || prefill.content || "";
     $("c_amount").value = c.amount != null ? c.amount : ""; $("c_tax").value = c.taxRate != null ? c.taxRate : (tpl.taxRate != null ? tpl.taxRate : 10);
+    $("c_taxmode").value = c.taxMode || tpl.taxMode || "excl";
     $("c_pay").value = c.payTerm || tpl.payTerm || "";
     workDates = H.contractDates(c).slice().sort();
     $("c_handover").value = c.handover || tpl.handover || ""; $("c_advance").value = c.advance || tpl.advance || ""; $("c_nowork").value = c.nowork || tpl.nowork || "";
@@ -691,20 +694,20 @@
     openContract(r.partnerKey, null, { title: r.title, site: r.site, content: r.body, startDate: r.dateText });
   }
   function saveTemplate() {
-    DB.update("companies/" + ck + "/contractTemplate", { taxRate: Number($("c_tax").value) || 0, payTerm: $("c_pay").value.trim(), handover: $("c_handover").value.trim(), advance: $("c_advance").value.trim(), nowork: $("c_nowork").value.trim() })
+    DB.update("companies/" + ck + "/contractTemplate", { taxRate: Number($("c_tax").value) || 0, taxMode: $("c_taxmode").value, payTerm: $("c_pay").value.trim(), handover: $("c_handover").value.trim(), advance: $("c_advance").value.trim(), nowork: $("c_nowork").value.trim() })
       .then(function () { H.toast("よく使う値を保存しました（次回の新規作成で自動入力されます）", "ok"); }).catch(function () {});
   }
   function saveContract() {
     var bk = $("c_partner").value, title = $("c_title").value.trim(), amount = Number($("c_amount").value) || 0;
     if (!bk) { H.toast("受注者（業者）を選んでください（先に業者登録が必要）", "err"); return; }
     if (!title) { H.toast("工事名を入力してください", "err"); return; }
-    if (!amount) { H.toast("注文金額（税抜）を入力してください", "err"); return; }
+    if (!amount) { H.toast("注文金額を入力してください", "err"); return; }
     var p = partners()[bk] || {}, prev = editingCid ? ((company.contracts || {})[editingCid] || {}) : {};
     var hadSign = !!(prev.fromSign || prev.toSign);
     if (hadSign && !confirm("署名済みの内容を変更します。双方の署名はリセットされます。よろしいですか？")) return;
     var obj = {
       partnerKey: bk, partnerName: p.name || "", title: title, site: $("c_site").value.trim(), content: $("c_content").value.trim(),
-      amount: amount, taxRate: Number($("c_tax").value) || 0, payTerm: $("c_pay").value.trim(),
+      amount: amount, taxRate: Number($("c_tax").value) || 0, taxMode: $("c_taxmode").value, payTerm: $("c_pay").value.trim(),
       workDates: workDates.slice().sort(), startDate: workDates.length ? workDates[0] : "", endDate: workDates.length ? workDates[workDates.length - 1] : "",
       handover: $("c_handover").value.trim(), advance: $("c_advance").value.trim(), nowork: $("c_nowork").value.trim(), note: $("c_note").value.trim(),
       fromSign: hadSign ? null : (prev.fromSign || null), toSign: hadSign ? null : (prev.toSign || null),
@@ -720,12 +723,12 @@
   }
   function crow(k, v) { return v ? '<div class="crow"><div class="k">' + H.esc(k) + '</div><div class="v">' + H.esc(v) + "</div></div>" : ""; }
   function cviewHTML(cid, c) {
-    var st = H.contractStatus(c), tax = H.taxOf(c), amt = Number(c.amount) || 0;
+    var st = H.contractStatus(c), tax = H.taxOf(c), amt = H.exclOf(c);
     var h = '<div style="text-align:center;margin-bottom:6px"><span class="cstat" style="color:' + st.color + ";background:" + st.bg + '">' + st.text + "</span></div>";
     h += '<div class="cc-title" style="text-align:center">' + H.esc(c.title || "") + "</div>";
     h += '<div class="cc-to" style="text-align:center;margin-bottom:8px">注文者：' + H.esc(companyName()) + "　／　受注者：" + H.esc(c.partnerName || "") + "</div>";
     h += crow("工事場所（住所）", c.site) + crow("作業内容", c.content);
-    h += '<div class="camt"><div class="big">税込 ' + H.yen(amt + tax) + '</div><div class="brk">税抜 ' + H.yen(amt) + " ＋ 消費税 " + H.yen(tax) + "（" + (Number(c.taxRate) || 0) + "%）</div></div>";
+    h += '<div class="camt"><div class="big">税込 ' + H.yen(H.inclOf(c)) + '</div><div class="brk">税抜 ' + H.yen(amt) + " ＋ 消費税 " + H.yen(tax) + "（" + (Number(c.taxRate) || 0) + "%）</div></div>";
     h += crow("支払方法・時期", c.payTerm) + crow("工事日程", H.fmtSchedule(c));
     h += crow("前払金・部分払", c.advance) + crow("検査・引渡し", c.handover) + crow("施工しない日・時間帯", c.nowork) + crow("備考", c.note);
     var fSigned = !!(c.fromSign && c.fromSign.at), tSigned = !!(c.toSign && c.toSign.at);
@@ -830,6 +833,7 @@
     });
     $("c_amount").addEventListener("input", taxView);
     $("c_tax").addEventListener("input", taxView);
+    $("c_taxmode").addEventListener("change", taxView);
     $("c_partner").addEventListener("change", renderSchedCal);
     $("c_schedClear").addEventListener("click", function () { workDates = []; paintSchedSel(); updateSchedLabel(); });
     $("c_calWrap").addEventListener("click", function (e) {

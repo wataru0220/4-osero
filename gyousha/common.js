@@ -75,7 +75,7 @@
       },
       contracts: {
         C1: { partnerKey: "P2", partnerName: "田中大工", title: "△△マンション 改修 内装工事", site: "□□市 本町2-5", content: "内部造作・ボード張り一式（1〜2階）", amount: 350000, taxRate: 10, payTerm: "完成・引渡し後、翌月末支払い（銀行振込）", workDates: [ymd(3), ymd(4), ymd(7)], startDate: ymd(3), endDate: ymd(7), handover: "完成後、注文者立会いで検査のうえ引渡し", advance: "", nowork: "日曜・祝日は施工しない", note: "", fromSign: null, toSign: { companyName: "田中大工", name: "田中 一郎", at: now - 40000 }, createdAt: now - 45000, updatedAt: now - 40000 },
-        C2: { partnerKey: "P2", partnerName: "田中大工", title: "◇◇邸 造作工事（先行の成立案件）", site: "市内 桜町1-2", content: "造作工事一式", amount: 200000, taxRate: 10, payTerm: "完成・引渡し後、翌月末支払い", workDates: [ymd(5), ymd(6)], startDate: ymd(5), endDate: ymd(6), handover: "", advance: "", nowork: "", note: "", fromSign: { companyName: "（体験）山田工務店", name: "山田 太郎", at: now - 60000 }, toSign: { companyName: "田中大工", name: "田中 一郎", at: now - 55000 }, createdAt: now - 65000, updatedAt: now - 55000 }
+        C2: { partnerKey: "P2", partnerName: "田中大工", title: "◇◇邸 造作工事（先行の成立案件）", site: "市内 桜町1-2", content: "造作工事一式", amount: 200000, taxRate: 10, taxMode: "incl", payTerm: "完成・引渡し後、翌月末支払い", workDates: [ymd(5), ymd(6)], startDate: ymd(5), endDate: ymd(6), handover: "", advance: "", nowork: "", note: "", fromSign: { companyName: "（体験）山田工務店", name: "山田 太郎", at: now - 60000 }, toSign: { companyName: "田中大工", name: "田中 一郎", at: now - 55000 }, createdAt: now - 65000, updatedAt: now - 55000 }
       }
     } } };
   };
@@ -283,8 +283,10 @@
   // ---- 電子契約（注文書／注文請書 方式・簡易版） ----
   // 工務店（発注者）が注文書を発行 → 協力業者（受注者）が確認して電子サイン（注文請書）で成立。
   H.yen = function (n) { return "¥" + (Number(n) || 0).toLocaleString("ja-JP"); };
-  H.taxOf = function (c) { return Math.round((Number(c.amount) || 0) * (Number(c.taxRate) || 0) / 100); };
-  H.inclOf = function (c) { return (Number(c.amount) || 0) + H.taxOf(c); };
+  // taxMode: "incl"=入力した amount は税込 ／ それ以外（既定・旧データ互換）=税抜。
+  H.exclOf = function (c) { var a = Number(c.amount) || 0, r = Number(c.taxRate) || 0; return (c.taxMode === "incl") ? Math.round(a / (1 + r / 100)) : a; };
+  H.taxOf = function (c) { var a = Number(c.amount) || 0, r = Number(c.taxRate) || 0; return (c.taxMode === "incl") ? (a - Math.round(a / (1 + r / 100))) : Math.round(a * r / 100); };
+  H.inclOf = function (c) { return (c.taxMode === "incl") ? (Number(c.amount) || 0) : ((Number(c.amount) || 0) + H.taxOf(c)); };
   // 成立＝両者署名（受注者の注文請書＋工務店の確定署名）。工務店の署名が「確定＝成立」の操作。
   H.contractStatus = function (c) {
     var f = c && c.fromSign && c.fromSign.at, t = c && c.toSign && c.toSign.at;
@@ -323,7 +325,7 @@
   };
   // 印刷/PDF用：注文書／注文請書（＋工事下請基本契約約款）のHTML文書を組み立てる
   H.contractDocHTML = function (c, koumutenName, terms) {
-    var e = H.esc, tax = H.taxOf(c), amt = Number(c.amount) || 0, incl = amt + tax;
+    var e = H.esc, tax = H.taxOf(c), amt = H.exclOf(c), incl = H.inclOf(c);
     var fromCo = (c.fromSign && c.fromSign.companyName) || koumutenName || "";
     var toCo = (c.toSign && c.toSign.companyName) || c.partnerName || "";
     var sig = function (role, s, coFallback) {
