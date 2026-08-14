@@ -15,11 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813k"></script>
-<script src="data.js?v=20260813k"></script>
-<script src="common.js?v=20260813k"></script>
-<script src="qrcode.min.js?v=20260813k"></script>
-<link rel="stylesheet" href="styles.css?v=20260813k">
+<script src="config.js?v=20260813l"></script>
+<script src="data.js?v=20260813l"></script>
+<script src="common.js?v=20260813l"></script>
+<script src="qrcode.min.js?v=20260813l"></script>
+<link rel="stylesheet" href="styles.css?v=20260813l">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -710,7 +710,7 @@
     if (!amount) { H.toast("注文金額を入力してください", "err"); return; }
     var p = partners()[bk] || {}, prev = editingCid ? ((company.contracts || {})[editingCid] || {}) : {};
     var hadSign = !!(prev.fromSign || prev.toSign);
-    if (hadSign && !confirm("署名済みの内容を変更します。双方の署名はリセットされます。よろしいですか？")) return;
+    if (hadSign && !confirm("この注文書は署名済みです。内容を変更すると双方の署名がリセットされ、業者に「注文を請ける」署名をやり直してもらう必要があります（再合意）。変更しますか？")) return;
     var obj = {
       partnerKey: bk, partnerName: p.name || "", title: title, site: $("c_site").value.trim(), content: $("c_content").value.trim(),
       amount: amount, taxRate: Number($("c_tax").value) || 0, taxMode: $("c_taxmode").value, payTerm: $("c_pay").value.trim(),
@@ -720,7 +720,7 @@
       createdAt: prev.createdAt || Date.now(), updatedAt: Date.now()
     };
     var save = editingCid ? DB.set("companies/" + ck + "/contracts/" + editingCid, obj) : DB.push("companies/" + ck + "/contracts", obj);
-    save.then(function () { hide("ovContract"); H.toast(editingCid ? "更新しました" : "注文書を作成しました", "ok"); switchTab("contracts"); }).catch(function () {});
+    save.then(function () { hide("ovContract"); H.toast(!editingCid ? "注文書を作成しました" : (hadSign ? "変更しました。業者の再署名（注文を請ける）→ あなたの注文（署名）で再び成立します" : "更新しました"), "ok"); switchTab("contracts"); }).catch(function () {});
   }
   function deleteContract() {
     if (!editingCid) return;
@@ -748,11 +748,11 @@
         '<div class="field"><label>担当者名</label><input id="cv_nm" type="text" placeholder="例）山田 太郎"></div>' +
         '<button class="btn full" id="cv_signBtn">' + (tSigned ? "注文する（署名して確定・成立）" : "注文する（署名）") + "</button></div>";
     }
-    if (fSigned && tSigned) h += '<div class="cnote">両者の署名がそろい、契約が成立しました。「印刷/PDF」で保存し、双方で保管してください。</div>';
+    if (fSigned && tSigned) h += '<div class="cnote">両者の署名がそろい、契約が成立しました。「印刷/PDF」で保存し、双方で保管してください。<br>内容を変更するときは下の <b>✏️ 編集</b> から。変更すると署名がリセットされ、業者の<b>再署名（注文を請ける）→ あなたの注文（署名）</b>で再び成立します。</div>';
     else if (tSigned) h += '<div class="cnote">受注者が注文を請けました。あなたが「注文する（署名）」と契約が成立します。</div>';
     else h += '<div class="cnote">受注者（協力業者）はアプリの「注文」タブで内容を確認し、注文を請けます（署名）。その後あなたが注文（署名）して確定します。</div>';
     h += '<p class="hint" style="margin-top:8px">🖨 印刷/PDFには「工事下請基本契約約款」（建設業法第19条 各号対応）が添付されます。約款の一部は「設定」で調整できます。</p>';
-    h += '<div class="cc-actions" style="margin-top:12px"><button class="btn sm" id="cv_printBtn">🖨 印刷/PDF</button><button class="btn sm ghost" id="cv_editBtn">✏️ 編集</button></div>';
+    h += '<div class="cc-actions" style="margin-top:12px"><button class="btn sm" id="cv_printBtn">🖨 印刷/PDF</button><button class="btn sm ghost" id="cv_editBtn">' + ((fSigned && tSigned) ? "✏️ 内容を変更（要再署名）" : "✏️ 編集") + '</button></div>';
     return h;
   }
   function openCView(cid) {
