@@ -15,10 +15,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813m"></script>
-<script src="data.js?v=20260813m"></script>
-<script src="common.js?v=20260813m"></script>
-<link rel="stylesheet" href="styles.css?v=20260813m">
+<script src="config.js?v=20260813n"></script>
+<script src="data.js?v=20260813n"></script>
+<script src="common.js?v=20260813n"></script>
+<link rel="stylesheet" href="styles.css?v=20260813n">
 <style>:root{--brand:#e8792a;--brand-dark:#b8560f;--chip:#fdece0}</style>
 </head>
 <body>
@@ -348,7 +348,21 @@
   H.setupInstall();
   if (H.isStandalone()) document.getElementById("installBtn").style.display = "none";
   document.getElementById("installBtn").addEventListener("click", function () { H.showInstall("匠協コネクト（協力業者）"); });
-  document.getElementById("helpBtn").addEventListener("click", function () { H.showHelp("使い方（協力業者）", USER_HELP); });
+  var USER_HOWTO = [
+    { emoji: "👷", h: "匠協コネクトの使い方（協力業者）", lines: ["工務店からの注文・連絡を確認して、かんたんに返信できます。", "登録・ログインは不要です。約1分でご説明します。"] },
+    { emoji: "🔗", h: "① リンクを開くだけ", lines: ["工務店から届いた招待リンク（またはQR）を開きます。", "これだけで使えます。ホーム画面に追加も可能です。"] },
+    { emoji: "📝", h: "② 注文書を確認", lines: ["「注文」タブで、工事名・作業内容・金額・工事日を確認します。"] },
+    { emoji: "✍️", h: "③ 注文を請ける（署名）", lines: ["内容に同意できたら「注文を請ける（署名）」。", "会社名・担当者名を入れるだけ。押印は不要です。"] },
+    { emoji: "📅", h: "④ 空き状況を登録", lines: ["「空き」タブで日付をタップ（空き→応相談→なし）。", "成立した工事の日は「工事」と自動で入ります。"] },
+    { emoji: "📢", h: "⑤ お知らせを見る", lines: ["工務店からの一斉連絡は「お知らせ」タブに届きます。"] },
+    { emoji: "🎉", h: "以上です", lines: ["困ったときは ❓ヘルプ を開いてください。"] }
+  ];
+  document.getElementById("helpBtn").addEventListener("click", function () {
+    H.showHelp("使い方（協力業者）", USER_HELP, [
+      { label: "使い方の動画（協力業者向け）", title: "使い方（協力業者）", slides: USER_HOWTO },
+      { label: "注意事項の動画", title: "ご利用の注意", slides: H.notesSlides() }
+    ]);
+  });
   document.getElementById("reloadBtn").addEventListener("click", function () { H.toast("最新に更新しています…", "ok"); setTimeout(function () { location.reload(); }, 250); });
   (function () { var cf = document.getElementById("cFilterU"); if (cf) cf.addEventListener("change", renderContracts); })();
 

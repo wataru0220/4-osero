@@ -35,6 +35,27 @@ header .sub{font-size:12px; opacity:.92; margin-top:3px}
 .helpitem[open] summary{border-bottom:1px solid var(--line)}
 .helpa{padding:11px 12px; font-size:13px; line-height:1.85; color:var(--ink)}
 .helpa b{color:var(--brand-dark)}
+/* ヘルプ内の動画ボタン */
+.helpvids{margin:2px 0 12px; padding:10px; border:1px solid var(--line); border-radius:10px; background:#fafbfc}
+.helpvids .hvlabel{font-size:12px; font-weight:800; color:var(--sub); margin-bottom:8px}
+.helpvids .vidbtn{margin-bottom:8px}
+.helpvids .vidbtn:last-child{margin-bottom:0}
+/* 説明動画プレーヤー（自動再生スライド） */
+.vov{position:fixed; inset:0; z-index:120; background:rgba(15,20,30,.92); display:flex; align-items:center; justify-content:center; padding:16px}
+.vplayer{width:100%; max-width:520px; background:#fff; border-radius:16px; padding:20px 16px 14px; position:relative; box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.vclose{position:absolute; top:8px; right:10px; border:0; background:transparent; font-size:20px; cursor:pointer; color:var(--sub); line-height:1}
+.vstage{min-height:240px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:8px 6px}
+.vemoji{font-size:64px; line-height:1; margin-bottom:12px}
+.vh{font-size:19px; font-weight:800; color:var(--ink); margin-bottom:12px; line-height:1.4}
+.vlines{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:7px; max-width:440px}
+.vlines li{font-size:14.5px; color:var(--ink); line-height:1.55; text-align:left}
+.vlines li::before{content:"・"; color:var(--brand); font-weight:800}
+.vbar{height:5px; background:#e4e8ee; border-radius:99px; overflow:hidden; margin:12px 2px 6px}
+.vbarfill{height:100%; width:0; background:var(--brand); border-radius:99px}
+.vmeta{text-align:center; font-size:12px; color:var(--sub); margin-bottom:12px}
+.vctrl{display:flex; gap:7px; justify-content:center; flex-wrap:wrap}
+.vbtn{border:1px solid var(--line); background:#fff; border-radius:10px; padding:9px 12px; font-size:13px; font-weight:700; cursor:pointer; color:var(--ink)}
+.vbtn.vmain{background:var(--brand); color:#fff; border-color:var(--brand)}
 
 /* 電子請負契約 */
 .ccard{border:1px solid var(--line); border-radius:13px; padding:13px; margin-bottom:11px; background:#fff; box-shadow:0 1px 2px rgba(16,24,40,.04)}

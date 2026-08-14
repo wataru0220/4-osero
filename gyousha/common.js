@@ -292,12 +292,86 @@
     s.ov.querySelector("#__closeInstall").onclick = s.close;
     if (opts.otherUrl) s.ov.querySelector("#__otherApp").onclick = function () { window.open(opts.otherUrl, "_blank"); };
   };
-  H.showHelp = function (title, items) {
+  H.showHelp = function (title, items, videos) {
+    var vhtml = (videos && videos.length)
+      ? '<div class="helpvids"><div class="hvlabel">▶ 動画で見る（音声つき）</div>' + videos.map(function (v, idx) {
+          return '<button class="btn full vidbtn" data-vidx="' + idx + '">🎬 ' + H.esc(v.label) + "</button>";
+        }).join("") + "</div>"
+      : "";
     var body = (items || []).map(function (it) {
       return '<details class="helpitem"><summary>' + H.esc(it.q) + '</summary><div class="helpa">' + it.a + "</div></details>";
     }).join("");
-    var s = H._sheet("<h3>❓ " + H.esc(title) + "</h3>" + body + '<button class="btn full ghost" id="__closeHelp" style="margin-top:10px">閉じる</button>');
+    var s = H._sheet("<h3>❓ " + H.esc(title) + "</h3>" + vhtml + body + '<button class="btn full ghost" id="__closeHelp" style="margin-top:10px">閉じる</button>');
     s.ov.querySelector("#__closeHelp").onclick = s.close;
+    if (videos && videos.length) Array.prototype.forEach.call(s.ov.querySelectorAll("[data-vidx]"), function (b) {
+      b.onclick = function () { var v = videos[+b.dataset.vidx]; H.playSlides(v.title || v.label, v.slides); };
+    });
+  };
+  // 説明動画（自動再生スライド＋日本語ナレーション音声＋字幕）。slides: [{emoji,h,lines[],say?}]
+  H.playSlides = function (title, slides) {
+    slides = (slides || []).slice(); if (!slides.length) return;
+    var i = 0, playing = true, muted = false, done = false, timer = null, utter = null;
+    var sayOf = function (s) { return s.say || ((s.h || "") + "。" + (s.lines || []).join("。")); };
+    var estMs = function (s) { return Math.max(3800, 2600 + sayOf(s).length * 75); };
+    var ov = document.createElement("div"); ov.className = "vov on";
+    ov.innerHTML = '<div class="vplayer"><button class="vclose" data-vclose>✕</button>' +
+      '<div class="vstage"><div class="vemoji" data-vemoji></div><div class="vh" data-vh></div><ul class="vlines" data-vlines></ul></div>' +
+      '<div class="vbar"><div class="vbarfill" data-vfill></div></div><div class="vmeta" data-vmeta></div>' +
+      '<div class="vctrl"><button class="vbtn" data-vprev>⏮ 前</button><button class="vbtn vmain" data-vplay>⏸ 一時停止</button>' +
+      '<button class="vbtn" data-vnext>次 ⏭</button><button class="vbtn" data-vmute>🔊 音声</button></div></div>';
+    document.body.appendChild(ov); document.body.style.overflow = "hidden";
+    var q = function (sel) { return ov.querySelector(sel); };
+    function stopTts() { try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {} utter = null; }
+    function clearT() { if (timer) { clearTimeout(timer); timer = null; } }
+    function close() { playing = false; clearT(); stopTts(); try { document.body.removeChild(ov); } catch (e) {} document.body.style.overflow = ""; }
+    function setBtn() { q("[data-vplay]").textContent = done ? "↺ もう一度" : (playing ? "⏸ 一時停止" : "▶ 再生"); q("[data-vmute]").textContent = muted ? "🔇 音声OFF" : "🔊 音声ON"; }
+    function speak(s) {
+      if (muted || !window.speechSynthesis) return false;
+      try {
+        var u = new SpeechSynthesisUtterance(sayOf(s)); u.lang = "ja-JP"; u.rate = 1.03;
+        try { var vs = window.speechSynthesis.getVoices() || [], jv = null; for (var k = 0; k < vs.length; k++) { if (/ja|japan/i.test(vs[k].lang) || /japan/i.test(vs[k].name)) { jv = vs[k]; break; } } if (jv) u.voice = jv; } catch (e2) {}
+        u.onend = function () { if (playing && u === utter) next(); };
+        utter = u; window.speechSynthesis.speak(u); return true;
+      } catch (e) { return false; }
+    }
+    function play() {
+      clearT(); stopTts();
+      var s = slides[i];
+      q("[data-vemoji]").textContent = s.emoji || "📘"; q("[data-vh]").innerHTML = s.h || "";
+      q("[data-vlines]").innerHTML = (s.lines || []).map(function (l) { return "<li>" + l + "</li>"; }).join("");
+      q("[data-vmeta]").textContent = (i + 1) + " / " + slides.length + "　｜　" + title;
+      var f = q("[data-vfill]"), d = estMs(s);
+      f.style.transition = "none"; f.style.width = "0%"; void f.offsetWidth;
+      f.style.transition = "width " + d + "ms linear"; f.style.width = "100%";
+      // 音声ナレーションの onend で次へ進む。音声が無い/終わらない環境でも進むよう安全タイマーも張る。
+      if (playing) { var spoke = speak(s); timer = setTimeout(next, spoke ? d + 4000 : d); }
+    }
+    function next() { if (i < slides.length - 1) { i++; play(); } else { done = true; playing = false; clearT(); stopTts(); q("[data-vfill]").style.width = "100%"; setBtn(); } }
+    function prev() { done = false; playing = true; if (i > 0) i--; setBtn(); play(); }
+    function togglePlay() {
+      if (done) { done = false; i = 0; playing = true; setBtn(); play(); return; }
+      playing = !playing; setBtn();
+      if (playing) play();
+      else { clearT(); stopTts(); var f = q("[data-vfill]"), w = getComputedStyle(f).width; f.style.transition = "none"; f.style.width = w; }
+    }
+    q("[data-vclose]").onclick = close; q("[data-vplay]").onclick = togglePlay;
+    q("[data-vnext]").onclick = function () { done = false; playing = true; setBtn(); next(); };
+    q("[data-vprev]").onclick = prev;
+    q("[data-vmute]").onclick = function () { muted = !muted; setBtn(); if (playing && !done) play(); };
+    ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
+    setBtn(); play();
+  };
+  // 注意事項の説明動画（両アプリ共通）。法的な留意点をやさしく。
+  H.notesSlides = function () {
+    return [
+      { emoji: "⚠️", h: "ご利用上の注意", lines: ["安心してお使いいただくための大切なポイントです。", "約1分でご説明します。"] },
+      { emoji: "✍️", h: "電子サインについて", lines: ["このアプリの電子サインは、合意した内容と日時を記録する方式です。", "法律上の「認証された電子署名」とは異なります。"] },
+      { emoji: "📄", h: "契約約款について", lines: ["添付の「工事下請基本契約約款」は簡易なひな型です。", "実際の運用前に、行政書士・弁護士などの専門家にご確認ください。"] },
+      { emoji: "🗄️", h: "保存年数について", lines: ["完了した工事は目安として5年間保存を表示しています。", "法令で必要な保存年数は、案件や立場により異なる場合があります。"] },
+      { emoji: "🔒", h: "個人情報の取り扱い", lines: ["業者名・連絡先などは大切に扱い、関係者以外に渡さないでください。", "招待リンクは相手ごとの専用リンクです。"] },
+      { emoji: "🔍", h: "署名の前に必ず確認", lines: ["工事名・金額・工事日・支払いなど、内容をよく確認してから署名を。", "相違があれば署名せず、相手にご連絡ください。"] },
+      { emoji: "🙏", h: "以上です", lines: ["ご不明点は❓ヘルプ、または取引先にご確認ください。"] }
+    ];
   };
 
   H.copy = (text, okMsg) => {
