@@ -75,7 +75,8 @@
       },
       contracts: {
         C1: { partnerKey: "P2", partnerName: "田中大工", title: "△△マンション 改修 内装工事", site: "□□市 本町2-5", content: "内部造作・ボード張り一式（1〜2階）", amount: 350000, taxRate: 10, payTerm: "完成・引渡し後、翌月末支払い（銀行振込）", workDates: [ymd(3), ymd(4), ymd(7)], startDate: ymd(3), endDate: ymd(7), handover: "完成後、注文者立会いで検査のうえ引渡し", advance: "", nowork: "日曜・祝日は施工しない", note: "", fromSign: null, toSign: { companyName: "田中大工", name: "田中 一郎", at: now - 40000 }, createdAt: now - 45000, updatedAt: now - 40000 },
-        C2: { partnerKey: "P2", partnerName: "田中大工", title: "◇◇邸 造作工事（先行の成立案件）", site: "市内 桜町1-2", content: "造作工事一式", amount: 200000, taxRate: 10, taxMode: "incl", payTerm: "完成・引渡し後、翌月末支払い", workDates: [ymd(5), ymd(6)], startDate: ymd(5), endDate: ymd(6), handover: "", advance: "", nowork: "", note: "", fromSign: { companyName: "（体験）山田工務店", name: "山田 太郎", at: now - 60000 }, toSign: { companyName: "田中大工", name: "田中 一郎", at: now - 55000 }, createdAt: now - 65000, updatedAt: now - 55000 }
+        C2: { partnerKey: "P2", partnerName: "田中大工", title: "◇◇邸 造作工事（先行の成立案件）", site: "市内 桜町1-2", content: "造作工事一式", amount: 200000, taxRate: 10, taxMode: "incl", payTerm: "完成・引渡し後、翌月末支払い", workDates: [ymd(5), ymd(6)], startDate: ymd(5), endDate: ymd(6), handover: "", advance: "", nowork: "", note: "", fromSign: { companyName: "（体験）山田工務店", name: "山田 太郎", at: now - 60000 }, toSign: { companyName: "田中大工", name: "田中 一郎", at: now - 55000 }, createdAt: now - 65000, updatedAt: now - 55000 },
+        C3: { partnerKey: "P1", partnerName: "丸山電気工事", title: "□□店舗 配線改修（完了）", site: "市内 中央2-8", content: "配線改修一式", amount: 80000, taxRate: 10, taxMode: "excl", payTerm: "翌月末 銀行振込", workDates: [ymd(-20), ymd(-19)], startDate: ymd(-20), endDate: ymd(-19), handover: "", advance: "", nowork: "", note: "", fromSign: { companyName: "（体験）山田工務店", name: "山田 太郎", at: now - 210000 }, toSign: { companyName: "丸山電気工事", name: "丸山", at: now - 215000 }, completedAt: now - 100000, createdAt: now - 220000, updatedAt: now - 100000 }
       }
     } } };
   };
@@ -313,12 +314,20 @@
   H.taxOf = function (c) { var a = Number(c.amount) || 0, r = Number(c.taxRate) || 0; return (c.taxMode === "incl") ? (a - Math.round(a / (1 + r / 100))) : Math.round(a * r / 100); };
   H.inclOf = function (c) { return (c.taxMode === "incl") ? (Number(c.amount) || 0) : ((Number(c.amount) || 0) + H.taxOf(c)); };
   // 成立＝両者署名（受注者の注文請書＋工務店の確定署名）。工務店の署名が「確定＝成立」の操作。
+  // 完了＝成立後に工務店が「工事完了」にしたもの（completedAt）。完了から H.retentionYears 年 保存。
   H.contractStatus = function (c) {
     var f = c && c.fromSign && c.fromSign.at, t = c && c.toSign && c.toSign.at;
+    if (c && c.completedAt) return { key: "completed", text: "完了", color: "#3730a3", bg: "#eef2ff" };
     if (f && t) return { key: "done", text: "成立", color: "#1a7a45", bg: "#eafaf0" };
     if (t) return { key: "wait", text: "工務店の確定待ち", color: "#8a5a00", bg: "#fff4e5" };
     if (f) return { key: "wait", text: "請書待ち", color: "#8a5a00", bg: "#fff4e5" };
     return { key: "draft", text: "下書き", color: "#5d6b7c", bg: "#eef1f4" };
+  };
+  // 完了案件の保存期限（完了日＋5年）。法令上の保存を意識した表示用。
+  H.retentionYears = 5;
+  H.retentionUntil = function (c) {
+    if (!c || !c.completedAt) return null;
+    var d = new Date(c.completedAt); d.setFullYear(d.getFullYear() + H.retentionYears); return d;
   };
   // 工事下請基本契約約款（建設業法第19条 各号に対応する簡易ひな型・会社設定で一部を調整可）
   H.contractTermsDefault = { defectYears: "2", court: "注文者の主たる営業所の所在地を管轄する地方裁判所" };

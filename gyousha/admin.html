@@ -15,11 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813l"></script>
-<script src="data.js?v=20260813l"></script>
-<script src="common.js?v=20260813l"></script>
-<script src="qrcode.min.js?v=20260813l"></script>
-<link rel="stylesheet" href="styles.css?v=20260813l">
+<script src="config.js?v=20260813m"></script>
+<script src="data.js?v=20260813m"></script>
+<script src="common.js?v=20260813m"></script>
+<script src="qrcode.min.js?v=20260813m"></script>
+<link rel="stylesheet" href="styles.css?v=20260813m">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -106,6 +106,7 @@
         <select id="cFilter" aria-label="絞り込み">
           <option value="active">進行中</option>
           <option value="done">成立</option>
+          <option value="completed">完了</option>
           <option value="all">すべて</option>
         </select>
       </div>
@@ -646,12 +647,12 @@
   function renderContracts() {
     var f = $("cFilter").value;
     var list = contractsArr().sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
-    if (f === "active") list = list.filter(function (c) { return H.contractStatus(c).key !== "done"; });
+    if (f === "active") list = list.filter(function (c) { var k = H.contractStatus(c).key; return k !== "done" && k !== "completed"; });
     else if (f !== "all") list = list.filter(function (c) { return H.contractStatus(c).key === f; });
     $("countC").textContent = list.length + " 件";
     var root = $("listC");
     if (contractsArr().length === 0) { root.innerHTML = emptyBox("まだ注文書はありません", "「業者」タブの各業者の <b>📝注文書</b>、または上の「＋新しい注文書を作成」から作成できます。"); return; }
-    if (!list.length) { root.innerHTML = emptyBox(f === "done" ? "成立した注文書はありません" : "進行中の注文書はありません", f === "active" ? "成立した注文書は、絞り込みの「成立」で確認できます。" : ""); return; }
+    if (!list.length) { root.innerHTML = emptyBox(f === "done" ? "成立した注文書はありません" : f === "completed" ? "完了した注文書はありません" : "進行中の注文書はありません", f === "active" ? "成立した注文書は「成立」、完了は「完了」で確認できます。" : ""); return; }
     root.innerHTML = list.map(ccard).join("");
   }
   function ccard(c) {
@@ -717,6 +718,7 @@
       workDates: workDates.slice().sort(), startDate: workDates.length ? workDates[0] : "", endDate: workDates.length ? workDates[workDates.length - 1] : "",
       handover: $("c_handover").value.trim(), advance: $("c_advance").value.trim(), nowork: $("c_nowork").value.trim(), note: $("c_note").value.trim(),
       fromSign: hadSign ? null : (prev.fromSign || null), toSign: hadSign ? null : (prev.toSign || null),
+      completedAt: hadSign ? null : (prev.completedAt || null),
       createdAt: prev.createdAt || Date.now(), updatedAt: Date.now()
     };
     var save = editingCid ? DB.set("companies/" + ck + "/contracts/" + editingCid, obj) : DB.push("companies/" + ck + "/contracts", obj);
@@ -748,11 +750,19 @@
         '<div class="field"><label>担当者名</label><input id="cv_nm" type="text" placeholder="例）山田 太郎"></div>' +
         '<button class="btn full" id="cv_signBtn">' + (tSigned ? "注文する（署名して確定・成立）" : "注文する（署名）") + "</button></div>";
     }
-    if (fSigned && tSigned) h += '<div class="cnote">両者の署名がそろい、契約が成立しました。「印刷/PDF」で保存し、双方で保管してください。<br>内容を変更するときは下の <b>✏️ 編集</b> から。変更すると署名がリセットされ、業者の<b>再署名（注文を請ける）→ あなたの注文（署名）</b>で再び成立します。</div>';
+    if (c.completedAt) {
+      var cd = H.fmtYmd(H.ymd(new Date(c.completedAt))), ru = H.retentionUntil(c);
+      h += '<div class="cnote" style="background:#eef2ff;border-color:#c7d2fe;color:#3730a3">✅ この工事は <b>完了</b> です（完了日：' + H.esc(cd) + '）。記録として <b>' + H.retentionYears + '年間</b> 保存します（保存期限：<b>' + H.esc(H.fmtYmd(H.ymd(ru))) + '</b>）。<br>※建設業法などの帳簿・書類の保存にご留意ください。「印刷/PDF」でも保管できます。</div>';
+    }
+    else if (fSigned && tSigned) h += '<div class="cnote">両者の署名がそろい、契約が成立しました。「印刷/PDF」で保存し、双方で保管してください。<br>内容を変更するときは下の <b>✏️ 編集</b> から。変更すると署名がリセットされ、業者の<b>再署名（注文を請ける）→ あなたの注文（署名）</b>で再び成立します。</div>';
     else if (tSigned) h += '<div class="cnote">受注者が注文を請けました。あなたが「注文する（署名）」と契約が成立します。</div>';
     else h += '<div class="cnote">受注者（協力業者）はアプリの「注文」タブで内容を確認し、注文を請けます（署名）。その後あなたが注文（署名）して確定します。</div>';
     h += '<p class="hint" style="margin-top:8px">🖨 印刷/PDFには「工事下請基本契約約款」（建設業法第19条 各号対応）が添付されます。約款の一部は「設定」で調整できます。</p>';
-    h += '<div class="cc-actions" style="margin-top:12px"><button class="btn sm" id="cv_printBtn">🖨 印刷/PDF</button><button class="btn sm ghost" id="cv_editBtn">' + ((fSigned && tSigned) ? "✏️ 内容を変更（要再署名）" : "✏️ 編集") + '</button></div>';
+    var acts = '<button class="btn sm" id="cv_printBtn">🖨 印刷/PDF</button>';
+    if (c.completedAt) acts += '<button class="btn sm ghost" id="cv_uncompleteBtn">↩ 完了を取り消す</button>';
+    else if (fSigned && tSigned) acts += '<button class="btn sm" id="cv_completeBtn">✅ 工事完了にする</button>';
+    acts += '<button class="btn sm ghost" id="cv_editBtn">' + ((fSigned && tSigned && !c.completedAt) ? "✏️ 内容を変更（要再署名）" : "✏️ 編集") + '</button>';
+    h += '<div class="cc-actions" style="margin-top:12px">' + acts + '</div>';
     return h;
   }
   function openCView(cid) {
@@ -762,6 +772,18 @@
     var sb = document.getElementById("cv_signBtn"); if (sb) sb.onclick = function () { signFrom(cid); };
     var pb = document.getElementById("cv_printBtn"); if (pb) pb.onclick = function () { H.printContract((company.contracts || {})[cid], companyName(), contractTerms()); };
     var eb = document.getElementById("cv_editBtn"); if (eb) eb.onclick = function () { hide("ovCView"); openContract(null, cid); };
+    var mb = document.getElementById("cv_completeBtn"); if (mb) mb.onclick = function () { markCompleted(cid); };
+    var ub = document.getElementById("cv_uncompleteBtn"); if (ub) ub.onclick = function () { uncompleteContract(cid); };
+  }
+  function markCompleted(cid) {
+    if (!confirm("この工事を「完了」にします。よろしいですか？（記録として" + H.retentionYears + "年間保存されます）")) return;
+    DB.update("companies/" + ck + "/contracts/" + cid, { completedAt: Date.now(), updatedAt: Date.now() })
+      .then(function () { H.toast("工事を完了にしました", "ok"); setTimeout(function () { openCView(cid); }, 60); }).catch(function () {});
+  }
+  function uncompleteContract(cid) {
+    if (!confirm("完了を取り消して「成立」に戻します。よろしいですか？")) return;
+    DB.update("companies/" + ck + "/contracts/" + cid, { completedAt: null, updatedAt: Date.now() })
+      .then(function () { H.toast("完了を取り消しました", "ok"); setTimeout(function () { openCView(cid); }, 60); }).catch(function () {});
   }
   function signFrom(cid) {
     var co = ($("cv_co").value || "").trim(), nm = ($("cv_nm").value || "").trim();
