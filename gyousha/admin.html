@@ -15,11 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813j"></script>
-<script src="data.js?v=20260813j"></script>
-<script src="common.js?v=20260813j"></script>
-<script src="qrcode.min.js?v=20260813j"></script>
-<link rel="stylesheet" href="styles.css?v=20260813j">
+<script src="config.js?v=20260813k"></script>
+<script src="data.js?v=20260813k"></script>
+<script src="common.js?v=20260813k"></script>
+<script src="qrcode.min.js?v=20260813k"></script>
+<link rel="stylesheet" href="styles.css?v=20260813k">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -265,7 +265,7 @@
   <div class="sheet">
     <h3 id="avTitle">📅 空き状況</h3>
     <p class="hint" style="margin-top:0">空きは各協力業者が自分で登録します（この画面は確認用）。</p>
-    <div class="callegend"><span><span class="sw" style="background:#1aa260"></span>空き</span><span><span class="sw" style="background:#e0a200"></span>応相談</span></div>
+    <div class="callegend"><span><span class="sw" style="background:#1aa260"></span>空き</span><span><span class="sw" style="background:#e0a200"></span>応相談</span><span><span class="sw" style="background:#475569"></span>工事予定</span></div>
     <div id="avRoot" class="calro"></div>
     <button class="btn ghost full" id="avClose" style="margin-top:10px">閉じる</button>
   </div>
@@ -294,6 +294,12 @@
   function announceArr() { var a = (company && company.announcements) || {}; return Object.keys(a).map(function (k) { var o = a[k]; o._key = k; return o; }); }
   function companyName() { return (company && company.profile && company.profile.name) || "(未設定)"; }
   function contractTerms() { return (company && company.profile && company.profile.terms) || {}; }
+  function jobTag(bk) {
+    var jobs = H.jobDates(company.contracts, bk);
+    var ds = Object.keys(jobs).filter(function (d) { return d >= H.todayStr(); }).sort();
+    if (!ds.length) return "";
+    return '<span class="availtag" style="background:#e8ecf1;color:#334155;border:1px solid #cbd2da">🔨 工事予定 ' + ds.slice(0, 3).map(H.mdFromYmd).join("・") + (ds.length > 3 ? " +" + (ds.length - 3) : "") + "</span>";
+  }
 
   // ---------- 起動 ----------
   function boot() {
@@ -470,7 +476,7 @@
       (meta.length ? '<div class="gc-meta">' + meta.join('<span class="dotsep">・</span>') + "</div>" : "") +
       (tel ? '<div class="gc-tel"><a class="telbtn" href="tel:' + H.esc(H.telDigits(tel)) + '">📞 ' + H.esc(tel) + '</a><button class="btn sm ghost" data-copy="' + H.esc(tel) + '">コピー</button></div>' : "") +
       (it.note ? '<div class="gc-note">' + H.esc(it.note) + "</div>" : "") +
-      '<div style="margin-top:8px">' + H.availSummary(it.avail).html + "</div>" +
+      '<div style="margin-top:8px">' + H.availSummary(it.avail).html + jobTag(it._key) + "</div>" +
       '<div class="gc-actions">' +
         '<button class="btn sm" data-contract="' + it._key + '">📝 注文書</button>' +
         '<button class="btn sm ghost" data-cal="' + it._key + '">📅 空き</button>' +
@@ -902,7 +908,11 @@
     var it = partners()[bk]; if (!it) return;
     $("avTitle").textContent = "📅 " + (it.name || "業者") + " の空き状況";
     var f = H.upcomingFreeDates(it.avail);
-    $("avRoot").innerHTML = (f.length ? '<div class="availtag free" style="display:block;margin:0 0 10px">🟢 直近の空き：' + f.slice(0, 6).map(H.mdFromYmd).join("・") + (f.length > 6 ? " ほか" : "") + "</div>" : '<div class="cnote">この業者はまだ空きを登録していません。</div>') + H.calendarHTML(it.avail, 3);
+    var jobs = H.jobDates(company.contracts, bk);
+    var jobDs = Object.keys(jobs).filter(function (d) { return d >= H.todayStr(); }).sort();
+    var jobLine = jobDs.length ? '<div class="availtag" style="display:block;margin:0 0 10px;background:#e8ecf1;color:#334155;border:1px solid #cbd2da">🔨 工事予定：' + jobDs.slice(0, 8).map(H.mdFromYmd).join("・") + (jobDs.length > 8 ? " ほか" : "") + "</div>" : "";
+    $("avRoot").innerHTML = (f.length ? '<div class="availtag free" style="display:block;margin:0 0 10px">🟢 直近の空き：' + f.slice(0, 6).map(H.mdFromYmd).join("・") + (f.length > 6 ? " ほか" : "") + "</div>" : '<div class="cnote">この業者はまだ空きを登録していません。</div>') + jobLine + H.calendarHTML(it.avail, 3);
+    H.paintJobs($("avRoot"), jobs);
     show("ovAvail");
   }
 

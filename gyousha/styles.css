@@ -159,6 +159,10 @@ textarea{resize:vertical; min-height:64px}
 .calcell.booked{background:#eceff3; color:#9aa7b5; cursor:not-allowed; flex-direction:column; gap:0; border-color:#dbe1e8}
 .calcell.booked .dn{font-size:12px; line-height:1}
 .calcell.booked .bk{font-size:8px; font-weight:800; color:#c0392b; line-height:1.1}
+/* 成立した工事の予定（空きカレンダーに重ねて表示・操作不可） */
+.calcell.job{background:#475569; color:#fff; border-color:#475569; cursor:not-allowed; flex-direction:column; gap:0}
+.calcell.job .dn{font-size:12px; line-height:1}
+.calcell.job .jb{font-size:8px; font-weight:800; line-height:1.1}
 .availtag{display:inline-block; font-size:12px; font-weight:700; border-radius:7px; padding:2px 7px; margin:4px 6px 0 0}
 .availtag.free{background:#eafaf0; color:#1a7a45; border:1px solid #b6e6c8}
 .availtag.maybe{background:#fff7e8; color:#8a5a00; border:1px solid #ffe1a8}

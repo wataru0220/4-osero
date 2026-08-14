@@ -139,6 +139,31 @@
   };
   // 工事日程の表示（新workDates優先、旧は範囲/自由入力）。
   H.fmtSchedule = (c) => (c && c.workDates && c.workDates.length) ? H.fmtDates(c.workDates) : H.fmtDateRange(c && c.startDate, c && c.endDate);
+  // 成立（両者署名）した契約の工事日を業者ごとに集計（日→{title,cid}）。カレンダーの「工事予定」表示に使う。
+  H.jobDates = (contracts, bk, excludeCid) => {
+    const set = {};
+    Object.keys(contracts || {}).forEach((k) => {
+      if (k === excludeCid) return;
+      const c = contracts[k];
+      if (!c || c.partnerKey !== bk) return;
+      if (!(c.fromSign && c.fromSign.at && c.toSign && c.toSign.at)) return; // 成立のみ
+      H.contractDates(c).forEach((d) => { set[d] = { title: c.title || "", cid: k }; });
+    });
+    return set;
+  };
+  // 描画済みカレンダーに「工事予定」（成立した工事日）を重ねる。該当セルは .job＋「工事」表示・操作不可。
+  H.paintJobs = (rootEl, jobSet) => {
+    if (!rootEl) return;
+    Array.prototype.forEach.call(rootEl.querySelectorAll(".calcell[data-date]"), (el) => {
+      if (el.classList.contains("past")) return;
+      const d = el.dataset.date;
+      if (jobSet && jobSet[d]) {
+        el.classList.add("job");
+        el.innerHTML = '<span class="dn">' + (+d.split("-")[2]) + '</span><span class="jb">工事</span>';
+        el.title = jobSet[d].title || "工事予定";
+      }
+    });
+  };
 
   // ---- 空き状況カレンダー ----
   H.todayStr = () => H.ymd(new Date());

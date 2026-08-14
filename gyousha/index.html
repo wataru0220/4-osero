@@ -15,10 +15,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813j"></script>
-<script src="data.js?v=20260813j"></script>
-<script src="common.js?v=20260813j"></script>
-<link rel="stylesheet" href="styles.css?v=20260813j">
+<script src="config.js?v=20260813k"></script>
+<script src="data.js?v=20260813k"></script>
+<script src="common.js?v=20260813k"></script>
+<link rel="stylesheet" href="styles.css?v=20260813k">
 <style>:root{--brand:#e8792a;--brand-dark:#b8560f;--chip:#fdece0}</style>
 </head>
 <body>
@@ -79,8 +79,8 @@
   <section id="page-avail" class="page">
     <div class="wrap">
       <div class="seclabel">📅 空き状況の登録</div>
-      <p class="hint" style="margin-top:0">日付をタップすると <b>空き → 応相談 → なし</b> の順で切り替わります。登録した空きは、取引先の工務店に表示されます。</p>
-      <div class="callegend"><span><span class="sw" style="background:#1aa260"></span>空き</span><span><span class="sw" style="background:#e0a200"></span>応相談</span><span><span class="sw" style="background:#fff;border:1px solid var(--line)"></span>なし</span></div>
+      <p class="hint" style="margin-top:0">日付をタップすると <b>空き → 応相談 → なし</b> の順で切り替わります。登録した空きは、取引先の工務店に表示されます。<b>成立した工事の日は「工事」</b>として自動で入り、変更できません。</p>
+      <div class="callegend"><span><span class="sw" style="background:#1aa260"></span>空き</span><span><span class="sw" style="background:#e0a200"></span>応相談</span><span><span class="sw" style="background:#fff;border:1px solid var(--line)"></span>なし</span><span><span class="sw" style="background:#475569"></span>工事予定</span></div>
       <div id="calRoot"></div>
     </div>
   </section>
@@ -154,9 +154,11 @@
     var root = $("calRoot"); if (!root) return;
     if (!me()) { root.innerHTML = emptyBox("この招待リンクは無効です", "工務店にリンクの再送をご依頼ください。"); return; }
     root.innerHTML = H.calendarHTML((me() || {}).avail, 3);
+    H.paintJobs(root, H.jobDates(company.contracts, bk));
   }
   function setAvail(date) {
     if (date < H.todayStr()) return;
+    if (H.jobDates(company.contracts, bk)[date]) { H.toast("この日は成立した工事の予定です", "err"); return; }
     var cur = ((me() || {}).avail || {})[date];
     var next = cur === "free" ? "maybe" : cur === "maybe" ? null : "free";
     var o = {}; o[date] = next;
