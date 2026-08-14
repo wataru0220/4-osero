@@ -15,11 +15,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813h"></script>
-<script src="data.js?v=20260813h"></script>
-<script src="common.js?v=20260813h"></script>
-<script src="qrcode.min.js?v=20260813h"></script>
-<link rel="stylesheet" href="styles.css?v=20260813h">
+<script src="config.js?v=20260813i"></script>
+<script src="data.js?v=20260813i"></script>
+<script src="common.js?v=20260813i"></script>
+<script src="qrcode.min.js?v=20260813i"></script>
+<link rel="stylesheet" href="styles.css?v=20260813i">
 <style>:root{--brand:#7b3fa6;--brand-dark:#43206b;--chip:#f0e6f7}</style>
 </head>
 <body>
@@ -225,10 +225,11 @@
     <div class="callegend" style="margin:2px 0 6px">
       <span><span class="sw" style="background:#1aa260"></span>業者の空き</span>
       <span><span class="sw" style="background:#e0a200"></span>応相談</span>
-      <span><span class="sw" style="background:#fff;box-shadow:inset 0 0 0 3px var(--brand)"></span>着工〜完成</span>
+      <span><span class="sw" style="background:#fff;box-shadow:inset 0 0 0 3px var(--brand)"></span>選択中</span>
+      <span><span class="sw" style="background:#eceff3"></span>確定（予約済）</span>
     </div>
     <div class="schedbar"><span class="hint" id="c_schedLabel" style="margin:0"></span><button type="button" class="btn ghost sm" id="c_schedClear">クリア</button></div>
-    <p class="hint" style="margin:2px 0 6px">着工日 → 完成日 の順にタップ。緑／黄は業者が登録した空き状況です。</p>
+    <p class="hint" style="margin:2px 0 6px">工事する日を1日ずつタップで選択（もう一度タップで解除）。灰色「確定」は他の成立案件で予約済みのため選べません（ダブルブッキング防止）。</p>
     <div id="c_calWrap" class="calpick"></div>
     <div style="font-weight:700;font-size:12.5px;margin:10px 0 2px">建設業法の記載事項（必要に応じて）</div>
     <div class="field"><label for="c_handover">検査・引渡しの時期／方法</label><input id="c_handover" type="text" placeholder="例）完成後、注文者立会いで検査のうえ引渡し"></div>
@@ -607,21 +608,32 @@
 
   // ---------- 注文書タブ（注文書／注文請書） ----------
   var editingCid = null;
-  var cStart = "", cEnd = ""; // 工事日程の選択（YYYY-MM-DD）
+  var workDates = []; // 工事日程の選択（YYYY-MM-DD の配列・昇順）
+  var bookedSet = {}; // 他の成立案件で予約済みの日（ダブルブッキング防止）
   function schedAvail() { var p = partners()[$("c_partner").value] || {}; return p.avail || {}; }
-  function renderSchedCal() { $("c_calWrap").innerHTML = H.calendarHTML(schedAvail(), 3); paintSchedSel(); updateSchedLabel(); }
+  function computeBooked() {
+    bookedSet = {}; var bk = $("c_partner").value;
+    contractsArr().forEach(function (c) {
+      if (c.partnerKey !== bk || c._key === editingCid) return;
+      if (!(c.fromSign && c.fromSign.at && c.toSign && c.toSign.at)) return; // 成立のみ確定扱い
+      H.contractDates(c).forEach(function (d) { bookedSet[d] = true; });
+    });
+  }
+  function renderSchedCal() { computeBooked(); $("c_calWrap").innerHTML = H.calendarHTML(schedAvail(), 3); paintSchedSel(); updateSchedLabel(); }
   function paintSchedSel() {
+    var sel = {}; workDates.forEach(function (d) { sel[d] = true; });
     Array.prototype.forEach.call($("c_calWrap").querySelectorAll(".calcell[data-date]"), function (el) {
-      var d = el.dataset.date; el.classList.remove("sel-start", "sel-end", "sel-range");
-      if (!cStart) return;
-      if (d === cStart) el.classList.add("sel-start");
-      else if (cEnd && d === cEnd) el.classList.add("sel-end");
-      else if (cEnd && d > cStart && d < cEnd) el.classList.add("sel-range");
+      el.classList.remove("sel-day", "booked");
+      if (el.classList.contains("past")) return;
+      var d = el.dataset.date;
+      if (bookedSet[d]) { el.classList.add("booked"); el.innerHTML = '<span class="dn">' + (+d.split("-")[2]) + '</span><span class="bk">確定</span>'; }
+      else if (sel[d]) el.classList.add("sel-day");
     });
   }
   function updateSchedLabel() {
-    $("c_schedLabel").innerHTML = (cStart ? "着工：<b>" + H.esc(H.fmtYmd(cStart)) + "</b>" : "着工：<span style=\"color:var(--warn)\">未選択</span>")
-      + "　／　" + (cEnd ? "完成：<b>" + H.esc(H.fmtYmd(cEnd)) + "</b>" : "完成：未選択");
+    $("c_schedLabel").innerHTML = workDates.length
+      ? ("工事日：<b>" + H.esc(H.fmtDates(workDates)) + "</b>（" + workDates.length + "日）")
+      : '工事日：<span style="color:var(--warn)">未選択</span>';
   }
   function contractsArr() { var r = (company && company.contracts) || {}; return Object.keys(r).map(function (k) { var o = r[k]; o._key = k; return o; }); }
   function renderContracts() {
@@ -668,7 +680,7 @@
     $("c_title").value = c.title || prefill.title || ""; $("c_site").value = c.site || prefill.site || ""; $("c_content").value = c.content || prefill.content || "";
     $("c_amount").value = c.amount != null ? c.amount : ""; $("c_tax").value = c.taxRate != null ? c.taxRate : (tpl.taxRate != null ? tpl.taxRate : 10);
     $("c_pay").value = c.payTerm || tpl.payTerm || "";
-    cStart = /^\d{4}-\d{2}-\d{2}$/.test(c.startDate || "") ? c.startDate : ""; cEnd = /^\d{4}-\d{2}-\d{2}$/.test(c.endDate || "") ? c.endDate : "";
+    workDates = H.contractDates(c).slice().sort();
     $("c_handover").value = c.handover || tpl.handover || ""; $("c_advance").value = c.advance || tpl.advance || ""; $("c_nowork").value = c.nowork || tpl.nowork || "";
     $("c_note").value = c.note || "";
     $("cf_delete").style.display = cid ? "block" : "none";
@@ -693,7 +705,7 @@
     var obj = {
       partnerKey: bk, partnerName: p.name || "", title: title, site: $("c_site").value.trim(), content: $("c_content").value.trim(),
       amount: amount, taxRate: Number($("c_tax").value) || 0, payTerm: $("c_pay").value.trim(),
-      startDate: cStart, endDate: cEnd,
+      workDates: workDates.slice().sort(), startDate: workDates.length ? workDates[0] : "", endDate: workDates.length ? workDates[workDates.length - 1] : "",
       handover: $("c_handover").value.trim(), advance: $("c_advance").value.trim(), nowork: $("c_nowork").value.trim(), note: $("c_note").value.trim(),
       fromSign: hadSign ? null : (prev.fromSign || null), toSign: hadSign ? null : (prev.toSign || null),
       createdAt: prev.createdAt || Date.now(), updatedAt: Date.now()
@@ -714,7 +726,7 @@
     h += '<div class="cc-to" style="text-align:center;margin-bottom:8px">注文者：' + H.esc(companyName()) + "　／　受注者：" + H.esc(c.partnerName || "") + "</div>";
     h += crow("工事場所（住所）", c.site) + crow("作業内容", c.content);
     h += '<div class="camt"><div class="big">税込 ' + H.yen(amt + tax) + '</div><div class="brk">税抜 ' + H.yen(amt) + " ＋ 消費税 " + H.yen(tax) + "（" + (Number(c.taxRate) || 0) + "%）</div></div>";
-    h += crow("支払方法・時期", c.payTerm) + crow("工事日程", H.fmtDateRange(c.startDate, c.endDate));
+    h += crow("支払方法・時期", c.payTerm) + crow("工事日程", H.fmtSchedule(c));
     h += crow("前払金・部分払", c.advance) + crow("検査・引渡し", c.handover) + crow("施工しない日・時間帯", c.nowork) + crow("備考", c.note);
     var fSigned = !!(c.fromSign && c.fromSign.at), tSigned = !!(c.toSign && c.toSign.at);
     h += '<div class="crow"><div class="k">受注者（注文請書）</div><div class="v">' + (tSigned ? "✅ " + H.esc(c.toSign.companyName || "") + " " + H.esc(c.toSign.name || "") + "（" + H.fmtDate(c.toSign.at) + "）" : "未署名（受注者の請書待ち）") + "</div></div>";
@@ -819,14 +831,15 @@
     $("c_amount").addEventListener("input", taxView);
     $("c_tax").addEventListener("input", taxView);
     $("c_partner").addEventListener("change", renderSchedCal);
-    $("c_schedClear").addEventListener("click", function () { cStart = ""; cEnd = ""; paintSchedSel(); updateSchedLabel(); });
+    $("c_schedClear").addEventListener("click", function () { workDates = []; paintSchedSel(); updateSchedLabel(); });
     $("c_calWrap").addEventListener("click", function (e) {
       var el = e.target.closest(".calcell[data-date]");
       if (!el || el.classList.contains("past") || el.classList.contains("empty")) return;
       var d = el.dataset.date;
-      if (!cStart || cEnd) { cStart = d; cEnd = ""; }        // 新規に着工日を選ぶ
-      else if (d < cStart) { cStart = d; }                    // 着工より前 → 着工を選び直し
-      else { cEnd = d; }                                      // 完成日を選ぶ
+      if (bookedSet[d]) { H.toast("その日は他の成立案件で予約済みです（確定）", "err"); return; }
+      var i = workDates.indexOf(d);
+      if (i >= 0) workDates.splice(i, 1); else workDates.push(d);
+      workDates.sort();
       paintSchedSel(); updateSchedLabel();
     });
     $("cf_save").addEventListener("click", saveContract);

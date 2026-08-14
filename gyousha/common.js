@@ -74,7 +74,8 @@
         A1: { body: "年末年始は12/29〜1/4を休業とします。ご協力よろしくお願いします。", targetTrade: "", createdAt: now - 30000 }
       },
       contracts: {
-        C1: { partnerKey: "P2", partnerName: "田中大工", title: "△△マンション 改修 内装工事", site: "□□市 本町2-5", content: "内部造作・ボード張り一式（1〜2階）", amount: 350000, taxRate: 10, payTerm: "完成・引渡し後、翌月末支払い（銀行振込）", startDate: ymd(3), endDate: ymd(7), handover: "完成後、注文者立会いで検査のうえ引渡し", advance: "", nowork: "日曜・祝日は施工しない", note: "", fromSign: null, toSign: { companyName: "田中大工", name: "田中 一郎", at: now - 40000 }, createdAt: now - 45000, updatedAt: now - 40000 }
+        C1: { partnerKey: "P2", partnerName: "田中大工", title: "△△マンション 改修 内装工事", site: "□□市 本町2-5", content: "内部造作・ボード張り一式（1〜2階）", amount: 350000, taxRate: 10, payTerm: "完成・引渡し後、翌月末支払い（銀行振込）", workDates: [ymd(3), ymd(4), ymd(7)], startDate: ymd(3), endDate: ymd(7), handover: "完成後、注文者立会いで検査のうえ引渡し", advance: "", nowork: "日曜・祝日は施工しない", note: "", fromSign: null, toSign: { companyName: "田中大工", name: "田中 一郎", at: now - 40000 }, createdAt: now - 45000, updatedAt: now - 40000 },
+        C2: { partnerKey: "P2", partnerName: "田中大工", title: "◇◇邸 造作工事（先行の成立案件）", site: "市内 桜町1-2", content: "造作工事一式", amount: 200000, taxRate: 10, payTerm: "完成・引渡し後、翌月末支払い", workDates: [ymd(5), ymd(6)], startDate: ymd(5), endDate: ymd(6), handover: "", advance: "", nowork: "", note: "", fromSign: { companyName: "（体験）山田工務店", name: "山田 太郎", at: now - 60000 }, toSign: { companyName: "田中大工", name: "田中 一郎", at: now - 55000 }, createdAt: now - 65000, updatedAt: now - 55000 }
       }
     } } };
   };
@@ -104,6 +105,40 @@
     }
     return (fs + (fe ? " 〜 " + fe : "")).trim();
   };
+  // 契約の工事日（YYYY-MM-DD の配列）。新: workDates、旧: startDate〜endDate を展開。
+  H.contractDates = (c) => {
+    const iso = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || "").trim());
+    if (c && c.workDates && c.workDates.length) return c.workDates.filter(iso);
+    if (c && iso(c.startDate) && iso(c.endDate)) {
+      const out = []; const d = new Date(c.startDate + "T00:00:00"), e = new Date(c.endDate + "T00:00:00");
+      for (; d <= e; d.setDate(d.getDate() + 1)) out.push(H.ymd(d));
+      return out;
+    }
+    if (c && iso(c.startDate)) return [c.startDate];
+    return [];
+  };
+  // 複数日をまとめて表示（連続はまとめて範囲に）。例：2026年8月17日〜18日・20日
+  H.fmtDates = (arr) => {
+    const ds = (arr || []).filter((s) => /^\d{4}-\d{2}-\d{2}$/.test(s)).slice().sort();
+    if (!ds.length) return "";
+    const runs = []; let run = [ds[0]];
+    for (let i = 1; i < ds.length; i++) {
+      if ((new Date(ds[i] + "T00:00:00") - new Date(ds[i - 1] + "T00:00:00")) === 86400000) run.push(ds[i]);
+      else { runs.push(run); run = [ds[i]]; }
+    }
+    runs.push(run);
+    let first = true;
+    return runs.map((r) => {
+      const a = r[0].split("-"), b = r[r.length - 1].split("-");
+      const head = first ? (+a[0] + "年" + (+a[1]) + "月" + (+a[2]) + "日") : ((+a[1]) + "月" + (+a[2]) + "日");
+      first = false;
+      if (r.length === 1) return head;
+      const tail = (a[1] === b[1]) ? ((+b[2]) + "日") : ((+b[1]) + "月" + (+b[2]) + "日");
+      return head + "〜" + tail;
+    }).join("・");
+  };
+  // 工事日程の表示（新workDates優先、旧は範囲/自由入力）。
+  H.fmtSchedule = (c) => (c && c.workDates && c.workDates.length) ? H.fmtDates(c.workDates) : H.fmtDateRange(c && c.startDate, c && c.endDate);
 
   // ---- 空き状況カレンダー ----
   H.todayStr = () => H.ymd(new Date());
@@ -321,7 +356,7 @@
       '<div class="parties"><div class="party"><div class="cap">注文者（発注者・元請）</div><div class="nm">' + e(fromCo || "—") + "</div></div>" +
       '<div class="party"><div class="cap">請負者（受注者・協力業者）</div><div class="nm">' + e(toCo || "—") + "</div></div></div>" +
       "<table>" + row("工事名", c.title) + row("工事場所（住所）", c.site) + row("作業内容", c.content) +
-      row("工事日程（工期）", H.fmtDateRange(c.startDate, c.endDate)) +
+      row("工事日程", H.fmtSchedule(c)) +
       '<tr><th>注文金額（請負代金）</th><td class="amount">税抜 ' + H.yen(amt) + "　＋　消費税 " + H.yen(tax) + "（" + (Number(c.taxRate) || 0) + "%）<br><b>税込 " + H.yen(incl) + "</b></td></tr>" +
       row("支払方法・時期", c.payTerm) + rowIf("前払金・部分払", c.advance) + row("検査・引渡し", c.handover) +
       rowIf("施工しない日・時間帯", c.nowork) + rowIf("備考", c.note) + "</table>" +
