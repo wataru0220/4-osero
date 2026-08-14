@@ -305,8 +305,22 @@
     var s = H._sheet("<h3>❓ " + H.esc(title) + "</h3>" + vhtml + body + '<button class="btn full ghost" id="__closeHelp" style="margin-top:10px">閉じる</button>');
     s.ov.querySelector("#__closeHelp").onclick = s.close;
     if (videos && videos.length) Array.prototype.forEach.call(s.ov.querySelectorAll("[data-vidx]"), function (b) {
-      b.onclick = function () { var v = videos[+b.dataset.vidx]; H.playSlides(v.title || v.label, v.slides); };
+      b.onclick = function () { var v = videos[+b.dataset.vidx]; if (v.url) H.playVideo(v.title || v.label, v.url); else H.playSlides(v.title || v.label, v.slides); };
     });
+  };
+  // MP4の説明動画を全画面で再生（別タブで開いて保存・共有も可）。
+  H.playVideo = function (title, url) {
+    var ov = document.createElement("div"); ov.className = "vov on";
+    ov.innerHTML = '<div class="vplayer vplayer-mp4"><button class="vclose" data-vclose>✕</button>' +
+      '<div class="vmp4title">' + H.esc(title) + '</div>' +
+      '<video class="vmp4" src="' + url + '" controls autoplay playsinline preload="metadata"></video>' +
+      '<div class="vctrl"><button class="vbtn" data-vopen>🔗 別タブで開く／保存</button><button class="vbtn vmain" data-vdone>閉じる</button></div></div>';
+    document.body.appendChild(ov); document.body.style.overflow = "hidden";
+    var close = function () { try { var v = ov.querySelector("video"); if (v) v.pause(); } catch (e) {} try { document.body.removeChild(ov); } catch (e2) {} document.body.style.overflow = ""; };
+    ov.querySelector("[data-vclose]").onclick = close;
+    ov.querySelector("[data-vdone]").onclick = close;
+    ov.querySelector("[data-vopen]").onclick = function () { window.open(url, "_blank"); };
+    ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
   };
   // 説明動画（自動再生スライド＋日本語ナレーション音声＋字幕）。slides: [{emoji,h,lines[],say?}]
   H.playSlides = function (title, slides) {
