@@ -35,6 +35,7 @@ header .sub{font-size:12px; opacity:.92; margin-top:3px}
 .helpitem[open] summary{border-bottom:1px solid var(--line)}
 .helpa{padding:11px 12px; font-size:13px; line-height:1.85; color:var(--ink)}
 .helpa b{color:var(--brand-dark)}
+.helpa img{display:block; width:100%; max-width:240px; border:1px solid var(--line); border-radius:8px; margin:8px 0; box-shadow:0 2px 8px rgba(0,0,0,.08)}
 /* ヘルプ内の動画ボタン */
 .helpvids{margin:2px 0 12px; padding:10px; border:1px solid var(--line); border-radius:10px; background:#fafbfc}
 .helpvids .hvlabel{font-size:12px; font-weight:800; color:var(--sub); margin-bottom:8px}

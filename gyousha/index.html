@@ -15,10 +15,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260814a"></script>
-<script src="data.js?v=20260814a"></script>
-<script src="common.js?v=20260814a"></script>
-<link rel="stylesheet" href="styles.css?v=20260814a">
+<script src="config.js?v=20260814b"></script>
+<script src="data.js?v=20260814b"></script>
+<script src="common.js?v=20260814b"></script>
+<link rel="stylesheet" href="styles.css?v=20260814b">
 <style>:root{--brand:#e8792a;--brand-dark:#b8560f;--chip:#fdece0}</style>
 </head>
 <body>
@@ -346,8 +346,8 @@
   var USER_HELP = [
     { q: "これは何のアプリ？", a: "取引先の<b>工務店から届いた招待リンク</b>で開くアプリです。工務店からの <b>作業依頼</b> や <b>お知らせ</b> を確認して返信できます。<b>登録・ログインは不要</b>です。" },
     { q: "依頼に返信するには", a: "「依頼」タブで、届いた依頼に <b>✅受ける</b> か <b>✖不可</b> を選び、必要なら一言を添えて送ります。送信後も「変更」から返答をやり直せます。未返信の件数はタブのバッジでわかります。" },
-    { q: "注文書に署名するには（注文請書）", a: "「注文」タブに、工務店からの注文書が表示されます。<b>📄内容・署名</b> で工事名・作業内容・工事日程・支払方法・金額などを確認し、内容に同意できれば <b>「注文を請ける（署名）」</b> を押します（会社名・担当者名を入力。<b>押印は不要</b>で、担当者名の入力が電子署名になります）。<b>その後、工務店が内容を確認して署名すると契約が成立します</b>。この注文書には「<b>工事下請基本契約約款</b>」（建設業法第19条 各号対応）が付き、署名は約款を含む内容への同意になります。全文は <b>🖨印刷/PDF</b>（注文書 兼 注文請書＋約款）でご確認・保存できます。相違があれば署名せず工務店へご連絡ください。" },
-    { q: "空き状況を登録するには", a: "「空き」タブで日付をタップすると <b>空き → 応相談 → なし</b> の順で切り替わります。登録した空きは取引先の工務店に表示され、空いている日に依頼・契約が届きやすくなります。3か月先まで登録できます。" },
+    { q: "注文書に署名するには（注文請書）", a: "「注文」タブに、工務店からの注文書が表示されます。<b>📄内容・署名</b> で工事名・作業内容・工事日程・支払方法・金額などを確認し、内容に同意できれば <b>「注文を請ける（署名）」</b> を押します（会社名・担当者名を入力。<b>押印は不要</b>で、担当者名の入力が電子署名になります）。<b>その後、工務店が内容を確認して署名すると契約が成立します</b>。この注文書には「<b>工事下請基本契約約款</b>」（建設業法第19条 各号対応）が付き、署名は約款を含む内容への同意になります。全文は <b>🖨印刷/PDF</b>（注文書 兼 注文請書＋約款）でご確認・保存できます。相違があれば署名せず工務店へご連絡ください。<img src=\"shots/user_sign.png?v=1\" alt=\"注文を請ける（署名）画面\">" },
+    { q: "空き状況を登録するには", a: "「空き」タブで日付をタップすると <b>空き → 応相談 → なし</b> の順で切り替わります。登録した空きは取引先の工務店に表示され、空いている日に依頼・契約が届きやすくなります。成立した工事の日は「工事」と自動で入ります。3か月先まで登録できます。<img src=\"shots/user_avail.png?v=1\" alt=\"空きカレンダー画面\">" },
     { q: "お知らせを見る", a: "「お知らせ」タブに、工務店からの連絡が新しい順に表示されます。" },
     { q: "アプリにする（ホーム画面に追加）", a: "ヘッダーの <b>📲アプリ</b> を押すと、スマホのホーム画面にアイコンを追加できます。次回からはアイコンを1タップで開けます（ブラウザ不要）。" },
     { q: "リンクが無効・依頼が見えない", a: "招待リンクが正しいかご確認ください。うまくいかない場合は、取引先の工務店に<b>リンクの再送</b>をご依頼ください。" }
@@ -357,8 +357,8 @@
   document.getElementById("installBtn").addEventListener("click", function () { H.showInstall("匠協コネクト（協力業者）"); });
   document.getElementById("helpBtn").addEventListener("click", function () {
     H.showHelp("使い方（協力業者）", USER_HELP, [
-      { label: "使い方の動画（協力業者向け）", title: "使い方（協力業者）", url: "videos/howto_gyousha.mp4?v=20260813" },
-      { label: "注意事項の動画", title: "ご利用の注意", url: "videos/chuui.mp4?v=20260813" }
+      { label: "使い方の動画（協力業者向け）", title: "使い方（協力業者）", url: "videos/howto_gyousha.mp4?v=20260814" },
+      { label: "注意事項の動画", title: "ご利用の注意", url: "videos/chuui.mp4?v=20260814" }
     ]);
   });
   document.getElementById("reloadBtn").addEventListener("click", function () { H.toast("最新に更新しています…", "ok"); setTimeout(function () { location.reload(); }, 250); });
