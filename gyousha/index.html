@@ -15,10 +15,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="config.js?v=20260813p"></script>
-<script src="data.js?v=20260813p"></script>
-<script src="common.js?v=20260813p"></script>
-<link rel="stylesheet" href="styles.css?v=20260813p">
+<script src="config.js?v=20260814a"></script>
+<script src="data.js?v=20260814a"></script>
+<script src="common.js?v=20260814a"></script>
+<link rel="stylesheet" href="styles.css?v=20260814a">
 <style>:root{--brand:#e8792a;--brand-dark:#b8560f;--chip:#fdece0}</style>
 </head>
 <body>
@@ -291,12 +291,14 @@
       h += '<div class="signbox"><div class="st">✍️ 内容を確認し、この注文を請ける（注文請書に署名）</div>' +
         '<div class="field"><label>会社名（屋号）</label><input id="cv_co" type="text" value="' + H.esc(m.name || "") + '"></div>' +
         '<div class="field"><label>担当者名</label><input id="cv_nm" type="text" placeholder="例）田中 一郎"></div>' +
+        '<label class="consent"><input type="checkbox" id="cv_consent"> 上記の内容（末尾の工事下請基本契約約款を含む）を確認し、これに同意して電子署名します。</label>' +
         '<button class="btn full" id="cv_signBtn">注文を請ける（署名）</button>' +
         '<p class="hint">請けたあと、工務店が内容を確認して注文（署名）すると契約が成立します。内容に相違がある場合は請けず、工務店にご連絡ください。</p></div>';
     }
     if (c.completedAt) { var ru = H.retentionUntil(c); h += '<div class="cnote" style="background:#eef2ff;border-color:#c7d2fe;color:#3730a3">✅ この工事は <b>完了</b> です（完了日：' + H.esc(H.fmtYmd(H.ymd(new Date(c.completedAt)))) + '）。記録として <b>' + H.retentionYears + '年間</b> 保存されます（保存期限：<b>' + H.esc(H.fmtYmd(H.ymd(ru))) + '</b>）。「印刷/PDF」で保管できます。</div>'; }
     else if (fSigned && tSigned) h += '<div class="cnote">両者の署名がそろい、契約が成立しました。「印刷/PDF」で保存して保管してください。</div>';
     else if (tSigned) h += '<div class="cnote">注文を請けました。工務店が注文（署名）して確定すると契約が成立します。</div>';
+    if (fSigned || tSigned) h += '<div class="crow" style="align-items:flex-start"><div class="k">🔐 電子署名</div><div class="v" style="font-size:12px">署名者名・日時に加え、契約内容の<b>改ざん検知コード</b>（SHA-256）を記録しています。<span id="cv_verify"></span><br><span style="color:var(--sub)">※合意の記録・証拠として用いるもので、認定された電子署名ではありません。</span></div></div>';
     h += '<div class="cc-actions" style="margin-top:12px"><button class="btn sm" id="cv_printBtn">🖨 印刷/PDF</button></div>';
     return h;
   }
@@ -306,15 +308,20 @@
     $("ovCView").classList.add("on"); document.body.style.overflow = "hidden";
     var sb = document.getElementById("cv_signBtn"); if (sb) sb.onclick = function () { signTo(cid); };
     var pb = document.getElementById("cv_printBtn"); if (pb) pb.onclick = function () { H.printContract((company.contracts || {})[cid], companyName(), (company.profile && company.profile.terms) || {}); };
+    var vEl = document.getElementById("cv_verify"), sg = (c.fromSign && c.fromSign.hash) ? c.fromSign : ((c.toSign && c.toSign.hash) ? c.toSign : null);
+    if (vEl && sg) H.verifySign(c, sg).then(function (ok) { vEl.innerHTML = ok ? ' <b style="color:#1a7a45">✅ 内容は署名時から変更なし</b>' : ' <b style="color:#c0392b">⚠️ 署名後に内容が変更されています</b>'; });
   }
   function closeCView() { $("ovCView").classList.remove("on"); document.body.style.overflow = ""; }
   function signTo(cid) {
     var co = ($("cv_co").value || "").trim(), nm = ($("cv_nm").value || "").trim();
     if (!nm) { H.toast("担当者名を入力してください", "err"); return; }
+    if (!$("cv_consent") || !$("cv_consent").checked) { H.toast("内容を確認し、同意のチェックを入れてください", "err"); return; }
     var prev = (company.contracts || {})[cid] || {}, willComplete = !!(prev.fromSign && prev.fromSign.at);
-    var upd = { toSign: { companyName: co, name: nm, at: Date.now() }, updatedAt: Date.now() };
-    DB.update("companies/" + ck + "/contracts/" + cid, upd)
-      .then(function () { H.toast(willComplete ? "注文を請けました。契約が成立しました" : "注文を請けました（署名）。工務店の確定をお待ちください", "ok"); setTimeout(function () { openCView(cid); }, 60); }).catch(function () {});
+    H.contentHash(prev).then(function (hash) {
+      var upd = { toSign: { companyName: co, name: nm, at: Date.now(), hash: hash, consent: true }, updatedAt: Date.now() };
+      DB.update("companies/" + ck + "/contracts/" + cid, upd)
+        .then(function () { H.toast(willComplete ? "注文を請けました。契約が成立しました" : "注文を請けました（署名）。工務店の確定をお待ちください", "ok"); setTimeout(function () { openCView(cid); }, 60); }).catch(function () {});
+    });
   }
 
   function switchTab(name) {
