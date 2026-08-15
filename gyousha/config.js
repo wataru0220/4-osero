@@ -9,7 +9,7 @@
 window.GYOUSHA_CONFIG = {
   appName: "匠協コネクト",
   // config.js / *.html / data.js / common.js / sw.js を更新したら版を上げる（?v= と揃える）
-  appVersion: "2026-08-14b",
+  appVersion: "2026-08-15a",
 
   // -------------------------------------------------------------------
   // Firebase Realtime Database（オセロ／勤怠／匠コネクトと同じプロジェクトを流用可）
