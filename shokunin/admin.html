@@ -36,6 +36,13 @@
   .hbtn{flex:none; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.45); color:#fff; border-radius:11px; padding:7px 11px; font-weight:800; font-size:11px; display:flex; flex-direction:column; align-items:center; gap:1px; cursor:pointer}
   .hbtn .ic{font-size:18px; line-height:1}
   .hbtn:active{transform:translateY(1px)}
+  /* 「アプリにする」自動バナー（インストール可能時のみ表示） */
+  #installBanner{display:flex; align-items:center; gap:10px; background:linear-gradient(135deg,#e6f4f8,#d3ecf3); border-bottom:2px solid var(--brand); padding:10px 14px}
+  #installBanner .ib-txt{flex:1; font-size:13px; color:var(--ink); line-height:1.35}
+  #installBanner .ib-sub{display:block; font-size:11px; color:var(--sub); margin-top:1px}
+  #installBanner .ib-go{flex:none; background:var(--accent); color:#fff; border:0; border-radius:20px; padding:9px 18px; font-weight:800; font-size:14px; cursor:pointer; font-family:inherit; box-shadow:0 2px 6px rgba(234,88,12,.3)}
+  #installBanner .ib-go:active{transform:translateY(1px)}
+  #installBanner .ib-x{flex:none; background:transparent; border:0; font-size:20px; color:var(--sub); cursor:pointer; padding:2px 6px; line-height:1; font-family:inherit}
   .wrap{max-width:680px; margin:0 auto; padding:14px}
   .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; box-shadow:0 1px 2px rgba(16,24,40,.04)}
   label{display:block; font-size:12px; font-weight:700; color:var(--sub); margin:0 0 5px}
@@ -130,6 +137,13 @@
     </div>
   </div>
 </header>
+
+<!-- インストール可能なときだけ自動で出る「アプリにする」バナー（ワンタップで追加） -->
+<div id="installBanner" style="display:none">
+  <span class="ib-txt">📲 <b>「大工コネクト 管理」をアプリにできます</b><span class="ib-sub">タスクバー/ホーム画面から1タップで起動</span></span>
+  <button class="ib-go" id="ibGo">アプリにする</button>
+  <button class="ib-x" id="ibClose" aria-label="閉じる">×</button>
+</div>
 
 <!-- アプリにする手順モーダル -->
 <div class="ov" id="installOv">
@@ -286,7 +300,23 @@ let adminMeta={}; // versionTracker: 直近で一斉配信の判断（送信/削
 
 // ===== PWA：ホーム画面に追加（ボタン1つでアプリ化） =====
 let deferredPrompt=null;
-window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; });
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; maybeShowInstallBanner(); });
+window.addEventListener('appinstalled', ()=>{ deferredPrompt=null; hideInstallBanner(); try{ H.toast('アプリに追加しました🎉 タスクバー/ホーム画面のアイコンから起動できます','ok'); }catch(_){ } });
+// インストール可能で、まだアプリ化しておらず、ログイン後（アプリ表示中）で閉じてもいなければ、上部にバナーを出す
+function maybeShowInstallBanner(){
+  const b=document.getElementById('installBanner'); if(!b || !deferredPrompt) return;
+  const standalone=window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  const app=document.getElementById('app'); const appVisible = app && app.offsetParent!==null;
+  if(standalone || !appVisible){ b.style.display='none'; return; }
+  try{ if(sessionStorage.getItem('ib_dismissed')) return; }catch(_){ }
+  b.style.display='flex';
+}
+function hideInstallBanner(){ const b=document.getElementById('installBanner'); if(b) b.style.display='none'; }
+(function(){
+  const go=document.getElementById('ibGo'), x=document.getElementById('ibClose');
+  if(go) go.onclick=async()=>{ if(deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){ } deferredPrompt=null; hideInstallBanner(); } else { hideInstallBanner(); showInstallSteps(); } };
+  if(x) x.onclick=()=>{ hideInstallBanner(); try{ sessionStorage.setItem('ib_dismissed','1'); }catch(_){ } };
+})();
 (function(){
   const btn=document.getElementById('installBtn'); if(!btn) return;
   const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -333,6 +363,7 @@ function anyAdmin(){ return Object.keys(admins).length>0; }
 function startApp(){
   document.getElementById('gate').style.display='none';
   document.getElementById('app').style.display='block';
+  maybeShowInstallBanner();
   renderSecurityNotice();
   if(!booted){ booted=true; boot(); }
 }
