@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0e7490">
-<title>管理画面｜匠コネクト</title>
+<title>管理画面｜大工コネクト</title>
 <!-- ホーム画面に追加してアプリのように起動（PWA） -->
 <link rel="manifest" href="manifest-admin.json">
 <link rel="apple-touch-icon" href="apple-touch-icon-admin.png">
@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="匠コネクト管理">
+<meta name="apple-mobile-web-app-title" content="大工コネクト管理">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -117,7 +117,7 @@
 <header>
   <div class="hrow">
     <div>
-      <h1 style="display:flex;align-items:center;gap:8px;margin:0"><img src="logo.png" alt="" style="height:40px;width:auto">管理画面｜匠コネクト</h1>
+      <h1 style="display:flex;align-items:center;gap:8px;margin:0"><img src="logo.png" alt="" style="height:40px;width:auto">管理画面｜大工コネクト</h1>
       <div class="sub">大工の認証・評価、応援要請の確認、工務店との連絡</div>
     </div>
     <div id="hbtns" style="display:flex; flex-direction:column; gap:6px; flex:none">
@@ -305,7 +305,7 @@ async function isThisAppInstalled(){
 function showAlreadyInstalled(){
   const html='<div style="font-weight:800;font-size:16px;margin-bottom:8px">✅ すでにインストール済みです</div>'
     +'<div style="line-height:1.8">再インストールは不要です。次のいずれかで、全画面のアプリとして開けます。</div>'
-    +'<div style="margin-top:10px;line-height:2">・アドレスバー右側の <b>緑色の「アプリで開く」</b> をクリック<br>・<b>タスクバー</b>／<b>スタート画面</b>（スマホはホーム画面）の <b>匠コネクトのアイコン</b> をタップ</div>';
+    +'<div style="margin-top:10px;line-height:2">・アドレスバー右側の <b>緑色の「アプリで開く」</b> をクリック<br>・<b>タスクバー</b>／<b>スタート画面</b>（スマホはホーム画面）の <b>大工コネクトのアイコン</b> をタップ</div>';
   document.getElementById('installSteps').innerHTML=html;
   document.getElementById('installOv').classList.add('on');
 }
@@ -319,7 +319,7 @@ function showInstallSteps(){
     +step(1,'ブラウザ<b>右上の「⋮」メニュー</b>（Edgeは「…」）を開く')
     +step(2,'メニュー内の <b>「ページをアプリとしてインストール」</b> または <b>「アプリをインストール」</b> を選ぶ<br><span style="color:var(--sub);font-size:12px">Chromeは「キャスト、保存、共有」の中、Edgeは「アプリ」の中にあります</span>')
     +step(3,'表示された画面で <b>「インストール」</b> をクリック'); }
-  const note='<div style="margin-top:4px;padding:10px 12px;background:#e9f5f8;border:1px solid #bfe0e8;border-radius:10px;font-size:13px;line-height:1.7">💡 <b>すでに追加済みかもしれません。</b><br>アドレスバーに <b>緑色の「アプリで開く」</b> が出ている、またはタスクバー／スタート画面・ホーム画面に <b>匠コネクトのアイコン</b> がある場合は、そこから開いてください（再インストール不要です）。</div>';
+  const note='<div style="margin-top:4px;padding:10px 12px;background:#e9f5f8;border:1px solid #bfe0e8;border-radius:10px;font-size:13px;line-height:1.7">💡 <b>すでに追加済みかもしれません。</b><br>アドレスバーに <b>緑色の「アプリで開く」</b> が出ている、またはタスクバー／スタート画面・ホーム画面に <b>大工コネクトのアイコン</b> がある場合は、そこから開いてください（再インストール不要です）。</div>';
   document.getElementById('installSteps').innerHTML=body+note;
   document.getElementById('installOv').classList.add('on');
 }
@@ -1046,7 +1046,7 @@ function autoDraftDefs(){
     defs.push({
       kind:'app', version:CURRENT_APP_VERSION, label:'アプリの更新（操作方法の変更）',
       title:'アプリを更新しました（版 '+CURRENT_APP_VERSION+'）',
-      body:'匠コネクトを更新しました（版 '+CURRENT_APP_VERSION+'）。操作方法が一部変わっている場合があります。最新の使い方は「❓ヘルプ」からご確認いただけます。'
+      body:'大工コネクトを更新しました（版 '+CURRENT_APP_VERSION+'）。操作方法が一部変わっている場合があります。最新の使い方は「❓ヘルプ」からご確認いただけます。'
     });
   }
   return defs;

@@ -1,7 +1,7 @@
 {
-  "name": "匠コネクト 管理画面",
-  "short_name": "匠コネクト管理",
-  "description": "匠コネクトの管理画面",
+  "name": "大工コネクト 管理画面",
+  "short_name": "大工コネクト管理",
+  "description": "大工コネクトの管理画面",
   "id": "/4-osero/shokunin/admin.html",
   "start_url": "./admin.html",
   "scope": "./admin.html",

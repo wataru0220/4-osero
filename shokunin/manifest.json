@@ -1,6 +1,6 @@
 {
-  "name": "匠コネクト",
-  "short_name": "匠コネクト",
+  "name": "大工コネクト",
+  "short_name": "大工コネクト",
   "description": "一棟司塾 匠と連携した、大工職人の応援・マッチング支援ネットワーク。空き状況をリアルタイム共有。",
   "id": "/4-osero/shokunin/index.html",
   "start_url": "./index.html",
