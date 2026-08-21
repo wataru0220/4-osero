@@ -301,7 +301,7 @@ let adminMeta={}; // versionTracker: 直近で一斉配信の判断（送信/削
 // ===== PWA：ホーム画面に追加（ボタン1つでアプリ化） =====
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; maybeShowInstallBanner(); });
-window.addEventListener('appinstalled', ()=>{ deferredPrompt=null; hideInstallBanner(); try{ H.toast('アプリに追加しました🎉 タスクバー/ホーム画面のアイコンから起動できます','ok'); }catch(_){ } });
+window.addEventListener('appinstalled', ()=>{ deferredPrompt=null; hideInstallBanner(); const ib=document.getElementById('installBtn'); if(ib) ib.style.display='none'; try{ H.toast('アプリに追加しました🎉 タスクバー/ホーム画面のアイコンから起動できます','ok'); }catch(_){ } });
 // インストール可能で、まだアプリ化しておらず、ログイン後（アプリ表示中）で閉じてもいなければ、上部にバナーを出す
 function maybeShowInstallBanner(){
   const b=document.getElementById('installBanner'); if(!b || !deferredPrompt) return;
@@ -326,6 +326,8 @@ function hideInstallBanner(){ const b=document.getElementById('installBanner'); 
     if(deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){ } deferredPrompt=null; return; }
     showInstallSteps();
   };
+  // 既にインストール済みなら、ブラウザ表示でも「アプリにする」ボタンは不要なので隠す
+  isThisAppInstalled().then(inst=>{ if(inst) btn.style.display='none'; });
 })();
 // このアプリ(PWA)が既にインストール済みか（Chrome/Edge。未対応ブラウザはfalse）
 async function isThisAppInstalled(){
