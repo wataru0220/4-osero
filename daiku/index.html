@@ -803,13 +803,35 @@
     setTimeout(()=>{ if(state==='clear') nextStage(); }, 500);
   }
   function roundRectS(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
-  function drawMiniTower(x, y, w){
-    const fh=13, bw=w;
-    for(let i=0;i<5;i++){ const fy=y+i*fh, fw=bw*(1-i*0.07);
-      ctx.fillStyle='#f4ebd6'; ctx.fillRect(x-fw/2, fy, fw, fh-3);
-      ctx.fillStyle='#6b3f2a'; ctx.beginPath(); ctx.moveTo(x-fw/2-6,fy+fh-2); ctx.lineTo(x,fy+fh-9); ctx.lineTo(x+fw/2+6,fy+fh-2); ctx.closePath(); ctx.fill();
+  function drawMiniTower(cx, topY, baseW){
+    const tiers=5, step=11, rh=8, bh=6;
+    const baseY = topY + 16 + tiers*step;         // 基壇の高さ（相輪16px＋5層ぶん下）
+    const bodyCol='#efe6d0', roofCol='#5b3d28', pillarCol='#8a5a2b';
+    ctx.fillStyle='#a8916b'; ctx.fillRect(cx-baseW*0.30, baseY, baseW*0.60, 5);   // 基壇
+    for(let i=0;i<tiers;i++){                       // 下(0)→上(4)：下ほど広い（drawで上層が上書き＝手前）
+      const t=i/(tiers-1);
+      const roofW=baseW*(1-t*0.44), bodyW=roofW*0.66;
+      const bodyBottom=baseY - i*step, bodyTop=bodyBottom-bh;
+      ctx.fillStyle=bodyCol; ctx.fillRect(cx-bodyW/2, bodyTop, bodyW, bh);         // 胴（白壁）
+      ctx.strokeStyle=pillarCol; ctx.lineWidth=1;                                  // 柱
+      for(let p=-1;p<=1;p++){ const px=cx+p*bodyW*0.30; ctx.beginPath(); ctx.moveTo(px,bodyTop); ctx.lineTo(px,bodyBottom); ctx.stroke(); }
+      const eaveY=bodyTop, ridgeW=roofW*0.30;                                       // 屋根（反り軒）
+      ctx.fillStyle=roofCol; ctx.beginPath();
+      ctx.moveTo(cx-roofW/2, eaveY-1);
+      ctx.quadraticCurveTo(cx-roofW*0.40, eaveY+3, cx-ridgeW/2, eaveY-rh);
+      ctx.lineTo(cx+ridgeW/2, eaveY-rh);
+      ctx.quadraticCurveTo(cx+roofW*0.40, eaveY+3, cx+roofW/2, eaveY-1);
+      ctx.quadraticCurveTo(cx, eaveY+4, cx-roofW/2, eaveY-1);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,.15)'; ctx.lineWidth=1; ctx.stroke();
     }
-    ctx.strokeStyle='#c9a24a'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x,y-10); ctx.lineTo(x,y+2); ctx.stroke();
+    const topRidgeY = baseY-(tiers-1)*step-bh-rh;                                   // 相輪（九輪＋宝珠）
+    ctx.strokeStyle='#caa64e'; ctx.lineWidth=2; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(cx, topRidgeY+1); ctx.lineTo(cx, topRidgeY-13); ctx.stroke();
+    ctx.lineWidth=1;
+    for(let k=0;k<5;k++){ const ry=topRidgeY-2-k*2.2, hw=4-k*0.5; ctx.beginPath(); ctx.moveTo(cx-hw,ry); ctx.lineTo(cx+hw,ry); ctx.stroke(); }
+    ctx.fillStyle='#e8c84a'; ctx.beginPath(); ctx.arc(cx, topRidgeY-15, 2.6, 0, Math.PI*2); ctx.fill();
+    ctx.lineCap='butt';
   }
   function drawMochi(m){
     ctx.save(); ctx.translate(m.x,m.y); ctx.rotate(m.rot||0);
@@ -847,10 +869,10 @@
     ctx.textAlign='center'; ctx.font='900 16px sans-serif';
     for(const p of mochiPops){ ctx.globalAlpha=Math.max(0,1-p.t/0.8); ctx.fillStyle=p.col; ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.strokeText('+'+p.val,p.x,p.y); ctx.fillText('+'+p.val,p.x,p.y); }
     ctx.globalAlpha=1;
-    ctx.fillStyle='rgba(27,58,92,.92)'; roundRectS(cssW/2-98,120,196,50,14); ctx.fill();
+    ctx.fillStyle='rgba(27,58,92,.92)'; roundRectS(cssW/2-98,150,196,50,14); ctx.fill();
     ctx.fillStyle='#fff'; ctx.textAlign='center';
-    ctx.font='900 20px sans-serif'; ctx.fillText('🎉 餅まき！', cssW/2, 142);
-    ctx.font='bold 13px sans-serif'; ctx.fillText(`残り ${Math.max(0,mochiT).toFixed(1)}秒 ・ ボーナス +${mochiScore}`, cssW/2, 160);
+    ctx.font='900 20px sans-serif'; ctx.fillText('🎉 餅まき！', cssW/2, 172);
+    ctx.font='bold 13px sans-serif'; ctx.fillText(`残り ${Math.max(0,mochiT).toFixed(1)}秒 ・ ボーナス +${mochiScore}`, cssW/2, 190);
     if(mochiT<=0){
       ctx.fillStyle='rgba(76,154,76,.95)'; roundRectS(cssW/2-120,cssH/2-42,240,84,16); ctx.fill();
       ctx.fillStyle='#fff'; ctx.font='900 26px sans-serif'; ctx.fillText('餅まき終了！', cssW/2, cssH/2-4);
