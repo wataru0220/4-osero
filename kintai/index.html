@@ -95,9 +95,10 @@
   .done pre{white-space:pre-wrap; word-break:break-word; font-family:inherit; font-size:14px; background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px; margin:0}
   .footlink{display:block; text-align:center; margin-top:10px; font-size:13px; color:var(--sub); text-decoration:none}
   .chip{display:inline-block; background:var(--chip); color:var(--brand-dark); border-radius:20px; padding:3px 10px; font-size:12px; font-weight:700}
-  /* ヘルプ（使い方の検索） */
-  .helpbtn{position:absolute; right:14px; top:14px; background:rgba(255,255,255,.18); color:#fff;
-    border:1px solid rgba(255,255,255,.5); border-radius:20px; padding:6px 12px; font-size:13px; font-weight:700; cursor:pointer}
+  /* ヘッダー右上ボタン群（アプリにする／使い方） */
+  .hdrbtns{position:absolute; right:12px; top:12px; display:flex; gap:8px}
+  .helpbtn{background:rgba(255,255,255,.18); color:#fff;
+    border:1px solid rgba(255,255,255,.5); border-radius:20px; padding:6px 11px; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap}
   .helpbtn:active{transform:translateY(1px)}
   .ov{position:fixed; inset:0; background:rgba(15,36,54,.5); display:none; align-items:flex-start; justify-content:center; z-index:60; overflow:auto; padding:24px 12px}
   .ov.on{display:flex}
@@ -117,7 +118,10 @@
 </head>
 <body>
 <header>
-  <button class="helpbtn" id="helpBtn" type="button">❓ 使い方</button>
+  <div class="hdrbtns">
+    <button class="helpbtn" id="installBtn" type="button" style="display:none">⬇️ アプリにする</button>
+    <button class="helpbtn" id="helpBtn" type="button">❓ 使い方</button>
+  </div>
   <h1>🏗️ 現場作業報告</h1>
   <div class="who" id="whoLine">読み込み中…</div>
 </header>
@@ -209,6 +213,21 @@
     </div>
     <input type="text" id="helpSearch" placeholder="🔍 キーワードで検索（例：現場、修正、LINE、半日）">
     <div id="helpList"></div>
+  </div>
+</div>
+
+<!-- アプリにする（手動の手順・自動インストールできない端末向け） -->
+<div class="ov" id="installOv">
+  <div class="sheet">
+    <div class="sheethead">
+      <h3>📲 アプリにする</h3>
+      <button class="x" id="installClose" type="button">✕</button>
+    </div>
+    <div style="font-size:14px; line-height:1.7">
+      <p style="margin:0 0 12px"><b>📱 iPhone（Safari）</b><br>下の「共有」ボタン（□に↑）→「ホーム画面に追加」</p>
+      <p style="margin:0"><b>🤖 Android（Chrome）</b><br>右上メニュー <b>⋮</b> →「アプリをインストール」または「ホーム画面に追加」</p>
+      <div class="hint" style="margin-top:12px">追加すると、ホーム画面のアイコンから全画面のアプリとして起動できます。</div>
+    </div>
   </div>
 </div>
 
@@ -377,7 +396,7 @@
     {t:'LINEグループに貼る', k:'LINE 共有 シェア グループ 貼る コピー', a:'送信後に出る「📲この報告をLINEグループに貼る」を押すと共有画面が開きます。対応していない端末では内容がコピーされるので、LINEに貼り付けてください。'},
     {t:'過去の報告を修正する', k:'修正 編集 直す 訂正', a:'画面下の「最近の報告（自分）」で対象の「✏️修正」を押すと内容が読み込まれます。直したら「修正を保存」を押してください。'},
     {t:'報告を削除する', k:'削除 消す 取り消し', a:'「最近の報告（自分）」で「🗑削除」を押すと、その報告を削除できます（確認あり）。'},
-    {t:'ホーム画面に追加する', k:'ホーム画面 アイコン インストール アプリ pwa 追加', a:'iPhoneはSafariの共有ボタン→「ホーム画面に追加」。Androidは右上メニュー→「ホーム画面に追加」。次回からアプリのように開けます。'},
+    {t:'アプリにする（ホーム画面に追加）', k:'アプリにする ホーム画面 アイコン インストール アプリ pwa 追加', a:'右上の「⬇️アプリにする」を押すと追加できます（Android/PCは1タップ）。iPhoneはSafariの共有ボタン→「ホーム画面に追加」。次回からアイコンで全画面起動できます。'},
     {t:'報告できない・保存されないとき', k:'保存 できない エラー 接続 オフライン firebase 未設定 失敗', a:'「Firebase未設定」と出るときは管理者に連絡してください。電波が悪いと送信に失敗します。電波の良い場所でもう一度お試しください。'}
   ];
   function renderHelp(){
@@ -389,6 +408,24 @@
   }
   function openHelp(){ $('helpSearch').value=''; renderHelp(); $('helpOv').classList.add('on'); }
   function closeHelp(){ $('helpOv').classList.remove('on'); }
+
+  // ---- PWA：アプリにする（インストール） ----
+  let deferredPrompt=null;
+  function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true; }
+  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; const b=$('installBtn'); if(b && !isStandalone()) b.style.display=''; });
+  window.addEventListener('appinstalled', ()=>{ deferredPrompt=null; const b=$('installBtn'); if(b) b.style.display='none'; toast('アプリに追加しました🎉','ok'); });
+  function initInstall(){
+    const b=$('installBtn'); if(!b) return;
+    if(isStandalone()){ b.style.display='none'; return; } // 既にアプリとして起動中
+    b.style.display=''; // iOS等は beforeinstallprompt が来ないので最初から表示
+    b.addEventListener('click', async ()=>{
+      if(deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){ } deferredPrompt=null; return; }
+      $('installOv').classList.add('on'); // 手動手順を案内
+    });
+    $('installClose').addEventListener('click', ()=> $('installOv').classList.remove('on'));
+    $('installOv').addEventListener('click', e=>{ if(e.target===$('installOv')) $('installOv').classList.remove('on'); });
+  }
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 
   // ---- LINEなどへ共有（公式アカウント不要。スマホの共有シートを使う） ----
   async function shareReport(){
@@ -471,6 +508,8 @@
     $('helpClose').addEventListener('click', closeHelp);
     $('helpOv').addEventListener('click', e=>{ if(e.target===$('helpOv')) closeHelp(); });
     $('helpSearch').addEventListener('input', renderHelp);
+    // アプリにする
+    initInstall();
   }
 
   async function boot(){

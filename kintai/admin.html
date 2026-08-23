@@ -94,6 +94,10 @@
   .helpitem[open] summary::before{content:"－ "}
   .helpa{padding:0 13px 12px; font-size:13.5px; color:var(--sub); line-height:1.65}
   .helpempty{padding:18px; text-align:center; color:var(--sub)}
+  /* 会社情報フォーム */
+  .orgform .f{margin-bottom:12px}
+  .orgform label{display:block; font-size:12px; color:var(--sub); font-weight:600; margin-bottom:4px}
+  .orgform input{width:100%}
 </style>
 </head>
 <body>
@@ -122,6 +126,7 @@
 <header>
   <h1>🏗️ 勤怠管理</h1>
   <span class="sp"></span>
+  <button class="helpbtn" id="installBtn" type="button" style="display:none">⬇️ アプリにする</button>
   <button class="helpbtn" id="passChangeBtn" type="button">🔑 パスコード変更</button>
   <button class="helpbtn" id="helpBtn" type="button">❓ 使い方</button>
   <a href="index.html">＋ 入力フォームへ</a>
@@ -133,6 +138,7 @@
     <button data-tab="records">📝 記録一覧</button>
     <button data-tab="workers">👷 従業員（給与）</button>
     <button data-tab="sites">📍 現場</button>
+    <button data-tab="org">🏢 会社情報</button>
   </div>
 
   <!-- 期間フィルタ -->
@@ -262,6 +268,25 @@
       <div class="note">入力フォームの現場プルダウンに表示されます。職人が「その他」で入力した現場名もそのまま集計されます。</div>
     </div>
   </section>
+
+  <!-- 会社情報タブ -->
+  <section id="tab-org" class="hide">
+    <div class="card orgform">
+      <h2>🏢 会社情報・管理者の登録</h2>
+      <div class="lock" style="background:#eaf2ff; color:#1759c4; border-color:#c7dbff">ここで登録した<b>管理者メールアドレス</b>は「パスコードを忘れた方はこちら」のログインリンク送信先になります（config.js を編集しなくてもここで設定できます）。内容はクラウドに保存され、全ての管理者端末で共通です。</div>
+      <div class="grid2">
+        <div class="f"><label>会社名</label><input type="text" id="orgName" placeholder="例：◯◯工務店"></div>
+        <div class="f"><label>電話番号</label><input type="text" id="orgPhone" placeholder="例：03-1234-5678" inputmode="tel"></div>
+      </div>
+      <div class="f"><label>住所</label><input type="text" id="orgAddr" placeholder="例：東京都◯◯区◯◯1-2-3"></div>
+      <div class="grid2">
+        <div class="f"><label>管理者氏名</label><input type="text" id="orgAdminName" placeholder="例：山田 太郎"></div>
+        <div class="f"><label>管理者メールアドレス</label><input type="email" id="orgAdminEmail" placeholder="you@example.com" inputmode="email" autocomplete="email"></div>
+      </div>
+      <button class="act green" id="orgSave">保存する</button>
+      <div class="note" id="orgSavedInfo"></div>
+    </div>
+  </section>
 </div>
 </div>
 
@@ -317,6 +342,21 @@
       <button class="save" id="passSave" type="button">変更する</button>
     </div>
     <div class="muted" id="passState" style="font-size:12px; margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- アプリにする（手動の手順・自動インストールできない端末向け） -->
+<div class="modal-ov" id="installModal">
+  <div class="modal">
+    <div class="helphead">
+      <h3>📲 アプリにする</h3>
+      <button class="sm" id="installClose" type="button">✕ 閉じる</button>
+    </div>
+    <div style="font-size:14px; line-height:1.7">
+      <p style="margin:0 0 12px"><b>📱 iPhone（Safari）</b><br>下の「共有」ボタン（□に↑）→「ホーム画面に追加」</p>
+      <p style="margin:0"><b>🤖 Android（Chrome）</b><br>右上メニュー <b>⋮</b> →「アプリをインストール」または「ホーム画面に追加」</p>
+      <div class="note" style="margin-top:12px">追加すると、ホーム画面/デスクトップのアイコンから全画面のアプリとして起動できます。</div>
+    </div>
   </div>
 </div>
 
@@ -441,13 +481,28 @@
     };
   }
 
-  // 管理者メール一覧（config.js）
+  // 会社情報（クラウド共有）。管理者メールは救済リンクの送信先に使う。
+  let _orgInfo; // undefined=未取得, null/obj=取得済み
+  function loadOrgInfo(force){
+    if(!force && _orgInfo!==undefined) return Promise.resolve(_orgInfo);
+    if(!ensureApp()) return Promise.resolve(_orgInfo===undefined?null:_orgInfo);
+    const auth=firebase.auth();
+    const read=()=> firebase.database().ref(dbRoot+'/orgInfo').once('value')
+      .then(s=>{ _orgInfo=s.val()||null; return _orgInfo; })
+      .catch(()=> (_orgInfo===undefined?null:_orgInfo));
+    if(auth.currentUser) return read();
+    return auth.signInAnonymously().then(read).catch(()=> null);
+  }
+  function registeredAdminEmail(){ return (_orgInfo && _orgInfo.adminEmail) ? String(_orgInfo.adminEmail).trim().toLowerCase() : ''; }
+
+  // 管理者メール一覧（config.js ＋ 会社情報タブで登録したメール）
   const EMAIL_LS='kintai_admin_email_for_link';
   function adminEmailList(){
     let list=[];
     if(Array.isArray(CFG.adminEmails)) list=CFG.adminEmails.slice();
     if(CFG.adminEmail) list.push(CFG.adminEmail);
-    return list.map(s=>String(s||'').trim().toLowerCase()).filter(Boolean);
+    const reg=registeredAdminEmail(); if(reg) list.push(reg);
+    return [...new Set(list.map(s=>String(s||'').trim().toLowerCase()).filter(Boolean))];
   }
   function isAdminEmail(email){ return adminEmailList().indexOf(String(email||'').trim().toLowerCase())>=0; }
   function authError(e){
@@ -459,13 +514,15 @@
     return 'メールの送信に失敗しました（'+m+'）';
   }
 
-  // パスコードを忘れたとき：登録メールにログイン用リンクを送る／ヒントを出す
+  // パスコードを忘れたとき：登録メール（config.js または会社情報タブ）にログイン用リンクを送る／ヒントを出す
   function setupForgot(){
-    const emails=adminEmailList();
     const hint=String(CFG.adminHint||'').trim();
-    if(!emails.length && !hint) return; // 未設定なら「忘れた方はこちら」を出さない
-    const link=$('forgotLink'); link.classList.remove('hide');
+    const link=$('forgotLink');
+    const updateVisible=()=>{ const has=adminEmailList().length>0 || !!hint; link.classList.toggle('hide', !has); };
+    updateVisible();
+    loadOrgInfo().then(updateVisible); // 会社情報タブで登録したメールが読めたら「忘れた方はこちら」を表示
     link.onclick=()=>{
+      const emails=adminEmailList();
       const box=$('recoverBox'); box.classList.toggle('hide');
       $('recoverHint').textContent = hint ? ('ヒント：'+hint) : '';
       $('recoverHint').style.display = hint ? 'block' : 'none';
@@ -490,10 +547,8 @@
         .catch(e=>{ console.error(e); toast(authError(e),'err'); })
         .finally(()=>{ btn.disabled=false; btn.textContent=label; });
     };
-    if(emails.length){
-      $('sendLinkBtn').onclick=sendLink;
-      $('linkEmail').addEventListener('keydown',e=>{ if(e.key==='Enter') sendLink(); });
-    }
+    $('sendLinkBtn').onclick=sendLink;
+    $('linkEmail').addEventListener('keydown',e=>{ if(e.key==='Enter') sendLink(); });
   }
 
   // メールのログインリンクから戻ってきたかを判定し、本人確認できたら true を返す
@@ -507,6 +562,7 @@
     if(!email){ email=(window.prompt('確認のため、リンクを送信したメールアドレスを入力してください')||'').trim(); }
     if(!email) return Promise.resolve(false);
     return auth.signInWithEmailLink(email, window.location.href)
+      .then(()=> loadOrgInfo()) // 登録メール（会社情報タブ）を読み込んでから照合する
       .then(()=>{
         try{ localStorage.removeItem(EMAIL_LS); }catch(_){}
         // URLから確認用パラメータを取り除く（再読込時の誤動作を防ぐ）
@@ -520,6 +576,55 @@
       })
       .catch(e=>{ console.error(e); toast('リンクの確認に失敗しました。もう一度お試しください','err'); return false; });
   }
+
+  // ===== 会社情報・管理者の登録（クラウド共有） =====
+  function fillOrgForm(){
+    const o=_orgInfo||{}; const active=document.activeElement;
+    const set=(id,v)=>{ const el=$(id); if(el && el!==active) el.value=(v||''); };
+    set('orgName',o.companyName); set('orgPhone',o.phone); set('orgAddr',o.address);
+    set('orgAdminName',o.adminName); set('orgAdminEmail',o.adminEmail);
+    const info=$('orgSavedInfo'); if(info) info.textContent = (o.companyName||o.adminEmail) ? '登録済みです（クラウド共有）。' : '';
+  }
+  function saveOrg(){
+    const email=String($('orgAdminEmail').value||'').trim();
+    if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast('メールアドレスの形式が正しくありません','err'); return; }
+    if(!ensureApp()){ toast('クラウドに接続できません','err'); return; }
+    const data={
+      companyName:String($('orgName').value||'').trim()||null,
+      phone:String($('orgPhone').value||'').trim()||null,
+      address:String($('orgAddr').value||'').trim()||null,
+      adminName:String($('orgAdminName').value||'').trim()||null,
+      adminEmail:email||null,
+      updatedAt:Date.now()
+    };
+    const btn=$('orgSave'); btn.disabled=true; const lb=btn.textContent; btn.textContent='保存中…';
+    firebase.database().ref(dbRoot+'/orgInfo').set(data)
+      .then(()=>{ _orgInfo=data; toast('保存しました','ok'); })
+      .catch(e=>{ console.error(e); toast('保存に失敗しました','err'); })
+      .finally(()=>{ btn.disabled=false; btn.textContent=lb; });
+  }
+  function bindOrg(){
+    $('orgSave').onclick=saveOrg;
+    ref('orgInfo').on('value', s=>{ _orgInfo=s.val()||null; fillOrgForm(); });
+  }
+
+  // ===== PWA：アプリにする（インストール） =====
+  let deferredPrompt=null;
+  function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true; }
+  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; const b=$('installBtn'); if(b && !isStandalone()) b.style.display=''; });
+  window.addEventListener('appinstalled', ()=>{ deferredPrompt=null; const b=$('installBtn'); if(b) b.style.display='none'; toast('アプリに追加しました🎉','ok'); });
+  function bindInstall(){
+    const b=$('installBtn'); if(!b) return;
+    if(isStandalone()){ b.style.display='none'; return; }
+    b.style.display=''; // iOS等は beforeinstallprompt が来ないので最初から表示
+    b.onclick=async()=>{
+      if(deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){ } deferredPrompt=null; return; }
+      $('installModal').classList.add('show');
+    };
+    $('installClose').onclick=()=> $('installModal').classList.remove('show');
+    $('installModal').addEventListener('click', e=>{ if(e.target===$('installModal')) $('installModal').classList.remove('show'); });
+  }
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 
   // Firebaseアプリを一度だけ初期化（gateのメールリンク処理とstartAppの二重初期化を防ぐ）
   function ensureApp(){
@@ -543,11 +648,12 @@
     $('app').classList.remove('hide');
     bindHelp();
     bindPassChange();
+    bindInstall();
     const ok=await initFirebase();
     if(ok==='authfail'){ toast('認証に接続できませんでした（Firebaseで匿名ログインの有効化が必要です）','err'); return; }
     if(!ok){ toast('Firebase未設定です（config.js）','err'); return; }
     setThisMonth();
-    bindTabs(); bindFilters(); bindMasters(); bindEditModal(); $('exportBtn').onclick=exportExcel;
+    bindTabs(); bindFilters(); bindMasters(); bindEditModal(); bindOrg(); $('exportBtn').onclick=exportExcel;
     ref('workers').on('value',s=>{ workers=s.val()||{}; migrateLegacyWages(); renderWorkers(); fillWorkerFilter(); renderAll(); });
     ref('sites').on('value',s=>{ sites=s.val()||{}; renderSites(); fillSiteFilter(); });
     ref('records').on('value',s=>{ records=s.val()||{}; renderAll(); });
@@ -559,9 +665,9 @@
       b.onclick=()=>{
         document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
         b.classList.add('on');
-        ['summary','records','workers','sites'].forEach(t=>$('tab-'+t).classList.add('hide'));
+        ['summary','records','workers','sites','org'].forEach(t=>$('tab-'+t).classList.add('hide'));
         $('tab-'+b.dataset.tab).classList.remove('hide');
-        $('filterCard').style.display=(b.dataset.tab==='workers'||b.dataset.tab==='sites')?'none':'';
+        $('filterCard').style.display=(b.dataset.tab==='workers'||b.dataset.tab==='sites'||b.dataset.tab==='org')?'none':'';
       };
     });
   }
@@ -924,7 +1030,8 @@
     {t:'記録を修正・削除する', k:'記録 修正 編集 削除 訂正 一覧', a:'「記録一覧」タブで各行の「修正」から内容を直せます（管理者は全員の記録を修正可）。「削除」で記録を消せます。'},
     {t:'Excelを出力する', k:'excel エクセル 出力 ダウンロード 数式 帳票', a:'「集計・Excel出力」タブの「📊Excelファイルをダウンロード」で、現在の絞り込み範囲を複数シート・数式入りで出力します。Excel上で単価を直すと自動で再計算されます。'},
     {t:'現場×氏名クロス集計の見方', k:'クロス 集計 現場 氏名 出勤日数 表', a:'「現場×氏名（出勤日数）」表で、どの現場に誰が何日入ったかを一覧できます。行＝現場、列＝氏名、数字＝出勤日数です。'},
-    {t:'ホーム画面に追加する', k:'ホーム画面 アイコン インストール アプリ pwa 追加', a:'iPhoneはSafariの共有ボタン→「ホーム画面に追加」。Androidは右上メニュー→「ホーム画面に追加」。次回からアプリのように開けます。'}
+    {t:'アプリにする（ホーム画面に追加）', k:'アプリにする ホーム画面 アイコン インストール アプリ pwa 追加', a:'ヘッダーの「⬇️アプリにする」を押すと追加できます（Android/PCは1タップ）。iPhoneはSafariの共有ボタン→「ホーム画面に追加」。'},
+    {t:'会社情報・管理者を登録する', k:'会社 会社名 住所 電話 管理者 氏名 メール 登録 設定', a:'「🏢 会社情報」タブで会社名・住所・電話・管理者氏名・管理者メールを登録できます（クラウド共有）。登録した管理者メールは「パスコードを忘れた方はこちら」のリンク送信先になります。'}
   ];
   function renderHelp(){
     const q=($('helpSearch').value||'').trim().toLowerCase();
