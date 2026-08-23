@@ -505,7 +505,7 @@
   const SILL_W = 260, SILL_H = 30;    // 土台
   const SILL_TOP_Y = 600;             // 土台上面のワールドY（下向き＋）
   const GRAVITY = 2400;               // 崩壊時の落下加速度
-  const POSTH=88, BEAMTH=20, FH=108;  // 柱高・梁厚・1階の高さ（FH=POSTH+BEAMTH）
+  const POSTH=120, BEAMTH=20, FH=140;  // 柱高・梁厚・1階の高さ（FH=POSTH+BEAMTH）
   const COLGAP=100;                   // 柱の間隔（横幅）
   let W_HALF=100;                     // 建物の半幅（ステージで可変＝横に大きく）
 
@@ -1021,34 +1021,38 @@
   };
   deshiEl.innerHTML = '<i class="life"><i></i></i><span class="badge"></span>'+deshiSVG+'<span class="tag"></span>';
   function spawnDeshi(){
+    if(!(state==='play' && current)) return;          // 棟梁のいる作業階が必要
     const types=['normal','strong','slow'], type=types[(Math.random()*3)|0], d=DESHI[type];
-    const fromLeft=Math.random()<0.5;                 // 画面の端から歩いて登場
-    deshi={ type, dir: fromLeft?1:-1,
-      x: fromLeft ? 30 : cssW-30,
-      y: cssH*(0.5+Math.random()*0.16),               // 地面の高さ（一定）
-      vx: (fromLeft?1:-1)*(58+Math.random()*26),      // 歩く速さ
-      walk:0, life:3.5 };
+    const f = current.slot.f!=null ? current.slot.f : (floors-1);   // 棟梁のいる階
+    const side = (current.t.tx < CX) ? 1 : -1;         // 中央寄りに立てかけて常に画面内・棟梁の隣に着く
+    const nearX = current.t.tx + side*34;              // 棟梁のすぐ横
+    deshi={ type, f, side,
+      topX: nearX, topY: floorBaseY(f),                 // はしご上端＝作業階の床（棟梁の隣）
+      baseX: nearX + side*22, baseY: SILL_TOP_Y,        // 下端＝地面（立てかけて少し横へ）
+      t:0, life:5.2, climbDur:2.5, p:0 };
     deshiEl.style.setProperty('--hc', d.hc);
     deshiEl.querySelector('.badge').textContent=d.badge;
     deshiEl.querySelector('.tag').textContent=d.name;
     deshiEl.classList.add('show');
-    audio.tone(920,.09,'triangle',.16);
+    audio.tone(760,.10,'triangle',.16); audio.tone(1010,.08,'triangle',.12);   // トントン（登場）
   }
   function updateDeshi(dt){
     if(swayDampT>0){ swayDampT-=dt; if(swayDampT<=0) swayDamp=1; }
     if(slowT>0){ slowT-=dt; if(slowT<=0) timeScale=1; }
-    if(state==='play' && !deshi){ deshiSpawnT-=dt; if(deshiSpawnT<=0){ spawnDeshi(); deshiSpawnT=13+Math.random()*10; } }
+    if(state==='play' && !deshi && current){ deshiSpawnT-=dt; if(deshiSpawnT<=0){ spawnDeshi(); deshiSpawnT=13+Math.random()*10; } }
     if(deshi){
-      deshi.life-=dt;
-      deshi.x += deshi.vx*dt;                          // 歩いて横移動
-      const m=30;
-      if(deshi.x<m){ deshi.x=m; deshi.vx=Math.abs(deshi.vx); deshi.dir=1; }
-      if(deshi.x>cssW-m){ deshi.x=cssW-m; deshi.vx=-Math.abs(deshi.vx); deshi.dir=-1; }
-      deshi.walk += dt*9;                               // 歩行のぴょこぴょこ
-      const bob = Math.abs(Math.sin(deshi.walk))*5;
-      deshiEl.style.left=deshi.x+'px';
-      deshiEl.style.top=(deshi.y - bob)+'px';
-      deshiEl.querySelector('.life i').style.width=Math.max(0,deshi.life/3.5)*100+'%';
+      deshi.t+=dt; deshi.life-=dt;
+      const p = Math.min(1, deshi.t/deshi.climbDur);    // 0=地面 → 1=作業階（棟梁のところ）
+      deshi.p = p;
+      const wxW = deshi.baseX + (deshi.topX-deshi.baseX)*p;
+      const wyW = deshi.baseY + (deshi.topY-deshi.baseY)*p;
+      const sx=wx(wxW), sy=wy(wyW);
+      const hPx=Math.max(30, POSTH*S*0.7), wPx=hPx*0.78;
+      const bob = (p<1) ? Math.abs(Math.sin(deshi.t*11))*3 : 0;   // 登るぴょこぴょこ
+      deshiEl.style.width=wPx+'px'; deshiEl.style.bottom='auto';
+      deshiEl.style.left=(sx - wPx*0.5)+'px';
+      deshiEl.style.top=(sy - hPx - bob)+'px';           // 足元をはしごの現在地に
+      deshiEl.querySelector('.life i').style.width=Math.max(0,deshi.life/5.2)*100+'%';
       if(deshi.life<=0 || state!=='play'){ deshi=null; deshiEl.classList.remove('show'); }
     }
   }
@@ -1091,6 +1095,7 @@
     if(tilt){ const bx=wx(CX), by=wy(SILL_TOP_Y+SILL_H); ctx.translate(bx,by); ctx.rotate(tilt); ctx.translate(-bx,-by); }
     for(const b of beams) drawTimber(b);
     ctx.restore();
+    if(state==='play') drawLadder();       // 弟子がのぼるはしご（世界座標）
     // クレーン＋落下中の材（空中＝揺れの外。座面ガイドは揺れた位置に描く）
     if(current && state==='play') drawCurrent(tilt);
     // 完成建物（上棟の演出：壁・屋根・相輪）
@@ -1153,6 +1158,28 @@
     ctx.strokeStyle='rgba(0,0,0,.15)'; ctx.lineWidth=1;
     for(let i=1;i<3;i++){ ctx.beginPath(); ctx.moveTo(bx, topY+i*40*S); ctx.lineTo(bx+bw, topY+i*40*S); ctx.stroke(); }
     ctx.fillStyle='rgba(255,255,255,.15)'; ctx.fillRect(bx, topY, bw, 5);
+  }
+
+  // 弟子がのぼるはしご（作業階＝棟梁のいる階へ立てかける。世界座標→画面へ変換して描画）
+  function drawLadder(){
+    if(!deshi) return;
+    const bx=wx(deshi.baseX), by=wy(deshi.baseY);
+    const tx=wx(deshi.topX),  ty=wy(deshi.topY);
+    if(Math.abs(deshi.topY-deshi.baseY) < 8) return;   // 平屋（棟梁が地面）ははしご無し
+    let dx=tx-bx, dy=ty-by; const len=Math.hypot(dx,dy)||1; dx/=len; dy/=len;
+    const nx=-dy, ny=dx;                                // レール間隔の法線方向
+    const hw=Math.max(4, 7*S);
+    ctx.save(); ctx.lineCap='round';
+    ctx.strokeStyle='#9c6a37'; ctx.lineWidth=Math.max(3,4.5*S);   // レール2本
+    ctx.beginPath();
+    ctx.moveTo(bx+nx*hw,by+ny*hw); ctx.lineTo(tx+nx*hw,ty+ny*hw);
+    ctx.moveTo(bx-nx*hw,by-ny*hw); ctx.lineTo(tx-nx*hw,ty-ny*hw);
+    ctx.stroke();
+    ctx.strokeStyle='#c79a5b'; ctx.lineWidth=Math.max(2,3*S);     // 桟（横木）
+    const n=Math.max(2, Math.round(len/Math.max(10, FH*S/7)));
+    for(let i=0;i<=n;i++){ const px=bx+(tx-bx)*i/n, py=by+(ty-by)*i/n;
+      ctx.beginPath(); ctx.moveTo(px+nx*hw,py+ny*hw); ctx.lineTo(px-nx*hw,py-ny*hw); ctx.stroke(); }
+    ctx.restore();
   }
 
   function roundRect(x,y,w,h,r){
