@@ -1,0 +1,16 @@
+{
+  "name": "上棟バランス｜大工パズル",
+  "short_name": "上棟バランス",
+  "description": "木材を落として家の骨組みを組み上げる大工パズル。最高難度は五重塔！",
+  "lang": "ja",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1b3a5c",
+  "theme_color": "#1b3a5c",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

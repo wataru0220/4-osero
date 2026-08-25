@@ -5,8 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#1b3a5c">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="上棟バランス">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<!-- ホーム画面に追加（PWA / Appleタッチアイコン） -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>上棟バランス｜大工パズル</title>
 <style>
   :root{
@@ -245,6 +250,9 @@
           <button class="btn-ghost" id="lineBtn">📱 LINEで共有</button>
           <button class="btn-ghost" id="muteBtn2">🔊 音 ON</button>
         </div>
+        <div class="row">
+          <button class="btn-ghost" id="installBtn" style="width:100%;">📲 アプリにする（ホーム画面に追加）</button>
+        </div>
       </div>
     </div>
     <!-- 遊び方 -->
@@ -257,10 +265,25 @@
           ③ 狙いがズレると<b>重心が傾き</b>、傾くほど<b>建物が揺れ続け</b>て狙い所（緑マーク）が動く＝難化。<b>ピタリを連続</b>すれば傾きが戻って<b>立て直せる</b>！<br>
           ④ 泡が端まで振り切る＝<b>倒壊</b>。筋交いは<b>たすき掛け（X）で互い違い</b>に入りバランスを助ける。<br>
           ⑤ 組み切ると<b>上棟</b>！ ステージが進むと <b>2階→3階…最高は五重塔</b>、揺れも速くなる。<br>
-          ⑥ たまに<b>弟子</b>が現れ動き回る（3秒で去る）。<b>タップで入手</b>→<b>アイテム枠をタップで発動</b>：🔧少し／💪大きく揺れを止める・🧘スロー。ピンチに助けてもらえ！
+          ⑥ たまに<b>弟子</b>が<b>はしごをかけて棟梁のいる階まで登ってくる</b>。<b>タップで入手</b>→<b>アイテム枠をタップで発動</b>：🔧少し／💪大きく揺れを止める・🧘スロー。ピンチに助けてもらえ！
         </p>
         <div style="text-align:center; margin-top:14px;">
           <button class="btn-primary" id="howClose">とじる</button>
+        </div>
+      </div>
+    </div>
+    <!-- アプリにする（自動インストールできない端末向けの手順） -->
+    <div class="overlay" id="installOverlay">
+      <div class="panel" style="text-align:left;">
+        <h2 class="brush" style="text-align:center;">📲 アプリにする</h2>
+        <p style="line-height:1.9; font-size:15px; color:#4a4030;">
+          ホーム画面に追加すると、アイコンから<b>全画面のアプリ</b>として起動できます。<br><br>
+          <b>📱 iPhone（Safari）</b><br>下の「共有」ボタン（□に↑）→「ホーム画面に追加」<br><br>
+          <b>🤖 Android（Chrome）</b><br>右上メニュー <b>⋮</b> →「アプリをインストール」または「ホーム画面に追加」<br><br>
+          <b>💻 PC（Chrome / Edge）</b><br>アドレスバー右の <b>⊕</b>（インストール）アイコンから追加
+        </p>
+        <div style="text-align:center; margin-top:14px;">
+          <button class="btn-primary" id="installClose">とじる</button>
         </div>
       </div>
     </div>
@@ -1006,7 +1029,7 @@
     const t=current.t, f=current.slot.f;
     const footY = (f!=null) ? floorBaseY(f) : postTopY(floors-1);   // 作業中の床（＝下階の上）
     const sx=wx(t.tx+40), sy=wy(footY);
-    const hPx=Math.max(38, POSTH*S*1.2), wPx=hPx*260/340;
+    const hPx=Math.max(26, POSTH*S*0.72), wPx=hPx*260/340;   // 棟梁は小さめ（材の脇に立つ）
     el.style.width=wPx+'px'; el.style.bottom='auto';
     el.style.left=(sx - wPx*0.5)+'px';
     el.style.top=(sy - hPx)+'px';                      // 足元を床に
@@ -1430,6 +1453,22 @@
   $('howClose').onclick=()=>$('howOverlay').classList.remove('show');
   function toggleMute(){ audio.muted=!audio.muted; localStorage.setItem('daiku_mute', audio.muted?'1':'0'); audio.updateBtns(); audio.ensure(); }
   $('muteBtn').onclick=toggleMute; $('muteBtn2').onclick=toggleMute;
+
+  // ===== PWA：アプリにする（ホーム画面に追加）=====
+  let deferredPrompt=null;
+  function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true; }
+  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; });   // Android/PCは1タップ用に保持
+  window.addEventListener('appinstalled', ()=>{ deferredPrompt=null; const b=$('installBtn'); if(b) b.style.display='none'; });
+  $('installBtn').onclick=async ()=>{
+    if(deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){ } deferredPrompt=null; return; }
+    $('installOverlay').classList.add('show');           // iOS等 beforeinstallprompt が来ない端末は手順を表示
+  };
+  $('installClose').onclick=()=>$('installOverlay').classList.remove('show');
+  $('installOverlay').addEventListener('pointerdown', e=>{ if(e.target===$('installOverlay')) $('installOverlay').classList.remove('show'); });
+  if(isStandalone()){ const b=$('installBtn'); if(b) b.style.display='none'; }   // 既にアプリ起動なら隠す
+  if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
+    window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  }
 
   // ===== LINEで共有（押すとLINEの共有画面が開き、スコア＋ゲームURLが入る）=====
   function shareLINE(kind){
