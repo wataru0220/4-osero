@@ -251,21 +251,32 @@
     </div>
   </section>
 
-  <!-- 現場タブ -->
+  <!-- 現場（工事）タブ -->
   <section id="tab-sites" class="hide">
     <div class="card">
-      <h2>📍 現場マスタ</h2>
+      <h2>🏗️ 工事（現場）</h2>
       <div class="addrow">
-        <input type="text" id="sName" placeholder="現場名（例：◯◯ビル新築）" style="width:240px">
+        <input type="text" id="sName" placeholder="工事名・現場名（例：◯◯ビル新築）" style="width:220px">
+        <select id="sStatus"><option value="進行中">進行中</option><option value="着工予定">着工予定</option></select>
         <button class="act" id="sAdd">追加</button>
       </div>
       <div class="scroll">
         <table id="tblSites">
-          <thead><tr><th>現場名</th><th>状態</th><th></th></tr></thead>
+          <thead><tr><th>工事名（現場）</th><th>状態</th><th>操作</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
-      <div class="note">入力フォームの現場プルダウンに表示されます。職人が「その他」で入力した現場名もそのまま集計されます。</div>
+      <div class="note">「進行中」「着工予定」の工事だけがここと入力フォームに表示されます。「✅完了にする」を押すと下の「完了済み工事」に保存され、入力フォームの現場一覧からも外れます。</div>
+
+      <div style="margin-top:14px">
+        <button class="sm" id="doneToggle" type="button" style="width:100%; padding:9px">✅ 完了済み工事を表示（0）</button>
+        <div class="scroll" id="doneWrap" style="display:none; margin-top:8px">
+          <table id="tblSitesDone">
+            <thead><tr><th>工事名（現場）</th><th>操作</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -843,8 +854,10 @@
         .then(()=>{ $('wName').value=''; $('wWage').value=''; toast('追加しました','ok'); });
     };
     $('sAdd').onclick=()=>{ const name=$('sName').value.trim(); if(!name){toast('現場名を入力','err'); return;}
-      ref('sites').push({name, active:true, createdAt:Date.now()}).then(()=>{ $('sName').value=''; toast('追加しました','ok'); });
+      const st=$('sStatus')?$('sStatus').value:'進行中';
+      ref('sites').push({name, status:st, active: st!=='完了済み', createdAt:Date.now()}).then(()=>{ $('sName').value=''; toast('追加しました','ok'); });
     };
+    $('doneToggle').onclick=()=>{ doneOpen=!doneOpen; renderSites(); };
     // 給与設定のバックアップ / 復元（端末間の引き継ぎ用）
     $('wageBackup').onclick=()=>{
       const blob=new Blob([JSON.stringify(wages,null,2)],{type:'application/json'});
@@ -894,19 +907,49 @@
     tb.querySelectorAll('[data-delw]').forEach(b=> b.onclick=()=>{ if(confirm('削除しますか？（過去の記録は残ります）')){ removeWage(b.dataset.delname); ref('workers/'+b.dataset.delw).remove(); } });
   }
 
+  // 工事の状態（旧データは active から移行）。完了済み＝表から外し「完了済み工事」フォルダーへ。
+  let doneOpen=false;
+  function siteStatus(s){ if(s&&s.status) return s.status; return (s&&s.active===false)?'完了済み':'進行中'; }
+  function statusPill(st){
+    if(st==='完了済み') return '<span class="pill" style="background:#eef1f5;color:#5f7185">完了済み</span>';
+    if(st==='着工予定') return '<span class="pill" style="background:#fff4e5;color:#8a5a00">着工予定</span>';
+    return '<span class="pill" style="background:#e7f0ff;color:#1759c4">進行中</span>';
+  }
+  function setSiteStatus(key, st){ ref('sites/'+key).update({ status:st, active: st!=='完了済み' }).then(()=>toast('更新しました','ok')); }
   function renderSites(){
+    const all=Object.entries(sites).map(([k,s])=>Object.assign({_key:k},s)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'));
+    const active=all.filter(s=>siteStatus(s)!=='完了済み');
+    const done=all.filter(s=>siteStatus(s)==='完了済み');
+    // 表：着工予定＋進行中のみ
     const tb=$('tblSites').querySelector('tbody');
-    const list=Object.entries(sites).map(([k,s])=>Object.assign({_key:k},s)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'));
-    if(!list.length){ tb.innerHTML='<tr><td colspan="3" class="muted">現場が未登録です。</td></tr>'; return; }
-    tb.innerHTML=list.map(s=>'<tr>'+
-      '<td><input data-sk="'+s._key+'" value="'+esc(s.name)+'" style="width:260px"></td>'+
-      '<td>'+(s.active===false?'<span class="muted">無効</span>':'<span class="pill daily">有効</span>')+'</td>'+
-      '<td><button class="sm" data-stoggle="'+s._key+'">'+(s.active===false?'有効化':'無効化')+'</button> '+
-          '<button class="sm del" data-dels="'+s._key+'">削除</button></td></tr>').join('');
-    tb.querySelectorAll('input[data-sk]').forEach(el=> el.onchange=()=> ref('sites/'+el.dataset.sk+'/name').set(el.value.trim()).then(()=>toast('保存しました','ok')));
-    tb.querySelectorAll('[data-stoggle]').forEach(b=> b.onclick=()=>{ const s=sites[b.dataset.stoggle];
-      ref('sites/'+b.dataset.stoggle+'/active').set(!(s.active===false)).then(()=>toast('更新しました','ok')); });
-    tb.querySelectorAll('[data-dels]').forEach(b=> b.onclick=()=>{ if(confirm('削除しますか？')) ref('sites/'+b.dataset.dels).remove(); });
+    if(!active.length){ tb.innerHTML='<tr><td colspan="3" class="muted">進行中・着工予定の工事はありません。上で追加してください。</td></tr>'; }
+    else tb.innerHTML=active.map(s=>{ const st=siteStatus(s);
+      const flip = (st==='着工予定')
+        ? '<button class="sm" data-sstart="'+s._key+'">▶ 進行中にする</button>'
+        : '<button class="sm" data-splan="'+s._key+'">↩ 着工予定に戻す</button>';
+      return '<tr>'+
+        '<td><input data-sk="'+s._key+'" value="'+esc(s.name)+'" style="width:240px"></td>'+
+        '<td>'+statusPill(st)+'</td>'+
+        '<td style="white-space:nowrap">'+flip+' '+
+          '<button class="sm" data-sdone="'+s._key+'">✅ 完了にする</button> '+
+          '<button class="sm del" data-dels="'+s._key+'">削除</button></td></tr>';
+    }).join('');
+    // 完了済み工事フォルダー（ファイルに保存されたもの）
+    $('doneToggle').textContent = (doneOpen?'▲ 完了済み工事を閉じる（':'✅ 完了済み工事を表示（')+done.length+'）';
+    $('doneWrap').style.display = doneOpen ? '' : 'none';
+    const dtb=$('tblSitesDone').querySelector('tbody');
+    if(!done.length){ dtb.innerHTML='<tr><td colspan="2" class="muted">完了済みの工事はありません。</td></tr>'; }
+    else dtb.innerHTML=done.map(s=>'<tr>'+
+      '<td>'+esc(s.name)+'</td>'+
+      '<td style="white-space:nowrap"><button class="sm" data-sreopen="'+s._key+'">↩ 工事中に戻す</button> '+
+        '<button class="sm del" data-dels="'+s._key+'">削除</button></td></tr>').join('');
+    // バインド
+    $('tblSites').querySelectorAll('input[data-sk]').forEach(el=> el.onchange=()=> ref('sites/'+el.dataset.sk+'/name').set(el.value.trim()).then(()=>toast('保存しました','ok')));
+    $('tblSites').querySelectorAll('[data-sstart]').forEach(b=> b.onclick=()=> setSiteStatus(b.dataset.sstart,'進行中'));
+    $('tblSites').querySelectorAll('[data-splan]').forEach(b=> b.onclick=()=> setSiteStatus(b.dataset.splan,'着工予定'));
+    $('tblSites').querySelectorAll('[data-sdone]').forEach(b=> b.onclick=()=> setSiteStatus(b.dataset.sdone,'完了済み'));
+    $('tblSitesDone').querySelectorAll('[data-sreopen]').forEach(b=> b.onclick=()=> setSiteStatus(b.dataset.sreopen,'進行中'));
+    document.querySelectorAll('#tab-sites [data-dels]').forEach(b=> b.onclick=()=>{ if(confirm('削除しますか？（過去の記録は残ります）')) ref('sites/'+b.dataset.dels).remove(); });
   }
 
   // ---------- Excel出力（数式入り） ----------
@@ -1026,7 +1069,7 @@
     {t:'給与（日給／時給・単価）を設定', k:'給与 日給 時給 単価 賃金 設定', a:'「従業員（給与）」タブで各人の方式（日給/時給）と単価を設定します。日給は1日あたり、時給は1時間あたりの金額。Excel出力に自動反映されます。'},
     {t:'給与は端末だけに保存される', k:'給与 ローカル 端末 セキュリティ 非公開 クラウド 漏れ', a:'給与（方式・単価）はこの管理者端末のブラウザにのみ保存され、クラウド（Firebase）や入力フォームには送られません。従業員からは見えません。'},
     {t:'給与のバックアップ／別PCへ引き継ぎ', k:'バックアップ 復元 引き継ぎ json 別pc 移行', a:'「従業員（給与）」タブ下の「⬇給与設定をバックアップ(JSON)」で書き出し、別PCで「⬆復元」から読み込むと給与設定を引き継げます。'},
-    {t:'現場を追加・編集する', k:'現場 追加 編集 マスタ 名前 無効', a:'「現場」タブで現場名を追加できます。一覧で名前の直接編集、無効化・削除もできます。'},
+    {t:'工事（現場）を追加・状態を変える', k:'現場 工事 追加 編集 着工予定 進行中 完了 完了済み 状態', a:'「🏗️工事（現場）」タブで工事を追加できます。状態は「着工予定／進行中／完了済み」。表には着工予定と進行中だけが並び、「✅完了にする」を押すと下の「完了済み工事」フォルダーに保存され、入力フォームの現場一覧からも外れます。完了済みは「↩工事中に戻す」で戻せます。'},
     {t:'記録を修正・削除する', k:'記録 修正 編集 削除 訂正 一覧', a:'「記録一覧」タブで各行の「修正」から内容を直せます（管理者は全員の記録を修正可）。「削除」で記録を消せます。'},
     {t:'Excelを出力する', k:'excel エクセル 出力 ダウンロード 数式 帳票', a:'「集計・Excel出力」タブの「📊Excelファイルをダウンロード」で、現在の絞り込み範囲を複数シート・数式入りで出力します。Excel上で単価を直すと自動で再計算されます。'},
     {t:'現場×氏名クロス集計の見方', k:'クロス 集計 現場 氏名 出勤日数 表', a:'「現場×氏名（出勤日数）」表で、どの現場に誰が何日入ったかを一覧できます。行＝現場、列＝氏名、数字＝出勤日数です。'},
