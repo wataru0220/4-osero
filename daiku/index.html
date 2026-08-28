@@ -916,62 +916,79 @@
     }
   }
 
-  // ================= ② クレーン操縦 =================
+  // ================= ② クレーン操縦（揺れる柱に梁をのせる） =================
+  const POSTH_C=130;                              // クレーンの柱の高さ(px)
+  function cranePostTopY(){ return groundY()-POSTH_C; }
+  function craneSwayAt(y){ return crane.swayAmp*Math.sin(crane.swayPhase) * (groundY()-y)/POSTH_C; }  // 下=固定, 上ほど揺れる
   function initCrane(){
-    crane={ tx:cssW/2, x:cssW/2, prevx:cssW/2, topY:72, L:Math.min(190,cssH*0.34),
-      theta:0.25, omega:0, load:true, drop:null, sawX:null,
+    crane={ tx:cssW/2, x:cssW/2, topY:64, cableL:Math.min(120,cssH*0.20),
+      load:true, drop:null,
       need:3+lvl, done:0, miss:0, maxMiss:3,
-      platX:cssW/2, platW:Math.max(48,84-lvl*7), platMove:(lvl>=3), platDir:1, stack:0 };
-    tapHint.textContent='ゆれる荷をタップ！台に乗せろ'; tapHint.style.display='block';
-    setTimeout(()=>{ if(mode==='crane') tapHint.style.display='none'; }, 2400);
+      frameX:cssW/2, spread:Math.min(cssW*0.28,110),
+      swayPhase:Math.random()*6.283, swayAmp:16+lvl*7, swaySpeed:1.1+lvl*0.28,
+      stack:0, beamTh:16 };
+    crane.beamLen=crane.spread*2+38;              // 梁は柱間より少し長い
+    tapHint.textContent='ゆれる柱に梁をのせろ！ タップで投下'; tapHint.style.display='block';
+    setTimeout(()=>{ if(mode==='crane') tapHint.style.display='none'; }, 2600);
   }
   function craneDrop(){
     const c=crane; if(!c||!c.load||c.drop) return;
-    const bx=c.x+c.L*Math.sin(c.theta), by=c.topY+c.L*Math.cos(c.theta);
-    c.drop={ x:bx, y:by, vx:c.L*Math.cos(c.theta)*c.omega, vy:0 };
+    c.drop={ x:c.x, y:c.topY+c.cableL, vy:0 };     // トロリー真下からまっすぐ落ちる
     c.load=false; tapHint.style.display='none'; audio.tone(300,.08,'square',.2);
   }
   function updateCrane(dt){
     const c=crane;
-    c.prevx=c.x; c.x += (c.tx-c.x)*Math.min(1,dt*9); c.x=Math.max(30,Math.min(cssW-30,c.x));
-    const ax=(c.x-c.prevx)/Math.max(dt,0.001);
-    c.omega += (-(1500/c.L)*Math.sin(c.theta) - (ax/c.L)*Math.cos(c.theta))*dt;   // 振り子
-    c.omega *= (1-1.1*dt); c.theta += c.omega*dt;
-    if(c.platMove){ c.platX += c.platDir*(50+lvl*14)*dt; if(c.platX<cssW*0.24){c.platX=cssW*0.24;c.platDir=1;} if(c.platX>cssW*0.76){c.platX=cssW*0.76;c.platDir=-1;} }
-    if(c.drop){ const d=c.drop; d.vy+=1700*dt; d.y+=d.vy*dt; d.x+=d.vx*dt;
-      const landY=groundY()-6-c.stack*15;
+    c.swayPhase += c.swaySpeed*dt;
+    c.x += (c.tx-c.x)*Math.min(1,dt*10); c.x=Math.max(30,Math.min(cssW-30,c.x));
+    if(c.drop){ const d=c.drop; d.vy+=1800*dt; d.y+=d.vy*dt;
+      const landY=cranePostTopY() - c.stack*c.beamTh;
       if(d.y>=landY){
-        const hit=Math.abs(d.x-c.platX) < c.platW*0.5+8;
-        if(hit){ c.done++; c.stack++; const pts=100+c.done*20+lvl*20; score+=pts; burst(d.x,landY,'#e0c060',12); audio.combo(2);
-          if(c.done>=c.need){ c.drop=null; updateHUD(); stageClear(200+lvl*100,'クレーン完了！ 全部乗せた✨'); return; } }
+        const centerX=c.frameX + craneSwayAt(landY);         // 揺れた柱の中心
+        const tol=Math.max(15, 40 - lvl*4);
+        if(Math.abs(d.x-centerX) < tol){ c.stack++; c.done++; const pts=100+c.done*30+lvl*20; score+=pts; burst(d.x,landY,'#e0c060',12); audio.combo(2);
+          if(c.done>=c.need){ c.drop=null; updateHUD(); stageClear(200+lvl*100,'クレーン完了！ 梁がのった✨'); return; } }
         else { c.miss++; burst(d.x,landY,'#d1503a',14); audio.tone(120,.2,'sawtooth',.3,-50); shake=6;
-          if(c.miss>=c.maxMiss){ c.drop=null; updateHUD(); gameOver('資材を落としすぎた…'); return; } }
-        c.drop=null; c.load=true; c.theta*=0.25; c.omega=0; updateHUD();
+          if(c.miss>=c.maxMiss){ c.drop=null; updateHUD(); gameOver('梁を落としすぎた…'); return; } }
+        c.drop=null; c.load=true; updateHUD();
       }
     }
   }
-  function drawCraneLoad(x,y){
-    ctx.fillStyle='#c79a5b'; roundRectS(x-26,y-9,52,18,4); ctx.fill();
-    ctx.strokeStyle='rgba(90,55,20,.55)'; ctx.lineWidth=2; ctx.strokeRect(x-26,y-9,52,18);
-    ctx.fillStyle='rgba(60,35,12,.6)'; ctx.beginPath(); ctx.arc(x-13,y,2.4,0,6.283); ctx.arc(x+13,y,2.4,0,6.283); ctx.fill();
+  function drawSwayPost(baseX, baseY, topY){
+    const topX=baseX+craneSwayAt(topY);
+    ctx.strokeStyle='#a9733f'; ctx.lineWidth=16; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(baseX,baseY); ctx.lineTo(topX,topY); ctx.stroke();
+    ctx.strokeStyle='#8a5a2b'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(baseX,baseY); ctx.lineTo(topX,topY); ctx.stroke();
+  }
+  function drawBeamPiece(cx,cy,len,th){
+    ctx.save(); ctx.translate(cx,cy);
+    const g=ctx.createLinearGradient(0,-th/2,0,th/2); g.addColorStop(0,'#c79a5b'); g.addColorStop(1,'#9c6a37');
+    ctx.fillStyle=g; roundRectS(-len/2,-th/2,len,th,4); ctx.fill();
+    ctx.strokeStyle='rgba(80,45,15,.5)'; ctx.lineWidth=2; ctx.strokeRect(-len/2,-th/2,len,th);
+    ctx.fillStyle='rgba(60,35,12,.55)'; ctx.beginPath(); ctx.arc(-len*0.33,0,2.4,0,6.283); ctx.arc(len*0.33,0,2.4,0,6.283); ctx.fill();
+    ctx.restore();
   }
   function drawCrane(){
     const c=crane; drawFlatSky(); if(!c) return;
-    const gY=groundY();
+    const gY=groundY(), ptY=cranePostTopY();
     ctx.fillStyle='#c9b48c'; ctx.fillRect(0,gY+18,cssW,cssH-gY);
-    ctx.save(); ctx.strokeStyle='rgba(76,154,76,.7)'; ctx.setLineDash([6,6]); ctx.lineWidth=2;
-    ctx.beginPath(); ctx.moveTo(c.platX,c.topY+10); ctx.lineTo(c.platX,gY); ctx.stroke(); ctx.restore();
-    ctx.fillStyle='#8a5a2b'; roundRectS(c.platX-c.platW/2,gY-4,c.platW,14,3); ctx.fill();
-    ctx.strokeStyle='#5c3a18'; ctx.lineWidth=2; ctx.strokeRect(c.platX-c.platW/2,gY-4,c.platW,14);
-    for(let i=0;i<c.stack;i++){ const yy=gY-6-(i+1)*15; ctx.fillStyle=i%2?'#c79a5b':'#b9884a'; roundRectS(c.platX-c.platW*0.42,yy,c.platW*0.84,13,3); ctx.fill(); ctx.strokeStyle='rgba(90,55,20,.5)'; ctx.lineWidth=1.5; ctx.strokeRect(c.platX-c.platW*0.42,yy,c.platW*0.84,13); }
+    // 2本の揺れる柱
+    drawSwayPost(c.frameX-c.spread, gY, ptY);
+    drawSwayPost(c.frameX+c.spread, gY, ptY);
+    // 乗せた梁（下から積み上げ、上ほど揺れる）
+    for(let i=0;i<c.stack;i++){ const yy=ptY - i*c.beamTh - c.beamTh/2; drawBeamPiece(c.frameX+craneSwayAt(yy), yy, c.beamLen, c.beamTh); }
+    // 目標マーカー（揺れた柱の中心）
+    const landY=ptY - c.stack*c.beamTh, cxTarget=c.frameX+craneSwayAt(landY);
+    ctx.save(); ctx.strokeStyle='rgba(76,154,76,.5)'; ctx.setLineDash([5,6]); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(cxTarget,c.topY+8); ctx.lineTo(cxTarget,landY); ctx.stroke(); ctx.restore();
+    // レール＋トロリー
     ctx.fillStyle='#4a5763'; ctx.fillRect(0,c.topY-16,cssW,9);
     ctx.fillStyle='#e0a63c'; roundRectS(c.x-18,c.topY-16,36,15,3); ctx.fill();
     ctx.fillStyle='#2b2b2b'; ctx.fillRect(c.x-12,c.topY-2,24,4);
+    // 吊り／落下中の梁
     ctx.strokeStyle='#3a3a3a'; ctx.lineWidth=2;
-    if(c.drop){ ctx.beginPath(); ctx.moveTo(c.drop.x,c.drop.y-9); ctx.lineTo(c.drop.x,c.drop.y-14); ctx.stroke(); drawCraneLoad(c.drop.x,c.drop.y); }
-    else if(c.load){ const bx=c.x+c.L*Math.sin(c.theta), by=c.topY+c.L*Math.cos(c.theta); ctx.beginPath(); ctx.moveTo(c.x,c.topY); ctx.lineTo(bx,by); ctx.stroke(); drawCraneLoad(bx,by); }
+    if(c.drop){ ctx.beginPath(); ctx.moveTo(c.drop.x,c.drop.y-c.beamTh); ctx.lineTo(c.drop.x,c.drop.y-c.beamTh/2); ctx.stroke(); drawBeamPiece(c.drop.x,c.drop.y,c.beamLen,c.beamTh); }
+    else if(c.load){ const by=c.topY+c.cableL; ctx.beginPath(); ctx.moveTo(c.x,c.topY); ctx.lineTo(c.x,by-c.beamTh/2); ctx.stroke(); drawBeamPiece(c.x,by,c.beamLen,c.beamTh); }
     drawSfx();
-    drawStatusBar(`資材 ${c.done}/${c.need}　ミス ${c.miss}/${c.maxMiss}`);
+    drawStatusBar(`梁 ${c.done}/${c.need}　ミス ${c.miss}/${c.maxMiss}`);
   }
 
   // ================= ③ 釘打ち（早打ち） =================
@@ -991,7 +1008,7 @@
     const remaining=n.need-n.done, onNow=n.items.filter(i=>!i.hit).length;
     if(n.spawnT<=0 && onNow<Math.min(n.maxOn,remaining)){ spawnNail(); n.spawnT=Math.max(0.2,0.45-lvl*0.03)+Math.random()*0.4; }
     for(let i=n.items.length-1;i>=0;i--){ const it=n.items[i];
-      if(it.hit){ it.anim+=dt; if(it.anim>0.22) n.items.splice(i,1); continue; }
+      if(it.hit){ it.anim+=dt; if(it.anim>0.42) n.items.splice(i,1); continue; }
       it.t+=dt;
       if(it.t>=it.life){ n.miss++; n.items.splice(i,1); audio.tone(120,.1,'sawtooth',.2,-30); updateHUD();
         if(n.miss>=n.maxMiss){ gameOver('板を打ち逃した…'); return; } }
@@ -1000,7 +1017,7 @@
   function nailTap(px,py){
     const n=nail; let hit=false;
     for(const it of n.items){ if(it.hit) continue;
-      if(Math.hypot(px-it.x,py-it.y)<=it.r+10){ it.hit=true; it.anim=0; n.done++; score+=60+lvl*15; burst(it.x,it.y,'#e0a63c',10); audio.combo(2); hit=true;
+      if(Math.hypot(px-it.x,py-it.y)<=it.r+10){ it.hit=true; it.anim=0; n.done++; score+=60+lvl*15; burst(it.x,it.y,'#cfd6dd',7); audio.tone(1500,.03,'square',.16); audio.tone(520,.06,'square',.12,-260); hit=true;   // カンッ（ハンマー）
         if(n.done>=n.need){ updateHUD(); stageClear(200+lvl*100,'壁張り完了！ 早打ち名人🔨'); return; } break; } }
     if(!hit) audio.tone(200,.05,'square',.1);
     updateHUD();
@@ -1015,8 +1032,18 @@
   function drawNail(){
     const n=nail; drawWall(); if(!n) return;
     for(const it of n.items){
-      if(it.hit){ const a=1-it.anim/0.22; ctx.save(); ctx.globalAlpha=Math.max(0,a); ctx.translate(it.x,it.y);
-        ctx.strokeStyle='#e0a63c'; ctx.lineWidth=3; for(let k=0;k<6;k++){ const an=k*Math.PI/3; ctx.beginPath(); ctx.moveTo(Math.cos(an)*6,Math.sin(an)*6); ctx.lineTo(Math.cos(an)*(14+it.anim*40),Math.sin(an)*(14+it.anim*40)); ctx.stroke(); }
+      if(it.hit){                                     // ハンマーで打つ演出
+        const ph=Math.min(1,it.anim/0.34), down=ph<0.4?(ph/0.4):1, ang=-0.7+down*0.95;
+        // 打ち込まれた釘（頭だけ）
+        ctx.fillStyle='#8a8f96'; ctx.beginPath(); ctx.arc(it.x,it.y,it.r*0.3,0,6.283); ctx.fill();
+        // 打撃の火花
+        if(down>=1 && ph<0.85){ const a=1-(ph-0.4)/0.45; ctx.save(); ctx.globalAlpha=Math.max(0,a); ctx.strokeStyle='#ffd24a'; ctx.lineWidth=3;
+          for(let k=0;k<5;k++){ const an=-2.2+k*0.55; ctx.beginPath(); ctx.moveTo(it.x+Math.cos(an)*it.r*0.4, it.y+Math.sin(an)*it.r*0.4); ctx.lineTo(it.x+Math.cos(an)*it.r*1.25, it.y+Math.sin(an)*it.r*1.25); ctx.stroke(); } ctx.restore(); }
+        // ハンマー（右上を支点に振り下ろす）
+        ctx.save(); ctx.translate(it.x+30, it.y-32); ctx.rotate(ang);
+        ctx.fillStyle='#a9733f'; roundRectS(-5,0,10,40,3); ctx.fill(); ctx.strokeStyle='#7a4f22'; ctx.lineWidth=1.5; ctx.strokeRect(-5,0,10,40);
+        ctx.fillStyle='#6b7076'; roundRectS(-17,38,34,16,3); ctx.fill(); ctx.fillStyle='#8a9096'; roundRectS(-17,38,34,5,3); ctx.fill();
+        ctx.fillStyle='#565b60'; roundRectS(11,38,8,16,2); ctx.fill();
         ctx.restore(); continue; }
       ctx.save(); ctx.translate(it.x,it.y); ctx.rotate(it.rot);
       ctx.fillStyle='#d9b877'; roundRectS(-it.r*1.3,-it.r*0.7,it.r*2.6,it.r*1.4,4); ctx.fill();
@@ -1727,7 +1754,8 @@
       modeInfo(){ return {stage, mode, lvl, state}; },
       // クレーン
       moveCrane(x){ if(crane) crane.tx=x; }, craneDrop:()=>craneDrop(),
-      craneState(){ return crane&&{x:Math.round(crane.x), theta:+crane.theta.toFixed(2), done:crane.done, need:crane.need, miss:crane.miss, load:crane.load, drop:!!crane.drop, platX:Math.round(crane.platX)}; },
+      craneCenter(){ return crane? Math.round(crane.frameX+craneSwayAt(cranePostTopY()-crane.stack*crane.beamTh)) : 0; },   // 今の揺れた着地中心
+      craneState(){ return crane&&{x:Math.round(crane.x), frameX:Math.round(crane.frameX), done:crane.done, need:crane.need, miss:crane.miss, load:crane.load, drop:!!crane.drop, stack:crane.stack}; },
       // 釘打ち
       nailHitAll(){ if(nail) for(const it of nail.items.slice()) if(!it.hit) nailTap(it.x,it.y); return nail&&{done:nail.done,need:nail.need,miss:nail.miss}; },
       nailState(){ return nail&&{done:nail.done, need:nail.need, miss:nail.miss, on:nail.items.filter(i=>!i.hit).length}; },
