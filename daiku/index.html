@@ -916,48 +916,65 @@
     }
   }
 
-  // ================= ② クレーン操縦（揺れる柱に梁をのせる） =================
+  // ================= ② クレーン操縦（柱2本→梁 をくり返す） =================
   const POSTH_C=130;                              // クレーンの柱の高さ(px)
   function cranePostTopY(){ return groundY()-POSTH_C; }
-  function craneSwayAt(y){ return crane.swayAmp*Math.sin(crane.swayPhase) * (groundY()-y)/POSTH_C; }  // 下=固定, 上ほど揺れる
+  function craneSwayOff(){ return crane.swayAmp*Math.sin(crane.swayPhase); }              // 柱上端の横ゆれ
+  function craneSwayAt(y){ return craneSwayOff() * (groundY()-y)/POSTH_C; }               // 下=固定, 上ほど揺れる
+  function craneTargetX(){ const c=crane; return c.cur==='post' ? c.frameX+(c.postIdx===0?-c.spread:c.spread) : c.frameX+craneSwayOff(); }
+  function craneBobX(){ return crane.x + Math.sin(crane.theta)*crane.cableL*0.45; }       // 軽く振れた荷のx
   function initCrane(){
-    crane={ tx:cssW/2, x:cssW/2, topY:64, cableL:Math.min(120,cssH*0.20),
-      load:true, drop:null,
-      need:3+lvl, done:0, miss:0, maxMiss:3,
-      frameX:cssW/2, spread:Math.min(cssW*0.28,110),
-      swayPhase:Math.random()*6.283, swayAmp:16+lvl*7, swaySpeed:1.1+lvl*0.28,
-      stack:0, beamTh:16 };
-    crane.beamLen=crane.spread*2+38;              // 梁は柱間より少し長い
-    tapHint.textContent='ゆれる柱に梁をのせろ！ タップで投下'; tapHint.style.display='block';
-    setTimeout(()=>{ if(mode==='crane') tapHint.style.display='none'; }, 2600);
+    crane={ tx:cssW/2, x:cssW/2, prevx:cssW/2, topY:60, cableL:Math.min(110,cssH*0.18),
+      need:2+lvl, done:0, miss:0, maxMiss:4,
+      frameX:cssW/2, spread:Math.min(cssW*0.25,96),
+      swayPhase:Math.random()*6.283, swayAmp:9+lvl*5, swaySpeed:0.9+lvl*0.22,
+      posts:[], cur:'post', postIdx:0, completeT:0,
+      theta:0.04, omega:0, load:true, drop:null, beamTh:16 };
+    crane.beamLen=crane.spread*2+36;
+    tapHint.textContent='柱を2本立てて梁をかけろ！ タップで投下'; tapHint.style.display='block';
+    setTimeout(()=>{ if(mode==='crane') tapHint.style.display='none'; }, 2800);
   }
   function craneDrop(){
-    const c=crane; if(!c||!c.load||c.drop) return;
-    c.drop={ x:c.x, y:c.topY+c.cableL, vy:0 };     // トロリー真下からまっすぐ落ちる
+    const c=crane; if(!c||!c.load||c.drop||c.completeT>0) return;
+    c.drop={ x:craneBobX(), y:c.topY+c.cableL, vy:0, kind:c.cur };
     c.load=false; tapHint.style.display='none'; audio.tone(300,.08,'square',.2);
   }
+  function craneMiss(x,y){ crane.miss++; burst(x,y,'#d1503a',12); audio.tone(120,.2,'sawtooth',.3,-50); shake=5; }
   function updateCrane(dt){
     const c=crane;
     c.swayPhase += c.swaySpeed*dt;
-    c.x += (c.tx-c.x)*Math.min(1,dt*10); c.x=Math.max(30,Math.min(cssW-30,c.x));
-    if(c.drop){ const d=c.drop; d.vy+=1800*dt; d.y+=d.vy*dt;
-      const landY=cranePostTopY() - c.stack*c.beamTh;
+    if(c.completeT>0){ c.completeT-=dt; if(c.completeT<=0){ c.posts=[]; c.cur='post'; c.postIdx=0; c.load=true; c.theta=0; c.omega=0; } return; }
+    c.prevx=c.x; c.x += (c.tx-c.x)*Math.min(1,dt*10); c.x=Math.max(30,Math.min(cssW-30,c.x));
+    const ax=(c.x-c.prevx)/Math.max(dt,0.001);
+    c.omega += (-(2400/c.cableL)*Math.sin(c.theta) - (ax*0.4/c.cableL)*Math.cos(c.theta))*dt;   // 軽い振り子
+    c.omega *= (1-2.4*dt); c.theta += c.omega*dt;
+    if(!c.drop) return;
+    const d=c.drop; d.vy+=1800*dt; d.y+=d.vy*dt;
+    if(d.kind==='post'){
+      if(d.y>=cranePostTopY()){
+        const tx=craneTargetX(), tol=Math.max(24,46-lvl*4);
+        if(Math.abs(d.x-tx)<tol){ c.posts.push({x:tx}); c.postIdx++; if(c.postIdx>=2) c.cur='beam'; burst(d.x,groundY(),'#e0c060',10); audio.combo(2); }
+        else { craneMiss(d.x,groundY()); }
+        c.drop=null; c.load=true; c.theta*=0.3; c.omega=0; updateHUD();
+        if(c.miss>=c.maxMiss){ gameOver('資材を落としすぎた…'); }
+      }
+    } else {                                          // 梁
+      const landY=cranePostTopY()-c.beamTh/2;
       if(d.y>=landY){
-        const centerX=c.frameX + craneSwayAt(landY);         // 揺れた柱の中心
-        const tol=Math.max(15, 40 - lvl*4);
-        if(Math.abs(d.x-centerX) < tol){ c.stack++; c.done++; const pts=100+c.done*30+lvl*20; score+=pts; burst(d.x,landY,'#e0c060',12); audio.combo(2);
-          if(c.done>=c.need){ c.drop=null; updateHUD(); stageClear(200+lvl*100,'クレーン完了！ 梁がのった✨'); return; } }
-        else { c.miss++; burst(d.x,landY,'#d1503a',14); audio.tone(120,.2,'sawtooth',.3,-50); shake=6;
-          if(c.miss>=c.maxMiss){ c.drop=null; updateHUD(); gameOver('梁を落としすぎた…'); return; } }
-        c.drop=null; c.load=true; updateHUD();
+        const tx=c.frameX+craneSwayOff(), tol=Math.max(22,42-lvl*4);
+        if(Math.abs(d.x-tx)<tol){ c.done++; const pts=150+c.done*40+lvl*30; score+=pts; burst(d.x,landY,'#e0c060',16); audio.combo(3);
+          c.drop=null; c.load=false; updateHUD();
+          if(c.done>=c.need){ stageClear(200+lvl*100,'クレーン完了！ 門型ができた✨'); return; }
+          c.completeT=0.9;                            // 完成フレームを見せてから次へ
+        } else { craneMiss(d.x,landY); c.drop=null; c.load=true; c.theta*=0.3; c.omega=0; updateHUD(); if(c.miss>=c.maxMiss){ gameOver('資材を落としすぎた…'); } }
       }
     }
   }
-  function drawSwayPost(baseX, baseY, topY){
+  function drawSwayPost(baseX, topY){
     const topX=baseX+craneSwayAt(topY);
     ctx.strokeStyle='#a9733f'; ctx.lineWidth=16; ctx.lineCap='round';
-    ctx.beginPath(); ctx.moveTo(baseX,baseY); ctx.lineTo(topX,topY); ctx.stroke();
-    ctx.strokeStyle='#8a5a2b'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(baseX,baseY); ctx.lineTo(topX,topY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(baseX,groundY()); ctx.lineTo(topX,topY); ctx.stroke();
+    ctx.strokeStyle='#8a5a2b'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(baseX,groundY()); ctx.lineTo(topX,topY); ctx.stroke();
   }
   function drawBeamPiece(cx,cy,len,th){
     ctx.save(); ctx.translate(cx,cy);
@@ -967,46 +984,56 @@
     ctx.fillStyle='rgba(60,35,12,.55)'; ctx.beginPath(); ctx.arc(-len*0.33,0,2.4,0,6.283); ctx.arc(len*0.33,0,2.4,0,6.283); ctx.fill();
     ctx.restore();
   }
+  function drawHangPost(x,topY){
+    const g=ctx.createLinearGradient(x-8,0,x+8,0); g.addColorStop(0,'#c79a5b'); g.addColorStop(1,'#9c6a37');
+    ctx.fillStyle=g; roundRectS(x-8,topY,16,POSTH_C,4); ctx.fill();
+    ctx.strokeStyle='rgba(80,45,15,.5)'; ctx.lineWidth=2; ctx.strokeRect(x-8,topY,16,POSTH_C);
+  }
   function drawCrane(){
     const c=crane; drawFlatSky(); if(!c) return;
     const gY=groundY(), ptY=cranePostTopY();
     ctx.fillStyle='#c9b48c'; ctx.fillRect(0,gY+18,cssW,cssH-gY);
-    // 2本の揺れる柱
-    drawSwayPost(c.frameX-c.spread, gY, ptY);
-    drawSwayPost(c.frameX+c.spread, gY, ptY);
-    // 乗せた梁（下から積み上げ、上ほど揺れる）
-    for(let i=0;i<c.stack;i++){ const yy=ptY - i*c.beamTh - c.beamTh/2; drawBeamPiece(c.frameX+craneSwayAt(yy), yy, c.beamLen, c.beamTh); }
-    // 目標マーカー（揺れた柱の中心）
-    const landY=ptY - c.stack*c.beamTh, cxTarget=c.frameX+craneSwayAt(landY);
-    ctx.save(); ctx.strokeStyle='rgba(76,154,76,.5)'; ctx.setLineDash([5,6]); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(cxTarget,c.topY+8); ctx.lineTo(cxTarget,landY); ctx.stroke(); ctx.restore();
+    // 基礎マーク（柱を落とす目印。現在の狙いを緑で強調）
+    for(let s=0;s<2;s++){ if(c.posts.length>s) continue; const mx=c.frameX+(s===0?-c.spread:c.spread);
+      const act=(c.cur==='post'&&c.postIdx===s);
+      ctx.save(); ctx.fillStyle=act?'rgba(76,154,76,.85)':'rgba(120,120,120,.45)'; ctx.fillRect(mx-15,gY-3,30,6);
+      ctx.strokeStyle=act?'rgba(76,154,76,.6)':'rgba(120,120,120,.35)'; ctx.setLineDash([4,5]); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(mx,gY-6); ctx.lineTo(mx,ptY); ctx.stroke(); ctx.restore(); }
+    // 立った柱（揺れる）
+    for(let i=0;i<c.posts.length;i++) drawSwayPost(c.posts[i].x, ptY);
+    // 梁（完成表示中）
+    if(c.completeT>0 && c.posts.length>=2) drawBeamPiece(c.frameX+craneSwayOff(), ptY-c.beamTh/2, c.beamLen, c.beamTh);
+    // 狙いガイド
+    if(c.completeT<=0){ const tx=craneTargetX(); ctx.save(); ctx.strokeStyle='rgba(76,154,76,.5)'; ctx.setLineDash([5,6]); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(tx,c.topY+8); ctx.lineTo(tx, c.cur==='post'?gY:ptY); ctx.stroke(); ctx.restore(); }
     // レール＋トロリー
     ctx.fillStyle='#4a5763'; ctx.fillRect(0,c.topY-16,cssW,9);
     ctx.fillStyle='#e0a63c'; roundRectS(c.x-18,c.topY-16,36,15,3); ctx.fill();
     ctx.fillStyle='#2b2b2b'; ctx.fillRect(c.x-12,c.topY-2,24,4);
-    // 吊り／落下中の梁
+    // 吊り／落下中の材
     ctx.strokeStyle='#3a3a3a'; ctx.lineWidth=2;
-    if(c.drop){ ctx.beginPath(); ctx.moveTo(c.drop.x,c.drop.y-c.beamTh); ctx.lineTo(c.drop.x,c.drop.y-c.beamTh/2); ctx.stroke(); drawBeamPiece(c.drop.x,c.drop.y,c.beamLen,c.beamTh); }
-    else if(c.load){ const by=c.topY+c.cableL; ctx.beginPath(); ctx.moveTo(c.x,c.topY); ctx.lineTo(c.x,by-c.beamTh/2); ctx.stroke(); drawBeamPiece(c.x,by,c.beamLen,c.beamTh); }
+    if(c.drop){ if(c.drop.kind==='post'){ ctx.beginPath(); ctx.moveTo(c.drop.x,c.drop.y-6); ctx.lineTo(c.drop.x,c.drop.y); ctx.stroke(); drawHangPost(c.drop.x,c.drop.y); }
+      else { ctx.beginPath(); ctx.moveTo(c.drop.x,c.drop.y-c.beamTh); ctx.lineTo(c.drop.x,c.drop.y-c.beamTh/2); ctx.stroke(); drawBeamPiece(c.drop.x,c.drop.y,c.beamLen,c.beamTh); } }
+    else if(c.load && c.completeT<=0){ const bx=craneBobX(), by=c.topY+c.cableL; ctx.beginPath(); ctx.moveTo(c.x,c.topY); ctx.lineTo(bx, by-(c.cur==='post'?0:c.beamTh/2)); ctx.stroke();
+      if(c.cur==='post') drawHangPost(bx,by); else drawBeamPiece(bx,by,c.beamLen,c.beamTh); }
     drawSfx();
-    drawStatusBar(`梁 ${c.done}/${c.need}　ミス ${c.miss}/${c.maxMiss}`);
+    drawStatusBar(`門型 ${c.done}/${c.need}　${c.cur==='post'?('柱'+(c.postIdx+1)+'本目'):'梁をかける'}　ミス ${c.miss}/${c.maxMiss}`);
   }
 
   // ================= ③ 釘打ち（早打ち） =================
   function initNail(){
-    nail={ need:8+lvl*3, done:0, miss:0, maxMiss:4, spawnT:0.3,
-      life:Math.max(0.75,1.7-lvl*0.16), maxOn:Math.min(4,2+lvl), items:[] };
+    nail={ need:6+lvl*2, done:0, miss:0, maxMiss:5, spawnT:0.4,
+      life:Math.max(1.3,2.4-lvl*0.12), maxOn:Math.min(3,1+lvl), items:[] };
     tapHint.textContent='光る釘をすばやくタップ！'; tapHint.style.display='block';
     setTimeout(()=>{ if(mode==='nail') tapHint.style.display='none'; }, 1800);
   }
   function spawnNail(){
     const m=54, top=120, bot=cssH-120;
     nail.items.push({ x:m+Math.random()*(cssW-2*m), y:top+Math.random()*(bot-top),
-      r:Math.max(19,30-lvl*1.4), t:0, life:nail.life, hit:false, anim:0, rot:Math.random()*0.6-0.3 });
+      r:Math.max(24,34-lvl*1.2), t:0, life:nail.life, hit:false, anim:0, rot:Math.random()*0.6-0.3 });
   }
   function updateNail(dt){
     const n=nail; n.spawnT-=dt;
     const remaining=n.need-n.done, onNow=n.items.filter(i=>!i.hit).length;
-    if(n.spawnT<=0 && onNow<Math.min(n.maxOn,remaining)){ spawnNail(); n.spawnT=Math.max(0.2,0.45-lvl*0.03)+Math.random()*0.4; }
+    if(n.spawnT<=0 && onNow<Math.min(n.maxOn,remaining)){ spawnNail(); n.spawnT=Math.max(0.35,0.6-lvl*0.04)+Math.random()*0.4; }
     for(let i=n.items.length-1;i>=0;i--){ const it=n.items[i];
       if(it.hit){ it.anim+=dt; if(it.anim>0.42) n.items.splice(i,1); continue; }
       it.t+=dt;
@@ -1754,8 +1781,8 @@
       modeInfo(){ return {stage, mode, lvl, state}; },
       // クレーン
       moveCrane(x){ if(crane) crane.tx=x; }, craneDrop:()=>craneDrop(),
-      craneCenter(){ return crane? Math.round(crane.frameX+craneSwayAt(cranePostTopY()-crane.stack*crane.beamTh)) : 0; },   // 今の揺れた着地中心
-      craneState(){ return crane&&{x:Math.round(crane.x), frameX:Math.round(crane.frameX), done:crane.done, need:crane.need, miss:crane.miss, load:crane.load, drop:!!crane.drop, stack:crane.stack}; },
+      craneTarget(){ return crane? Math.round(craneTargetX()) : 0; }, craneBob(){ return crane? Math.round(craneBobX()) : 0; },
+      craneState(){ return crane&&{x:Math.round(crane.x), bob:Math.round(craneBobX()), frameX:Math.round(crane.frameX), cur:crane.cur, postIdx:crane.postIdx, posts:crane.posts.length, done:crane.done, need:crane.need, miss:crane.miss, load:crane.load, drop:!!crane.drop, completeT:+crane.completeT.toFixed(2)}; },
       // 釘打ち
       nailHitAll(){ if(nail) for(const it of nail.items.slice()) if(!it.hit) nailTap(it.x,it.y); return nail&&{done:nail.done,need:nail.need,miss:nail.miss}; },
       nailState(){ return nail&&{done:nail.done, need:nail.need, miss:nail.miss, on:nail.items.filter(i=>!i.hit).length}; },
