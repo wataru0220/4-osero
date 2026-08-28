@@ -122,7 +122,7 @@
     transform:translate(-50%,-50%); transition:left .12s linear, background .2s;
   }
   .level-label{text-align:center; font-size:11px; color:#fff; letter-spacing:.16em; margin-top:5px; text-shadow:0 1px 3px rgba(0,0,0,.5); pointer-events:none;}
-  #game.mochi-mode .level-tool, #game.mochi-mode .level-label{ display:none; }   /* 餅まき中は水平器を隠す */
+  #game:not(.mode-build) .level-tool, #game:not(.mode-build) .level-label{ display:none; }   /* 建方以外は水平器を隠す */
 
   /* センターのトースト（○階！ など） */
   .toast{
@@ -241,7 +241,7 @@
       <div class="logo-wrap" id="titleMascot"><!-- 棟梁SVGを差し込む --></div>
       <h1 class="brush title-main">上棟バランス</h1>
       <p class="title-sub">じょうとう ばらんす</p>
-      <p class="title-tag">上でゆれる木材をタップで落とし、家の骨組みを組み上げろ。<br>重心が傾くと倒壊。最高難度は五重塔だ！</p>
+      <p class="title-tag">ステージごとに大工仕事が変わる5種のミニゲーム！<br>①建方 ②クレーン ③釘打ち ④丸太切り ⑤餅ひろい …くり返してレベルUP！</p>
       <div class="best-chip">🏆 ハイスコア <span id="titleBest">0</span></div>
       <div class="title-btns">
         <button class="btn-primary" id="startBtn">▶ 棟上げ開始</button>
@@ -260,12 +260,12 @@
       <div class="panel" style="text-align:left;">
         <h2 class="brush" style="text-align:center;">遊び方</h2>
         <p style="line-height:1.9; font-size:15px; color:#4a4030;">
-          ① 上で<b>左右にゆれる木材</b>を<b>タップ／クリック</b>（スペース可）で落とす。<br>
-          ② 下から <b>柱→梁→筋交い</b> の順に軸組へ組む。ど真ん中で落とすと<b>「ピタリ！」＝高得点＋コンボ</b>（連続でボーナス増）。<br>
-          ③ 狙いがズレると<b>重心が傾き</b>、傾くほど<b>建物が揺れ続け</b>て狙い所（緑マーク）が動く＝難化。<b>ピタリを連続</b>すれば傾きが戻って<b>立て直せる</b>！<br>
-          ④ 泡が端まで振り切る＝<b>倒壊</b>。筋交いは<b>たすき掛け（X）で互い違い</b>に入りバランスを助ける。<br>
-          ⑤ 組み切ると<b>上棟</b>！ ステージが進むと <b>2階→3階…最高は五重塔</b>、揺れも速くなる。<br>
-          ⑥ たまに<b>弟子</b>が<b>はしごをかけて棟梁のいる階まで登ってくる</b>。<b>タップで入手</b>→<b>アイテム枠をタップで発動</b>：🔧少し／💪大きく揺れを止める・🧘スロー。ピンチに助けてもらえ！
+          ステージごとに<b>大工仕事が変わる</b>よ。5種を1周したら、少しずつ難しくなってくり返し！<br>
+          <b>① 建方</b>：ゆれる木材を<b>タップで落として</b>軸組を組む。ど真ん中は<b>ピタリ！＝高得点＋コンボ</b>、傾き過ぎると倒壊。弟子が<b>はしごで登って</b>くる（タップで入手→揺れ対策アイテム）。<br>
+          <b>② クレーン操縦</b>：ふり子のように<b>ゆれる荷</b>を、<b>ドラッグで移動＆タップで投下</b>。<b>台にのせろ</b>。落とし過ぎ注意！<br>
+          <b>③ 釘打ち（早打ち）</b>：<b>光る釘</b>が次々出る。消える前に<b>すばやくタップ</b>して壁板を張れ。<br>
+          <b>④ 丸太切り（早切り）</b>：<b>ノコギリを左右にこすって</b>（ドラッグ）丸太を切る。制限時間内に本数を切れ。<br>
+          <b>⑤ 餅ひろい（上棟式）</b>：上からまかれる<b>紅白・金の餅</b>を、<b>動いてキャッチ</b>してボーナスGET！
         </p>
         <div style="text-align:center; margin-top:14px;">
           <button class="btn-primary" id="howClose">とじる</button>
@@ -296,7 +296,8 @@
     <div class="hud">
       <div class="hud-top">
         <div class="score-box">
-          <div class="lbl">ステージ <span id="stageNo">1</span> ・ <span id="placed">0</span>/<span id="goal">6</span>本</div>
+          <div class="lbl">ステージ <span id="stageNo">1</span>　<span id="hudSub">建方</span></div>
+          <span id="placed" style="display:none"></span><span id="goal" style="display:none"></span>
           <div class="val"><span id="score">0</span><small>点</small></div>
           <div class="best">完成 <span id="built">0</span> ・ 最高 <span id="best">0</span></div>
         </div>
@@ -351,7 +352,7 @@
     <div class="overlay" id="pauseOverlay">
       <div class="panel">
         <h2 class="brush">一時停止</h2>
-        <div class="result-big" style="font-size:44px;"><span id="pauseScore">0</span><small>本</small></div>
+        <div class="result-big" style="font-size:44px;"><span id="pauseScore">0</span><small>点</small></div>
         <button class="btn-primary" id="resumeBtn" style="width:100%; margin-bottom:10px;">つづける</button>
         <button class="btn-ghost" id="quitBtn" style="width:100%;">タイトルへ</button>
       </div>
@@ -517,7 +518,7 @@
   const $ = id => document.getElementById(id);
   const cv = $('cv'), ctx = cv.getContext('2d');
   const scoreEl=$('score'), bestEl=$('best');
-  const stageNoEl=$('stageNo'), goalEl=$('goal'), builtEl=$('built'), placedEl=$('placed');
+  const stageNoEl=$('stageNo'), goalEl=$('goal'), builtEl=$('built'), placedEl=$('placed'), hudSub=$('hudSub');
   const toastEl=$('toast'), tapHint=$('tapHint');
   const bubble=$('bubble');
   const overOverlay=$('overOverlay'), pauseOverlay=$('pauseOverlay');
@@ -548,7 +549,12 @@
   let swayT=0, curSway=0;                   // 傾くほど建物が揺れ続ける（難化）
   let deshi=null, deshiSpawnT=10, heldItem=null;      // 動き回る弟子・出現タイマー・所持アイテム
   let swayDamp=1, swayDampT=0, timeScale=1, slowT=0;  // 弟子の効果（揺れ抑制・スロー）
-  let mochis=[], mochiPops=[], catcher={x:0,tx:0}, mochiT=0, mochiScore=0, mochiSpawnT=0;  // 餅まきボーナス
+  let mochis=[], mochiPops=[], catcher={x:0,tx:0}, mochiT=0, mochiScore=0, mochiSpawnT=0;  // 餅ひろい
+  // ---- ステージごとに変わるミニゲーム ----
+  let mode='build', lvl=0;                  // 現ステージの種別・レベル（1周=5ステージ）
+  const MODES=['build','crane','nail','saw','mochi'];
+  const MODE_LABEL={build:'建方',crane:'クレーン操縦',nail:'釘打ち',saw:'丸太切り',mochi:'餅ひろい'};
+  let crane=null, nail=null, saw=null, sfx=[];   // 各ミニゲームの状態＋画面エフェクト
   const BASE_HALF=100;                      // 倒壊しきい値（重心の許容。小さいほどシビア）
   let effects=[];
   let shake=0, overTimer=0, collapsing=false;
@@ -664,38 +670,57 @@
     if(score>bestScore){ bestScore=score; localStorage.setItem('daiku_bestscore', bestScore); }
   }
   // 現ステージの軸組を用意（下から組む順を作り、最初の材を吊る）
-  function resetStage(){
-    floors=cfg.floors; cols=cfg.cols; bays=cols-1; postTh=cfg.postTh; swingSpeed=cfg.swing;
+  function modeForStage(s){ return MODES[(s-1)%5]; }
+  function stageLevel(s){ return Math.floor((s-1)/5); }
+  function buildCfgForLvl(l){ return { floors:Math.min(5,2+l), cols:3+Math.min(l,3), postTh:Math.max(20,32-l), swing:130+l*22 }; }
+
+  // 建方モードの用意（軸組を下から組む）
+  function initBuild(){
+    const c=buildCfgForLvl(lvl);
+    floors=c.floors; cols=c.cols; bays=cols-1; postTh=c.postTh; swingSpeed=c.swing;
     setGeometry();
-    beams=[sillTimber()]; effects=[]; completed=null; dims=null; collapsing=false; overTimer=0; shake=0;
-    lean=0; leanRatio=0; swayT=0; curSway=0; combo=0;
+    beams=[sillTimber()]; lean=0; leanRatio=0; swayT=0; curSway=0;
     seq=buildSequence(); seqI=0; total=seq.length; placed=0;
-    resetDeshi(false);                         // 動き回る弟子・効果はリセット（持ち物は保持）
-    frameCamera();
-    spawnCurrent();
+    resetDeshi(false);
+    frameCamera(); setMascot(''); spawnCurrent();
+    tapHint.textContent='タップで落とす！'; tapHint.style.display='block';
+  }
+  // ステージ開始（種別を判定してミニゲームを初期化）
+  function startStage(){
+    mode=modeForStage(stage); lvl=stageLevel(stage);
+    combo=0; effects=[]; sfx=[]; shake=0; collapsing=false; overTimer=0;
+    completed=null; dims=null; current=null;
+    const g=$('game'); g.classList.remove('mode-build','mode-crane','mode-nail','mode-saw','mode-mochi'); g.classList.add('mode-'+mode);
+    tapHint.style.display='none';
+    if(mode!=='build'){                       // 棟梁・弟子・アイテム枠は建方専用
+      gameMascot.style.left=''; gameMascot.style.top=''; gameMascot.style.width='';
+      deshiEl.classList.remove('show'); itemSlot.classList.remove('show');
+    } else if(heldItem){ itemSlot.classList.add('show'); }
+    if(mode==='build') initBuild();
+    else if(mode==='crane') initCrane();
+    else if(mode==='nail') initNail();
+    else if(mode==='saw') initSaw();
+    else if(mode==='mochi') initMochi();
+    state='play'; last=performance.now(); updateHUD();
+    showToast(`ステージ${stage}：${MODE_LABEL[mode]}${lvl>0?'（Lv'+(lvl+1)+'）':''}`, '#274c74');
   }
   function startGame(){
-    audio.ensure();
-    show('game');
+    audio.ensure(); show('game');
     overOverlay.classList.remove('show'); pauseOverlay.classList.remove('show');
     stage=1; built=0; score=0; combo=0; maxCombo=0;
-    cfg=stageConfig(stage);
-    resetStage();
-    resetDeshi(true);                          // 新ゲームは持ち物もクリア
-    state='play';
-    tapHint.style.display='block';
-    setMascot('');
-    updateHUD();
+    resetDeshi(true);
+    startStage();
   }
-  function nextStage(){
-    stage++; cfg=stageConfig(stage); bumpBest();
-    resetStage();
-    state='play';
-    tapHint.style.display='block';
-    setMascot('');
-    showToast(`ステージ${stage}：${buildingName(cfg.floors)}に挑戦！`, '#274c74');
-    updateHUD();
+  function nextStage(){ stage++; bumpBest(); startStage(); }
+  // ステージ共通クリア処理（各ミニゲームから呼ぶ）
+  function stageClear(bonus, msg, delay){
+    if(bonus) score+=bonus;
+    bumpBest(); updateHUD(); state='clear';
+    showToast(msg || `ステージ${stage} クリア！`, '#4c9a4c'); audio.milestone();
+    tapHint.style.display='none';
+    setTimeout(()=>{ if(state==='clear') nextStage(); }, delay||1800);
   }
+  function resetStage(){ initBuild(); }   // 互換用
 
   // ================= 組み立て順（下から。筋交いは互い違いのたすき掛け） =================
   function buildSequence(){
@@ -772,25 +797,16 @@
     current=null; built++; completed=makeDims(); dims=completed; fitWholeBuilding();
     const straight = Math.abs(lean)<18;
     const bonus = 100 + floors*100 + (straight?300:0);   // 上棟＋まっすぐボーナス
-    score += bonus;
-    audio.milestone(); reactMascot('good');
-    showToast(`🎏 ${buildingName(floors)} 上棟！ +${bonus}${straight?' まっすぐ★':''}`, '#e0a63c');
+    reactMascot('good');
     spawnConfetti(); setTimeout(spawnConfetti, 250);     // 多めにお祝い
-    bumpBest(); updateHUD();
-    state='clear';
-    if(floors>=5)   // 五重塔が完成したら上棟式＝餅まきボーナスへ
-      setTimeout(()=>{ if(state==='clear') startMochiBonus(); }, 2000);
-    else
-      setTimeout(()=>{ if(state==='clear') nextStage(); }, 2600);
+    stageClear(bonus, `🎏 ${buildingName(floors)} 上棟！ +${bonus}${straight?' まっすぐ★':''}`, 2600);
   }
 
   // ================= 餅まきボーナス（五重塔完成時の上棟式） =================
-  function startMochiBonus(){
-    state='mochi'; mochis=[]; mochiPops=[]; mochiT=10; mochiScore=0; mochiSpawnT=0.2;
-    catcher.x=cssW/2; catcher.tx=cssW/2; completed=null;
-    document.getElementById('game').classList.add('mochi-mode');
-    showToast('🎉 上棟式！餅まきだ〜！ 動いて餅を拾え！', '#e0a63c');
-    audio.milestone();
+  function initMochi(){
+    mochis=[]; mochiPops=[]; mochiT=12+lvl*2; mochiScore=0; mochiSpawnT=0.2;
+    catcher.x=cssW/2; catcher.tx=cssW/2;
+    showToast('🎉 上棟式！餅まきだ〜！ 動いて餅を拾え！', '#e0a63c'); audio.milestone();
   }
   function spawnMochi(){
     const r=Math.random(); let type,val,col;
@@ -819,12 +835,7 @@
     for(let i=mochiPops.length-1;i>=0;i--){ const p=mochiPops[i]; p.t+=dt; p.y-=46*dt; if(p.t>=0.8) mochiPops.splice(i,1); }
     if(mochiT<=-1.6) endMochiBonus();                  // 時間切れ後、落下中の餅を拾い切ってから締め
   }
-  function endMochiBonus(){
-    document.getElementById('game').classList.remove('mochi-mode');
-    showToast(`餅まき終了！ ボーナス +${mochiScore}点`, '#4c9a4c');
-    bumpBest(); updateHUD(); state='clear';
-    setTimeout(()=>{ if(state==='clear') nextStage(); }, 500);
-  }
+  function endMochiBonus(){ stageClear(0, `餅ひろい終了！ +${mochiScore}点`, 900); }
   function roundRectS(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
   function drawMiniTower(cx, topY, baseW){
     const tiers=5, step=11, rh=8, bh=6;
@@ -905,16 +916,206 @@
     }
   }
 
+  // ================= ② クレーン操縦 =================
+  function initCrane(){
+    crane={ tx:cssW/2, x:cssW/2, prevx:cssW/2, topY:72, L:Math.min(190,cssH*0.34),
+      theta:0.25, omega:0, load:true, drop:null, sawX:null,
+      need:3+lvl, done:0, miss:0, maxMiss:3,
+      platX:cssW/2, platW:Math.max(48,84-lvl*7), platMove:(lvl>=3), platDir:1, stack:0 };
+    tapHint.textContent='ゆれる荷をタップ！台に乗せろ'; tapHint.style.display='block';
+    setTimeout(()=>{ if(mode==='crane') tapHint.style.display='none'; }, 2400);
+  }
+  function craneDrop(){
+    const c=crane; if(!c||!c.load||c.drop) return;
+    const bx=c.x+c.L*Math.sin(c.theta), by=c.topY+c.L*Math.cos(c.theta);
+    c.drop={ x:bx, y:by, vx:c.L*Math.cos(c.theta)*c.omega, vy:0 };
+    c.load=false; tapHint.style.display='none'; audio.tone(300,.08,'square',.2);
+  }
+  function updateCrane(dt){
+    const c=crane;
+    c.prevx=c.x; c.x += (c.tx-c.x)*Math.min(1,dt*9); c.x=Math.max(30,Math.min(cssW-30,c.x));
+    const ax=(c.x-c.prevx)/Math.max(dt,0.001);
+    c.omega += (-(1500/c.L)*Math.sin(c.theta) - (ax/c.L)*Math.cos(c.theta))*dt;   // 振り子
+    c.omega *= (1-1.1*dt); c.theta += c.omega*dt;
+    if(c.platMove){ c.platX += c.platDir*(50+lvl*14)*dt; if(c.platX<cssW*0.24){c.platX=cssW*0.24;c.platDir=1;} if(c.platX>cssW*0.76){c.platX=cssW*0.76;c.platDir=-1;} }
+    if(c.drop){ const d=c.drop; d.vy+=1700*dt; d.y+=d.vy*dt; d.x+=d.vx*dt;
+      const landY=groundY()-6-c.stack*15;
+      if(d.y>=landY){
+        const hit=Math.abs(d.x-c.platX) < c.platW*0.5+8;
+        if(hit){ c.done++; c.stack++; const pts=100+c.done*20+lvl*20; score+=pts; burst(d.x,landY,'#e0c060',12); audio.combo(2);
+          if(c.done>=c.need){ c.drop=null; updateHUD(); stageClear(200+lvl*100,'クレーン完了！ 全部乗せた✨'); return; } }
+        else { c.miss++; burst(d.x,landY,'#d1503a',14); audio.tone(120,.2,'sawtooth',.3,-50); shake=6;
+          if(c.miss>=c.maxMiss){ c.drop=null; updateHUD(); gameOver('資材を落としすぎた…'); return; } }
+        c.drop=null; c.load=true; c.theta*=0.25; c.omega=0; updateHUD();
+      }
+    }
+  }
+  function drawCraneLoad(x,y){
+    ctx.fillStyle='#c79a5b'; roundRectS(x-26,y-9,52,18,4); ctx.fill();
+    ctx.strokeStyle='rgba(90,55,20,.55)'; ctx.lineWidth=2; ctx.strokeRect(x-26,y-9,52,18);
+    ctx.fillStyle='rgba(60,35,12,.6)'; ctx.beginPath(); ctx.arc(x-13,y,2.4,0,6.283); ctx.arc(x+13,y,2.4,0,6.283); ctx.fill();
+  }
+  function drawCrane(){
+    const c=crane; drawFlatSky(); if(!c) return;
+    const gY=groundY();
+    ctx.fillStyle='#c9b48c'; ctx.fillRect(0,gY+18,cssW,cssH-gY);
+    ctx.save(); ctx.strokeStyle='rgba(76,154,76,.7)'; ctx.setLineDash([6,6]); ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(c.platX,c.topY+10); ctx.lineTo(c.platX,gY); ctx.stroke(); ctx.restore();
+    ctx.fillStyle='#8a5a2b'; roundRectS(c.platX-c.platW/2,gY-4,c.platW,14,3); ctx.fill();
+    ctx.strokeStyle='#5c3a18'; ctx.lineWidth=2; ctx.strokeRect(c.platX-c.platW/2,gY-4,c.platW,14);
+    for(let i=0;i<c.stack;i++){ const yy=gY-6-(i+1)*15; ctx.fillStyle=i%2?'#c79a5b':'#b9884a'; roundRectS(c.platX-c.platW*0.42,yy,c.platW*0.84,13,3); ctx.fill(); ctx.strokeStyle='rgba(90,55,20,.5)'; ctx.lineWidth=1.5; ctx.strokeRect(c.platX-c.platW*0.42,yy,c.platW*0.84,13); }
+    ctx.fillStyle='#4a5763'; ctx.fillRect(0,c.topY-16,cssW,9);
+    ctx.fillStyle='#e0a63c'; roundRectS(c.x-18,c.topY-16,36,15,3); ctx.fill();
+    ctx.fillStyle='#2b2b2b'; ctx.fillRect(c.x-12,c.topY-2,24,4);
+    ctx.strokeStyle='#3a3a3a'; ctx.lineWidth=2;
+    if(c.drop){ ctx.beginPath(); ctx.moveTo(c.drop.x,c.drop.y-9); ctx.lineTo(c.drop.x,c.drop.y-14); ctx.stroke(); drawCraneLoad(c.drop.x,c.drop.y); }
+    else if(c.load){ const bx=c.x+c.L*Math.sin(c.theta), by=c.topY+c.L*Math.cos(c.theta); ctx.beginPath(); ctx.moveTo(c.x,c.topY); ctx.lineTo(bx,by); ctx.stroke(); drawCraneLoad(bx,by); }
+    drawSfx();
+    drawStatusBar(`資材 ${c.done}/${c.need}　ミス ${c.miss}/${c.maxMiss}`);
+  }
+
+  // ================= ③ 釘打ち（早打ち） =================
+  function initNail(){
+    nail={ need:8+lvl*3, done:0, miss:0, maxMiss:4, spawnT:0.3,
+      life:Math.max(0.75,1.7-lvl*0.16), maxOn:Math.min(4,2+lvl), items:[] };
+    tapHint.textContent='光る釘をすばやくタップ！'; tapHint.style.display='block';
+    setTimeout(()=>{ if(mode==='nail') tapHint.style.display='none'; }, 1800);
+  }
+  function spawnNail(){
+    const m=54, top=120, bot=cssH-120;
+    nail.items.push({ x:m+Math.random()*(cssW-2*m), y:top+Math.random()*(bot-top),
+      r:Math.max(19,30-lvl*1.4), t:0, life:nail.life, hit:false, anim:0, rot:Math.random()*0.6-0.3 });
+  }
+  function updateNail(dt){
+    const n=nail; n.spawnT-=dt;
+    const remaining=n.need-n.done, onNow=n.items.filter(i=>!i.hit).length;
+    if(n.spawnT<=0 && onNow<Math.min(n.maxOn,remaining)){ spawnNail(); n.spawnT=Math.max(0.2,0.45-lvl*0.03)+Math.random()*0.4; }
+    for(let i=n.items.length-1;i>=0;i--){ const it=n.items[i];
+      if(it.hit){ it.anim+=dt; if(it.anim>0.22) n.items.splice(i,1); continue; }
+      it.t+=dt;
+      if(it.t>=it.life){ n.miss++; n.items.splice(i,1); audio.tone(120,.1,'sawtooth',.2,-30); updateHUD();
+        if(n.miss>=n.maxMiss){ gameOver('板を打ち逃した…'); return; } }
+    }
+  }
+  function nailTap(px,py){
+    const n=nail; let hit=false;
+    for(const it of n.items){ if(it.hit) continue;
+      if(Math.hypot(px-it.x,py-it.y)<=it.r+10){ it.hit=true; it.anim=0; n.done++; score+=60+lvl*15; burst(it.x,it.y,'#e0a63c',10); audio.combo(2); hit=true;
+        if(n.done>=n.need){ updateHUD(); stageClear(200+lvl*100,'壁張り完了！ 早打ち名人🔨'); return; } break; } }
+    if(!hit) audio.tone(200,.05,'square',.1);
+    updateHUD();
+  }
+  function drawWall(){
+    ctx.fillStyle='#e8dcc0'; ctx.fillRect(0,0,cssW,cssH);
+    ctx.fillStyle='#dccba0'; for(let y=0;y<cssH;y+=46) ctx.fillRect(0,y,cssW,42);
+    ctx.strokeStyle='rgba(150,120,80,.25)'; ctx.lineWidth=2;
+    for(let y=0;y<cssH;y+=46){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cssW,y); ctx.stroke(); }
+    ctx.fillStyle='rgba(120,90,55,.16)'; for(let x=cssW*0.2;x<cssW;x+=cssW*0.3) ctx.fillRect(x-6,0,12,cssH);
+  }
+  function drawNail(){
+    const n=nail; drawWall(); if(!n) return;
+    for(const it of n.items){
+      if(it.hit){ const a=1-it.anim/0.22; ctx.save(); ctx.globalAlpha=Math.max(0,a); ctx.translate(it.x,it.y);
+        ctx.strokeStyle='#e0a63c'; ctx.lineWidth=3; for(let k=0;k<6;k++){ const an=k*Math.PI/3; ctx.beginPath(); ctx.moveTo(Math.cos(an)*6,Math.sin(an)*6); ctx.lineTo(Math.cos(an)*(14+it.anim*40),Math.sin(an)*(14+it.anim*40)); ctx.stroke(); }
+        ctx.restore(); continue; }
+      ctx.save(); ctx.translate(it.x,it.y); ctx.rotate(it.rot);
+      ctx.fillStyle='#d9b877'; roundRectS(-it.r*1.3,-it.r*0.7,it.r*2.6,it.r*1.4,4); ctx.fill();
+      ctx.strokeStyle='rgba(90,55,20,.4)'; ctx.lineWidth=2; ctx.strokeRect(-it.r*1.3,-it.r*0.7,it.r*2.6,it.r*1.4); ctx.restore();
+      ctx.fillStyle='#8a8f96'; ctx.beginPath(); ctx.arc(it.x,it.y,it.r*0.34,0,6.283); ctx.fill();
+      ctx.fillStyle='#cfd6dd'; ctx.beginPath(); ctx.arc(it.x-it.r*0.1,it.y-it.r*0.1,it.r*0.14,0,6.283); ctx.fill();
+      const p=1-it.t/it.life; ctx.strokeStyle=p<0.35?'#d1503a':'#4c9a4c'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(it.x,it.y,it.r,-Math.PI/2,-Math.PI/2+p*6.283); ctx.stroke();
+    }
+    drawSfx();
+    drawStatusBar(`板 ${n.done}/${n.need}　うち逃し ${n.miss}/${n.maxMiss}`);
+  }
+
+  // ================= ④ 丸太切り（早切り） =================
+  function initSaw(){
+    saw={ need:2+lvl, done:0, cut:0, cutNeeded:1000+lvl*300, T:24+lvl*3,
+      sawing:false, lastX:cssW/2, dir:0, splitting:0, dust:0, sawX:cssW/2 };
+    tapHint.textContent='ノコギリを左右にこすって切れ！'; tapHint.style.display='block';
+    setTimeout(()=>{ if(mode==='saw') tapHint.style.display='none'; }, 2400);
+  }
+  function sawLineY(){ return cssH*0.52; }
+  function sawMove(px){
+    const s=saw; if(s.splitting>0) return;
+    const dx=px-s.lastX; s.lastX=px; const adx=Math.abs(dx);
+    if(adx>1.2){
+      s.cut+=adx; s.dust=0.12; s.sawX=px; const nd=Math.sign(dx);
+      if(nd!==s.dir && s.dir!==0){ burst(cssW/2,sawLineY(),'#e9d8ae',5); audio.tone(560+Math.random()*220,.04,'sawtooth',.12); }
+      s.dir=nd;
+      if(s.cut>=s.cutNeeded){ s.splitting=0.8; s.sawing=false; score+=150+lvl*30; audio.tone(200,.25,'sawtooth',.3,-80); burst(cssW/2,sawLineY(),'#e9d8ae',24); }
+    }
+  }
+  function updateSaw(dt){
+    const s=saw; if(s.dust>0) s.dust-=dt;
+    if(s.splitting>0){ s.splitting-=dt; if(s.splitting<=0){ s.done++; updateHUD();
+      if(s.done>=s.need){ stageClear(200+lvl*100,'丸太切り完了！ 名人芸🪚'); return; } s.cut=0; s.dir=0; } return; }
+    s.T-=dt; if(s.T<=0){ gameOver('時間切れ…丸太が残った'); return; }
+  }
+  function drawLogHalf(x,y,w,h,left){
+    if(w<2) return;
+    const g=ctx.createLinearGradient(0,y,0,y+h); g.addColorStop(0,'#c79a5b'); g.addColorStop(.5,'#b07d3a'); g.addColorStop(1,'#8a5a2b');
+    ctx.fillStyle=g; roundRectS(x,y,w,h,10); ctx.fill();
+    ctx.strokeStyle='rgba(80,45,15,.5)'; ctx.lineWidth=2; roundRectS(x,y,w,h,10); ctx.stroke();
+    const cx=left? x+w : x;
+    ctx.save(); ctx.fillStyle='#e7c98f'; ctx.beginPath(); ctx.ellipse(cx,y+h/2,6,h*0.42,0,0,6.283); ctx.fill();
+    ctx.strokeStyle='rgba(120,80,40,.5)'; ctx.lineWidth=1.5;
+    for(let rr=h*0.32; rr>4; rr-=6){ ctx.beginPath(); ctx.ellipse(cx,y+h/2,5,rr,0,0,6.283); ctx.stroke(); }
+    ctx.restore();
+  }
+  function drawSawBlade(x,y){
+    ctx.fillStyle='#cfd6dd'; roundRectS(x-46,y-8,92,12,3); ctx.fill();
+    ctx.strokeStyle='#9aa0a6'; ctx.lineWidth=1; ctx.strokeRect(x-46,y-8,92,12);
+    ctx.fillStyle='#aeb4ba'; ctx.beginPath(); for(let i=-46;i<46;i+=6){ ctx.moveTo(x+i,y+4); ctx.lineTo(x+i+3,y+9); ctx.lineTo(x+i+6,y+4); } ctx.fill();
+    ctx.fillStyle='#8a5a2b'; roundRectS(x+40,y-12,20,20,5); ctx.fill();
+  }
+  function drawSaw(){
+    const s=saw; drawFlatSky(); if(!s) return;
+    const gY=groundY(), midY=sawLineY();
+    ctx.fillStyle='#c9b48c'; ctx.fillRect(0,gY+18,cssW,cssH-gY);
+    ctx.fillStyle='#8a5a2b'; ctx.fillRect(cssW*0.22-8,midY+6,16,gY-midY+12); ctx.fillRect(cssW*0.78-8,midY+6,16,gY-midY+12);
+    const logW=cssW*0.72, logX=cssW/2, logH=64;
+    const prog=Math.min(1,s.cut/s.cutNeeded);
+    const gap=s.splitting>0? (1-s.splitting/0.8)*44 : 0;
+    drawLogHalf(logX-logW/2, midY-logH/2, logW/2 - gap*0.5, logH, true);
+    drawLogHalf(logX+gap*0.5, midY-logH/2, logW/2 - gap*0.5, logH, false);
+    if(s.splitting<=0 && prog>0){ ctx.strokeStyle='rgba(50,30,10,.6)'; ctx.lineWidth=Math.max(3,prog*10); ctx.beginPath(); ctx.moveTo(logX,midY-logH/2); ctx.lineTo(logX,midY-logH/2+logH*prog); ctx.stroke(); }
+    if(s.splitting<=0) drawSawBlade(s.sawX!=null?s.sawX:cssW/2, midY-logH/2-6);
+    drawSfx();
+    drawStatusBar(`丸太 ${s.done}/${s.need}　残り ${Math.max(0,Math.ceil(s.T))}秒`);
+    ctx.fillStyle='rgba(0,0,0,.14)'; roundRectS(cssW/2-80,midY+logH/2+18,160,12,6); ctx.fill();
+    ctx.fillStyle='#4c9a4c'; roundRectS(cssW/2-80,midY+logH/2+18,160*prog,12,6); ctx.fill();
+  }
+
+  function pointerPos(e){ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
   function onPointer(e){
-    if(state==='play'){ e.preventDefault(); drop(); }
-    else if(state==='mochi'){ e.preventDefault(); const r=cv.getBoundingClientRect(); catcher.tx=e.clientX-r.left; }
+    if(state!=='play') return;
+    const p=pointerPos(e); e.preventDefault();
+    if(mode==='build') drop();
+    else if(mode==='crane') craneDrop();
+    else if(mode==='nail') nailTap(p.x,p.y);
+    else if(mode==='saw'){ saw.sawing=true; saw.lastX=p.x; }
+    else if(mode==='mochi') catcher.tx=p.x;
   }
   cv.addEventListener('pointerdown', onPointer, {passive:false});
-  cv.addEventListener('pointermove', e=>{ if(state==='mochi'){ const r=cv.getBoundingClientRect(); catcher.tx=e.clientX-r.left; } }, {passive:true});
+  cv.addEventListener('pointermove', e=>{
+    if(state!=='play') return;
+    const p=pointerPos(e);
+    if(mode==='crane') crane.tx=p.x;
+    else if(mode==='mochi') catcher.tx=p.x;
+    else if(mode==='saw' && saw.sawing) sawMove(p.x);
+  }, {passive:true});
+  function endSaw(){ if(saw) saw.sawing=false; }
+  cv.addEventListener('pointerup', endSaw); cv.addEventListener('pointercancel', endSaw);
   window.addEventListener('keydown', e=>{
+    if(state==='play' && mode==='crane' && (e.code==='ArrowLeft'||e.code==='ArrowRight')){
+      e.preventDefault(); crane.tx=Math.max(30,Math.min(cssW-30, crane.tx+(e.code==='ArrowLeft'?-40:40))); return;
+    }
     if(e.code==='Space'||e.code==='Enter'){
       e.preventDefault();
-      if(state==='play') drop();
+      if(state==='play'){ if(mode==='build') drop(); else if(mode==='crane') craneDrop(); }
       else if(state==='title'||state==='over') startGame();
     }
   });
@@ -1008,10 +1209,17 @@
   function updateHUD(){
     stageNoEl.textContent=stage;
     scoreEl.textContent=score;
-    placedEl.textContent=placed;
-    goalEl.textContent=total;
     builtEl.textContent=built;
     bestEl.textContent=bestScore;
+    hudSub.textContent = MODE_LABEL[mode] + (lvl>0?(' Lv'+(lvl+1)):'') + '　' + hudProgress();
+  }
+  function hudProgress(){
+    if(mode==='build') return placed+'/'+total+'本';
+    if(mode==='crane') return crane? (crane.done+'/'+crane.need+'個・ミス'+crane.miss) : '';
+    if(mode==='nail')  return nail? (nail.done+'/'+nail.need+'本・ミス'+nail.miss) : '';
+    if(mode==='saw')   return saw? (saw.done+'/'+saw.need+'本') : '';
+    if(mode==='mochi') return '残り'+Math.max(0,Math.ceil(mochiT))+'秒';
+    return '';
   }
   function updateBubble(){
     const r=Math.max(-1,Math.min(1,leanRatio));
@@ -1104,7 +1312,13 @@
   // ================= 描画 =================
   function draw(){
     ctx.clearRect(0,0,cssW,cssH);
-    if(state==='mochi'){ drawMochiBonus(); return; }   // 餅まきボーナス専用画面
+    if(mode==='build') drawBuild();
+    else if(mode==='crane') drawCrane();
+    else if(mode==='nail') drawNail();
+    else if(mode==='saw') drawSaw();
+    else if(mode==='mochi') drawMochiBonus();
+  }
+  function drawBuild(){
     // 画面ゆれ
     let ox=0,oy=0;
     if(shake>0){ ox=(Math.random()*2-1)*shake; oy=(Math.random()*2-1)*shake; }
@@ -1369,29 +1583,56 @@
 
   // ================= 更新 =================
   function update(dt){
-    const mdt = dt*timeScale;                          // スローモーション（弟子③）を反映する動き用dt
+    const mdt = dt*timeScale;
     if(shake>0){ shake=Math.max(0, shake-dt*30); }
     if(mascotTimer>0){ mascotTimer-=dt; if(mascotTimer<=0 && state==='play') setMascot(''); }
-    updateDeshi(dt);                                   // 弟子の出現・移動・効果タイマー（実時間）
-    if(state==='mochi'){ updateMochiBonus(dt); return; }   // 餅まきボーナス中は専用処理
+    if(mode==='build') updateDeshi(dt);                // 弟子は建方モードのみ
 
-    // 傾くほど建物が揺れ続ける（弟子①②で swayDamp が下がると揺れが収まる）
     if(state==='play'){
-      swayT += (3.0 + Math.abs(leanRatio)*3.5)*mdt;
-      curSway = (leanRatio*0.09 + Math.abs(leanRatio)*0.14*Math.sin(swayT)) * swayDamp;
-    } else curSway=0;
+      if(mode==='build') updateBuild(mdt,dt);
+      else if(mode==='crane') updateCrane(dt);
+      else if(mode==='nail') updateNail(dt);
+      else if(mode==='saw') updateSaw(dt);
+      else if(mode==='mochi') updateMochiBonus(dt);
+    }
+    updateSfx(dt);                                     // 画面エフェクト（全モード共通）
 
-    if(state==='play' && current){
+    // 建方の倒壊落下
+    if(mode==='build' && state==='over' && collapsing){
+      overTimer+=dt;
+      for(const b of beams){ if(b.vx===undefined) continue;
+        b.vy += GRAVITY*0.5*dt; b.cx += b.vx*dt; b.cy += b.vy*dt; b.ang += (b.va||0)*dt; }
+    }
+    // 木くず等のワールドエフェクト
+    for(let i=effects.length-1;i>=0;i--){
+      const e=effects[i]; e.t+=dt;
+      if(e.type!=='ring'){ e.x+=e.vx*dt; e.y+=e.vy*dt; e.vy += (e.type==='confetti'?120:400)*dt; }
+      if(e.va) e.ang=(e.ang||0)+e.va*dt;
+      if(e.t>=e.life) effects.splice(i,1);
+    }
+    // カメラ（建方の世界座標のみ）
+    if(mode==='build'){
+      if(!isFinite(camY)) camY=camTarget;
+      camY += (camTarget-camY)*Math.min(1, dt*5);
+      camX += (camTargetX-camX)*Math.min(1, dt*5);
+      zoom += (zoomTarget-zoom)*Math.min(1, dt*4);
+      S = Sbase*zoom;
+      updateBubble(); positionMascot();
+    }
+  }
+  function updateBuild(mdt,dt){
+    swayT += (3.0 + Math.abs(leanRatio)*3.5)*mdt;      // 傾くほど揺れ続ける
+    curSway = (leanRatio*0.09 + Math.abs(leanRatio)*0.14*Math.sin(swayT)) * swayDamp;
+    if(current){
       if(current.mode==='swing'){
         current.x += current.dir*swingSpeed*mdt;
-        const minX=current.t.tx-current.swingR, maxX=current.t.tx+current.swingR;  // 目標付近で揺れる
+        const minX=current.t.tx-current.swingR, maxX=current.t.tx+current.swingR;
         if(current.x<=minX){ current.x=minX; current.dir=1; }
         if(current.x>=maxX){ current.x=maxX; current.dir=-1; }
       } else if(current.mode==='drop'){
         current.vy += GRAVITY*mdt; current.y += current.vy*mdt;
         if(current.y>=current.t.ty){ current.y=current.t.ty; land(); }
       }
-      // カメラ：今の座面を追って縦横スクロール（land()でnull化した直後は追従しない）
       if(current){
         zoomTarget=playZoom();
         const effH=cssH/(Sbase*zoomTarget), effW=cssW/(Sbase*zoomTarget);
@@ -1402,31 +1643,14 @@
         camTargetX = (effW>=(R-L)) ? CX : Math.max(L+effW*0.5, Math.min(R-effW*0.5, tx));
       }
     }
-
-    // 倒壊の落下
-    if(state==='over' && collapsing){
-      overTimer+=dt;
-      for(const b of beams){ if(b.vx===undefined) continue;
-        b.vy += GRAVITY*0.5*dt; b.cx += b.vx*dt; b.cy += b.vy*dt; b.ang += (b.va||0)*dt; }
-    }
-
-    // エフェクト
-    for(let i=effects.length-1;i>=0;i--){
-      const e=effects[i]; e.t+=dt;
-      if(e.type!=='ring'){ e.x+=e.vx*dt; e.y+=e.vy*dt; e.vy += (e.type==='confetti'?120:400)*dt; }
-      if(e.va) e.ang=(e.ang||0)+e.va*dt;
-      if(e.t>=e.life) effects.splice(i,1);
-    }
-
-    // カメラ（縦横追従＋ズーム）をなめらかに
-    if(!isFinite(camY)) camY=camTarget;
-    camY += (camTarget-camY)*Math.min(1, dt*5);
-    camX += (camTargetX-camX)*Math.min(1, dt*5);
-    zoom += (zoomTarget-zoom)*Math.min(1, dt*4);
-    S = Sbase*zoom;
-    updateBubble();
-    positionMascot();
   }
+  // ---- 画面座標の軽量エフェクト（クレーン/釘/丸太で使用）----
+  function groundY(){ return cssH-70; }
+  function burst(x,y,col,n){ n=n||10; for(let i=0;i<n;i++){ const a=Math.random()*6.283, sp=40+Math.random()*130; sfx.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-50,life:.45+Math.random()*.35,t:0,col,r:2+Math.random()*3}); } }
+  function updateSfx(dt){ for(let i=sfx.length-1;i>=0;i--){ const p=sfx[i]; p.t+=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=520*dt; if(p.t>=p.life) sfx.splice(i,1); } }
+  function drawSfx(){ for(const p of sfx){ ctx.globalAlpha=Math.max(0,1-p.t/p.life); ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill(); } ctx.globalAlpha=1; }
+  function drawFlatSky(){ const g=ctx.createLinearGradient(0,0,0,cssH); g.addColorStop(0,'#a9def7'); g.addColorStop(.6,'#dff2ff'); g.addColorStop(1,'#eef8ff'); ctx.fillStyle=g; ctx.fillRect(0,0,cssW,cssH); }
+  function drawStatusBar(label){ ctx.fillStyle='rgba(27,58,92,.9)'; roundRectS(cssW/2-120,54,240,32,10); ctx.fill(); ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='bold 14px sans-serif'; ctx.fillText(label, cssW/2, 75); }
 
   // ================= メインループ =================
   function loop(ts){
@@ -1448,7 +1672,7 @@
   $('toTitleBtn').onclick=()=>{ state='title'; show('title'); $('titleBest').textContent=bestScore; };
   $('quitBtn').onclick=()=>{ state='title'; pauseOverlay.classList.remove('show'); show('title'); $('titleBest').textContent=bestScore; };
   $('resumeBtn').onclick=()=>{ pauseOverlay.classList.remove('show'); state='play'; last=performance.now(); };
-  $('pauseBtn').onclick=()=>{ if(state==='play'){ state='pause'; $('pauseScore').textContent=placed; pauseOverlay.classList.add('show'); } };
+  $('pauseBtn').onclick=()=>{ if(state==='play'){ state='pause'; $('pauseScore').textContent=score; pauseOverlay.classList.add('show'); } };
   $('howBtn').onclick=()=>$('howOverlay').classList.add('show');
   $('howClose').onclick=()=>$('howOverlay').classList.remove('show');
   function toggleMute(){ audio.muted=!audio.muted; localStorage.setItem('daiku_mute', audio.muted?'1':'0'); audio.updateBtns(); audio.ensure(); }
@@ -1497,13 +1721,23 @@
       autoBuild(max){ max=max||500; let g=0; while(state==='play'&&current&&g++<max){ current.x=current.t.tx; drop(); for(let i=0;i<50&&current&&current.mode==='drop';i++) update(1/60); } return {state, placed, total}; },
       cam(){ return {camY:Math.round(camY),camTarget:Math.round(camTarget),zoom:+zoom.toFixed(3),S:+S.toFixed(3),cssW,cssH,effH:Math.round(cssH/S),sway:+curSway.toFixed(3),lean:Math.round(lean)}; },
       spawnDeshi:()=>spawnDeshi(), catchDeshi:()=>catchDeshi(), useItem:()=>useItem(),
-      mochi:()=>startMochiBonus(), moveCatcher(x){ catcher.tx=x; },
-      mochiState(){ return {state, mochiT:+mochiT.toFixed(2), n:mochis.length, mochiScore, catcher:Math.round(catcher.x)}; },
-      setStage(n){ stage=n; cfg=stageConfig(stage); resetStage(); state='play'; return stageConfig(n); },
-      cfg:(n)=>stageConfig(n||stage),
+      moveCatcher(x){ catcher.tx=x; },
+      mochiState(){ return {state, mode, mochiT:+mochiT.toFixed(2), n:mochis.length, mochiScore, catcher:Math.round(catcher.x)}; },
+      setStage(n){ stage=n; startStage(); return {mode:modeForStage(n), lvl:stageLevel(n)}; },
+      modeInfo(){ return {stage, mode, lvl, state}; },
+      // クレーン
+      moveCrane(x){ if(crane) crane.tx=x; }, craneDrop:()=>craneDrop(),
+      craneState(){ return crane&&{x:Math.round(crane.x), theta:+crane.theta.toFixed(2), done:crane.done, need:crane.need, miss:crane.miss, load:crane.load, drop:!!crane.drop, platX:Math.round(crane.platX)}; },
+      // 釘打ち
+      nailHitAll(){ if(nail) for(const it of nail.items.slice()) if(!it.hit) nailTap(it.x,it.y); return nail&&{done:nail.done,need:nail.need,miss:nail.miss}; },
+      nailState(){ return nail&&{done:nail.done, need:nail.need, miss:nail.miss, on:nail.items.filter(i=>!i.hit).length}; },
+      // 丸太切り
+      sawStroke(px){ if(saw){ saw.sawing=true; saw.lastX=(saw.lastX||cssW/2); sawMove(px); } },
+      autoSaw(){ if(!saw) return; let x=40, d=1, guard=0; while(mode==='saw' && saw.done<saw.need && guard++<4000){ x+=d*14; if(x>cssW-40){x=cssW-40;d=-1;} if(x<40){x=40;d=1;} saw.sawing=true; saw.lastX=x-d*14; sawMove(x); update(1/60); } return saw&&{done:saw.done,need:saw.need}; },
+      sawState(){ return saw&&{cut:Math.round(saw.cut), need:saw.cutNeeded, done:saw.done, T:+saw.T.toFixed(1), splitting:+(saw.splitting||0).toFixed(2)}; },
       giveItem(type){ heldItem=type; const d=DESHI[type]; $('itemChip').textContent=d.badge; $('itemLbl').textContent=d.name+' 発動'; itemSlot.classList.add('show'); },
       deshiState(){ return {deshi:deshi&&deshi.type, life:deshi&&+deshi.life.toFixed(1), held:heldItem, swayDamp:+swayDamp.toFixed(2), swayDampT:+swayDampT.toFixed(1), timeScale:+timeScale.toFixed(2), slowT:+slowT.toFixed(1)}; },
-      snap(){ return {state, stage, floors, placed, total, score, combo, maxCombo, bestScore, lean:Math.round(lean), leanRatio:+leanRatio.toFixed(2), built, bestStage, pieces:beams.length,
+      snap(){ return {state, mode, lvl, stage, floors, placed, total, score, combo, maxCombo, bestScore, lean:Math.round(lean), leanRatio:+leanRatio.toFixed(2), built, bestStage, pieces:beams.length,
         cur: current&&{type:current.slot.type, f:current.slot.f, mode:current.mode, x:Math.round(current.x), tx:Math.round(current.t.tx)}}; },
       dataURL(scale){ scale=scale||0.5; const o=document.createElement('canvas');
         o.width=Math.round(cssW*scale); o.height=Math.round(cssH*scale);
