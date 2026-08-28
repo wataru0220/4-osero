@@ -53,7 +53,7 @@
   .scroll{overflow:auto; max-height:62vh; border:1px solid var(--line); border-radius:8px}
   tr.total td{font-weight:800; background:#f0f6ff}
   .pill{display:inline-block; padding:2px 9px; border-radius:20px; font-size:12px; font-weight:700}
-  .pill.daily{background:#e7f0ff; color:#1759c4} .pill.hourly{background:#eafaf0; color:#178a52}
+  .pill.daily{background:#e7f0ff; color:#1759c4} .pill.hourly{background:#eafaf0; color:#178a52} .pill.monthly{background:#f3e8ff; color:#7a3ea8}
   .kpis{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px}
   .kpi{flex:1; min-width:150px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px}
   .kpi .v{font-size:24px; font-weight:800; color:var(--brand)} .kpi .l{font-size:12px; color:var(--sub)}
@@ -94,6 +94,12 @@
   .helpitem[open] summary::before{content:"－ "}
   .helpa{padding:0 13px 12px; font-size:13.5px; color:var(--sub); line-height:1.65}
   .helpempty{padding:18px; text-align:center; color:var(--sub)}
+  /* 工事の状態タブ（着工前/工事中/工事完了） */
+  .segstat{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden}
+  .segstat button{border:0; background:#fff; color:var(--sub); font-size:12px; padding:5px 10px; cursor:pointer; border-right:1px solid var(--line); white-space:nowrap}
+  .segstat button:last-child{border-right:0}
+  .segstat button.on{background:var(--accent); color:#fff; font-weight:700}
+  .segstat button.on.done{background:#5f7185}
   /* 会社情報フォーム */
   .orgform .f{margin-bottom:12px}
   .orgform label{display:block; font-size:12px; color:var(--sub); font-weight:600; margin-bottom:4px}
@@ -231,8 +237,8 @@
       <div class="lock">🔒 <b>給与（給与方式・単価）はこの管理者端末のブラウザにのみ保存</b>され、クラウド（Firebase）や入力フォームには送られません。従業員からは見えません。一度入力すれば<b>Excel出力に毎回自動反映</b>されます。</div>
       <div class="addrow">
         <input type="text" id="wName" placeholder="氏名" style="width:150px">
-        <select id="wType"><option value="daily">日給</option><option value="hourly">時給</option></select>
-        <input type="number" id="wWage" placeholder="単価（円）" style="width:130px" inputmode="numeric">
+        <select id="wType"><option value="daily">日給</option><option value="hourly">時給</option><option value="monthly">月給</option></select>
+        <input type="number" id="wWage" placeholder="金額（円）" style="width:130px" inputmode="numeric">
         <button class="act" id="wAdd">追加</button>
       </div>
       <div class="scroll">
@@ -241,7 +247,7 @@
           <tbody></tbody>
         </table>
       </div>
-      <div class="note">単価＝日給なら「1日あたりの金額」、時給なら「1時間あたりの金額」。氏名・有効/無効はクラウド共有、<b>給与だけは端末ローカル保存</b>です。</div>
+      <div class="note">金額＝日給なら「1日あたり」、時給なら「1時間あたり」、<b>月給なら「1か月あたり」</b>。月給の人の人件費は<b>月給÷22日×出勤日数</b>で計算します。氏名・有効/無効はクラウド共有、<b>給与だけは端末ローカル保存</b>です。</div>
       <div class="addrow" style="background:#fff; border:1px dashed var(--line); margin-top:10px">
         <span class="muted" style="font-size:12px">別PCへ給与を引き継ぐ／バックアップ：</span>
         <button class="sm" id="wageBackup">⬇ 給与設定をバックアップ(JSON)</button>
@@ -257,19 +263,19 @@
       <h2>🏗️ 工事（現場）</h2>
       <div class="addrow">
         <input type="text" id="sName" placeholder="工事名・現場名（例：◯◯ビル新築）" style="width:220px">
-        <select id="sStatus"><option value="進行中">進行中</option><option value="着工予定">着工予定</option></select>
+        <select id="sStatus"><option value="工事中">工事中</option><option value="着工前">着工前</option></select>
         <button class="act" id="sAdd">追加</button>
       </div>
       <div class="scroll">
         <table id="tblSites">
-          <thead><tr><th>工事名（現場）</th><th>状態</th><th>操作</th></tr></thead>
+          <thead><tr><th>工事名（現場）</th><th>状態（着工前／工事中／工事完了）</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
-      <div class="note">「進行中」「着工予定」の工事だけがここと入力フォームに表示されます。「✅完了にする」を押すと下の「完了済み工事」に保存され、入力フォームの現場一覧からも外れます。</div>
+      <div class="note">工事名の脇のタブで状態を切り替えます。「着工前」「工事中」の工事だけがここと入力フォームの現場一覧に表示され、「工事完了」にすると下の「完了した工事」に保存されて選択肢から外れます。</div>
 
       <div style="margin-top:14px">
-        <button class="sm" id="doneToggle" type="button" style="width:100%; padding:9px">✅ 完了済み工事を表示（0）</button>
+        <button class="sm" id="doneToggle" type="button" style="width:100%; padding:9px">✅ 完了した工事を表示（0）</button>
         <div class="scroll" id="doneWrap" style="display:none; margin-top:8px">
           <table id="tblSitesDone">
             <thead><tr><th>工事名（現場）</th><th>操作</th></tr></thead>
@@ -390,18 +396,24 @@
   let workers={}, sites={}, records={}; // key -> obj
 
   // ---------- 給与ストア（この端末のみに保存。Firebase・入力フォームには出さない） ----------
-  // 形式: { "氏名": { type:'daily'|'hourly', wage:Number } }
+  // 形式: { "氏名": { type:'daily'|'hourly'|'monthly', wage:Number } }
+  // 月給(monthly)は「1か月あたりの金額」。日給換算は 月給 ÷ 22日 で計算する。
+  const MONTH_DAYS=22;
   const WAGE_LS_KEY='kintai_wages_v1';
   function loadWages(){ try{ return JSON.parse(localStorage.getItem(WAGE_LS_KEY)||'{}')||{}; }catch(_){ return {}; } }
   function saveWages(){ localStorage.setItem(WAGE_LS_KEY, JSON.stringify(wages)); }
   let wages=loadWages();
-  function getWage(name){ const w=wages[name]; return w? {type:(w.type==='hourly'?'hourly':'daily'), wage:Number(w.wage)||0, found:true} : {type:'daily', wage:0, found:false}; }
-  function setWage(name,type,wage){ wages[name]={type:(type==='hourly'?'hourly':'daily'), wage:Number(wage)||0}; saveWages(); }
+  function normType(t){ return t==='hourly'?'hourly':(t==='monthly'?'monthly':'daily'); }
+  function wageTypeLabel(t){ return t==='hourly'?'時給':(t==='monthly'?'月給':'日給'); }
+  function getWage(name){ const w=wages[name]; return w? {type:normType(w.type), wage:Number(w.wage)||0, found:true} : {type:'daily', wage:0, found:false}; }
+  function setWage(name,type,wage){ wages[name]={type:normType(type), wage:Number(wage)||0}; saveWages(); }
   function renameWage(oldName,newName){ if(oldName===newName||!wages[oldName]) return; wages[newName]=wages[oldName]; delete wages[oldName]; saveWages(); }
   function removeWage(name){ if(wages[name]){ delete wages[name]; saveWages(); } }
-  // 1記録あたりの人件費（給与方式に応じて 単価×日数 or 単価×時間）
+  // 1記録あたりの人件費（時給=単価×時間 / 日給=単価×日数 / 月給=(月給÷22)×日数）
   function recordCost(r){ const w=getWage(r.workerName); const du=(r.dayUnit!=null?Number(r.dayUnit):1); const h=Number(r.hours)||0;
-    return w.type==='hourly'? h*w.wage : du*w.wage; }
+    if(w.type==='hourly') return h*w.wage;
+    if(w.type==='monthly') return (w.wage/MONTH_DAYS)*du;
+    return du*w.wage; }
   // 旧バージョンでFirebaseに給与が残っていたら、ローカルへ移してクラウドからは除去
   function migrateLegacyWages(){
     for(const k in workers){ const w=workers[k]; if(!w) continue;
@@ -732,7 +744,7 @@
     const names=Object.keys(byW).sort((a,b)=>a.localeCompare(b,'ja'));
     let rows='';
     names.forEach(n=>{ const w=getWage(n); const a=byW[n];
-      const pill = w.type==='hourly'?'<span class="pill hourly">時給</span>':'<span class="pill daily">日給</span>';
+      const pill = '<span class="pill '+w.type+'">'+wageTypeLabel(w.type)+'</span>';
       rows+='<tr><td>'+esc(n)+(w.found?'':' <span class="muted">(未)</span>')+'</td><td>'+pill+'</td>'+
         '<td class="num">'+(w.wage?yen(w.wage):'<span class="muted">未</span>')+'</td>'+
         '<td class="num">'+round1(a.days)+'</td><td class="num">'+round1(a.hours)+'</td>'+
@@ -854,8 +866,8 @@
         .then(()=>{ $('wName').value=''; $('wWage').value=''; toast('追加しました','ok'); });
     };
     $('sAdd').onclick=()=>{ const name=$('sName').value.trim(); if(!name){toast('現場名を入力','err'); return;}
-      const st=$('sStatus')?$('sStatus').value:'進行中';
-      ref('sites').push({name, status:st, active: st!=='完了済み', createdAt:Date.now()}).then(()=>{ $('sName').value=''; toast('追加しました','ok'); });
+      const st=$('sStatus')?$('sStatus').value:'工事中';
+      ref('sites').push({name, status:st, active: st!=='工事完了', createdAt:Date.now()}).then(()=>{ $('sName').value=''; toast('追加しました','ok'); });
     };
     $('doneToggle').onclick=()=>{ doneOpen=!doneOpen; renderSites(); };
     // 給与設定のバックアップ / 復元（端末間の引き継ぎ用）
@@ -870,7 +882,7 @@
       const f=e.target.files&&e.target.files[0]; if(!f) return; const rd=new FileReader();
       rd.onload=()=>{ try{ const obj=JSON.parse(rd.result);
         if(obj && typeof obj==='object' && !Array.isArray(obj)){
-          Object.keys(obj).forEach(n=>{ const v=obj[n]; if(v && typeof v==='object') wages[n]={type:(v.type==='hourly'?'hourly':'daily'), wage:Number(v.wage)||0}; });
+          Object.keys(obj).forEach(n=>{ const v=obj[n]; if(v && typeof v==='object') wages[n]={type:normType(v.type), wage:Number(v.wage)||0}; });
           saveWages(); renderWorkers(); renderAll(); toast('給与設定を復元しました','ok');
         } else toast('ファイル形式が不正です','err');
       }catch(_){ toast('読み込みに失敗しました','err'); } };
@@ -886,7 +898,7 @@
       const wg=getWage(w.name); const t=wg.type;
       return '<tr>'+
         '<td><input data-rename="'+w._key+'" data-old="'+esc(w.name)+'" value="'+esc(w.name)+'" style="width:140px"></td>'+
-        '<td><select data-wtype="'+esc(w.name)+'"><option value="daily"'+(t==='daily'?' selected':'')+'>日給</option><option value="hourly"'+(t==='hourly'?' selected':'')+'>時給</option></select></td>'+
+        '<td><select data-wtype="'+esc(w.name)+'"><option value="daily"'+(t==='daily'?' selected':'')+'>日給</option><option value="hourly"'+(t==='hourly'?' selected':'')+'>時給</option><option value="monthly"'+(t==='monthly'?' selected':'')+'>月給</option></select></td>'+
         '<td class="num"><input data-wwage="'+esc(w.name)+'" type="number" value="'+(wg.wage||0)+'" style="width:110px; text-align:right"></td>'+
         '<td>'+(w.active===false?'<span class="muted">無効</span>':'<span class="pill daily">有効</span>')+'</td>'+
         '<td><button class="sm" data-toggle="'+w._key+'">'+(w.active===false?'有効化':'無効化')+'</button> '+
@@ -907,48 +919,47 @@
     tb.querySelectorAll('[data-delw]').forEach(b=> b.onclick=()=>{ if(confirm('削除しますか？（過去の記録は残ります）')){ removeWage(b.dataset.delname); ref('workers/'+b.dataset.delw).remove(); } });
   }
 
-  // 工事の状態（旧データは active から移行）。完了済み＝表から外し「完了済み工事」フォルダーへ。
+  // 工事の状態：着工前／工事中／工事完了（旧ラベルと active から移行）。工事完了は表から外し「完了した工事」へ。
   let doneOpen=false;
-  function siteStatus(s){ if(s&&s.status) return s.status; return (s&&s.active===false)?'完了済み':'進行中'; }
-  function statusPill(st){
-    if(st==='完了済み') return '<span class="pill" style="background:#eef1f5;color:#5f7185">完了済み</span>';
-    if(st==='着工予定') return '<span class="pill" style="background:#fff4e5;color:#8a5a00">着工予定</span>';
-    return '<span class="pill" style="background:#e7f0ff;color:#1759c4">進行中</span>';
+  const SITE_STATES=['着工前','工事中','工事完了'];
+  const SITE_DONE='工事完了';
+  function siteStatus(s){
+    const raw=s&&s.status;
+    if(raw==='工事完了'||raw==='完了済み') return '工事完了';
+    if(raw==='工事中'||raw==='進行中') return '工事中';
+    if(raw==='着工前'||raw==='着工予定') return '着工前';
+    return (s&&s.active===false)?'工事完了':'工事中'; // 旧データ（statusなし）
   }
-  function setSiteStatus(key, st){ ref('sites/'+key).update({ status:st, active: st!=='完了済み' }).then(()=>toast('更新しました','ok')); }
+  function setSiteStatus(key, st){ ref('sites/'+key).update({ status:st, active: st!==SITE_DONE }).then(()=>toast('更新しました','ok')); }
+  // 工事名の脇の状態タブ（着工前／工事中／工事完了）
+  function segStatHTML(key, cur){
+    return '<div class="segstat">'+SITE_STATES.map(st=>{
+      const on = (st===cur) ? ('on'+(st===SITE_DONE?' done':'')) : '';
+      return '<button class="'+on+'" data-sset="'+key+'" data-st="'+st+'">'+st+'</button>';
+    }).join('')+'</div>';
+  }
   function renderSites(){
     const all=Object.entries(sites).map(([k,s])=>Object.assign({_key:k},s)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'));
-    const active=all.filter(s=>siteStatus(s)!=='完了済み');
-    const done=all.filter(s=>siteStatus(s)==='完了済み');
-    // 表：着工予定＋進行中のみ
+    const active=all.filter(s=>siteStatus(s)!==SITE_DONE);
+    const done=all.filter(s=>siteStatus(s)===SITE_DONE);
+    // 表：着工前＋工事中のみ
     const tb=$('tblSites').querySelector('tbody');
-    if(!active.length){ tb.innerHTML='<tr><td colspan="3" class="muted">進行中・着工予定の工事はありません。上で追加してください。</td></tr>'; }
-    else tb.innerHTML=active.map(s=>{ const st=siteStatus(s);
-      const flip = (st==='着工予定')
-        ? '<button class="sm" data-sstart="'+s._key+'">▶ 進行中にする</button>'
-        : '<button class="sm" data-splan="'+s._key+'">↩ 着工予定に戻す</button>';
-      return '<tr>'+
-        '<td><input data-sk="'+s._key+'" value="'+esc(s.name)+'" style="width:240px"></td>'+
-        '<td>'+statusPill(st)+'</td>'+
-        '<td style="white-space:nowrap">'+flip+' '+
-          '<button class="sm" data-sdone="'+s._key+'">✅ 完了にする</button> '+
-          '<button class="sm del" data-dels="'+s._key+'">削除</button></td></tr>';
-    }).join('');
-    // 完了済み工事フォルダー（ファイルに保存されたもの）
-    $('doneToggle').textContent = (doneOpen?'▲ 完了済み工事を閉じる（':'✅ 完了済み工事を表示（')+done.length+'）';
+    if(!active.length){ tb.innerHTML='<tr><td colspan="3" class="muted">着工前・工事中の工事はありません。上で追加してください。</td></tr>'; }
+    else tb.innerHTML=active.map(s=>'<tr>'+
+      '<td><input data-sk="'+s._key+'" value="'+esc(s.name)+'" style="width:200px"></td>'+
+      '<td>'+segStatHTML(s._key, siteStatus(s))+'</td>'+
+      '<td><button class="sm del" data-dels="'+s._key+'">削除</button></td></tr>').join('');
+    // 完了した工事フォルダー（ファイルに保存されたもの）
+    $('doneToggle').textContent = (doneOpen?'▲ 完了した工事を閉じる（':'✅ 完了した工事を表示（')+done.length+'）';
     $('doneWrap').style.display = doneOpen ? '' : 'none';
     const dtb=$('tblSitesDone').querySelector('tbody');
-    if(!done.length){ dtb.innerHTML='<tr><td colspan="2" class="muted">完了済みの工事はありません。</td></tr>'; }
+    if(!done.length){ dtb.innerHTML='<tr><td colspan="2" class="muted">完了した工事はありません。</td></tr>'; }
     else dtb.innerHTML=done.map(s=>'<tr>'+
       '<td>'+esc(s.name)+'</td>'+
-      '<td style="white-space:nowrap"><button class="sm" data-sreopen="'+s._key+'">↩ 工事中に戻す</button> '+
-        '<button class="sm del" data-dels="'+s._key+'">削除</button></td></tr>').join('');
+      '<td>'+segStatHTML(s._key, siteStatus(s))+' <button class="sm del" data-dels="'+s._key+'" style="margin-left:6px">削除</button></td></tr>').join('');
     // バインド
     $('tblSites').querySelectorAll('input[data-sk]').forEach(el=> el.onchange=()=> ref('sites/'+el.dataset.sk+'/name').set(el.value.trim()).then(()=>toast('保存しました','ok')));
-    $('tblSites').querySelectorAll('[data-sstart]').forEach(b=> b.onclick=()=> setSiteStatus(b.dataset.sstart,'進行中'));
-    $('tblSites').querySelectorAll('[data-splan]').forEach(b=> b.onclick=()=> setSiteStatus(b.dataset.splan,'着工予定'));
-    $('tblSites').querySelectorAll('[data-sdone]').forEach(b=> b.onclick=()=> setSiteStatus(b.dataset.sdone,'完了済み'));
-    $('tblSitesDone').querySelectorAll('[data-sreopen]').forEach(b=> b.onclick=()=> setSiteStatus(b.dataset.sreopen,'進行中'));
+    document.querySelectorAll('#tab-sites [data-sset]').forEach(b=> b.onclick=()=> setSiteStatus(b.dataset.sset, b.dataset.st));
     document.querySelectorAll('#tab-sites [data-dels]').forEach(b=> b.onclick=()=>{ if(confirm('削除しますか？（過去の記録は残ります）')) ref('sites/'+b.dataset.dels).remove(); });
   }
 
@@ -974,7 +985,7 @@
     recs.forEach(r=>{ if(r.workerName) nameSet.add(r.workerName); });
     const masterNames=[...nameSet].sort((a,b)=>(a||'').localeCompare(b||'','ja'));
     const masterAoa=[['氏名','給与方式（日給/時給）','単価(円)']];
-    masterNames.forEach(n=>{ const wg=getWage(n); masterAoa.push([n, (wg.type==='hourly'?'時給':'日給'), wg.wage]); });
+    masterNames.forEach(n=>{ const wg=getWage(n); masterAoa.push([n, wageTypeLabel(wg.type), wg.wage]); });
     const wsMaster=XLSX.utils.aoa_to_sheet(masterAoa);
     wsMaster['!cols']=[{wch:16},{wch:18},{wch:12}];
     XLSX.utils.book_append_sheet(wb, wsMaster, '従業員マスタ');
@@ -992,8 +1003,8 @@
     for(let i=0;i<recs.length;i++){ const row=i+2;
       const vlType="IFERROR(VLOOKUP($C"+row+","+MASTER+"!$A:$C,2,FALSE),\"日給\")";
       const vlWage="IFERROR(VLOOKUP($C"+row+","+MASTER+"!$A:$C,3,FALSE),0)";
-      // 時給なら 単価×実働(J)、日給なら 単価×工数(F)
-      wsRec['L'+row].f = "IF("+vlType+"=\"時給\","+vlWage+"*$J"+row+","+vlWage+"*$F"+row+")";
+      // 月給なら (単価÷22)×工数(F)、時給なら 単価×実働(J)、日給なら 単価×工数(F)
+      wsRec['L'+row].f = "IF("+vlType+"=\"月給\","+vlWage+"/22*$F"+row+",IF("+vlType+"=\"時給\","+vlWage+"*$J"+row+","+vlWage+"*$F"+row+"))";
     }
     wsRec['!cols']=[{wch:11},{wch:18},{wch:12},{wch:26},{wch:9},{wch:8},{wch:7},{wch:7},{wch:9},{wch:9},{wch:16},{wch:12}];
     XLSX.utils.book_append_sheet(wb, wsRec, '勤怠記録');
@@ -1004,8 +1015,8 @@
     const wsSum=XLSX.utils.aoa_to_sheet(sumAoa);
     let sumF=0;
     for(let i=0;i<names.length;i++){ const row=i+2; const n=names[i]; const wg=getWage(n);
-      const cost=(wg.type==='hourly')? byW[n].hours*wg.wage : byW[n].days*wg.wage; sumF+=cost;
-      wsSum['B'+row]={t:'s', v:(wg.type==='hourly'?'時給':'日給'), f:'IFERROR(VLOOKUP(A'+row+','+MASTER+'!$A:$C,2,FALSE),\"日給\")'};
+      const cost=(wg.type==='hourly')? byW[n].hours*wg.wage : (wg.type==='monthly' ? (wg.wage/MONTH_DAYS)*byW[n].days : byW[n].days*wg.wage); sumF+=cost;
+      wsSum['B'+row]={t:'s', v:wageTypeLabel(wg.type), f:'IFERROR(VLOOKUP(A'+row+','+MASTER+'!$A:$C,2,FALSE),\"日給\")'};
       wsSum['C'+row]={t:'n', v:(Number(wg.wage)||0), f:'IFERROR(VLOOKUP(A'+row+','+MASTER+'!$A:$C,3,FALSE),0)'};
       wsSum['F'+row]={t:'n', v:Math.round(cost), f:'SUMIF('+REC+'!$C:$C,A'+row+','+REC+'!$L:$L)'};
     }
@@ -1066,10 +1077,10 @@
     {t:'現場・氏名で絞り込む', k:'現場 氏名 絞り込み フィルタ 選択', a:'「現場」「氏名」のプルダウンで対象をしぼれます。「すべて」で全件に戻ります。'},
     {t:'合計（KPI）の見方', k:'kpi 人件費 合計 日数 時間 件数 集計', a:'絞り込み範囲の「人件費合計」「延べ出勤日数」「延べ実働時間」「報告件数」が上部に表示されます。'},
     {t:'従業員を追加する', k:'従業員 追加 登録 氏名 マスタ', a:'「従業員（給与）」タブで氏名・給与方式・単価を入れて「追加」します。氏名はクラウド共有、給与はこの端末のみに保存されます。'},
-    {t:'給与（日給／時給・単価）を設定', k:'給与 日給 時給 単価 賃金 設定', a:'「従業員（給与）」タブで各人の方式（日給/時給）と単価を設定します。日給は1日あたり、時給は1時間あたりの金額。Excel出力に自動反映されます。'},
+    {t:'給与（日給／時給／月給）を設定', k:'給与 日給 時給 月給 単価 賃金 設定 22', a:'「従業員（給与）」タブで各人の方式（日給/時給/月給）と金額を設定します。日給=1日あたり、時給=1時間あたり、月給=1か月あたり。月給の人の人件費は「月給÷22日×出勤日数」で自動計算し、Excel出力にも反映されます。'},
     {t:'給与は端末だけに保存される', k:'給与 ローカル 端末 セキュリティ 非公開 クラウド 漏れ', a:'給与（方式・単価）はこの管理者端末のブラウザにのみ保存され、クラウド（Firebase）や入力フォームには送られません。従業員からは見えません。'},
     {t:'給与のバックアップ／別PCへ引き継ぎ', k:'バックアップ 復元 引き継ぎ json 別pc 移行', a:'「従業員（給与）」タブ下の「⬇給与設定をバックアップ(JSON)」で書き出し、別PCで「⬆復元」から読み込むと給与設定を引き継げます。'},
-    {t:'工事（現場）を追加・状態を変える', k:'現場 工事 追加 編集 着工予定 進行中 完了 完了済み 状態', a:'「🏗️工事（現場）」タブで工事を追加できます。状態は「着工予定／進行中／完了済み」。表には着工予定と進行中だけが並び、「✅完了にする」を押すと下の「完了済み工事」フォルダーに保存され、入力フォームの現場一覧からも外れます。完了済みは「↩工事中に戻す」で戻せます。'},
+    {t:'工事（現場）を追加・状態を変える', k:'現場 工事 追加 編集 着工前 工事中 工事完了 完了 状態 タブ', a:'「🏗️工事（現場）」タブで工事を追加できます。工事名の脇のタブで「着工前／工事中／工事完了」を切り替えます。表には着工前・工事中だけが並び、「工事完了」にすると下の「完了した工事」に保存され、入力フォームの現場一覧（選択肢）からも外れます。完了した工事のタブで「工事中」等に戻せます。'},
     {t:'記録を修正・削除する', k:'記録 修正 編集 削除 訂正 一覧', a:'「記録一覧」タブで各行の「修正」から内容を直せます（管理者は全員の記録を修正可）。「削除」で記録を消せます。'},
     {t:'Excelを出力する', k:'excel エクセル 出力 ダウンロード 数式 帳票', a:'「集計・Excel出力」タブの「📊Excelファイルをダウンロード」で、現在の絞り込み範囲を複数シート・数式入りで出力します。Excel上で単価を直すと自動で再計算されます。'},
     {t:'現場×氏名クロス集計の見方', k:'クロス 集計 現場 氏名 出勤日数 表', a:'「現場×氏名（出勤日数）」表で、どの現場に誰が何日入ったかを一覧できます。行＝現場、列＝氏名、数字＝出勤日数です。'},
