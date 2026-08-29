@@ -228,8 +228,8 @@
     <button class="cancelEdit" id="cancelEditBtn" style="display:none">✕ 修正をやめる（新規入力に戻る）</button>
   </div>
 
-  <h2 class="sec">最近の報告（自分）</h2>
-  <div id="myRecords"><div class="hint" style="padding:4px">まだ報告はありません。</div></div>
+  <h2 class="sec">最近の報告（自分・過去1ヶ月）</h2>
+  <div id="myRecords"><div class="hint" style="padding:4px">氏名を選ぶと表示されます。</div></div>
 
   <!-- 有給休暇 -->
   <div class="card" style="margin-top:8px">
@@ -305,6 +305,9 @@
   // n日後の日付文字列（有給は1週間=7日以上先のみ申請可）
   const LEAVE_MIN_DAYS = 7;
   const plusDaysStr = (n) => { const d=new Date(); d.setDate(d.getDate()+n); const z=x=>String(x).padStart(2,'0');
+    return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()); };
+  // 1ヶ月前の日付（「最近の報告」を過去1ヶ月以内に絞る基準）
+  const monthAgoStr = () => { const d=new Date(); d.setMonth(d.getMonth()-1); const z=x=>String(x).padStart(2,'0');
     return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()); };
   const r1 = (n) => Math.round((Number(n)||0)*10)/10;
 
@@ -394,10 +397,11 @@
   function loadMyRecords(){
     const name=$('worker').value; const box=$('myRecords');
     if(!name){ box.innerHTML='<div class="hint" style="padding:4px">氏名を選ぶと表示されます。</div>'; return; }
-    ref('records').orderByChild('workerName').equalTo(name).limitToLast(10).on('value', snap=>{
-      const arr=[]; myRecsMap={}; snap.forEach(c=>{ const r=c.val(); r._key=c.key; myRecsMap[c.key]=r; arr.push(r); });
+    ref('records').orderByChild('workerName').equalTo(name).limitToLast(100).on('value', snap=>{
+      const cutoff=monthAgoStr(); // 過去1ヶ月以内のみ表示
+      const arr=[]; myRecsMap={}; snap.forEach(c=>{ const r=c.val(); r._key=c.key; myRecsMap[c.key]=r; if((r.date||'')>=cutoff) arr.push(r); });
       arr.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
-      if(!arr.length){ box.innerHTML='<div class="hint" style="padding:4px">まだ報告はありません。</div>'; return; }
+      if(!arr.length){ box.innerHTML='<div class="hint" style="padding:4px">過去1ヶ月の報告はありません。</div>'; return; }
       box.innerHTML = arr.map(r=>{
         const unit = r.dayUnit===0.5? '半日':'終日';
         const hrs = (r.hours!=null && r.hours!=='')? ('・'+r.hours+'h'):'';
