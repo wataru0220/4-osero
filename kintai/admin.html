@@ -219,6 +219,7 @@
   <section id="tab-records" class="hide">
     <div class="card">
       <h2>📝 記録一覧 <span class="muted" id="recCount"></span></h2>
+      <div style="margin-bottom:12px"><button class="act" id="addProxyBtn">➕ 代理で報告を追加（全職員）</button></div>
       <div class="scroll">
         <table id="tblRecords">
           <thead><tr>
@@ -291,7 +292,7 @@
   <section id="tab-leave" class="hide">
     <div class="card">
       <h2>🏖️ 有給休暇</h2>
-      <div class="lock" style="background:#f3e8ff; color:#7a3ea8; border-color:#e2ccf5">職人が入力フォームの「🏖️有給休暇」から申請（1週間以上前）→ ここで<b>承認/却下</b>します。<b>承認した分だけ</b>取得・残日数に反映されます（残＝付与−取得）。付与日数はクラウド共有です。</div>
+      <div class="lock" style="background:#f3e8ff; color:#7a3ea8; border-color:#e2ccf5">職員が入力フォームの「🏖️有給休暇」から申請（1週間以上前）→ ここで<b>承認/却下</b>します。<b>承認した分だけ</b>取得・残日数に反映されます（残＝付与−取得）。付与日数はクラウド共有です。</div>
 
       <h2 style="font-size:14px; margin:4px 0 8px">🔔 承認待ちの申請</h2>
       <div id="leavePending"></div>
@@ -332,7 +333,7 @@
 <!-- 記録の編集モーダル -->
 <div class="modal-ov" id="editModal">
   <div class="modal">
-    <h3>📝 記録を修正</h3>
+    <h3 id="editTitle">📝 記録を修正</h3>
     <div class="mf"><label>作業日</label><input type="date" id="eDate"></div>
     <div class="mf"><label>現場</label><input type="text" id="eSite" list="siteList"><datalist id="siteList"></datalist></div>
     <div class="mf"><label>氏名</label><input type="text" id="eWorker" list="workerList"><datalist id="workerList"></datalist></div>
@@ -848,34 +849,51 @@
     $('eCalc').textContent = h!=null? ('実働 '+h+' 時間（休憩除く）で保存されます'):'';
   }
   function fillDatalist(id, arr){ const dl=$(id); dl.innerHTML=arr.map(v=>'<option value="'+esc(v)+'"></option>').join(''); }
-  function openEditModal(key){
-    const r=records[key]; if(!r){ toast('記録が見つかりません','err'); return; }
-    editKey=key;
+  function fillRecordDatalists(){
     fillDatalist('siteList', Object.values(sites).filter(s=>s&&s.active!==false).map(s=>s.name).sort((a,b)=>(a||'').localeCompare(b||'','ja')));
     fillDatalist('workerList', Object.values(workers).filter(w=>w&&w.active!==false).map(w=>w.name).sort((a,b)=>(a||'').localeCompare(b||'','ja')));
+  }
+  function openEditModal(key){
+    const r=records[key]; if(!r){ toast('記録が見つかりません','err'); return; }
+    editKey=key; fillRecordDatalists();
+    $('editTitle').textContent='📝 記録を修正';
     $('eDate').value=r.date||''; $('eSite').value=r.siteName||''; $('eWorker').value=r.workerName||'';
     $('eWork').value=r.work||''; $('eUnit').value=String(r.dayUnit===0.5?0.5:1);
     $('eBreak').value=(r.breakMin!=null?r.breakMin:0); $('eStart').value=r.start||''; $('eEnd').value=r.end||'';
     $('eNote').value=r.note||''; updateECalc();
     $('editModal').classList.add('show');
   }
+  // 管理者が全職員の分を代理入力（新規の勤怠記録を追加）
+  function openNewRecordModal(){
+    editKey=null; fillRecordDatalists();
+    $('editTitle').textContent='➕ 代理で報告を追加';
+    $('eDate').value=todayStr(); $('eSite').value=''; $('eWorker').value=''; $('eWork').value='';
+    $('eUnit').value='1'; $('eBreak').value=0; $('eStart').value=''; $('eEnd').value=''; $('eNote').value='';
+    updateECalc();
+    $('editModal').classList.add('show'); $('eWorker').focus();
+  }
   function closeEditModal(){ editKey=null; $('editModal').classList.remove('show'); }
   function saveEditModal(){
-    if(!editKey) return;
     const date=$('eDate').value, site=$('eSite').value.trim(), worker=$('eWorker').value.trim(), work=$('eWork').value.trim();
     if(!date){ toast('作業日を入力','err'); return; }
     if(!site){ toast('現場を入力','err'); return; }
     if(!worker){ toast('氏名を入力','err'); return; }
     if(!work){ toast('作業内容を入力','err'); return; }
     const start=$('eStart').value||null, end=$('eEnd').value||null, breakMin=parseInt($('eBreak').value||'0',10)||0;
-    const upd={ date, siteName:site, workerName:worker, work, note:$('eNote').value.trim()||null,
-      dayUnit:parseFloat($('eUnit').value), start, end, breakMin, hours:calcH(start,end,breakMin), updatedAt:Date.now() };
-    ref('records/'+editKey).update(upd).then(()=>{ toast('修正を保存しました','ok'); closeEditModal(); })
-      .catch(()=> toast('保存に失敗しました','err'));
+    const fields={ date, siteName:site, workerName:worker, work, note:$('eNote').value.trim()||null,
+      dayUnit:parseFloat($('eUnit').value), start, end, breakMin, hours:calcH(start,end,breakMin) };
+    if(editKey){
+      ref('records/'+editKey).update(Object.assign({}, fields, {updatedAt:Date.now()}))
+        .then(()=>{ toast('修正を保存しました','ok'); closeEditModal(); }).catch(()=> toast('保存に失敗しました','err'));
+    }else{
+      ref('records').push(Object.assign({}, fields, {createdAt:Date.now(), byAdmin:true}))
+        .then(()=>{ toast('代理で報告を追加しました','ok'); closeEditModal(); }).catch(()=> toast('追加に失敗しました','err'));
+    }
   }
   function bindEditModal(){
     $('eCancel').onclick=closeEditModal;
     $('eSave').onclick=saveEditModal;
+    $('addProxyBtn').onclick=openNewRecordModal;
     ['eStart','eEnd','eBreak'].forEach(id=> $(id).addEventListener('input', updateECalc));
     $('editModal').addEventListener('click', e=>{ if(e.target===$('editModal')) closeEditModal(); });
   }
@@ -1156,12 +1174,12 @@
     {t:'給与は端末だけに保存される', k:'給与 ローカル 端末 セキュリティ 非公開 クラウド 漏れ', a:'給与（方式・単価）はこの管理者端末のブラウザにのみ保存され、クラウド（Firebase）や入力フォームには送られません。従業員からは見えません。'},
     {t:'給与のバックアップ／別PCへ引き継ぎ', k:'バックアップ 復元 引き継ぎ json 別pc 移行', a:'「従業員（給与）」タブ下の「⬇給与設定をバックアップ(JSON)」で書き出し、別PCで「⬆復元」から読み込むと給与設定を引き継げます。'},
     {t:'工事（現場）を追加・状態を変える', k:'現場 工事 追加 編集 着工前 工事中 工事完了 完了 状態 タブ', a:'「🏗️工事（現場）」タブで工事を追加できます。工事名の脇のタブで「着工前／工事中／工事完了」を切り替えます。表には着工前・工事中だけが並び、「工事完了」にすると下の「完了した工事」に保存され、入力フォームの現場一覧（選択肢）からも外れます。完了した工事のタブで「工事中」等に戻せます。'},
-    {t:'記録を修正・削除する', k:'記録 修正 編集 削除 訂正 一覧', a:'「記録一覧」タブで各行の「修正」から内容を直せます（管理者は全員の記録を修正可）。「削除」で記録を消せます。'},
+    {t:'記録を修正・削除・代理入力する', k:'記録 修正 編集 削除 訂正 一覧 代理 追加 入力', a:'「記録一覧」タブで各行の「修正」から内容を直せます（管理者は全員の記録を修正可）。「削除」で消せます。上の「➕代理で報告を追加」から、全職員の分を管理者が代理で入力（時間・休憩も入力可）できます。'},
     {t:'Excelを出力する', k:'excel エクセル 出力 ダウンロード 数式 帳票', a:'「集計・Excel出力」タブの「📊Excelファイルをダウンロード」で、現在の絞り込み範囲を複数シート・数式入りで出力します。Excel上で単価を直すと自動で再計算されます。'},
     {t:'現場×氏名クロス集計の見方', k:'クロス 集計 現場 氏名 出勤日数 表', a:'「現場×氏名（出勤日数）」表で、どの現場に誰が何日入ったかを一覧できます。行＝現場、列＝氏名、数字＝出勤日数です。'},
     {t:'アプリにする（ホーム画面に追加）', k:'アプリにする ホーム画面 アイコン インストール アプリ pwa 追加', a:'ヘッダーの「⬇️アプリにする」を押すと追加できます（Android/PCは1タップ）。iPhoneはSafariの共有ボタン→「ホーム画面に追加」。'},
     {t:'会社情報・管理者を登録する', k:'会社 会社名 住所 電話 管理者 氏名 メール 登録 設定', a:'「🏢 会社情報」タブで会社名・住所・電話・管理者氏名・管理者メールを登録できます（クラウド共有）。登録した管理者メールは「パスコードを忘れた方はこちら」のリンク送信先になります。'},
-    {t:'有給休暇の承認・付与・残日数', k:'有給 有休 休暇 付与 残 日数 取得 申請 承認 却下', a:'「🏖️ 有給」タブで各人の付与日数を入力します。職人の申請（1週間以上前）は「承認待ちの申請」に届き、承認/却下を選べます。承認した分だけ取得・残（＝付与−取得）に反映。申請中の日数も一覧で確認でき、記録は削除で修正できます。'}
+    {t:'有給休暇の承認・付与・残日数', k:'有給 有休 休暇 付与 残 日数 取得 申請 承認 却下', a:'「🏖️ 有給」タブで各人の付与日数を入力します。職員の申請（1週間以上前）は「承認待ちの申請」に届き、承認/却下を選べます。承認した分だけ取得・残（＝付与−取得）に反映。申請中の日数も一覧で確認でき、記録は削除で修正できます。'}
   ];
   function renderHelp(){
     const q=($('helpSearch').value||'').trim().toLowerCase();
