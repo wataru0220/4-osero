@@ -201,6 +201,30 @@
   <h2 class="sec">最近の報告（自分）</h2>
   <div id="myRecords"><div class="hint" style="padding:4px">まだ報告はありません。</div></div>
 
+  <!-- 有給休暇 -->
+  <div class="card" style="margin-top:8px">
+    <label style="margin-bottom:8px">🏖️ 有給休暇</label>
+    <div id="leaveSummary" class="banner info" style="margin-bottom:12px">氏名を選ぶと残日数が表示されます。</div>
+    <div class="field">
+      <label class="req" for="leaveDate">取得日</label>
+      <input type="date" id="leaveDate">
+    </div>
+    <div class="field">
+      <label>取得単位</label>
+      <div class="seg" id="leaveUnitSeg">
+        <button type="button" data-v="1" class="on">終日（1.0日）</button>
+        <button type="button" data-v="0.5">半日（0.5日）</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="leaveNote">備考（任意）</label>
+      <input type="text" id="leaveNote" placeholder="例）私用のため など">
+    </div>
+    <button class="submit" id="leaveTakeBtn" style="background:#7a3ea8; box-shadow:0 4px 12px rgba(122,62,168,.3)">🏖️ 有給休暇を取得する</button>
+    <h2 class="sec" style="margin-top:16px">最近の有給（自分）</h2>
+    <div id="myLeaves"><div class="hint" style="padding:4px">氏名を選ぶと表示されます。</div></div>
+  </div>
+
   <a class="footlink" href="admin.html">管理者の方はこちら（集計・Excel出力）</a>
 </div>
 
@@ -247,9 +271,13 @@
 
   let db=null, dbRoot=(CFG.dbRoot||'kintai');
   let dayUnit = 1;
+  let leaveUnit = 1;            // 有給の取得単位（1=終日 / 0.5=半日）
   let lastReportText = '';
   let editingKey = null;        // 修正中の記録キー（null=新規）
   let myRecsMap = {};           // key -> 自分の記録（修正用）
+  let workersMap = {};          // 氏名 -> {key, granted}（有給の付与日数）
+  let myLeavesMap = {};         // key -> 自分の有給
+  let _leavesQuery = null;      // 有給のリスナー（氏名切替時に付け替える）
 
   // ---- Firebase 初期化 ----
   function initFirebase(){
@@ -270,10 +298,12 @@
     const sel=$('worker');
     ref('workers').orderByChild('name').on('value', snap=>{
       const cur = sel.value;
-      sel.innerHTML='';
+      sel.innerHTML=''; workersMap={};
       const ph=document.createElement('option'); ph.value=''; ph.textContent='― 選択してください ―'; sel.appendChild(ph);
       snap.forEach(c=>{
-        const w=c.val(); if(w && w.active===false) return;
+        const w=c.val(); if(!w) return;
+        workersMap[w.name]={ key:c.key, granted:Number(w.paidLeaveGranted)||0 };
+        if(w.active===false) return;
         const o=document.createElement('option'); o.value=w.name; o.textContent=w.name; o.dataset.id=c.key;
         sel.appendChild(o);
       });
@@ -283,6 +313,7 @@
       if(pick) sel.value = pick;
       updateWho();
       loadMyRecords();
+      loadMyLeaves();
     });
   }
 
@@ -342,6 +373,58 @@
     });
   }
 
+  // ---- 有給休暇（取得・残日数） ----
+  function renderLeaveSummary(taken){
+    const name=$('worker').value; const box=$('leaveSummary');
+    if(!name){ box.innerHTML='氏名を選ぶと残日数が表示されます。'; return; }
+    const granted=(workersMap[name]&&workersMap[name].granted)||0;
+    const remain=Math.round((granted-(taken||0))*10)/10;
+    box.innerHTML='🏖️ <b>'+esc(name)+'</b> さんの有給休暇：残り <b style="font-size:18px">'+remain+'</b> 日 '+
+      '<span style="opacity:.85">（付与 '+granted+' 日・取得 '+(Math.round((taken||0)*10)/10)+' 日）</span>'+
+      (granted===0?'<br><span style="font-size:12px">※ 付与日数は管理者が設定します。</span>':'');
+  }
+  function loadMyLeaves(){
+    if(_leavesQuery){ _leavesQuery.off(); _leavesQuery=null; }
+    const name=$('worker').value; const box=$('myLeaves');
+    if(!name){ box.innerHTML='<div class="hint" style="padding:4px">氏名を選ぶと表示されます。</div>'; renderLeaveSummary(0); return; }
+    _leavesQuery=ref('leaves').orderByChild('workerName').equalTo(name);
+    _leavesQuery.on('value', snap=>{
+      const arr=[]; myLeavesMap={}; let taken=0;
+      snap.forEach(c=>{ const l=c.val(); l._key=c.key; myLeavesMap[c.key]=l; taken+=Number(l.days)||0; arr.push(l); });
+      arr.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
+      renderLeaveSummary(taken);
+      if(!arr.length){ box.innerHTML='<div class="hint" style="padding:4px">まだ有給の取得はありません。</div>'; return; }
+      box.innerHTML=arr.map(l=>{
+        const u=Number(l.days)===0.5?'半日':'終日';
+        return '<div class="rec"><div class="top"><span>'+esc(l.date)+'</span><span><span class="chip">'+u+'</span></span></div>'+
+          (l.note?'<div class="wk">'+esc(l.note)+'</div>':'')+
+          '<div class="recbtns"><button class="del" data-delleave="'+l._key+'">🗑 取り消し</button></div></div>';
+      }).join('');
+      box.querySelectorAll('[data-delleave]').forEach(b=> b.onclick=()=> deleteLeave(b.dataset.delleave));
+    });
+  }
+  async function takeLeave(){
+    const name=$('worker').value.trim(); const date=$('leaveDate').value;
+    if(!name){ toast('氏名を選択してください','err'); return; }
+    if(!date){ toast('取得日を選んでください','err'); return; }
+    if(!db){ toast('サーバー未接続です','err'); return; }
+    const selOpt=$('worker').selectedOptions[0];
+    const btn=$('leaveTakeBtn'); btn.disabled=true; const lb=btn.textContent; btn.textContent='送信中…';
+    try{
+      await ref('leaves').push({ workerName:name, workerId: selOpt?(selOpt.dataset.id||null):null,
+        date, days:leaveUnit, note:$('leaveNote').value.trim()||null, createdAt:Date.now() });
+      localStorage.setItem('kintai_worker', name);
+      $('leaveNote').value='';
+      toast('有給休暇を登録しました','ok');
+    }catch(e){ console.error(e); toast('登録に失敗しました','err'); }
+    finally{ btn.disabled=false; btn.textContent=lb; }
+  }
+  function deleteLeave(key){
+    const l=myLeavesMap[key]; if(!l) return;
+    if(!confirm('この有給を取り消しますか？\n'+(l.date||''))) return;
+    ref('leaves/'+key).remove().then(()=>toast('取り消しました','ok')).catch(()=>toast('取り消しに失敗しました','err'));
+  }
+
   // ---- 自分の記録を修正/削除 ----
   function setSiteField(siteName){
     const sel=$('site'); let matched=false;
@@ -396,6 +479,7 @@
     {t:'LINEグループに貼る', k:'LINE 共有 シェア グループ 貼る コピー', a:'送信後に出る「📲この報告をLINEグループに貼る」を押すと共有画面が開きます。対応していない端末では内容がコピーされるので、LINEに貼り付けてください。'},
     {t:'過去の報告を修正する', k:'修正 編集 直す 訂正', a:'画面下の「最近の報告（自分）」で対象の「✏️修正」を押すと内容が読み込まれます。直したら「修正を保存」を押してください。'},
     {t:'報告を削除する', k:'削除 消す 取り消し', a:'「最近の報告（自分）」で「🗑削除」を押すと、その報告を削除できます（確認あり）。'},
+    {t:'有給休暇を取る・残日数を見る', k:'有給 有休 休暇 残 日数 取得 半日', a:'画面下の「🏖️有給休暇」で、取得日と終日/半日を選び「有給休暇を取得する」を押すと申請できます。上に「残り◯日（付与◯・取得◯）」が表示されます。付与日数は管理者が設定します。'},
     {t:'アプリにする（ホーム画面に追加）', k:'アプリにする ホーム画面 アイコン インストール アプリ pwa 追加', a:'右上の「⬇️アプリにする」を押すと追加できます（Android/PCは1タップ）。iPhoneはSafariの共有ボタン→「ホーム画面に追加」。次回からアイコンで全画面起動できます。'},
     {t:'報告できない・保存されないとき', k:'保存 できない エラー 接続 オフライン firebase 未設定 失敗', a:'「Firebase未設定」と出るときは管理者に連絡してください。電波が悪いと送信に失敗します。電波の良い場所でもう一度お試しください。'}
   ];
@@ -492,7 +576,8 @@
   // ---- 起動 ----
   function bindUI(){
     $('date').value=todayStr();
-    $('worker').addEventListener('change', ()=>{ if(editingKey) exitEdit(); updateWho(); loadMyRecords();
+    $('leaveDate').value=todayStr();
+    $('worker').addEventListener('change', ()=>{ if(editingKey) exitEdit(); updateWho(); loadMyRecords(); loadMyLeaves();
       localStorage.setItem('kintai_worker', $('worker').value); });
     $('cancelEditBtn').addEventListener('click', exitEdit);
     ['start','end','breakMin'].forEach(id=> $(id).addEventListener('input', calcHours));
@@ -503,6 +588,13 @@
     });
     $('submitBtn').addEventListener('click', submit);
     $('shareBtn').addEventListener('click', shareReport);
+    // 有給休暇
+    $('leaveUnitSeg').addEventListener('click', e=>{
+      const b=e.target.closest('button'); if(!b) return;
+      [...$('leaveUnitSeg').children].forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); leaveUnit=parseFloat(b.dataset.v);
+    });
+    $('leaveTakeBtn').addEventListener('click', takeLeave);
     // ヘルプ
     $('helpBtn').addEventListener('click', openHelp);
     $('helpClose').addEventListener('click', closeHelp);
