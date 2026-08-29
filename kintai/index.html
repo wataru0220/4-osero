@@ -100,6 +100,11 @@
   .helpbtn{background:rgba(255,255,255,.18); color:#fff;
     border:1px solid rgba(255,255,255,.5); border-radius:20px; padding:6px 11px; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap}
   .helpbtn:active{transform:translateY(1px)}
+  /* アプリにする自動バナー（インストール可能時のみ） */
+  #installBar{display:none; align-items:center; gap:8px; background:linear-gradient(135deg,#fff3e8,#ffe2c8); border-bottom:2px solid var(--brand); padding:10px 14px}
+  #installBar .ib-txt{flex:1; font-size:13px; color:var(--ink); line-height:1.35}
+  #installBar #ibInstall{background:var(--brand); color:#fff; border:0; border-radius:8px; padding:8px 14px; font-weight:800; font-size:13px; cursor:pointer; white-space:nowrap}
+  #installBar #ibClose{background:transparent; border:0; font-size:20px; line-height:1; color:var(--sub); cursor:pointer; padding:2px 6px}
   .ov{position:fixed; inset:0; background:rgba(15,36,54,.5); display:none; align-items:flex-start; justify-content:center; z-index:60; overflow:auto; padding:24px 12px}
   .ov.on{display:flex}
   .sheet{background:#fff; border-radius:14px; padding:18px; width:100%; max-width:520px; box-shadow:0 12px 40px rgba(0,0,0,.25)}
@@ -125,6 +130,13 @@
   <h1>🏗️ 現場作業報告</h1>
   <div class="who" id="whoLine">読み込み中…</div>
 </header>
+
+<!-- アプリにする（インストール可能なときだけ自動表示） -->
+<div id="installBar">
+  <span class="ib-txt">📲 <b>アプリにすると便利です</b><br>ホーム画面のアイコンから1タップで開けます</span>
+  <button id="ibInstall">アプリにする</button>
+  <button id="ibClose" aria-label="閉じる">×</button>
+</div>
 
 <div class="wrap">
 
@@ -513,19 +525,26 @@
   function openHelp(){ $('helpSearch').value=''; renderHelp(); $('helpOv').classList.add('on'); }
   function closeHelp(){ $('helpOv').classList.remove('on'); }
 
-  // ---- PWA：アプリにする（インストール） ----
+  // ---- PWA：アプリにする（インストール／自動バナー） ----
   let deferredPrompt=null;
   function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true; }
-  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; const b=$('installBtn'); if(b && !isStandalone()) b.style.display=''; });
-  window.addEventListener('appinstalled', ()=>{ deferredPrompt=null; const b=$('installBtn'); if(b) b.style.display='none'; toast('アプリに追加しました🎉','ok'); });
+  function installDismissed(){ try{ return localStorage.getItem('kintai_install_dismissed')==='1'; }catch(_){ return false; } }
+  function updateInstallUI(){
+    const show = !isStandalone();
+    const btn=$('installBtn'); if(btn) btn.style.display = show ? '' : 'none';           // ヘッダーのボタン
+    const bar=$('installBar'); if(bar) bar.style.display = (show && !installDismissed()) ? 'flex' : 'none'; // 上部バナー
+  }
+  async function doInstall(){
+    if(deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){ } deferredPrompt=null; updateInstallUI(); return; }
+    $('installOv').classList.add('on'); // 自動インストールできない端末（iPhone等）は手順を案内
+  }
+  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; updateInstallUI(); });
+  window.addEventListener('appinstalled', ()=>{ deferredPrompt=null; toast('アプリに追加しました🎉','ok'); updateInstallUI(); });
   function initInstall(){
-    const b=$('installBtn'); if(!b) return;
-    if(isStandalone()){ b.style.display='none'; return; } // 既にアプリとして起動中
-    b.style.display=''; // iOS等は beforeinstallprompt が来ないので最初から表示
-    b.addEventListener('click', async ()=>{
-      if(deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){ } deferredPrompt=null; return; }
-      $('installOv').classList.add('on'); // 手動手順を案内
-    });
+    updateInstallUI();
+    const btn=$('installBtn'); if(btn) btn.addEventListener('click', doInstall);
+    const ibI=$('ibInstall'); if(ibI) ibI.addEventListener('click', doInstall);
+    const ibC=$('ibClose'); if(ibC) ibC.addEventListener('click', ()=>{ try{ localStorage.setItem('kintai_install_dismissed','1'); }catch(_){} const bar=$('installBar'); if(bar) bar.style.display='none'; });
     $('installClose').addEventListener('click', ()=> $('installOv').classList.remove('on'));
     $('installOv').addEventListener('click', e=>{ if(e.target===$('installOv')) $('installOv').classList.remove('on'); });
   }
