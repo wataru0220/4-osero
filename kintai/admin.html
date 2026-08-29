@@ -291,15 +291,19 @@
   <section id="tab-leave" class="hide">
     <div class="card">
       <h2>🏖️ 有給休暇</h2>
-      <div class="lock" style="background:#f3e8ff; color:#7a3ea8; border-color:#e2ccf5">各人の「付与日数」を入力すると、<b>残日数＝付与−取得</b> が自動計算されます。取得は職人が入力フォームの「🏖️有給休暇」から申請します（半日＝0.5日）。付与日数はクラウド共有です。</div>
-      <div class="scroll">
+      <div class="lock" style="background:#f3e8ff; color:#7a3ea8; border-color:#e2ccf5">職人が入力フォームの「🏖️有給休暇」から申請（1週間以上前）→ ここで<b>承認/却下</b>します。<b>承認した分だけ</b>取得・残日数に反映されます（残＝付与−取得）。付与日数はクラウド共有です。</div>
+
+      <h2 style="font-size:14px; margin:4px 0 8px">🔔 承認待ちの申請</h2>
+      <div id="leavePending"></div>
+
+      <div class="scroll" style="margin-top:16px">
         <table id="tblLeave">
-          <thead><tr><th>氏名</th><th class="num">付与日数</th><th class="num">取得</th><th class="num">残</th></tr></thead>
+          <thead><tr><th>氏名</th><th class="num">付与日数</th><th class="num">取得</th><th class="num">申請中</th><th class="num">残</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
       <div class="note">付与日数は年次の付与や繰越を含めた「その人が使える合計日数」を入れてください。年度更新のときは数字を書き換えます。</div>
-      <h2 style="margin-top:16px">取得の記録</h2>
+      <h2 style="margin-top:16px">申請・取得の記録</h2>
       <div class="scroll" id="leaveRecords"></div>
     </div>
   </section>
@@ -982,21 +986,42 @@
     document.querySelectorAll('#tab-sites [data-dels]').forEach(b=> b.onclick=()=>{ if(confirm('削除しますか？（過去の記録は残ります）')) ref('sites/'+b.dataset.dels).remove(); });
   }
 
-  // ---------- 有給休暇（付与・取得・残） ----------
-  function leaveTakenByName(){
-    const t={}; Object.values(leaves||{}).forEach(l=>{ if(!l) return; const n=l.workerName||''; t[n]=(t[n]||0)+(Number(l.days)||0); }); return t;
+  // ---------- 有給休暇（申請・承認・付与・取得・残） ----------
+  function leaveIsApproved(l){ return !l.status || l.status==='approved'; } // status無し=旧データは承認扱い
+  function leaveStatusPill(st){
+    if(st==='rejected') return '<span class="pill" style="background:#fdeceb;color:#c0392b">却下</span>';
+    if(st==='pending') return '<span class="pill" style="background:#fff4e5;color:#8a5a00">申請中</span>';
+    return '<span class="pill" style="background:#eafaf0;color:#178a52">承認</span>';
   }
+  function setLeaveStatus(key, st){ ref('leaves/'+key).update({ status:st, decidedAt:Date.now() })
+    .then(()=>toast(st==='approved'?'承認しました':(st==='rejected'?'却下しました':'更新しました'),'ok')); }
   function renderLeave(){
     const tb=$('tblLeave'); if(!tb) return; const body=tb.querySelector('tbody');
-    const taken=leaveTakenByName();
+    const appr={}, pend={};
+    Object.values(leaves||{}).forEach(l=>{ if(!l) return; const n=l.workerName||'', d=Number(l.days)||0;
+      if(l.status==='pending') pend[n]=(pend[n]||0)+d;
+      else if(l.status!=='rejected') appr[n]=(appr[n]||0)+d; });
+    // 承認待ちの申請
+    const pendList=Object.entries(leaves||{}).map(([k,l])=>Object.assign({_key:k},l)).filter(l=>l.status==='pending')
+      .sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    const pbox=$('leavePending');
+    if(!pendList.length){ pbox.innerHTML='<div class="muted" style="padding:8px; background:#f7f9fc; border-radius:8px">承認待ちの申請はありません。</div>'; }
+    else pbox.innerHTML=pendList.map(l=>'<div class="addrow" style="justify-content:space-between; align-items:center">'+
+      '<div><b>'+esc(l.workerName)+'</b>　'+esc(l.date)+'　'+(Number(l.days)===0.5?'半日(0.5)':'終日(1.0)')+(l.note?'　<span class="muted">'+esc(l.note)+'</span>':'')+'</div>'+
+      '<div style="white-space:nowrap"><button class="act green sm" data-lappr="'+l._key+'">承認</button> '+
+        '<button class="sm del" data-lrej="'+l._key+'">却下</button></div></div>').join('');
+    pbox.querySelectorAll('[data-lappr]').forEach(b=> b.onclick=()=> setLeaveStatus(b.dataset.lappr,'approved'));
+    pbox.querySelectorAll('[data-lrej]').forEach(b=> b.onclick=()=>{ if(confirm('この申請を却下しますか？')) setLeaveStatus(b.dataset.lrej,'rejected'); });
+    // 付与・取得・申請中・残
     const list=Object.entries(workers).map(([k,w])=>Object.assign({_key:k},w)).filter(w=>w&&w.active!==false)
       .sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'));
-    if(!list.length){ body.innerHTML='<tr><td colspan="4" class="muted">従業員が未登録です。</td></tr>'; }
+    if(!list.length){ body.innerHTML='<tr><td colspan="5" class="muted">従業員が未登録です。</td></tr>'; }
     else body.innerHTML=list.map(w=>{
-      const granted=Number(w.paidLeaveGranted)||0, tk=round1(taken[w.name]||0), remain=round1(granted-tk);
+      const granted=Number(w.paidLeaveGranted)||0, tk=round1(appr[w.name]||0), pd=round1(pend[w.name]||0), remain=round1(granted-tk);
       return '<tr><td>'+esc(w.name)+'</td>'+
         '<td class="num"><input data-lg="'+w._key+'" type="number" min="0" step="0.5" value="'+granted+'" style="width:90px; text-align:right"></td>'+
         '<td class="num">'+tk+'</td>'+
+        '<td class="num">'+(pd>0?'<span style="color:#8a5a00">'+pd+'</span>':'0')+'</td>'+
         '<td class="num"><b'+(remain<0?' style="color:var(--warn)"':'')+'>'+remain+'</b></td></tr>';
     }).join('');
     body.querySelectorAll('input[data-lg]').forEach(el=> el.onchange=()=> ref('workers/'+el.dataset.lg+'/paidLeaveGranted').set(Number(el.value)||0).then(()=>toast('保存しました','ok')));
@@ -1005,10 +1030,11 @@
   function renderLeaveList(){
     const box=$('leaveRecords'); if(!box) return;
     const arr=Object.entries(leaves||{}).map(([k,l])=>Object.assign({_key:k},l)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,80);
-    if(!arr.length){ box.innerHTML='<div class="muted" style="padding:8px">有給の取得記録はありません。</div>'; return; }
-    box.innerHTML='<table><thead><tr><th>取得日</th><th>氏名</th><th class="num">日数</th><th>備考</th><th></th></tr></thead><tbody>'+
+    if(!arr.length){ box.innerHTML='<div class="muted" style="padding:8px">有給の申請・取得記録はありません。</div>'; return; }
+    box.innerHTML='<table><thead><tr><th>希望日</th><th>氏名</th><th class="num">日数</th><th>状態</th><th>備考</th><th></th></tr></thead><tbody>'+
       arr.map(l=>'<tr><td>'+esc(l.date)+'</td><td>'+esc(l.workerName)+'</td><td class="num">'+(Number(l.days)===0.5?'0.5':'1')+'</td>'+
-        '<td>'+esc(l.note||'')+'</td><td><button class="sm del" data-dell="'+l._key+'">削除</button></td></tr>').join('')+'</tbody></table>';
+        '<td>'+leaveStatusPill(l.status||'approved')+'</td><td>'+esc(l.note||'')+'</td>'+
+        '<td><button class="sm del" data-dell="'+l._key+'">削除</button></td></tr>').join('')+'</tbody></table>';
     box.querySelectorAll('[data-dell]').forEach(b=> b.onclick=()=>{ if(confirm('この有給記録を削除しますか？')) ref('leaves/'+b.dataset.dell).remove().then(()=>toast('削除しました','ok')); });
   }
 
@@ -1135,7 +1161,7 @@
     {t:'現場×氏名クロス集計の見方', k:'クロス 集計 現場 氏名 出勤日数 表', a:'「現場×氏名（出勤日数）」表で、どの現場に誰が何日入ったかを一覧できます。行＝現場、列＝氏名、数字＝出勤日数です。'},
     {t:'アプリにする（ホーム画面に追加）', k:'アプリにする ホーム画面 アイコン インストール アプリ pwa 追加', a:'ヘッダーの「⬇️アプリにする」を押すと追加できます（Android/PCは1タップ）。iPhoneはSafariの共有ボタン→「ホーム画面に追加」。'},
     {t:'会社情報・管理者を登録する', k:'会社 会社名 住所 電話 管理者 氏名 メール 登録 設定', a:'「🏢 会社情報」タブで会社名・住所・電話・管理者氏名・管理者メールを登録できます（クラウド共有）。登録した管理者メールは「パスコードを忘れた方はこちら」のリンク送信先になります。'},
-    {t:'有給休暇の付与・残日数', k:'有給 有休 休暇 付与 残 日数 取得', a:'「🏖️ 有給」タブで各人の付与日数を入力すると、残＝付与−取得が自動計算されます。取得は職人が入力フォームの「🏖️有給休暇」から申請します（半日=0.5日）。取得記録は同タブで削除して修正できます。'}
+    {t:'有給休暇の承認・付与・残日数', k:'有給 有休 休暇 付与 残 日数 取得 申請 承認 却下', a:'「🏖️ 有給」タブで各人の付与日数を入力します。職人の申請（1週間以上前）は「承認待ちの申請」に届き、承認/却下を選べます。承認した分だけ取得・残（＝付与−取得）に反映。申請中の日数も一覧で確認でき、記録は削除で修正できます。'}
   ];
   function renderHelp(){
     const q=($('helpSearch').value||'').trim().toLowerCase();
