@@ -105,6 +105,24 @@
   #installBar .ib-txt{flex:1; font-size:13px; color:var(--ink); line-height:1.35}
   #installBar #ibInstall{background:var(--brand); color:#fff; border:0; border-radius:8px; padding:8px 14px; font-weight:800; font-size:13px; cursor:pointer; white-space:nowrap}
   #installBar #ibClose{background:transparent; border:0; font-size:20px; line-height:1; color:var(--sub); cursor:pointer; padding:2px 6px}
+  /* 有給カレンダー */
+  .cal{border:1px solid var(--line); border-radius:12px; padding:8px; background:#fff; user-select:none; -webkit-user-select:none}
+  .cal-head{display:flex; align-items:center; justify-content:space-between; padding:2px 4px 8px}
+  .cal-head .m{font-weight:800; font-size:15px; color:var(--ink)}
+  .cal-nav{background:#eef3fb; border:0; border-radius:8px; width:36px; height:36px; font-size:18px; cursor:pointer; color:var(--brand-dark)}
+  .cal-nav[disabled]{opacity:.3; cursor:default}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:3px}
+  .cal-wd{text-align:center; font-size:11px; color:var(--sub); padding:2px 0; font-weight:700}
+  .cal-wd.sun{color:#c0392b} .cal-wd.sat{color:#1f6feb}
+  .cal-day{aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; border-radius:8px; font-size:14px; cursor:pointer; position:relative; background:#f4f7fb; color:var(--ink)}
+  .cal-day.dis{color:#c3ccd6; background:#fff; cursor:default}
+  .cal-day.sel{background:var(--brand); color:#fff; font-weight:800}
+  .cal-day.today:not(.sel){box-shadow:inset 0 0 0 2px #ffd591}
+  .cal-day .dot{position:absolute; bottom:4px; width:5px; height:5px; border-radius:50%}
+  .cal-day .dot.p{background:#e6a23c} .cal-day .dot.a{background:#1aa260}
+  .cal-empty{background:transparent}
+  .calsel{margin-top:8px; font-size:13.5px; font-weight:800; color:var(--brand-dark); text-align:center}
+  .callegend{margin-top:4px; font-size:11px; color:var(--sub); text-align:center}
   .ov{position:fixed; inset:0; background:rgba(15,36,54,.5); display:none; align-items:flex-start; justify-content:center; z-index:60; overflow:auto; padding:24px 12px}
   .ov.on{display:flex}
   .sheet{background:#fff; border-radius:14px; padding:18px; width:100%; max-width:520px; box-shadow:0 12px 40px rgba(0,0,0,.25)}
@@ -218,8 +236,10 @@
     <label style="margin-bottom:8px">🏖️ 有給休暇</label>
     <div id="leaveSummary" class="banner info" style="margin-bottom:12px">氏名を選ぶと残日数が表示されます。</div>
     <div class="field">
-      <label class="req" for="leaveDate">取得を希望する日</label>
-      <input type="date" id="leaveDate">
+      <label class="req">取得を希望する日（カレンダーから選択）</label>
+      <div id="leaveCal" class="cal"></div>
+      <div class="calsel" id="leaveSelLabel">日付をタップして選んでください</div>
+      <div class="callegend">🟠 申請中　🟢 承認済　枠 = 今日</div>
       <div class="hint">※ 有給は<b>1週間以上前</b>に申請してください（1週間先より前の日は選べません）。</div>
     </div>
     <div class="field">
@@ -297,6 +317,8 @@
   let workersMap = {};          // 氏名 -> {key, granted}（有給の付与日数）
   let myLeavesMap = {};         // key -> 自分の有給
   let _leavesQuery = null;      // 有給のリスナー（氏名切替時に付け替える）
+  let calMonth = null;          // 表示中の月（その月の1日のDate）
+  let selectedLeaveDate = '';   // カレンダーで選択中の日（YYYY-MM-DD）
 
   // ---- Firebase 初期化 ----
   function initFirebase(){
@@ -392,6 +414,42 @@
     });
   }
 
+  // ---- 有給カレンダー ----
+  function parseYmd(s){ const p=String(s).split('-'); return new Date(+p[0], (+p[1])-1, +p[2]); }
+  function ymd(y,m,d){ return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
+  function initCalendar(){
+    selectedLeaveDate = plusDaysStr(LEAVE_MIN_DAYS); // 初期値＝申請可能な最初の日
+    const min=parseYmd(selectedLeaveDate);
+    calMonth = new Date(min.getFullYear(), min.getMonth(), 1);
+    renderCalendar();
+  }
+  function renderCalendar(){
+    const cal=$('leaveCal'); if(!cal || !calMonth) return;
+    const minStr=plusDaysStr(LEAVE_MIN_DAYS), today=todayStr();
+    const y=calMonth.getFullYear(), m=calMonth.getMonth();
+    const startWd=new Date(y,m,1).getDay(), daysInMonth=new Date(y,m+1,0).getDate();
+    const minD=parseYmd(minStr);
+    const prevDisabled = (y<minD.getFullYear()) || (y===minD.getFullYear() && m<=minD.getMonth());
+    // 自分の申請済みの日（date -> status）
+    const applied={}; Object.values(myLeavesMap||{}).forEach(l=>{ if(l&&l.date) applied[l.date]=l.status||'approved'; });
+    let h='<div class="cal-head"><button class="cal-nav" id="calPrev"'+(prevDisabled?' disabled':'')+'>‹</button>'+
+      '<span class="m">'+y+'年 '+(m+1)+'月</span><button class="cal-nav" id="calNext">›</button></div><div class="cal-grid">';
+    ['日','月','火','水','木','金','土'].forEach((w,i)=> h+='<div class="cal-wd'+(i===0?' sun':(i===6?' sat':''))+'">'+w+'</div>');
+    for(let i=0;i<startWd;i++) h+='<div class="cal-empty"></div>';
+    for(let d=1; d<=daysInMonth; d++){
+      const ds=ymd(y,m,d), dis=ds<minStr;
+      const cls=['cal-day']; if(dis) cls.push('dis'); if(ds===selectedLeaveDate) cls.push('sel'); if(ds===today) cls.push('today');
+      const dot=applied[ds]? '<span class="dot '+(applied[ds]==='pending'?'p':'a')+'"></span>':'';
+      h+='<div class="'+cls.join(' ')+'"'+(dis?'':' data-cald="'+ds+'"')+'>'+d+dot+'</div>';
+    }
+    h+='</div>'; cal.innerHTML=h;
+    const label=$('leaveSelLabel'); if(label) label.textContent = selectedLeaveDate? ('選択中：'+selectedLeaveDate.replace(/-/g,'/')) : '日付をタップして選んでください';
+    const prev=$('calPrev'), next=$('calNext');
+    if(prev && !prevDisabled) prev.onclick=()=>{ calMonth=new Date(y,m-1,1); renderCalendar(); };
+    if(next) next.onclick=()=>{ calMonth=new Date(y,m+1,1); renderCalendar(); };
+    cal.querySelectorAll('[data-cald]').forEach(c=> c.onclick=()=>{ selectedLeaveDate=c.dataset.cald; renderCalendar(); });
+  }
+
   // ---- 有給休暇（申請・承認・残日数） ----
   function leaveBadge(st){
     if(st==='approved') return '<span class="chip" style="background:#eafaf0;color:#178a52">承認済</span>';
@@ -410,7 +468,7 @@
   function loadMyLeaves(){
     if(_leavesQuery){ _leavesQuery.off(); _leavesQuery=null; }
     const name=$('worker').value; const box=$('myLeaves');
-    if(!name){ box.innerHTML='<div class="hint" style="padding:4px">氏名を選ぶと表示されます。</div>'; renderLeaveSummary(0,0); return; }
+    if(!name){ box.innerHTML='<div class="hint" style="padding:4px">氏名を選ぶと表示されます。</div>'; myLeavesMap={}; renderLeaveSummary(0,0); renderCalendar(); return; }
     _leavesQuery=ref('leaves').orderByChild('workerName').equalTo(name);
     _leavesQuery.on('value', snap=>{
       const arr=[]; myLeavesMap={}; let approved=0, pending=0;
@@ -420,6 +478,7 @@
         arr.push(l); });
       arr.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
       renderLeaveSummary(approved, pending);
+      renderCalendar(); // カレンダーの申請済みマークを更新
       if(!arr.length){ box.innerHTML='<div class="hint" style="padding:4px">まだ有給の申請はありません。</div>'; return; }
       box.innerHTML=arr.map(l=>{
         const u=Number(l.days)===0.5?'半日':'終日';
@@ -433,9 +492,9 @@
     });
   }
   async function takeLeave(){
-    const name=$('worker').value.trim(); const date=$('leaveDate').value;
+    const name=$('worker').value.trim(); const date=selectedLeaveDate;
     if(!name){ toast('氏名を選択してください','err'); return; }
-    if(!date){ toast('希望日を選んでください','err'); return; }
+    if(!date){ toast('カレンダーから希望日を選んでください','err'); return; }
     const minDate=plusDaysStr(LEAVE_MIN_DAYS);
     if(date<minDate){ toast('有給は1週間以上前に申請してください（'+minDate+' 以降）','err'); return; }
     if(!db){ toast('サーバー未接続です','err'); return; }
@@ -615,9 +674,8 @@
   // ---- 起動 ----
   function bindUI(){
     $('date').value=todayStr();
-    // 有給は1週間以上先のみ：最小日と初期値を today+7 に
-    $('leaveDate').min=plusDaysStr(LEAVE_MIN_DAYS);
-    $('leaveDate').value=plusDaysStr(LEAVE_MIN_DAYS);
+    // 有給は1週間以上先のみ：カレンダーを初期化（1週間先を初期選択、それより前はグレーで選べない）
+    initCalendar();
     $('worker').addEventListener('change', ()=>{ if(editingKey) exitEdit(); updateWho(); loadMyRecords(); loadMyLeaves();
       localStorage.setItem('kintai_worker', $('worker').value); });
     $('cancelEditBtn').addEventListener('click', exitEdit);
