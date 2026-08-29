@@ -142,7 +142,7 @@
   <div class="tabs">
     <button data-tab="summary" class="on">📊 集計・Excel出力</button>
     <button data-tab="records">📝 記録一覧</button>
-    <button data-tab="workers">👷 従業員（給与）</button>
+    <button data-tab="workers">👷 従業員</button>
     <button data-tab="sites">📍 現場</button>
     <button data-tab="leave">🏖️ 有給</button>
     <button data-tab="org">🏢 会社情報</button>
@@ -164,7 +164,6 @@
   <!-- 集計タブ -->
   <section id="tab-summary">
     <div class="kpis">
-      <div class="kpi"><div class="v" id="kpiCost">¥0</div><div class="l">人件費 合計</div></div>
       <div class="kpi"><div class="v" id="kpiDays">0</div><div class="l">延べ出勤日数</div></div>
       <div class="kpi"><div class="v" id="kpiHours">0</div><div class="l">延べ実働時間</div></div>
       <div class="kpi"><div class="v" id="kpiRecs">0</div><div class="l">報告件数</div></div>
@@ -172,30 +171,23 @@
 
     <div class="grid2">
       <div class="card">
-        <h2>👷 従業員別 人件費</h2>
+        <h2>👷 従業員別 集計</h2>
         <div class="scroll">
           <table id="tblCost">
-            <thead><tr>
-              <th>氏名</th><th>方式</th><th class="num">単価</th>
-              <th class="num">日数</th><th class="num">時間</th><th class="num">人件費</th>
-            </tr></thead>
+            <thead><tr><th>氏名</th><th class="num">出勤日数</th><th class="num">実働時間</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
-        <div class="note">※ 給与方式・単価は「従業員（給与）」タブで設定。未設定の方は単価0で計算されます。</div>
       </div>
 
       <div class="card">
-        <h2>📍 現場別 人件費</h2>
+        <h2>📍 現場別 集計</h2>
         <div class="scroll">
           <table id="tblSiteCost">
-            <thead><tr>
-              <th>現場</th><th class="num">延べ日数</th><th class="num">延べ時間</th><th class="num">人件費</th>
-            </tr></thead>
+            <thead><tr><th>現場</th><th class="num">延べ日数</th><th class="num">延べ時間</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
-        <div class="note">※ その現場に入った各人の（日数×日給／時間×時給）の合計です。</div>
       </div>
     </div>
 
@@ -208,9 +200,7 @@
 
     <div class="card">
       <h2>⬇️ Excel出力</h2>
-      <p class="muted">現在の絞り込み範囲を1つのExcelファイル（複数シート）に出力します。<br>
-        「従業員（給与）」タブで入力した<b>単価が自動で反映</b>され、「人件費サマリ」「現場別人件費」「勤怠記録」が
-        <b>数式入り</b>で計算されます。Excel上で単価を直すと再計算されます。</p>
+      <p class="muted">現在の絞り込み範囲を1つのExcelファイル（勤怠記録／集計サマリ／現場別集計／現場×氏名）に出力します。金額は含みません。</p>
       <button class="act green" id="exportBtn">📊 Excelファイルをダウンロード</button>
     </div>
   </section>
@@ -235,27 +225,18 @@
   <!-- 従業員タブ -->
   <section id="tab-workers" class="hide">
     <div class="card">
-      <h2>👷 従業員マスタ（給与）</h2>
-      <div class="lock">🔒 <b>給与（給与方式・単価）はこの管理者端末のブラウザにのみ保存</b>され、クラウド（Firebase）や入力フォームには送られません。従業員からは見えません。一度入力すれば<b>Excel出力に毎回自動反映</b>されます。</div>
+      <h2>👷 従業員マスタ</h2>
       <div class="addrow">
-        <input type="text" id="wName" placeholder="氏名" style="width:150px">
-        <select id="wType"><option value="daily">日給</option><option value="hourly">時給</option><option value="monthly">月給</option></select>
-        <input type="number" id="wWage" placeholder="金額（円）" style="width:130px" inputmode="numeric">
+        <input type="text" id="wName" placeholder="氏名" style="width:220px">
         <button class="act" id="wAdd">追加</button>
       </div>
       <div class="scroll">
         <table id="tblWorkers">
-          <thead><tr><th>氏名</th><th>給与方式</th><th class="num">単価(円)</th><th>状態</th><th></th></tr></thead>
+          <thead><tr><th>氏名</th><th>状態</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
-      <div class="note">金額＝日給なら「1日あたり」、時給なら「1時間あたり」、<b>月給なら「1か月あたり」</b>。月給の人の人件費は<b>月給÷22日×出勤日数</b>で計算します。氏名・有効/無効はクラウド共有、<b>給与だけは端末ローカル保存</b>です。</div>
-      <div class="addrow" style="background:#fff; border:1px dashed var(--line); margin-top:10px">
-        <span class="muted" style="font-size:12px">別PCへ給与を引き継ぐ／バックアップ：</span>
-        <button class="sm" id="wageBackup">⬇ 給与設定をバックアップ(JSON)</button>
-        <button class="sm" id="wageRestore">⬆ 復元(JSON読込)</button>
-        <input type="file" id="wageRestoreFile" accept="application/json,.json" style="display:none">
-      </div>
+      <div class="note">氏名は入力フォームの氏名一覧に表示されます（クラウド共有）。「無効化」すると選べなくなります（過去の記録は残ります）。氏名はセルを直接書き換えて保存できます。</div>
     </div>
   </section>
 
@@ -419,36 +400,6 @@
 
   let db=null;
   let workers={}, sites={}, records={}, leaves={}; // key -> obj
-
-  // ---------- 給与ストア（この端末のみに保存。Firebase・入力フォームには出さない） ----------
-  // 形式: { "氏名": { type:'daily'|'hourly'|'monthly', wage:Number } }
-  // 月給(monthly)は「1か月あたりの金額」。日給換算は 月給 ÷ 22日 で計算する。
-  const MONTH_DAYS=22;
-  const WAGE_LS_KEY='kintai_wages_v1';
-  function loadWages(){ try{ return JSON.parse(localStorage.getItem(WAGE_LS_KEY)||'{}')||{}; }catch(_){ return {}; } }
-  function saveWages(){ localStorage.setItem(WAGE_LS_KEY, JSON.stringify(wages)); }
-  let wages=loadWages();
-  function normType(t){ return t==='hourly'?'hourly':(t==='monthly'?'monthly':'daily'); }
-  function wageTypeLabel(t){ return t==='hourly'?'時給':(t==='monthly'?'月給':'日給'); }
-  function getWage(name){ const w=wages[name]; return w? {type:normType(w.type), wage:Number(w.wage)||0, found:true} : {type:'daily', wage:0, found:false}; }
-  function setWage(name,type,wage){ wages[name]={type:normType(type), wage:Number(wage)||0}; saveWages(); }
-  function renameWage(oldName,newName){ if(oldName===newName||!wages[oldName]) return; wages[newName]=wages[oldName]; delete wages[oldName]; saveWages(); }
-  function removeWage(name){ if(wages[name]){ delete wages[name]; saveWages(); } }
-  // 1記録あたりの人件費（時給=単価×時間 / 日給=単価×日数 / 月給=(月給÷22)×日数）
-  function recordCost(r){ const w=getWage(r.workerName); const du=(r.dayUnit!=null?Number(r.dayUnit):1); const h=Number(r.hours)||0;
-    if(w.type==='hourly') return h*w.wage;
-    if(w.type==='monthly') return (w.wage/MONTH_DAYS)*du;
-    return du*w.wage; }
-  // 旧バージョンでFirebaseに給与が残っていたら、ローカルへ移してクラウドからは除去
-  function migrateLegacyWages(){
-    for(const k in workers){ const w=workers[k]; if(!w) continue;
-      if(w.wage!=null || w.wageType!=null){
-        if(!wages[w.name]) setWage(w.name, w.wageType||'daily', Number(w.wage)||0);
-        ref('workers/'+k+'/wage').remove(); ref('workers/'+k+'/wageType').remove();
-        delete w.wage; delete w.wageType;
-      }
-    }
-  }
 
   // ---------- パスコード ----------
   function gate(){
@@ -702,7 +653,7 @@
     if(!ok){ toast('Firebase未設定です（config.js）','err'); return; }
     setThisMonth();
     bindTabs(); bindFilters(); bindMasters(); bindEditModal(); bindOrg(); $('exportBtn').onclick=exportExcel;
-    ref('workers').on('value',s=>{ workers=s.val()||{}; migrateLegacyWages(); renderWorkers(); fillWorkerFilter(); renderAll(); renderLeave(); });
+    ref('workers').on('value',s=>{ workers=s.val()||{}; renderWorkers(); fillWorkerFilter(); renderAll(); renderLeave(); });
     ref('sites').on('value',s=>{ sites=s.val()||{}; renderSites(); fillSiteFilter(); });
     ref('records').on('value',s=>{ records=s.val()||{}; renderAll(); });
     ref('leaves').on('value',s=>{ leaves=s.val()||{}; renderLeave(); });
@@ -757,40 +708,34 @@
     $('filterInfo').textContent = recs.length+' 件（'+($('fFrom').value||'最初')+' 〜 '+($('fTo').value||'最後')+'）';
 
     const byW={}, bySite={};
-    let totDays=0, totHours=0, totalCost=0;
+    let totDays=0, totHours=0;
     recs.forEach(r=>{
       const n=r.workerName||'(未設定)', s=r.siteName||'(未設定)';
-      const du=(r.dayUnit!=null)?Number(r.dayUnit):1, h=Number(r.hours)||0, cost=recordCost(r);
-      byW[n]=byW[n]||{days:0,hours:0,cost:0}; byW[n].days+=du; byW[n].hours+=h; byW[n].cost+=cost;
-      bySite[s]=bySite[s]||{days:0,hours:0,cost:0}; bySite[s].days+=du; bySite[s].hours+=h; bySite[s].cost+=cost;
-      totDays+=du; totHours+=h; totalCost+=cost;
+      const du=(r.dayUnit!=null)?Number(r.dayUnit):1, h=Number(r.hours)||0;
+      byW[n]=byW[n]||{days:0,hours:0}; byW[n].days+=du; byW[n].hours+=h;
+      bySite[s]=bySite[s]||{days:0,hours:0}; bySite[s].days+=du; bySite[s].hours+=h;
+      totDays+=du; totHours+=h;
     });
 
-    // 従業員別 人件費
+    // 従業員別 集計（出勤日数・実働時間）
     const names=Object.keys(byW).sort((a,b)=>a.localeCompare(b,'ja'));
     let rows='';
-    names.forEach(n=>{ const w=getWage(n); const a=byW[n];
-      const pill = '<span class="pill '+w.type+'">'+wageTypeLabel(w.type)+'</span>';
-      rows+='<tr><td>'+esc(n)+(w.found?'':' <span class="muted">(未)</span>')+'</td><td>'+pill+'</td>'+
-        '<td class="num">'+(w.wage?yen(w.wage):'<span class="muted">未</span>')+'</td>'+
-        '<td class="num">'+round1(a.days)+'</td><td class="num">'+round1(a.hours)+'</td>'+
-        '<td class="num"><b>'+yen(a.cost)+'</b></td></tr>';
+    names.forEach(n=>{ const a=byW[n];
+      rows+='<tr><td>'+esc(n)+'</td><td class="num">'+round1(a.days)+'</td><td class="num">'+round1(a.hours)+'</td></tr>';
     });
-    rows+='<tr class="total"><td>合計</td><td></td><td></td><td class="num">'+round1(totDays)+'</td><td class="num">'+round1(totHours)+'</td><td class="num">'+yen(totalCost)+'</td></tr>';
-    $('tblCost').querySelector('tbody').innerHTML = names.length? rows : '<tr><td colspan="6" class="muted">該当データなし</td></tr>';
+    rows+='<tr class="total"><td>合計</td><td class="num">'+round1(totDays)+'</td><td class="num">'+round1(totHours)+'</td></tr>';
+    $('tblCost').querySelector('tbody').innerHTML = names.length? rows : '<tr><td colspan="3" class="muted">該当データなし</td></tr>';
 
-    // 現場別 人件費
+    // 現場別 集計
     const siteNames=Object.keys(bySite).sort((a,b)=>a.localeCompare(b,'ja'));
     let srows='';
     siteNames.forEach(s=>{ const a=bySite[s];
-      srows+='<tr><td>'+esc(s)+'</td><td class="num">'+round1(a.days)+'</td><td class="num">'+round1(a.hours)+'</td>'+
-        '<td class="num"><b>'+yen(a.cost)+'</b></td></tr>';
+      srows+='<tr><td>'+esc(s)+'</td><td class="num">'+round1(a.days)+'</td><td class="num">'+round1(a.hours)+'</td></tr>';
     });
-    srows+='<tr class="total"><td>合計</td><td class="num">'+round1(totDays)+'</td><td class="num">'+round1(totHours)+'</td><td class="num">'+yen(totalCost)+'</td></tr>';
-    $('tblSiteCost').querySelector('tbody').innerHTML = siteNames.length? srows : '<tr><td colspan="4" class="muted">該当データなし</td></tr>';
+    srows+='<tr class="total"><td>合計</td><td class="num">'+round1(totDays)+'</td><td class="num">'+round1(totHours)+'</td></tr>';
+    $('tblSiteCost').querySelector('tbody').innerHTML = siteNames.length? srows : '<tr><td colspan="3" class="muted">該当データなし</td></tr>';
 
     // KPI
-    $('kpiCost').textContent=yen(totalCost);
     $('kpiDays').textContent=round1(totDays);
     $('kpiHours').textContent=round1(totHours);
     $('kpiRecs').textContent=recs.length;
@@ -902,64 +847,35 @@
 
   // ---------- 従業員マスタ ----------
   function bindMasters(){
-    $('wAdd').onclick=()=>{ const name=$('wName').value.trim(); const wage=Number($('wWage').value)||0; const type=$('wType').value;
+    $('wAdd').onclick=()=>{ const name=$('wName').value.trim();
       if(!name){ toast('氏名を入力','err'); return; }
-      setWage(name, type, wage); // 給与は端末ローカルへ
-      ref('workers').push({name, active:true, createdAt:Date.now()})  // クラウドには氏名のみ
-        .then(()=>{ $('wName').value=''; $('wWage').value=''; toast('追加しました','ok'); });
+      ref('workers').push({name, active:true, createdAt:Date.now()})
+        .then(()=>{ $('wName').value=''; toast('追加しました','ok'); });
     };
     $('sAdd').onclick=()=>{ const name=$('sName').value.trim(); if(!name){toast('現場名を入力','err'); return;}
       const st=$('sStatus')?$('sStatus').value:'工事中';
       ref('sites').push({name, status:st, active: st!=='工事完了', createdAt:Date.now()}).then(()=>{ $('sName').value=''; toast('追加しました','ok'); });
     };
     $('doneToggle').onclick=()=>{ doneOpen=!doneOpen; renderSites(); };
-    // 給与設定のバックアップ / 復元（端末間の引き継ぎ用）
-    $('wageBackup').onclick=()=>{
-      const blob=new Blob([JSON.stringify(wages,null,2)],{type:'application/json'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='kintai_給与設定_backup.json';
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
-      toast('給与設定を書き出しました','ok');
-    };
-    $('wageRestore').onclick=()=> $('wageRestoreFile').click();
-    $('wageRestoreFile').onchange=(e)=>{
-      const f=e.target.files&&e.target.files[0]; if(!f) return; const rd=new FileReader();
-      rd.onload=()=>{ try{ const obj=JSON.parse(rd.result);
-        if(obj && typeof obj==='object' && !Array.isArray(obj)){
-          Object.keys(obj).forEach(n=>{ const v=obj[n]; if(v && typeof v==='object') wages[n]={type:normType(v.type), wage:Number(v.wage)||0}; });
-          saveWages(); renderWorkers(); renderAll(); toast('給与設定を復元しました','ok');
-        } else toast('ファイル形式が不正です','err');
-      }catch(_){ toast('読み込みに失敗しました','err'); } };
-      rd.readAsText(f); e.target.value='';
-    };
   }
 
   function renderWorkers(){
     const tb=$('tblWorkers').querySelector('tbody');
     const list=Object.entries(workers).map(([k,w])=>Object.assign({_key:k},w)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'));
-    if(!list.length){ tb.innerHTML='<tr><td colspan="5" class="muted">従業員が未登録です。上のフォームから追加してください。</td></tr>'; return; }
-    tb.innerHTML=list.map(w=>{
-      const wg=getWage(w.name); const t=wg.type;
-      return '<tr>'+
-        '<td><input data-rename="'+w._key+'" data-old="'+esc(w.name)+'" value="'+esc(w.name)+'" style="width:140px"></td>'+
-        '<td><select data-wtype="'+esc(w.name)+'"><option value="daily"'+(t==='daily'?' selected':'')+'>日給</option><option value="hourly"'+(t==='hourly'?' selected':'')+'>時給</option><option value="monthly"'+(t==='monthly'?' selected':'')+'>月給</option></select></td>'+
-        '<td class="num"><input data-wwage="'+esc(w.name)+'" type="number" value="'+(wg.wage||0)+'" style="width:110px; text-align:right"></td>'+
-        '<td>'+(w.active===false?'<span class="muted">無効</span>':'<span class="pill daily">有効</span>')+'</td>'+
-        '<td><button class="sm" data-toggle="'+w._key+'">'+(w.active===false?'有効化':'無効化')+'</button> '+
-            '<button class="sm del" data-delw="'+w._key+'" data-delname="'+esc(w.name)+'">削除</button></td></tr>';
-    }).join('');
+    if(!list.length){ tb.innerHTML='<tr><td colspan="3" class="muted">従業員が未登録です。上のフォームから追加してください。</td></tr>'; return; }
+    tb.innerHTML=list.map(w=>'<tr>'+
+      '<td><input data-rename="'+w._key+'" data-old="'+esc(w.name)+'" value="'+esc(w.name)+'" style="width:180px"></td>'+
+      '<td>'+(w.active===false?'<span class="muted">無効</span>':'<span class="pill daily">有効</span>')+'</td>'+
+      '<td><button class="sm" data-toggle="'+w._key+'">'+(w.active===false?'有効化':'無効化')+'</button> '+
+          '<button class="sm del" data-delw="'+w._key+'">削除</button></td></tr>').join('');
     tb.querySelectorAll('input[data-rename]').forEach(el=> el.onchange=()=>{
       const newName=el.value.trim(), oldName=el.dataset.old;
       if(!newName){ el.value=oldName; return; }
-      renameWage(oldName, newName);
       ref('workers/'+el.dataset.rename+'/name').set(newName).then(()=>toast('保存しました','ok'));
     });
-    tb.querySelectorAll('select[data-wtype]').forEach(el=> el.onchange=()=>{
-      const name=el.dataset.wtype; setWage(name, el.value, getWage(name).wage); renderAll(); toast('保存しました','ok'); });
-    tb.querySelectorAll('input[data-wwage]').forEach(el=> el.onchange=()=>{
-      const name=el.dataset.wwage; setWage(name, getWage(name).type, Number(el.value)||0); renderAll(); toast('保存しました','ok'); });
     tb.querySelectorAll('[data-toggle]').forEach(b=> b.onclick=()=>{ const w=workers[b.dataset.toggle];
       ref('workers/'+b.dataset.toggle+'/active').set(!(w.active===false)).then(()=>toast('更新しました','ok')); });
-    tb.querySelectorAll('[data-delw]').forEach(b=> b.onclick=()=>{ if(confirm('削除しますか？（過去の記録は残ります）')){ removeWage(b.dataset.delname); ref('workers/'+b.dataset.delw).remove(); } });
+    tb.querySelectorAll('[data-delw]').forEach(b=> b.onclick=()=>{ if(confirm('削除しますか？（過去の記録は残ります）')) ref('workers/'+b.dataset.delw).remove(); });
   }
 
   // 工事の状態：着工前／工事中／工事完了（旧ラベルと active から移行）。工事完了は表から外し「完了した工事」へ。
@@ -1065,7 +981,7 @@
     if(!recs.length){ toast('出力対象のデータがありません','err'); return; }
     const wb=XLSX.utils.book_new();
     const from=$('fFrom').value||'', to=$('fTo').value||'';
-    const MASTER="'従業員マスタ'", REC="'勤怠記録'";
+    const REC="'勤怠記録'";
 
     // 集計（氏名別）
     const byW={};
@@ -1075,78 +991,54 @@
     const names=Object.keys(byW).sort((a,b)=>a.localeCompare(b,'ja'));
     const siteNames=[...new Set(recs.map(r=>r.siteName||'(未設定)'))].sort((a,b)=>a.localeCompare(b,'ja'));
 
-    // --- (1) 従業員マスタ（給与は端末ローカルから自動反映。ここを直すと全シート再計算） ---
-    const nameSet=new Set(Object.values(workers).filter(w=>w).map(w=>w.name));
-    recs.forEach(r=>{ if(r.workerName) nameSet.add(r.workerName); });
-    const masterNames=[...nameSet].sort((a,b)=>(a||'').localeCompare(b||'','ja'));
-    const masterAoa=[['氏名','給与方式（日給/時給）','単価(円)']];
-    masterNames.forEach(n=>{ const wg=getWage(n); masterAoa.push([n, wageTypeLabel(wg.type), wg.wage]); });
-    const wsMaster=XLSX.utils.aoa_to_sheet(masterAoa);
-    wsMaster['!cols']=[{wch:16},{wch:18},{wch:12}];
-    XLSX.utils.book_append_sheet(wb, wsMaster, '従業員マスタ');
-
-    // --- (2) 勤怠記録（明細 ＋ 1行ごとの人件費を数式で算出：L列） ---
-    const recAoa=[['作業日','現場','氏名','作業内容','勤務区分','工数(日)','開始','終了','休憩(分)','実働(時間)','備考','人件費(円)']];
+    // --- (1) 勤怠記録（明細・金額なし） ---
+    const recAoa=[['作業日','現場','氏名','作業内容','労働時間','工数(日)','開始','終了','休憩(分)','実働(時間)','備考']];
     recs.forEach(r=> recAoa.push([
       r.date||'', r.siteName||'', r.workerName||'', r.work||'',
       unitLabel(r.dayUnit), (r.dayUnit!=null?Number(r.dayUnit):1),
       r.start||'', r.end||'', (r.breakMin!=null?Number(r.breakMin):''),
-      (r.hours!=null&&r.hours!==''?Number(r.hours):''), r.note||'',
-      Math.round(recordCost(r))   // 初期表示用のキャッシュ値（数式は下で付与）
+      (r.hours!=null&&r.hours!==''?Number(r.hours):''), r.note||''
     ]));
     const wsRec=XLSX.utils.aoa_to_sheet(recAoa);
-    for(let i=0;i<recs.length;i++){ const row=i+2;
-      const vlType="IFERROR(VLOOKUP($C"+row+","+MASTER+"!$A:$C,2,FALSE),\"日給\")";
-      const vlWage="IFERROR(VLOOKUP($C"+row+","+MASTER+"!$A:$C,3,FALSE),0)";
-      // 月給なら (単価÷22)×工数(F)、時給なら 単価×実働(J)、日給なら 単価×工数(F)
-      wsRec['L'+row].f = "IF("+vlType+"=\"月給\","+vlWage+"/22*$F"+row+",IF("+vlType+"=\"時給\","+vlWage+"*$J"+row+","+vlWage+"*$F"+row+"))";
-    }
-    wsRec['!cols']=[{wch:11},{wch:18},{wch:12},{wch:26},{wch:9},{wch:8},{wch:7},{wch:7},{wch:9},{wch:9},{wch:16},{wch:12}];
+    wsRec['!cols']=[{wch:11},{wch:18},{wch:12},{wch:26},{wch:9},{wch:8},{wch:7},{wch:7},{wch:9},{wch:9},{wch:16}];
     XLSX.utils.book_append_sheet(wb, wsRec, '勤怠記録');
 
-    // --- (3) 人件費サマリ（氏名別。人件費は勤怠記録L列をSUMIF） ---
-    const sumAoa=[['氏名','給与方式','単価(円)','出勤日数','実働時間(h)','人件費(円)']];
-    names.forEach(n=> sumAoa.push([n,'','', round1(byW[n].days), round1(byW[n].hours), '']));
+    // --- (2) 集計サマリ（氏名別・出勤日数/実働時間。勤怠記録をSUMIF） ---
+    const sumAoa=[['氏名','出勤日数','実働時間(h)']];
+    names.forEach(n=> sumAoa.push([n, round1(byW[n].days), round1(byW[n].hours)]));
     const wsSum=XLSX.utils.aoa_to_sheet(sumAoa);
-    let sumF=0;
-    for(let i=0;i<names.length;i++){ const row=i+2; const n=names[i]; const wg=getWage(n);
-      const cost=(wg.type==='hourly')? byW[n].hours*wg.wage : (wg.type==='monthly' ? (wg.wage/MONTH_DAYS)*byW[n].days : byW[n].days*wg.wage); sumF+=cost;
-      wsSum['B'+row]={t:'s', v:wageTypeLabel(wg.type), f:'IFERROR(VLOOKUP(A'+row+','+MASTER+'!$A:$C,2,FALSE),\"日給\")'};
-      wsSum['C'+row]={t:'n', v:(Number(wg.wage)||0), f:'IFERROR(VLOOKUP(A'+row+','+MASTER+'!$A:$C,3,FALSE),0)'};
-      wsSum['F'+row]={t:'n', v:Math.round(cost), f:'SUMIF('+REC+'!$C:$C,A'+row+','+REC+'!$L:$L)'};
+    for(let i=0;i<names.length;i++){ const row=i+2; const n=names[i];
+      wsSum['B'+row]={t:'n', v:round1(byW[n].days), f:'SUMIF('+REC+'!$C:$C,A'+row+','+REC+'!$F:$F)'};
+      wsSum['C'+row]={t:'n', v:round1(byW[n].hours), f:'SUMIF('+REC+'!$C:$C,A'+row+','+REC+'!$J:$J)'};
     }
     const sumTot=names.length+2;
     wsSum['A'+sumTot]={t:'s', v:'合計'};
-    wsSum['D'+sumTot]={t:'n', f:'SUM(D2:D'+(sumTot-1)+')'};
-    wsSum['E'+sumTot]={t:'n', f:'SUM(E2:E'+(sumTot-1)+')'};
-    wsSum['F'+sumTot]={t:'n', v:Math.round(sumF), f:'SUM(F2:F'+(sumTot-1)+')'};
-    wsSum['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:sumTot-1,c:5}});
-    wsSum['!cols']=[{wch:16},{wch:10},{wch:12},{wch:10},{wch:12},{wch:14}];
-    XLSX.utils.book_append_sheet(wb, wsSum, '人件費サマリ');
+    wsSum['B'+sumTot]={t:'n', f:'SUM(B2:B'+(sumTot-1)+')'};
+    wsSum['C'+sumTot]={t:'n', f:'SUM(C2:C'+(sumTot-1)+')'};
+    wsSum['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:sumTot-1,c:2}});
+    wsSum['!cols']=[{wch:16},{wch:12},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, wsSum, '集計サマリ');
 
-    // --- (4) 現場別 人件費（現場ごとに勤怠記録をSUMIF） ---
-    const scAoa=[['現場','延べ日数','延べ時間(h)','人件費(円)']];
+    // --- (3) 現場別 集計（現場ごとに勤怠記録をSUMIF） ---
+    const scAoa=[['現場','延べ日数','延べ時間(h)']];
     const siteAgg={};
-    recs.forEach(r=>{ const s=r.siteName||'(未設定)'; siteAgg[s]=siteAgg[s]||{days:0,hours:0,cost:0};
-      siteAgg[s].days+=(r.dayUnit!=null?Number(r.dayUnit):1); siteAgg[s].hours+=(Number(r.hours)||0); siteAgg[s].cost+=recordCost(r); });
-    siteNames.forEach(s=> scAoa.push([s, round1(siteAgg[s].days), round1(siteAgg[s].hours), '']));
+    recs.forEach(r=>{ const s=r.siteName||'(未設定)'; siteAgg[s]=siteAgg[s]||{days:0,hours:0};
+      siteAgg[s].days+=(r.dayUnit!=null?Number(r.dayUnit):1); siteAgg[s].hours+=(Number(r.hours)||0); });
+    siteNames.forEach(s=> scAoa.push([s, round1(siteAgg[s].days), round1(siteAgg[s].hours)]));
     const wsSC=XLSX.utils.aoa_to_sheet(scAoa);
-    let scF=0;
-    for(let i=0;i<siteNames.length;i++){ const row=i+2; const s=siteNames[i]; scF+=siteAgg[s].cost;
+    for(let i=0;i<siteNames.length;i++){ const row=i+2; const s=siteNames[i];
       wsSC['B'+row]={t:'n', v:round1(siteAgg[s].days), f:'SUMIF('+REC+'!$B:$B,A'+row+','+REC+'!$F:$F)'};
       wsSC['C'+row]={t:'n', v:round1(siteAgg[s].hours), f:'SUMIF('+REC+'!$B:$B,A'+row+','+REC+'!$J:$J)'};
-      wsSC['D'+row]={t:'n', v:Math.round(siteAgg[s].cost), f:'SUMIF('+REC+'!$B:$B,A'+row+','+REC+'!$L:$L)'};
     }
     const scTot=siteNames.length+2;
     wsSC['A'+scTot]={t:'s', v:'合計'};
     wsSC['B'+scTot]={t:'n', f:'SUM(B2:B'+(scTot-1)+')'};
     wsSC['C'+scTot]={t:'n', f:'SUM(C2:C'+(scTot-1)+')'};
-    wsSC['D'+scTot]={t:'n', v:Math.round(scF), f:'SUM(D2:D'+(scTot-1)+')'};
-    wsSC['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:scTot-1,c:3}});
-    wsSC['!cols']=[{wch:20},{wch:10},{wch:12},{wch:14}];
-    XLSX.utils.book_append_sheet(wb, wsSC, '現場別人件費');
+    wsSC['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:scTot-1,c:2}});
+    wsSC['!cols']=[{wch:20},{wch:10},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, wsSC, '現場別集計');
 
-    // --- (5) 現場×氏名 出勤日数クロス ---
+    // --- (4) 現場×氏名 出勤日数クロス ---
     const cell={};
     recs.forEach(r=>{ const s=r.siteName||'(未設定)', n=r.workerName||'(未設定)';
       cell[s+'||'+n]=(cell[s+'||'+n]||0)+(r.dayUnit!=null?Number(r.dayUnit):1); });
@@ -1159,9 +1051,9 @@
     crossAoa.push(colTotRow);
     const wsCross=XLSX.utils.aoa_to_sheet(crossAoa);
     wsCross['!cols']=[{wch:20}, ...names.map(()=>({wch:9})), {wch:8}];
-    XLSX.utils.book_append_sheet(wb, wsCross, '現場別集計');
+    XLSX.utils.book_append_sheet(wb, wsCross, '現場×氏名');
 
-    XLSX.writeFile(wb, '勤怠_人件費_'+(from||'all')+'_'+(to||'all')+'.xlsx');
+    XLSX.writeFile(wb, '勤怠集計_'+(from||'all')+'_'+(to||'all')+'.xlsx');
     toast('Excelを出力しました','ok');
   }
 
@@ -1170,14 +1062,11 @@
     {t:'管理画面を開く（パスコード）', k:'パスコード ログイン 開く ロック 管理', a:'config.jsで設定したパスコードを入力して開きます。一度開くとそのタブを閉じるまで記憶されます。パスコード未設定ならそのまま開きます。'},
     {t:'期間で絞り込む（今月など）', k:'期間 絞り込み 今月 開始日 終了日 日付', a:'上部の「開始日」「終了日」で対象期間を指定します。「今月」ボタンで当月にすぐ設定できます。変更すると集計が自動更新されます。'},
     {t:'現場・氏名で絞り込む', k:'現場 氏名 絞り込み フィルタ 選択', a:'「現場」「氏名」のプルダウンで対象をしぼれます。「すべて」で全件に戻ります。'},
-    {t:'合計（KPI）の見方', k:'kpi 人件費 合計 日数 時間 件数 集計', a:'絞り込み範囲の「人件費合計」「延べ出勤日数」「延べ実働時間」「報告件数」が上部に表示されます。'},
-    {t:'従業員を追加する', k:'従業員 追加 登録 氏名 マスタ', a:'「従業員（給与）」タブで氏名・給与方式・単価を入れて「追加」します。氏名はクラウド共有、給与はこの端末のみに保存されます。'},
-    {t:'給与（日給／時給／月給）を設定', k:'給与 日給 時給 月給 単価 賃金 設定 22', a:'「従業員（給与）」タブで各人の方式（日給/時給/月給）と金額を設定します。日給=1日あたり、時給=1時間あたり、月給=1か月あたり。月給の人の人件費は「月給÷22日×出勤日数」で自動計算し、Excel出力にも反映されます。'},
-    {t:'給与は端末だけに保存される', k:'給与 ローカル 端末 セキュリティ 非公開 クラウド 漏れ', a:'給与（方式・単価）はこの管理者端末のブラウザにのみ保存され、クラウド（Firebase）や入力フォームには送られません。従業員からは見えません。'},
-    {t:'給与のバックアップ／別PCへ引き継ぎ', k:'バックアップ 復元 引き継ぎ json 別pc 移行', a:'「従業員（給与）」タブ下の「⬇給与設定をバックアップ(JSON)」で書き出し、別PCで「⬆復元」から読み込むと給与設定を引き継げます。'},
+    {t:'合計（KPI）の見方', k:'kpi 合計 日数 時間 件数 集計', a:'絞り込み範囲の「延べ出勤日数」「延べ実働時間」「報告件数」が上部に表示されます（金額の計算はありません）。'},
+    {t:'従業員を追加・管理する', k:'従業員 追加 登録 氏名 マスタ 無効 削除', a:'「従業員」タブで氏名を入れて「追加」します（クラウド共有）。氏名はセルで直接編集、無効化・削除もできます（過去の記録は残ります）。'},
     {t:'工事（現場）を追加・状態を変える', k:'現場 工事 追加 編集 着工前 工事中 工事完了 完了 状態 タブ', a:'「🏗️工事（現場）」タブで工事を追加できます。工事名の脇のタブで「着工前／工事中／工事完了」を切り替えます。表には着工前・工事中だけが並び、「工事完了」にすると下の「完了した工事」に保存され、入力フォームの現場一覧（選択肢）からも外れます。完了した工事のタブで「工事中」等に戻せます。'},
     {t:'記録を修正・削除・代理入力する', k:'記録 修正 編集 削除 訂正 一覧 代理 追加 入力', a:'「記録一覧」タブで各行の「修正」から内容を直せます（管理者は全員の記録を修正可）。「削除」で消せます。上の「➕代理で報告を追加」から、全職員の分を管理者が代理で入力（時間・休憩も入力可）できます。'},
-    {t:'Excelを出力する', k:'excel エクセル 出力 ダウンロード 数式 帳票', a:'「集計・Excel出力」タブの「📊Excelファイルをダウンロード」で、現在の絞り込み範囲を複数シート・数式入りで出力します。Excel上で単価を直すと自動で再計算されます。'},
+    {t:'Excelを出力する', k:'excel エクセル 出力 ダウンロード 帳票 集計', a:'「集計・Excel出力」タブの「📊Excelファイルをダウンロード」で、現在の絞り込み範囲を「勤怠記録・集計サマリ・現場別集計・現場×氏名」の複数シートで出力します（金額は含みません）。'},
     {t:'現場×氏名クロス集計の見方', k:'クロス 集計 現場 氏名 出勤日数 表', a:'「現場×氏名（出勤日数）」表で、どの現場に誰が何日入ったかを一覧できます。行＝現場、列＝氏名、数字＝出勤日数です。'},
     {t:'アプリにする（ホーム画面に追加）', k:'アプリにする ホーム画面 アイコン インストール アプリ pwa 追加', a:'ヘッダーの「⬇️アプリにする」を押すと追加できます（Android/PCは1タップ）。iPhoneはSafariの共有ボタン→「ホーム画面に追加」。'},
     {t:'会社情報・管理者を登録する', k:'会社 会社名 住所 電話 管理者 氏名 メール 登録 設定', a:'「🏢 会社情報」タブで会社名・住所・電話・管理者氏名・管理者メールを登録できます（クラウド共有）。登録した管理者メールは「パスコードを忘れた方はこちら」のリンク送信先になります。'},
