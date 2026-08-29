@@ -57,6 +57,7 @@
     border-radius:10px; font-weight:600; cursor:pointer;
   }
   .seg button.on{background:var(--brand); border-color:var(--brand); color:#fff}
+  #dayUnitSeg{gap:6px} #dayUnitSeg button{padding:12px 2px; font-size:15px}
   .hint{font-size:12px; color:var(--sub); margin-top:6px}
   .calc{font-size:13px; color:var(--brand-dark); font-weight:700; margin-top:6px}
   .submit{
@@ -164,8 +165,6 @@
   <div id="doneBox" class="done" style="display:none">
     <div class="t">✅ 報告しました！お疲れさまです</div>
     <pre id="doneText"></pre>
-    <button class="share" id="shareBtn">📲 この報告をLINEグループに貼る</button>
-    <div class="hint">※ ボタンを押すと共有先の選択画面が出ます。LINEグループを選んで送ってください。（任意）</div>
   </div>
 
   <div class="card">
@@ -197,10 +196,12 @@
     </div>
 
     <div class="field">
-      <label class="req">勤務区分</label>
+      <label class="req">労働時間（1日を1.0として）</label>
       <div class="seg" id="dayUnitSeg">
-        <button type="button" data-v="1" class="on">終日（1.0日）</button>
-        <button type="button" data-v="0.5">半日（0.5日）</button>
+        <button type="button" data-v="0.25">0.25日</button>
+        <button type="button" data-v="0.5">0.5日</button>
+        <button type="button" data-v="0.75">0.75日</button>
+        <button type="button" data-v="1" class="on">1日</button>
       </div>
     </div>
 
@@ -259,7 +260,7 @@
       <h3>❓ アプリの使い方</h3>
       <button class="x" id="helpClose" type="button">✕</button>
     </div>
-    <input type="text" id="helpSearch" placeholder="🔍 キーワードで検索（例：現場、修正、LINE、半日）">
+    <input type="text" id="helpSearch" placeholder="🔍 キーワードで検索（例：現場、修正、有給、労働時間）">
     <div id="helpList"></div>
   </div>
 </div>
@@ -300,6 +301,8 @@
   const monthAgoStr = () => { const d=new Date(); d.setMonth(d.getMonth()-1); const z=x=>String(x).padStart(2,'0');
     return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()); };
   const r1 = (n) => Math.round((Number(n)||0)*10)/10;
+  // 労働時間の表示ラベル（0.25/0.5/0.75/1日）
+  const unitLabel = (u) => { const n=Number(u); return (n===0.25?'0.25日':n===0.5?'0.5日':n===0.75?'0.75日':n===1?'1日':(r1(n)+'日')); };
 
   let db=null, dbRoot=(CFG.dbRoot||'kintai');
   let dayUnit = 1;
@@ -394,7 +397,7 @@
       arr.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
       if(!arr.length){ box.innerHTML='<div class="hint" style="padding:4px">過去1ヶ月の報告はありません。</div>'; return; }
       box.innerHTML = arr.map(r=>{
-        const unit = r.dayUnit===0.5? '半日':'終日';
+        const unit = unitLabel(r.dayUnit);
         const hrs = (r.hours!=null && r.hours!=='')? ('・'+r.hours+'h'):'';
         const edited = r.updatedAt? '<span class="chip" style="background:#fff4e5;color:#8a5a00">修正済</span> ':'';
         return '<div class="rec"><div class="top"><span>'+esc(r.date)+'</span>'+
@@ -519,7 +522,7 @@
     else { sel.value='__other__'; $('siteOther').style.display='block'; $('siteOther').value=siteName; }
   }
   function setDayUnit(v){
-    dayUnit=(Number(v)===0.5)?0.5:1;
+    const n=Number(v); dayUnit=[0.25,0.5,0.75,1].includes(n)? n : 1;
     [...$('dayUnitSeg').children].forEach(x=> x.classList.toggle('on', parseFloat(x.dataset.v)===dayUnit));
   }
   function enterEdit(key){
@@ -556,10 +559,9 @@
     {t:'氏名（自分）を選ぶ・変更する', k:'氏名 名前 自分 選択 記憶 本人 変更', a:'初回に自分の氏名を選ぶと、この端末では「あなた本人」に固定され、自分の分だけ報告できます。別の人の分は、その人の端末で選んでください。氏名の右の「変更」から選び直せます（別の人に代わって入力したいときは管理者に依頼してください）。'},
     {t:'作業日を入れる', k:'作業日 日付 カレンダー 日 過去', a:'「作業日」に現場へ入った日を入れます。初期値は今日です。前の日の分も日付を選んで報告できます。'},
     {t:'現場を選ぶ／その他で自由入力', k:'現場 場所 選択 その他 自由入力', a:'「現場」から選びます。一覧に無い現場は「＋その他（自由入力）」を選ぶと現場名を直接入力できます。'},
-    {t:'勤務区分（終日／半日）', k:'勤務区分 終日 半日 1日 0.5 工数', a:'「終日（1.0日）」か「半日（0.5日）」を選びます。人件費の日数計算に使われます。'},
+    {t:'労働時間（0.25／0.5／0.75／1日）', k:'労働時間 勤務区分 日 0.25 0.5 0.75 1日 工数', a:'その日の労働時間を「0.25日・0.5日・0.75日・1日」から選びます（1日を1.0とした割合）。人件費の日数計算に使われます。'},
     {t:'作業内容・備考を書く', k:'作業内容 備考 メモ 内容', a:'「作業内容」に行った作業（例：2F内装ボード貼り）を書きます。「備考」は任意（例：資材待ちで午前のみ）です。'},
-    {t:'報告する（送信）', k:'報告 送信 提出 登録 保存', a:'入力できたら「この内容で報告する」を押します。送信後に報告内容が表示され、そのままLINE共有もできます。'},
-    {t:'LINEグループに貼る', k:'LINE 共有 シェア グループ 貼る コピー', a:'送信後に出る「📲この報告をLINEグループに貼る」を押すと共有画面が開きます。対応していない端末では内容がコピーされるので、LINEに貼り付けてください。'},
+    {t:'報告する（送信）', k:'報告 送信 提出 登録 保存', a:'入力できたら「この内容で報告する」を押します。送信後に報告した内容が表示されます。'},
     {t:'過去の報告を修正する', k:'修正 編集 直す 訂正', a:'画面下の「最近の報告（自分）」で対象の「✏️修正」を押すと内容が読み込まれます。直したら「修正を保存」を押してください。'},
     {t:'報告を削除する', k:'削除 消す 取り消し', a:'「最近の報告（自分）」で「🗑削除」を押すと、その報告を削除できます（確認あり）。'},
     {t:'有給休暇を申請する・残日数を見る', k:'有給 有休 休暇 残 日数 申請 承認 半日 1週間', a:'画面下の「🏖️有給休暇」で、希望日（1週間以上先）と終日/半日を選び「有給休暇を申請する」を押します。管理者が承認すると残日数から引かれます。上に「残り◯日（付与◯・取得◯・申請中◯）」が表示されます。承認前の申請は自分で取り消せます。'},
@@ -601,17 +603,6 @@
   }
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 
-  // ---- LINEなどへ共有（公式アカウント不要。スマホの共有シートを使う） ----
-  async function shareReport(){
-    const text = lastReportText; if(!text) return;
-    if(navigator.share){
-      try{ await navigator.share({ text }); return; }catch(e){ if(e && e.name==='AbortError') return; }
-    }
-    // 共有APIが無い環境はクリップボードへコピー
-    try{ await navigator.clipboard.writeText(text); toast('コピーしました。LINEに貼り付けてください','ok'); }
-    catch(_){ toast('この端末では共有に対応していません','err'); }
-  }
-
   // ---- 送信 ----
   async function submit(){
     const name=$('worker').value.trim();
@@ -645,7 +636,7 @@
         }));
         localStorage.setItem('kintai_worker', name);
         lastReportText = '【勤怠報告】\n'+date+'\n現場: '+site+'\n氏名: '+name+
-          '（'+(dayUnit===0.5?'半日':'終日')+'）\n作業: '+work+
+          '（'+unitLabel(dayUnit)+'）\n作業: '+work+
           ($('note').value.trim()?('\n備考: '+$('note').value.trim()):'');
         $('doneText').textContent = lastReportText;
         $('doneBox').style.display='block';
@@ -675,7 +666,6 @@
       b.classList.add('on'); dayUnit=parseFloat(b.dataset.v);
     });
     $('submitBtn').addEventListener('click', submit);
-    $('shareBtn').addEventListener('click', shareReport);
     // 有給休暇
     $('leaveUnitSeg').addEventListener('click', e=>{
       const b=e.target.closest('button'); if(!b) return;
@@ -697,7 +687,7 @@
     const banner=$('modeBanner');
     const ok=await initFirebase();
     if(ok===true){
-      banner.innerHTML='<div class="banner info">📲 このページのURLをLINEグループに貼って、各自が報告に使えます。</div>';
+      banner.innerHTML='<div class="banner info">📲 このページのURLを各自に共有すると、それぞれが自分の報告に使えます。</div>';
       loadWorkers(); loadSites();
     }else if(ok==='authfail'){
       banner.innerHTML='<div class="banner warn">⚠ 認証に接続できませんでした。少し時間をおいて再読み込みしてください（Firebaseコンソールで「匿名」ログインの有効化が必要です）。</div>';

@@ -339,7 +339,7 @@
     <div class="mf"><label>氏名</label><input type="text" id="eWorker" list="workerList"><datalist id="workerList"></datalist></div>
     <div class="mf"><label>作業内容</label><textarea id="eWork"></textarea></div>
     <div class="mrow">
-      <div class="mf"><label>勤務区分</label><select id="eUnit"><option value="1">終日（1.0日）</option><option value="0.5">半日（0.5日）</option></select></div>
+      <div class="mf"><label>労働時間（1日=1.0）</label><select id="eUnit"><option value="0.25">0.25日</option><option value="0.5">0.5日</option><option value="0.75">0.75日</option><option value="1">1日</option></select></div>
       <div class="mf"><label>休憩(分)</label><input type="number" id="eBreak" min="0" step="5"></div>
     </div>
     <div class="mrow">
@@ -414,6 +414,8 @@
   const z=n=>String(n).padStart(2,'0');
   const todayStr=()=>{const d=new Date(); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());};
   const round1=n=>Math.round((n||0)*10)/10;
+  // 労働時間の表示ラベル（0.25/0.5/0.75/1日）
+  const unitLabel=u=>{ const n=Number(u); return (n===0.25?'0.25日':n===0.5?'0.5日':n===0.75?'0.75日':n===1?'1日':(round1(n)+'日')); };
 
   let db=null;
   let workers={}, sites={}, records={}, leaves={}; // key -> obj
@@ -822,7 +824,7 @@
     if(!recs.length){ tb.innerHTML='<tr><td colspan="9" class="muted">該当データなし</td></tr>'; return; }
     tb.innerHTML = recs.slice().reverse().map(r=>{
       const time=(r.start&&r.end)?(r.start+'〜'+r.end):'';
-      const unit=(r.dayUnit===0.5)?'半日':'終日';
+      const unit=unitLabel(r.dayUnit);
       return '<tr>'+
         '<td>'+esc(r.date)+'</td><td>'+esc(r.siteName)+'</td><td>'+esc(r.workerName)+'</td>'+
         '<td>'+esc(r.work)+'</td><td class="num">'+unit+'</td><td>'+esc(time)+'</td>'+
@@ -858,7 +860,7 @@
     editKey=key; fillRecordDatalists();
     $('editTitle').textContent='📝 記録を修正';
     $('eDate').value=r.date||''; $('eSite').value=r.siteName||''; $('eWorker').value=r.workerName||'';
-    $('eWork').value=r.work||''; $('eUnit').value=String(r.dayUnit===0.5?0.5:1);
+    $('eWork').value=r.work||''; $('eUnit').value=String(r.dayUnit!=null?Number(r.dayUnit):1);
     $('eBreak').value=(r.breakMin!=null?r.breakMin:0); $('eStart').value=r.start||''; $('eEnd').value=r.end||'';
     $('eNote').value=r.note||''; updateECalc();
     $('editModal').classList.add('show');
@@ -1087,7 +1089,7 @@
     const recAoa=[['作業日','現場','氏名','作業内容','勤務区分','工数(日)','開始','終了','休憩(分)','実働(時間)','備考','人件費(円)']];
     recs.forEach(r=> recAoa.push([
       r.date||'', r.siteName||'', r.workerName||'', r.work||'',
-      (r.dayUnit===0.5?'半日':'終日'), (r.dayUnit!=null?Number(r.dayUnit):1),
+      unitLabel(r.dayUnit), (r.dayUnit!=null?Number(r.dayUnit):1),
       r.start||'', r.end||'', (r.breakMin!=null?Number(r.breakMin):''),
       (r.hours!=null&&r.hours!==''?Number(r.hours):''), r.note||'',
       Math.round(recordCost(r))   // 初期表示用のキャッシュ値（数式は下で付与）
