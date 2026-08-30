@@ -130,7 +130,7 @@
 
 <div id="app" class="hide">
 <header>
-  <h1>🏗️ 勤怠管理</h1>
+  <h1>🏗️ 勤務管理</h1>
   <span class="sp"></span>
   <button class="helpbtn" id="installBtn" type="button" style="display:none">⬇️ アプリにする</button>
   <button class="helpbtn" id="passChangeBtn" type="button">🔑 パスコード変更</button>
@@ -143,7 +143,7 @@
     <button data-tab="summary" class="on">📊 集計・Excel出力</button>
     <button data-tab="records">📝 記録一覧</button>
     <button data-tab="workers">👷 従業員</button>
-    <button data-tab="sites">📍 現場</button>
+    <button data-tab="sites">📍 勤務管理</button>
     <button data-tab="leave">🏖️ 有給</button>
     <button data-tab="org">🏢 会社情報</button>
   </div>
@@ -240,10 +240,11 @@
     </div>
   </section>
 
-  <!-- 現場（工事）タブ -->
+  <!-- 勤務管理（工事・現場）タブ -->
   <section id="tab-sites" class="hide">
     <div class="card">
-      <h2>🏗️ 工事（現場）</h2>
+      <h2>🏗️ 勤務管理（工事・現場）</h2>
+      <div class="note" style="margin:0 0 10px">「🏢 事務所勤務」は常に選択できる固定項目です（状態タブはありません）。ここでは工事現場を追加・管理します。</div>
       <div class="addrow">
         <input type="text" id="sName" placeholder="工事名・現場名（例：◯◯ビル新築）" style="width:220px">
         <select id="sStatus"><option value="工事中">工事中</option><option value="着工前">着工前</option></select>
@@ -343,7 +344,7 @@
       <h3>❓ 管理画面の使い方</h3>
       <button class="sm" id="helpClose" type="button">✕ 閉じる</button>
     </div>
-    <input type="text" id="helpSearch" placeholder="🔍 キーワードで検索（例：給与、Excel、絞り込み、削除）">
+    <input type="text" id="helpSearch" placeholder="🔍 キーワードで検索（例：現場、Excel、絞り込み、有給）">
     <div id="helpList"></div>
   </div>
 </div>
@@ -680,7 +681,7 @@
     $('applyFilter').onclick=renderAll;
     ['fFrom','fTo','fSite','fWorker'].forEach(id=>$(id).addEventListener('change',renderAll));
   }
-  function fillSiteFilter(){ const sel=$('fSite'); const cur=sel.value; sel.innerHTML='<option value="">すべて</option>';
+  function fillSiteFilter(){ const sel=$('fSite'); const cur=sel.value; sel.innerHTML='<option value="">すべて</option><option value="事務所勤務">🏢 事務所勤務</option>';
     Object.values(sites).filter(s=>s&&s.active!==false).sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'))
       .forEach(s=>{const o=document.createElement('option');o.value=s.name;o.textContent=s.name;sel.appendChild(o);}); sel.value=cur; }
   function fillWorkerFilter(){ const sel=$('fWorker'); const cur=sel.value; sel.innerHTML='<option value="">すべて</option>';
@@ -797,7 +798,7 @@
   }
   function fillDatalist(id, arr){ const dl=$(id); dl.innerHTML=arr.map(v=>'<option value="'+esc(v)+'"></option>').join(''); }
   function fillRecordDatalists(){
-    fillDatalist('siteList', Object.values(sites).filter(s=>s&&s.active!==false).map(s=>s.name).sort((a,b)=>(a||'').localeCompare(b||'','ja')));
+    fillDatalist('siteList', ['事務所勤務', ...Object.values(sites).filter(s=>s&&s.active!==false).map(s=>s.name).sort((a,b)=>(a||'').localeCompare(b||'','ja'))]);
     fillDatalist('workerList', Object.values(workers).filter(w=>w&&w.active!==false).map(w=>w.name).sort((a,b)=>(a||'').localeCompare(b||'','ja')));
   }
   function openEditModal(key){
@@ -1064,7 +1065,7 @@
     {t:'現場・氏名で絞り込む', k:'現場 氏名 絞り込み フィルタ 選択', a:'「現場」「氏名」のプルダウンで対象をしぼれます。「すべて」で全件に戻ります。'},
     {t:'合計（KPI）の見方', k:'kpi 合計 日数 時間 件数 集計', a:'絞り込み範囲の「延べ出勤日数」「延べ実働時間」「報告件数」が上部に表示されます（金額の計算はありません）。'},
     {t:'従業員を追加・管理する', k:'従業員 追加 登録 氏名 マスタ 無効 削除', a:'「従業員」タブで氏名を入れて「追加」します（クラウド共有）。氏名はセルで直接編集、無効化・削除もできます（過去の記録は残ります）。'},
-    {t:'工事（現場）を追加・状態を変える', k:'現場 工事 追加 編集 着工前 工事中 工事完了 完了 状態 タブ', a:'「🏗️工事（現場）」タブで工事を追加できます。工事名の脇のタブで「着工前／工事中／工事完了」を切り替えます。表には着工前・工事中だけが並び、「工事完了」にすると下の「完了した工事」に保存され、入力フォームの現場一覧（選択肢）からも外れます。完了した工事のタブで「工事中」等に戻せます。'},
+    {t:'勤務管理（工事・現場）を追加・状態を変える', k:'勤務管理 現場 工事 追加 編集 着工前 工事中 工事完了 完了 状態 タブ 事務所勤務', a:'「🏗️勤務管理」タブで工事現場を追加できます。工事名の脇のタブで「着工前／工事中／工事完了」を切り替えます。表には着工前・工事中だけが並び、「工事完了」にすると「完了した工事」に保存され、入力フォームの現場一覧からも外れます。「🏢事務所勤務」は常に選べる固定項目で、状態タブはありません。'},
     {t:'記録を修正・削除・代理入力する', k:'記録 修正 編集 削除 訂正 一覧 代理 追加 入力', a:'「記録一覧」タブで各行の「修正」から内容を直せます（管理者は全員の記録を修正可）。「削除」で消せます。上の「➕代理で報告を追加」から、全職員の分を管理者が代理で入力（時間・休憩も入力可）できます。'},
     {t:'Excelを出力する', k:'excel エクセル 出力 ダウンロード 帳票 集計', a:'「集計・Excel出力」タブの「📊Excelファイルをダウンロード」で、現在の絞り込み範囲を「勤怠記録・集計サマリ・現場別集計・現場×氏名」の複数シートで出力します（金額は含みません）。'},
     {t:'現場×氏名クロス集計の見方', k:'クロス 集計 現場 氏名 出勤日数 表', a:'「現場×氏名（出勤日数）」表で、どの現場に誰が何日入ったかを一覧できます。行＝現場、列＝氏名、数字＝出勤日数です。'},
