@@ -919,56 +919,79 @@
   // ================= ② クレーン操縦（走るトラックの荷台から木材をつかみ、柱にのせる） =================
   function craneLaneY(){ return groundY()-10; }
   function newTruck(){
-    const w=Math.min(cssW*0.44,175), margin=22;
-    return { x:-w-24, y:craneLaneY(), w, speed:70+lvl*24, margin, gap:(w-margin*2)/3, timbers:[0,1,2] };
+    const w=Math.min(cssW*0.44,175), margin=22, timbers=[];
+    for(let s=0;s<3;s++) timbers.push({slot:s, gold:(Math.random()<0.16)});   // たまに金の梁
+    return { x:-w-24, y:craneLaneY(), w, speed:72+lvl*22+(crane?crane.done*7:0), margin, gap:(w-margin*2)/3, timbers };
   }
   function timberX(t,slot){ return t.x + t.margin + slot*t.gap + t.gap/2; }
-  function craneNearestTimber(){ const t=crane.truck; if(!t||!t.timbers.length) return null; let best=null,bd=1e9; for(const s of t.timbers){ const dx=Math.abs(timberX(t,s)-crane.x); if(dx<bd){bd=dx;best=s;} } return {slot:best, dx:bd, x:timberX(t,best)}; }
+  function craneNearestTimber(){ const t=crane.truck; if(!t||!t.timbers.length) return null; let best=null,bd=1e9; for(const tm of t.timbers){ const dx=Math.abs(timberX(t,tm.slot)-crane.x); if(dx<bd){bd=dx;best=tm;} } return best?{tm:best, dx:bd, x:timberX(t,best.slot)}:null; }
+  function craneBobX(){ return crane.x + Math.sin(crane.theta)*crane.hangL; }   // 揺れた荷のx
   function initCrane(){
-    crane={ tx:cssW/2, x:cssW/2, topY:54, hangL:Math.min(96,cssH*0.16),
+    crane={ tx:cssW/2, x:cssW/2, prevx:cssW/2, topY:54, hangL:Math.min(96,cssH*0.16),
       need:3+lvl, done:0, miss:0, maxMiss:4,
       frameX:cssW/2, spread:Math.min(cssW*0.24,90), postTopY:groundY()-118,
-      stack:0, beamTh:16, beamLen:0,
-      load:null, dropObj:null, grabAnim:0, grabFromX:0, grabFromY:0, truck:null };
+      stack:0, beamTh:16, beamLen:0, settleT:0,
+      load:null, loadGold:false, dropObj:null, grabAnim:0, grabFromX:0, grabFromY:0,
+      theta:0, omega:0, wind:(lvl>=2?0.5+lvl*0.18:0), windPhase:Math.random()*6.283, truck:null };
     crane.beamLen=crane.spread*2+34;
     crane.truck=newTruck();
     tapHint.textContent='走るトラックから木材をつかんで柱にのせろ！'; tapHint.style.display='block';
     setTimeout(()=>{ if(mode==='crane') tapHint.style.display='none'; }, 3000);
   }
   function hookHangY(){ return crane.topY + crane.hangL; }
-  function craneMiss(x,y){ crane.miss++; burst(x,y,'#d1503a',12); audio.tone(120,.2,'sawtooth',.3,-50); shake=5; }
+  function craneMiss(x,y){ crane.miss++; combo=0; burst(x,y,'#d1503a',12); audio.tone(120,.2,'sawtooth',.3,-50); shake=6; }
   function craneGrab(){                              // 荷台の木材をつかむ
     const c=crane; if(c.load || c.dropObj || c.grabAnim>0) return;
-    const n=craneNearestTimber(); const tol=Math.max(26,46-lvl*4);
-    if(n && n.dx<tol){ c.grabFromX=n.x; c.grabFromY=c.truck.y-6; c.truck.timbers=c.truck.timbers.filter(s=>s!==n.slot);
-      c.load='beam'; c.grabAnim=0.3; audio.tone(440,.07,'square',.2); burst(n.x,c.grabFromY,'#e0c060',6); }
+    const n=craneNearestTimber(); const tol=Math.max(28,48-lvl*4);
+    if(n && n.dx<tol){ c.grabFromX=n.x; c.grabFromY=c.truck.y-6; c.loadGold=n.tm.gold; c.truck.timbers=c.truck.timbers.filter(x=>x!==n.tm);
+      c.load='beam'; c.grabAnim=0.28; c.theta=0; c.omega=0;
+      audio.tone(n.tm.gold?680:440,.08,'square',.2); burst(n.x,c.grabFromY, n.tm.gold?'#ffe08a':'#e0c060', n.tm.gold?14:6); if(n.tm.gold) ring(n.x,c.grabFromY,'#ffd24a'); }
     else audio.tone(170,.08,'square',.12);           // 空振り（ペナルティなし）
   }
-  function cranePlace(){                             // 柱の上に梁をのせる
+  function cranePlace(){                             // 柱の上に梁をのせる（揺れた位置から落とす）
     const c=crane; if(c.load!=='beam' || c.dropObj || c.grabAnim>0) return;
-    c.dropObj={ x:c.x, y:hookHangY(), vy:0 }; c.load=null; tapHint.style.display='none'; audio.tone(300,.08,'square',.2);
+    c.dropObj={ x:craneBobX(), y:hookHangY(), vy:0, gold:c.loadGold }; c.load=null; c.loadGold=false;
+    tapHint.style.display='none'; audio.tone(300,.08,'square',.2);
   }
   function craneDrop(){ const c=crane; if(!c) return; if(c.load==='beam') cranePlace(); else craneGrab(); }   // タップ＝つかむ/のせる
   function updateCrane(dt){
     const c=crane;
-    c.x += (c.tx-c.x)*Math.min(1,dt*10); c.x=Math.max(24,Math.min(cssW-24,c.x));
+    c.prevx=c.x; c.x += (c.tx-c.x)*Math.min(1,dt*10); c.x=Math.max(24,Math.min(cssW-24,c.x));
     const t=c.truck; if(t){ t.x += t.speed*dt; if(t.x>cssW+30 || t.timbers.length===0) c.truck=newTruck(); }
     if(c.grabAnim>0){ c.grabAnim-=dt; if(c.grabAnim<0) c.grabAnim=0; }
+    if(c.settleT>0) c.settleT-=dt;
+    // 吊った荷のゆれ（トロリーを動かすと揺れる。止めると収まる）
+    if(c.load==='beam' && c.grabAnim<=0){
+      const ax=(c.x-c.prevx)/Math.max(dt,0.001);
+      c.omega += (-(1900/c.hangL)*Math.sin(c.theta) - (ax*0.5/c.hangL)*Math.cos(c.theta))*dt;
+      if(c.wind){ c.windPhase+=dt*0.9; c.omega += Math.sin(c.windPhase)*c.wind*dt*2.6; }
+      c.omega *= (1-1.7*dt); c.theta += c.omega*dt;
+    }
     if(c.dropObj){ const d=c.dropObj; d.vy+=1800*dt; d.y+=d.vy*dt;
       const landY=c.postTopY - c.stack*c.beamTh - c.beamTh/2;
-      if(d.y>=landY){ const tol=Math.max(22,40-lvl*3);
-        if(Math.abs(d.x-c.frameX)<tol){ c.stack++; c.done++; const pts=120+c.done*30+lvl*25; score+=pts; burst(d.x,landY,'#e0c060',14); audio.combo(3);
-          c.dropObj=null; updateHUD(); if(c.done>=c.need){ stageClear(200+lvl*100,'クレーン完了！ 柱に梁がのった✨'); return; } }
-        else { craneMiss(d.x,landY); c.dropObj=null; updateHUD(); if(c.miss>=c.maxMiss){ gameOver('木材を落としすぎた…'); return; } }
+      if(d.y>=landY){
+        const err=Math.abs(d.x-c.frameX), placeTol=Math.max(30,48-lvl*3), perfectTol=12;
+        if(err<placeTol){
+          c.stack++; c.done++; c.settleT=0.2; puff(d.x,landY+c.beamTh/2);
+          let pts, col='#4c9a4c', msg;
+          if(err<perfectTol){ combo++; maxCombo=Math.max(maxCombo,combo); pts=120+combo*50; col='#3a76c0'; msg=`ピタリ！ ${combo}連★ +${pts}`; ring(d.x,landY,'#ffd24a'); shake=5; audio.combo(combo); if(combo>0&&combo%3===0) spawnConfetti(); }
+          else { combo=0; pts=80; msg='のった！ +'+pts; audio.place(); }
+          if(d.gold){ pts+=220; col='#e0a63c'; msg='🌟金の梁！ '+msg; burst(d.x,landY,'#ffe08a',20); ring(d.x,landY,'#ffd24a'); }
+          score+=pts; burst(d.x,landY,'#e0c060',10); showToast(msg,col);
+          c.dropObj=null; updateHUD();
+          if(c.done>=c.need){ stageClear(200+lvl*100+maxCombo*30,'クレーン完了！ 見事な操縦✨'); return; }
+        } else { craneMiss(d.x,landY); c.dropObj=null; updateHUD(); if(c.miss>=c.maxMiss){ gameOver('木材を落としすぎた…'); return; } }
       }
     }
   }
-  function drawBeamPiece(cx,cy,len,th){
+  function drawBeamPiece(cx,cy,len,th,gold){
     ctx.save(); ctx.translate(cx,cy);
-    const g=ctx.createLinearGradient(0,-th/2,0,th/2); g.addColorStop(0,'#c79a5b'); g.addColorStop(1,'#9c6a37');
+    const g=ctx.createLinearGradient(0,-th/2,0,th/2);
+    if(gold){ g.addColorStop(0,'#ffe9a8'); g.addColorStop(1,'#d99a2c'); } else { g.addColorStop(0,'#c79a5b'); g.addColorStop(1,'#9c6a37'); }
     ctx.fillStyle=g; roundRectS(-len/2,-th/2,len,th,4); ctx.fill();
-    ctx.strokeStyle='rgba(80,45,15,.5)'; ctx.lineWidth=2; ctx.strokeRect(-len/2,-th/2,len,th);
-    ctx.fillStyle='rgba(60,35,12,.55)'; ctx.beginPath(); ctx.arc(-len*0.33,0,2.4,0,6.283); ctx.arc(len*0.33,0,2.4,0,6.283); ctx.fill();
+    ctx.strokeStyle=gold?'rgba(150,100,20,.6)':'rgba(80,45,15,.5)'; ctx.lineWidth=2; ctx.strokeRect(-len/2,-th/2,len,th);
+    ctx.fillStyle=gold?'rgba(120,80,10,.5)':'rgba(60,35,12,.55)'; ctx.beginPath(); ctx.arc(-len*0.33,0,2.4,0,6.283); ctx.arc(len*0.33,0,2.4,0,6.283); ctx.fill();
+    if(gold){ ctx.fillStyle='rgba(255,255,255,.5)'; ctx.fillRect(-len/2+3,-th/2+2,len-6,2); }
     ctx.restore();
   }
   function drawPostFixed(x, topY){
@@ -976,41 +999,35 @@
     ctx.fillStyle=g; roundRectS(x-8, topY, 16, groundY()-topY, 4); ctx.fill();
     ctx.strokeStyle='rgba(80,45,15,.5)'; ctx.lineWidth=2; ctx.strokeRect(x-8, topY, 16, groundY()-topY);
   }
-  function drawHook(x,y){
-    ctx.strokeStyle='#555'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(x,y,6,-0.5,Math.PI+0.5); ctx.stroke();
-  }
+  function drawHook(x,y){ ctx.strokeStyle='#555'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(x,y,6,-0.5,Math.PI+0.5); ctx.stroke(); }
   function drawTruck(t){
     ctx.fillStyle='#2b2b2b'; for(const wx of [t.x+t.w*0.24, t.x+t.w*0.72]){ ctx.beginPath(); ctx.arc(wx,t.y+16,10,0,6.283); ctx.fill(); ctx.fillStyle='#8a9096'; ctx.beginPath(); ctx.arc(wx,t.y+16,4,0,6.283); ctx.fill(); ctx.fillStyle='#2b2b2b'; }
-    ctx.fillStyle='#c23b2f'; roundRectS(t.x, t.y+2, t.w, 14, 3); ctx.fill();                 // シャシー
-    ctx.fillStyle='#8a5a2b'; ctx.fillRect(t.x+4, t.y-4, t.w-42, 8);                           // 荷台の床
-    ctx.fillStyle='#c23b2f'; roundRectS(t.x+t.w-36, t.y-20, 36, 22, 4); ctx.fill();           // 運転席（前=右）
-    ctx.fillStyle='#bfe0f0'; roundRectS(t.x+t.w-30, t.y-16, 17, 12, 2); ctx.fill();           // 窓
-    for(const s of t.timbers) drawBeamPiece(timberX(t,s), t.y-8, t.gap*0.86, 11);             // 荷台の木材
+    ctx.fillStyle='#c23b2f'; roundRectS(t.x, t.y+2, t.w, 14, 3); ctx.fill();
+    ctx.fillStyle='#8a5a2b'; ctx.fillRect(t.x+4, t.y-4, t.w-42, 8);
+    ctx.fillStyle='#c23b2f'; roundRectS(t.x+t.w-36, t.y-20, 36, 22, 4); ctx.fill();
+    ctx.fillStyle='#bfe0f0'; roundRectS(t.x+t.w-30, t.y-16, 17, 12, 2); ctx.fill();
+    for(const tm of t.timbers) drawBeamPiece(timberX(t,tm.slot), t.y-8, t.gap*0.86, 11, tm.gold);
   }
   function drawCrane(){
     const c=crane; drawFlatSky(); if(!c) return;
     const gY=groundY(), ptY=c.postTopY;
     ctx.fillStyle='#c9b48c'; ctx.fillRect(0,gY+18,cssW,cssH-gY);
-    // 柱2本（固定）＋のせた梁
     drawPostFixed(c.frameX-c.spread, ptY); drawPostFixed(c.frameX+c.spread, ptY);
-    for(let i=0;i<c.stack;i++) drawBeamPiece(c.frameX, ptY - i*c.beamTh - c.beamTh/2, c.beamLen, c.beamTh);
-    // トラック
+    for(let i=0;i<c.stack;i++){ let th=c.beamTh; if(i===c.stack-1 && c.settleT>0){ th=c.beamTh*(1+Math.sin(c.settleT/0.2*Math.PI)*0.28); }   // 着地バウンド
+      drawBeamPiece(c.frameX, ptY - i*c.beamTh - th/2, c.beamLen, th); }
     if(c.truck) drawTruck(c.truck);
-    // 狙いガイド（梁を持っている時＝柱の中心へ）
     if(c.load==='beam' && c.grabAnim<=0){ ctx.save(); ctx.strokeStyle='rgba(76,154,76,.5)'; ctx.setLineDash([5,6]); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(c.frameX,c.topY+8); ctx.lineTo(c.frameX, ptY-c.stack*c.beamTh); ctx.stroke(); ctx.restore(); }
-    // レール＋トロリー
     ctx.fillStyle='#4a5763'; ctx.fillRect(0,c.topY-16,cssW,9);
     ctx.fillStyle='#e0a63c'; roundRectS(c.x-18,c.topY-16,36,15,3); ctx.fill();
     ctx.fillStyle='#2b2b2b'; ctx.fillRect(c.x-12,c.topY-2,24,4);
-    // フック／吊り／落下中の梁
     ctx.strokeStyle='#3a3a3a'; ctx.lineWidth=2;
-    if(c.dropObj){ ctx.beginPath(); ctx.moveTo(c.dropObj.x,c.dropObj.y-c.beamTh); ctx.lineTo(c.dropObj.x,c.dropObj.y-c.beamTh/2); ctx.stroke(); drawBeamPiece(c.dropObj.x,c.dropObj.y,c.beamLen,c.beamTh); }
-    else if(c.load==='beam'){ let bx=c.x, by=hookHangY();
-      if(c.grabAnim>0){ const p=1-c.grabAnim/0.3; bx=c.grabFromX+(c.x-c.grabFromX)*p; by=c.grabFromY+(hookHangY()-c.grabFromY)*p; }   // トラックから持ち上げ
-      ctx.beginPath(); ctx.moveTo(c.x,c.topY); ctx.lineTo(bx,by-c.beamTh/2); ctx.stroke(); drawBeamPiece(bx,by,c.beamLen,c.beamTh); }
-    else { const hy=hookHangY(); ctx.beginPath(); ctx.moveTo(c.x,c.topY); ctx.lineTo(c.x,hy); ctx.stroke(); drawHook(c.x,hy); }   // 空フック
+    if(c.dropObj){ ctx.beginPath(); ctx.moveTo(c.dropObj.x,c.dropObj.y-c.beamTh); ctx.lineTo(c.dropObj.x,c.dropObj.y-c.beamTh/2); ctx.stroke(); drawBeamPiece(c.dropObj.x,c.dropObj.y,c.beamLen,c.beamTh,c.dropObj.gold); }
+    else if(c.load==='beam'){ let bx=craneBobX(), by=hookHangY();
+      if(c.grabAnim>0){ const p=1-c.grabAnim/0.28; bx=c.grabFromX+(c.x-c.grabFromX)*p; by=c.grabFromY+(hookHangY()-c.grabFromY)*p; }
+      ctx.beginPath(); ctx.moveTo(c.x,c.topY); ctx.lineTo(bx,by-c.beamTh/2); ctx.stroke(); drawBeamPiece(bx,by,c.beamLen,c.beamTh,c.loadGold); }
+    else { const hy=hookHangY(); ctx.beginPath(); ctx.moveTo(c.x,c.topY); ctx.lineTo(c.x,hy); ctx.stroke(); drawHook(c.x,hy); }
     drawSfx();
-    drawStatusBar(`梁 ${c.done}/${c.need}　${c.load==='beam'?'柱にのせる':'トラックからつかむ'}　ミス ${c.miss}/${c.maxMiss}`);
+    drawStatusBar(`梁 ${c.done}/${c.need}　${combo>1?('🔥'+combo+'連　'):''}ミス ${c.miss}/${c.maxMiss}`);
   }
 
   // ================= ③ 釘打ち（早打ち） =================
@@ -1696,8 +1713,12 @@
   // ---- 画面座標の軽量エフェクト（クレーン/釘/丸太で使用）----
   function groundY(){ return cssH-70; }
   function burst(x,y,col,n){ n=n||10; for(let i=0;i<n;i++){ const a=Math.random()*6.283, sp=40+Math.random()*130; sfx.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-50,life:.45+Math.random()*.35,t:0,col,r:2+Math.random()*3}); } }
-  function updateSfx(dt){ for(let i=sfx.length-1;i>=0;i--){ const p=sfx[i]; p.t+=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=520*dt; if(p.t>=p.life) sfx.splice(i,1); } }
-  function drawSfx(){ for(const p of sfx){ ctx.globalAlpha=Math.max(0,1-p.t/p.life); ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill(); } ctx.globalAlpha=1; }
+  function ring(x,y,col){ sfx.push({type:'ring',x,y,t:0,life:0.5,col:col||'#ffd24a',r0:8}); }
+  function puff(x,y){ for(let i=0;i<8;i++){ const a=Math.random()*6.283; sfx.push({x,y,vx:Math.cos(a)*30,vy:Math.sin(a)*20-16,life:.4+Math.random()*.2,t:0,col:'rgba(200,180,140,.9)',r:3+Math.random()*3}); } }
+  function updateSfx(dt){ for(let i=sfx.length-1;i>=0;i--){ const p=sfx[i]; p.t+=dt; if(p.type!=='ring'){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=520*dt; } if(p.t>=p.life) sfx.splice(i,1); } }
+  function drawSfx(){ for(const p of sfx){ const a=Math.max(0,1-p.t/p.life);
+    if(p.type==='ring'){ ctx.save(); ctx.globalAlpha=a; ctx.strokeStyle=p.col; ctx.lineWidth=3.5; ctx.beginPath(); ctx.arc(p.x,p.y,p.r0+(p.t/p.life)*44,0,6.283); ctx.stroke(); ctx.restore(); }
+    else { ctx.globalAlpha=a; ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill(); } } ctx.globalAlpha=1; }
   function drawFlatSky(){ const g=ctx.createLinearGradient(0,0,0,cssH); g.addColorStop(0,'#a9def7'); g.addColorStop(.6,'#dff2ff'); g.addColorStop(1,'#eef8ff'); ctx.fillStyle=g; ctx.fillRect(0,0,cssW,cssH); }
   function drawStatusBar(label){ ctx.fillStyle='rgba(27,58,92,.9)'; roundRectS(cssW/2-120,54,240,32,10); ctx.fill(); ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='bold 14px sans-serif'; ctx.fillText(label, cssW/2, 75); }
 
@@ -1777,8 +1798,8 @@
       // クレーン
       moveCrane(x){ if(crane) crane.tx=x; crane.x=x; }, craneDrop:()=>craneDrop(),
       craneTarget(){ return crane? crane.frameX : 0; },
-      craneTimber(){ const n=crane&&craneNearestTimber(); return n? {x:Math.round(n.x), dx:Math.round(n.dx), slot:n.slot} : null; },
-      craneState(){ return crane&&{x:Math.round(crane.x), frameX:crane.frameX, load:crane.load, stack:crane.stack, done:crane.done, need:crane.need, miss:crane.miss, drop:!!crane.dropObj, grabAnim:+crane.grabAnim.toFixed(2), truckX:crane.truck&&Math.round(crane.truck.x), timbers:crane.truck?crane.truck.timbers.length:0}; },
+      craneTimber(){ const n=crane&&craneNearestTimber(); return n? {x:Math.round(n.x), dx:Math.round(n.dx), slot:n.tm.slot, gold:n.tm.gold} : null; },
+      craneState(){ return crane&&{x:Math.round(crane.x), bob:Math.round(craneBobX()), theta:+crane.theta.toFixed(3), frameX:crane.frameX, load:crane.load, gold:crane.loadGold, stack:crane.stack, done:crane.done, need:crane.need, miss:crane.miss, combo, drop:!!crane.dropObj, grabAnim:+crane.grabAnim.toFixed(2), timbers:crane.truck?crane.truck.timbers.length:0}; },
       // 釘打ち
       nailHitAll(){ if(nail) for(const it of nail.items.slice()) if(!it.hit) nailTap(it.x,it.y); return nail&&{done:nail.done,need:nail.need,miss:nail.miss}; },
       nailState(){ return nail&&{done:nail.done, need:nail.need, miss:nail.miss, on:nail.items.filter(i=>!i.hit).length}; },
