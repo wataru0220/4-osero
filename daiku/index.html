@@ -241,7 +241,7 @@
       <div class="logo-wrap" id="titleMascot"><!-- 棟梁SVGを差し込む --></div>
       <h1 class="brush title-main">上棟バランス</h1>
       <p class="title-sub">じょうとう ばらんす</p>
-      <p class="title-tag">ステージごとに大工仕事が変わる5種のミニゲーム！<br>①建方 ②クレーン ③釘打ち ④丸太切り ⑤餅ひろい …くり返してレベルUP！</p>
+      <p class="title-tag">ステージごとに大工仕事が変わる3種のミニゲーム！<br>①建方 ②釘打ち ③餅ひろい …くり返してレベルUP！</p>
       <div class="best-chip">🏆 ハイスコア <span id="titleBest">0</span></div>
       <div class="title-btns">
         <button class="btn-primary" id="startBtn">▶ 棟上げ開始</button>
@@ -260,12 +260,10 @@
       <div class="panel" style="text-align:left;">
         <h2 class="brush" style="text-align:center;">遊び方</h2>
         <p style="line-height:1.9; font-size:15px; color:#4a4030;">
-          ステージごとに<b>大工仕事が変わる</b>よ。5種を1周したら、少しずつ難しくなってくり返し！<br>
+          ステージごとに<b>大工仕事が変わる</b>よ。3種を1周したら、少しずつ難しくなってくり返し！<br>
           <b>① 建方</b>：ゆれる木材を<b>タップで落として</b>軸組を組む。ど真ん中は<b>ピタリ！＝高得点＋コンボ</b>、傾き過ぎると倒壊。弟子が<b>はしごで登って</b>くる（タップで入手→揺れ対策アイテム）。<br>
-          <b>② クレーン操縦</b>：<b>走るトラックの荷台</b>から木材を<b>タップでつかみ</b>、動かして<b>柱の上にのせる</b>。落とし過ぎ注意！<br>
-          <b>③ 釘打ち（早打ち）</b>：<b>光る釘</b>が次々出る。消える前に<b>すばやくタップ</b>して壁板を張れ。<br>
-          <b>④ 丸太切り（早切り）</b>：<b>ノコギリを左右にこすって</b>（ドラッグ）丸太を切る。制限時間内に本数を切れ。<br>
-          <b>⑤ 餅ひろい（上棟式）</b>：上からまかれる<b>紅白・金の餅</b>を、<b>動いてキャッチ</b>してボーナスGET！
+          <b>② 釘打ち（早打ち）</b>：<b>光る釘</b>が次々出る。消える前に<b>すばやくタップ</b>して壁板を張れ。<br>
+          <b>③ 餅ひろい（上棟式）</b>：上からまかれる<b>紅白・金の餅</b>を、<b>動いてキャッチ</b>してボーナスGET！
         </p>
         <div style="text-align:center; margin-top:14px;">
           <button class="btn-primary" id="howClose">とじる</button>
@@ -552,7 +550,7 @@
   let mochis=[], mochiPops=[], catcher={x:0,tx:0}, mochiT=0, mochiScore=0, mochiSpawnT=0;  // 餅ひろい
   // ---- ステージごとに変わるミニゲーム ----
   let mode='build', lvl=0;                  // 現ステージの種別・レベル（1周=5ステージ）
-  const MODES=['build','crane','nail','saw','mochi'];
+  const MODES=['build','nail','mochi'];          // クレーン・丸太切りは除外（コードは残置＝再有効化容易）
   const MODE_LABEL={build:'建方',crane:'クレーン操縦',nail:'釘打ち',saw:'丸太切り',mochi:'餅ひろい'};
   let crane=null, nail=null, saw=null, sfx=[];   // 各ミニゲームの状態＋画面エフェクト
   const BASE_HALF=100;                      // 倒壊しきい値（重心の許容。小さいほどシビア）
@@ -670,8 +668,8 @@
     if(score>bestScore){ bestScore=score; localStorage.setItem('daiku_bestscore', bestScore); }
   }
   // 現ステージの軸組を用意（下から組む順を作り、最初の材を吊る）
-  function modeForStage(s){ return MODES[(s-1)%5]; }
-  function stageLevel(s){ return Math.floor((s-1)/5); }
+  function modeForStage(s){ return MODES[(s-1)%MODES.length]; }
+  function stageLevel(s){ return Math.floor((s-1)/MODES.length); }
   function buildCfgForLvl(l){ return { floors:Math.min(5,2+l), cols:3+Math.min(l,3), postTh:Math.max(20,32-l), swing:130+l*22 }; }
 
   // 建方モードの用意（軸組を下から組む）
