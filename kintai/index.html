@@ -117,10 +117,10 @@
   .cal-wd.sun{color:#c0392b} .cal-wd.sat{color:#1f6feb}
   .cal-day{aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; border-radius:8px; font-size:14px; cursor:pointer; position:relative; background:#f4f7fb; color:var(--ink)}
   .cal-day.dis{color:#c3ccd6; background:#fff; cursor:default}
-  .cal-day.sel{background:var(--brand); color:#fff; font-weight:800}
-  .cal-day.today:not(.sel){box-shadow:inset 0 0 0 2px #ffd591}
-  .cal-day .dot{position:absolute; bottom:4px; width:5px; height:5px; border-radius:50%}
-  .cal-day .dot.p{background:#e6a23c} .cal-day .dot.a{background:#1aa260}
+  .cal-day.today:not(.sel){box-shadow:inset 0 0 0 2px var(--brand)}
+  .cal-day.lv-pending{box-shadow:inset 0 0 0 3px #e6a23c}            /* 申請中＝オレンジの枠 */
+  .cal-day.lv-approved{background:#ffd21e; color:#6b5200; font-weight:800; border-radius:50%}  /* 承認＝黄色い丸 */
+  .cal-day.sel{background:var(--brand); color:#fff; font-weight:800; border-radius:8px}  /* 選択が最優先 */
   .cal-empty{background:transparent}
   .calsel{margin-top:8px; font-size:13.5px; font-weight:800; color:var(--brand-dark); text-align:center}
   .callegend{margin-top:4px; font-size:11px; color:var(--sub); text-align:center}
@@ -230,7 +230,7 @@
       <label class="req">取得を希望する日（カレンダーから選択）</label>
       <div id="leaveCal" class="cal"></div>
       <div class="calsel" id="leaveSelLabel">日付をタップして選んでください</div>
-      <div class="callegend">🟠 申請中　🟢 承認済　枠 = 今日</div>
+      <div class="callegend">🟡 有給が取れた日（承認）　🟧 オレンジ枠＝申請中　🔵 青枠＝今日</div>
       <div class="hint">※ 有給は<b>1週間以上前</b>に申請してください（1週間先より前の日は選べません）。</div>
     </div>
     <div class="field">
@@ -436,10 +436,10 @@
     ['日','月','火','水','木','金','土'].forEach((w,i)=> h+='<div class="cal-wd'+(i===0?' sun':(i===6?' sat':''))+'">'+w+'</div>');
     for(let i=0;i<startWd;i++) h+='<div class="cal-empty"></div>';
     for(let d=1; d<=daysInMonth; d++){
-      const ds=ymd(y,m,d), dis=ds<minStr;
+      const ds=ymd(y,m,d), dis=ds<minStr, st=applied[ds];
       const cls=['cal-day']; if(dis) cls.push('dis'); if(ds===selectedLeaveDate) cls.push('sel'); if(ds===today) cls.push('today');
-      const dot=applied[ds]? '<span class="dot '+(applied[ds]==='pending'?'p':'a')+'"></span>':'';
-      h+='<div class="'+cls.join(' ')+'"'+(dis?'':' data-cald="'+ds+'"')+'>'+d+dot+'</div>';
+      if(st==='pending') cls.push('lv-pending'); else if(st && st!=='rejected') cls.push('lv-approved');
+      h+='<div class="'+cls.join(' ')+'"'+(dis?'':' data-cald="'+ds+'"')+'>'+d+'</div>';
     }
     h+='</div>'; cal.innerHTML=h;
     const label=$('leaveSelLabel'); if(label) label.textContent = selectedLeaveDate? ('選択中：'+selectedLeaveDate.replace(/-/g,'/')) : '日付をタップして選んでください';
