@@ -355,6 +355,21 @@
       </div>
     </div>
 
+    <!-- ステージ結果発表（クリアごと。スタートで次へ） -->
+    <div class="overlay" id="srOverlay">
+      <div class="panel">
+        <div style="display:inline-block; background:#4c9a4c; color:#fff; font-weight:800; padding:6px 16px; border-radius:999px; margin-bottom:6px;">ステージ <span id="srStage">1</span> クリア！</div>
+        <h2 class="brush" id="srTitle" style="font-size:20px; margin:4px 0 8px;">結果発表</h2>
+        <div class="result-big"><span id="srScore">0</span><small>点</small></div>
+        <div class="stat-row">
+          <div>今回 <b id="srBonus">+0</b></div>
+          <div>ハイスコア <b id="srBest">0</b></div>
+        </div>
+        <button class="btn-primary" id="srNextBtn" style="width:100%; margin-top:6px;">▶ <span id="srNextLabel">次のステージ</span>スタート</button>
+        <button class="btn-ghost" id="srQuitBtn" style="width:100%; margin-top:8px;">タイトルへ</button>
+      </div>
+    </div>
+
     <!-- 一時停止パネル -->
     <div class="overlay" id="pauseOverlay">
       <div class="panel">
@@ -700,6 +715,7 @@
   }
   // ステージ開始（種別を判定してミニゲームを初期化）
   function startStage(){
+    $('srOverlay').classList.remove('show');   // 結果パネルを閉じる
     mode=modeForStage(stage); lvl=stageLevel(stage);
     combo=0; effects=[]; sfx=[]; shake=0; collapsing=false; overTimer=0;
     completed=null; dims=null; current=null;
@@ -725,13 +741,24 @@
     startStage();
   }
   function nextStage(){ stage++; bumpBest(); startStage(); }
-  // ステージ共通クリア処理（各ミニゲームから呼ぶ）
+  // ステージ共通クリア処理（各ミニゲームから呼ぶ）→ 結果発表してスタート待ち
   function stageClear(bonus, msg, delay){
     if(bonus) score+=bonus;
     bumpBest(); updateHUD(); state='clear';
     showToast(msg || `ステージ${stage} クリア！`, '#4c9a4c'); audio.milestone();
     tapHint.style.display='none';
-    setTimeout(()=>{ if(state==='clear') nextStage(); }, delay||1800);
+    const head=msg||`ステージ${stage} クリア！`, gained=bonus||0;
+    setTimeout(()=>{ if(state==='clear') showStageResult(head, gained); }, delay||900);   // 演出を見せてから結果発表
+  }
+  function showStageResult(head, gained){
+    $('srStage').textContent=stage;
+    $('srTitle').textContent=head;
+    $('srScore').textContent=score;
+    $('srBonus').textContent='+'+gained;
+    $('srBest').textContent=bestScore;
+    $('srNextLabel').textContent=MODE_LABEL[modeForStage(stage+1)]+'を';
+    $('srOverlay').classList.add('show');
+    audio.milestone();
   }
   function resetStage(){ initBuild(); }   // 互換用
 
@@ -1271,6 +1298,7 @@
     if(e.code==='Space'||e.code==='Enter'){
       e.preventDefault();
       if(state==='play'){ if(mode==='build') drop(); else if(mode==='crane') craneDrop(); }
+      else if(state==='clear' && $('srOverlay').classList.contains('show')) nextStage();   // 結果発表→次へ
       else if(state==='title'||state==='over') startGame();
     }
   });
@@ -1831,6 +1859,8 @@
   // ================= ボタン =================
   $('startBtn').onclick=()=>{ resize(); startGame(); };
   $('retryBtn').onclick=()=>{ startGame(); };
+  $('srNextBtn').onclick=()=>{ if(state==='clear') nextStage(); };            // 結果発表→スタートで次のステージ
+  $('srQuitBtn').onclick=()=>{ $('srOverlay').classList.remove('show'); state='title'; show('title'); $('titleBest').textContent=bestScore; };
   $('toTitleBtn').onclick=()=>{ state='title'; show('title'); $('titleBest').textContent=bestScore; };
   $('quitBtn').onclick=()=>{ state='title'; pauseOverlay.classList.remove('show'); show('title'); $('titleBest').textContent=bestScore; };
   $('resumeBtn').onclick=()=>{ pauseOverlay.classList.remove('show'); state='play'; last=performance.now(); };
