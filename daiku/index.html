@@ -588,7 +588,7 @@
       src.connect(g); g.connect(this.ctx.destination); src.start(t);
     },
     place(){ this.tone(150,.08,'square',.25); this.tone(90,.12,'triangle',.2); },   // トン
-    thud(){ this.tone(72,.20,'sine',.36,-34); this.tone(120,.09,'triangle',.22); this.noise(.13,.22); },  // ドスン（柱を立てる）
+    thud(){ this.tone(100,.30,'sine',.55,-58); this.tone(160,.12,'triangle',.32,-95); this.noise(.17,.34); },  // ドスン（柱を立てる・重め）
     hit(p){ p=p||0; this.tone(150+p*130,.05,'square',.12+p*0.18); this.tone(70,.10,'triangle',.13+p*0.15); }, // カケヤの打撃（強さで音が変化）
     perfect(){ this.tone(660,.09,'square',.2); setTimeout(()=>this.tone(990,.14,'square',.2),70); },
     combo(n){ const f=560*Math.pow(1.06, Math.min(n,14)); this.tone(f,.08,'square',.2); setTimeout(()=>this.tone(f*1.5,.12,'square',.18),55); },
@@ -806,7 +806,7 @@
 
   // ================= 餅まきボーナス（五重塔完成時の上棟式） =================
   function initMochi(){
-    mochis=[]; mochiPops=[]; mochiT=12+lvl*2; mochiScore=0; mochiSpawnT=0.2;
+    mochis=[]; mochiPops=[]; mochiT=20+lvl*3; mochiScore=0; mochiSpawnT=0.2;
     catcher.x=cssW/2; catcher.tx=cssW/2;
     showToast('🎉 上棟式！餅まきだ〜！ 動いて餅を拾え！', '#e0a63c'); audio.milestone();
   }
@@ -1034,7 +1034,7 @@
 
   // ================= ③ 釘打ち（早打ち） =================
   function initNail(){
-    nail={ need:6+lvl*2, done:0, miss:0, maxMiss:5, spawnT:0.4,
+    nail={ need:12+lvl*3, done:0, miss:0, maxMiss:5, spawnT:0.4,
       life:Math.max(1.3,2.4-lvl*0.12), maxOn:Math.min(3,1+lvl), items:[] };
     tapHint.textContent='光る釘をすばやくタップ！'; tapHint.style.display='block';
     setTimeout(()=>{ if(mode==='nail') tapHint.style.display='none'; }, 1800);
