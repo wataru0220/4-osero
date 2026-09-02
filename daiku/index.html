@@ -479,6 +479,9 @@
   <path d="M114 192 L118 220 L102 220 L100 194 Z" fill="#221f1b"/>
   <path d="M76 218 Q88 224 98 220 L96 230 Q86 232 78 227 Z" fill="#15120f"/>
   <path d="M124 218 Q112 224 102 220 L104 230 Q114 232 122 227 Z" fill="#15120f"/>
+  <!-- 首（胴より先に描いて衿が自然に重なる） -->
+  <path d="M91 120 L109 120 L114 160 L86 160 Z" fill="#f3cf9f"/>
+  <path d="M88 130 Q100 136 112 130 L112 135 Q100 141 88 135 Z" fill="#d9a878" opacity=".4"/>
   <path class="hp" d="M74 148 Q100 160 126 148 L130 196 Q100 206 70 196 Z"/>
   <path d="M96 150 L92 196 L100 198 L104 152 Z" fill="rgba(255,255,255,.35)"/>
   <path d="M108 150 L112 196 L104 198 L100 152 Z" fill="rgba(255,255,255,.35)"/>
@@ -487,8 +490,6 @@
   <path class="hp" d="M126 150 Q144 128 142 106 Q140 98 132 102 Q126 106 126 120 Q126 136 112 148 Z"/>
   <circle cx="60" cy="102" r="10" fill="#f3cf9f"/>
   <circle cx="140" cy="102" r="10" fill="#f3cf9f"/>
-  <rect x="89" y="118" width="22" height="44" rx="8" fill="#f3cf9f"/>
-  <path d="M89 122 Q100 129 111 122 L111 126 Q100 133 89 126 Z" fill="#d9a878" opacity=".45"/>
   <path d="M74 90 Q74 56 100 56 Q126 56 126 90 Q126 122 100 126 Q74 122 74 90 Z" fill="#f3cf9f"/>
   <ellipse cx="74" cy="94" rx="8" ry="10" fill="#f3cf9f"/><ellipse cx="126" cy="94" rx="8" ry="10" fill="#f3cf9f"/>
   <path d="M72 76 Q68 46 92 42 Q88 56 100 56 Q98 44 118 44 Q114 58 126 64 Q130 50 132 76 Q112 60 100 62 Q86 60 72 76 Z" fill="#2a1c12"/>
@@ -514,6 +515,7 @@
   document.getElementById('titleMascot').innerHTML = mascotSVG;
   document.getElementById('gameMascot').innerHTML  = mascotSVG;
   const gameMascot = document.getElementById('gameMascot');
+  const mascotImg = new Image(); try{ mascotImg.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(mascotSVG); }catch(e){}   // 餅まきの投げ手用
   const deshiSVG = document.getElementById('deshiTpl').innerHTML;
 
   // ---- DOM ----
@@ -552,6 +554,7 @@
   let deshi=null, deshiSpawnT=10, heldItem=null;      // 動き回る弟子・出現タイマー・所持アイテム
   let swayDamp=1, swayDampT=0, timeScale=1, slowT=0;  // 弟子の効果（揺れ抑制・スロー）
   let mochis=[], mochiPops=[], catcher={x:0,tx:0}, mochiT=0, mochiScore=0, mochiSpawnT=0;  // 餅ひろい
+  let crowd=[], mochiThrowT=0;               // 拾いに来る人々・大工の投げモーション
   // ---- ステージごとに変わるミニゲーム ----
   let mode='build', lvl=0;                  // 現ステージの種別・レベル（1周=5ステージ）
   const MODES=['build','nail','mochi'];          // クレーン・丸太切りは除外（コードは残置＝再有効化容易）
@@ -805,32 +808,50 @@
   }
 
   // ================= 餅まきボーナス（五重塔完成時の上棟式） =================
+  function mochiThrowX(){ return cssW/2 + 18; }       // 大工さんの上げた手の位置
+  function mochiThrowY(){ return 72; }
   function initMochi(){
-    mochis=[]; mochiPops=[]; mochiT=20+lvl*3; mochiScore=0; mochiSpawnT=0.2;
+    mochis=[]; mochiPops=[]; mochiT=20+lvl*3; mochiScore=0; mochiSpawnT=0.3; mochiThrowT=0;
     catcher.x=cssW/2; catcher.tx=cssW/2;
-    showToast('🎉 上棟式！餅まきだ〜！ 動いて餅を拾え！', '#e0a63c'); audio.milestone();
+    const n=Math.min(4,2+lvl), cols=['#b0532a','#b03a76','#4a6ab0','#7a5cc0'];   // 拾いに来る人々
+    crowd=[]; for(let i=0;i<n;i++) crowd.push({ x:cssW*(0.15+0.7*(i+1)/(n+1)), sp:110+Math.random()*60+lvl*18, col:cols[i%4], catches:0, target:null, bob:Math.random()*6 });
+    showToast('🎉 上棟式！大工さんが餅をまくよ〜 拾え！', '#e0a63c'); audio.milestone();
   }
   function spawnMochi(){
     const r=Math.random(); let type,val,col;
     if(r<0.10){ type='gold'; val=300; col='#ffe08a'; }
     else if(r<0.42){ type='red'; val=100; col='#ffd9d0'; }
     else { type='white'; val=50; col='#ffffff'; }
-    mochis.push({ x:cssW*(0.12+Math.random()*0.76), y:-24, vy:55+Math.random()*70, vx:(Math.random()*2-1)*45,
-      val, col, type, rot:0, vr:(Math.random()*2-1)*3, r:13+Math.random()*4 });
+    mochis.push({ x:mochiThrowX()+(Math.random()*2-1)*10, y:mochiThrowY(),
+      vx:(Math.random()*2-1)*(100+Math.random()*110), vy:-(70+Math.random()*120),   // 放り投げる（上＋横へ散る）
+      val, col, type, rot:0, vr:(Math.random()*2-1)*4, r:13+Math.random()*4 });
+    mochiThrowT=0.2;                                    // 投げモーション
   }
   function updateMochiBonus(dt){
-    mochiT-=dt;
+    mochiT-=dt; if(mochiThrowT>0) mochiThrowT-=dt;
     catcher.x += (catcher.tx-catcher.x)*Math.min(1,dt*14);
     catcher.x=Math.max(40,Math.min(cssW-40,catcher.x));
-    if(mochiT>0){ mochiSpawnT-=dt; if(mochiSpawnT<=0){ spawnMochi(); mochiSpawnT=0.30+Math.random()*0.35; } }
-    const catchY=cssH-90, catchHalf=34;
+    if(mochiT>0){ mochiSpawnT-=dt; if(mochiSpawnT<=0){ spawnMochi(); mochiSpawnT=Math.max(0.16,0.32-lvl*0.02)+Math.random()*0.24; } }
+    // 拾いに来る人々（落ちてくる餅の近くへ寄る）
+    for(const p of crowd){
+      if(!p.target || mochis.indexOf(p.target)<0 || p.target.y>cssH-55){ p.target=null; let bd=1e9;
+        for(const m of mochis){ if(m.y<cssH*0.4) continue; const d=Math.abs(m.x-p.x); if(d<bd){bd=d;p.target=m;} } }
+      const goal=p.target?p.target.x:p.x;
+      p.x += Math.max(-p.sp*dt, Math.min(p.sp*dt, goal-p.x)); p.x=Math.max(28,Math.min(cssW-28,p.x)); p.bob+=dt*11;
+    }
+    const catchY=cssH-90, catchHalf=34, npcHalf=24;
     for(let i=mochis.length-1;i>=0;i--){ const m=mochis[i];
       m.vy+=480*dt; m.y+=m.vy*dt; m.x+=m.vx*dt; m.rot+=m.vr*dt;
       if(m.x<20){m.x=20;m.vx*=-1;} if(m.x>cssW-20){m.x=cssW-20;m.vx*=-1;}
-      if(m.y>=catchY && m.y<=catchY+34 && Math.abs(m.x-catcher.x)<catchHalf){   // 升でキャッチ
-        mochiScore+=m.val; score+=m.val;
-        mochiPops.push({x:m.x,y:catchY-6,val:m.val,t:0,col:m.type==='gold'?'#e0a63c':(m.type==='red'?'#d1503a':'#4c9a4c')});
-        audio.combo(2); mochis.splice(i,1); continue;
+      if(m.y>=catchY && m.y<=catchY+40){
+        if(Math.abs(m.x-catcher.x)<catchHalf){        // 自分が拾う
+          mochiScore+=m.val; score+=m.val;
+          mochiPops.push({x:m.x,y:catchY-6,val:m.val,t:0,col:m.type==='gold'?'#e0a63c':(m.type==='red'?'#d1503a':'#4c9a4c')});
+          audio.combo(2); mochis.splice(i,1); continue;
+        }
+        let taken=false;                              // 拾いに来た人が拾う（自分が取れなかった分）
+        for(const p of crowd){ if(Math.abs(m.x-p.x)<npcHalf){ p.catches++; p.bob=0; burst(m.x,catchY,'#cdd2d8',5); taken=true; break; } }
+        if(taken){ mochis.splice(i,1); continue; }
       }
       if(m.y>cssH+30) mochis.splice(i,1);
     }
@@ -878,43 +899,52 @@
     else if(m.type==='red'){ ctx.fillStyle='#d1503a'; ctx.beginPath(); ctx.arc(0,0,m.r*0.35,0,Math.PI*2); ctx.fill(); }
     ctx.restore();
   }
-  function drawCatcher(x){
-    const baseY=cssH-58, w=68, h=32, boxY=baseY-h;
-    ctx.fillStyle='rgba(0,0,0,.12)'; ctx.beginPath(); ctx.ellipse(x,cssH-14,42,8,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#221f1b'; ctx.fillRect(x-10,baseY,7,16); ctx.fillRect(x+3,baseY,7,16);        // 脚
-    ctx.fillStyle='#3f7a4a'; roundRectS(x-16,baseY-20,32,26,6); ctx.fill();                        // 法被
-    ctx.fillStyle='#e0a63c'; ctx.fillRect(x-16,baseY-2,32,4);
-    ctx.fillStyle='#f3cf9f'; ctx.beginPath(); ctx.arc(x, baseY-30, 13,0,Math.PI*2); ctx.fill();     // 頭
-    ctx.fillStyle='#20160f'; ctx.beginPath(); ctx.arc(x,baseY-33,13,Math.PI,0); ctx.fill();
-    ctx.fillStyle='#fbfbf7'; ctx.fillRect(x-13,baseY-32,26,5);                                      // 鉢巻
-    ctx.fillStyle='#20160f'; ctx.fillRect(x-6,baseY-30,3,3); ctx.fillRect(x+3,baseY-30,3,3);
-    ctx.strokeStyle='#3f7a4a'; ctx.lineWidth=7; ctx.lineCap='round';                                // 腕
-    ctx.beginPath(); ctx.moveTo(x-12,baseY-14); ctx.lineTo(x-w/2+8,boxY+6); ctx.moveTo(x+12,baseY-14); ctx.lineTo(x+w/2-8,boxY+6); ctx.stroke();
-    ctx.fillStyle='#c79a5b'; ctx.fillRect(x-w/2,boxY,w,h);                                          // 升
-    ctx.fillStyle='#8a5a2b'; ctx.fillRect(x-w/2,boxY,w,7);
+  function drawCatcher(x, col, s, me, bob){
+    col=col||'#3f7a4a'; s=s==null?1:s; bob=bob||0;
+    const baseY=cssH-58-bob, w=68*s, h=32*s, boxY=baseY-h, R=13*s;
+    ctx.fillStyle='rgba(0,0,0,.12)'; ctx.beginPath(); ctx.ellipse(x,cssH-14,42*s,8,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#221f1b'; ctx.fillRect(x-10*s,baseY,7*s,16*s); ctx.fillRect(x+3*s,baseY,7*s,16*s);   // 脚
+    ctx.fillStyle=col; roundRectS(x-16*s,baseY-20*s,32*s,26*s,6); ctx.fill();                            // 法被
+    ctx.fillStyle='#e0a63c'; ctx.fillRect(x-16*s,baseY-2*s,32*s,4*s);
+    ctx.fillStyle='#f3cf9f'; ctx.beginPath(); ctx.arc(x, baseY-30*s, R,0,Math.PI*2); ctx.fill();          // 頭
+    ctx.fillStyle='#20160f'; ctx.beginPath(); ctx.arc(x,baseY-33*s,R,Math.PI,0); ctx.fill();
+    ctx.fillStyle='#fbfbf7'; ctx.fillRect(x-R,baseY-32*s,R*2,5*s);                                        // 鉢巻
+    ctx.fillStyle='#20160f'; ctx.fillRect(x-6*s,baseY-30*s,3*s,3*s); ctx.fillRect(x+3*s,baseY-30*s,3*s,3*s);
+    ctx.strokeStyle=col; ctx.lineWidth=7*s; ctx.lineCap='round';                                          // 腕
+    ctx.beginPath(); ctx.moveTo(x-12*s,baseY-14*s); ctx.lineTo(x-w/2+8*s,boxY+6); ctx.moveTo(x+12*s,baseY-14*s); ctx.lineTo(x+w/2-8*s,boxY+6); ctx.stroke();
+    ctx.fillStyle='#c79a5b'; ctx.fillRect(x-w/2,boxY,w,h);                                                // 升
+    ctx.fillStyle='#8a5a2b'; ctx.fillRect(x-w/2,boxY,w,7*s);
     ctx.strokeStyle='#7a4f22'; ctx.lineWidth=2; ctx.strokeRect(x-w/2,boxY,w,h);
+    if(me){ ctx.fillStyle='#d1503a'; ctx.beginPath(); ctx.moveTo(x,boxY-12); ctx.lineTo(x-7,boxY-22); ctx.lineTo(x+7,boxY-22); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center'; ctx.fillText('YOU',x,boxY-24); }   // 自分マーカー
   }
   function drawMochiBonus(){
     const g=ctx.createLinearGradient(0,0,0,cssH); g.addColorStop(0,'#a9def7'); g.addColorStop(.6,'#dff2ff'); g.addColorStop(1,'#eef8ff');
     ctx.fillStyle=g; ctx.fillRect(0,0,cssW,cssH);
     for(let i=0;i<Math.ceil(cssW/40)+1;i++){ ctx.fillStyle=i%2?'#d1503a':'#fff'; ctx.fillRect(i*40,0,40,26); }   // 紅白幕
     ctx.fillStyle='#e0a63c'; ctx.fillRect(0,26,cssW,4);
-    drawMiniTower(cssW/2, 36, Math.min(cssW*0.5,210));
+    drawMiniTower(cssW*0.20, 30, Math.min(cssW*0.30,108));                                   // 小さい五重塔（左）
+    // 足場の梁＋大工さん（餅をまく）
+    const feetY=142, beamW=96;
+    ctx.fillStyle='#8a5a2b'; roundRectS(cssW/2-beamW/2, feetY, beamW, 10, 3); ctx.fill();
+    ctx.strokeStyle='#5c3a18'; ctx.lineWidth=2; ctx.strokeRect(cssW/2-beamW/2, feetY, beamW, 10);
+    if(mascotImg.complete && mascotImg.naturalWidth){ const mh=104, mw=mh*260/340, bob=mochiThrowT>0?(mochiThrowT/0.2)*5:0; ctx.drawImage(mascotImg, cssW/2-mw/2, feetY-mh-bob, mw, mh); }
     for(const m of mochis) drawMochi(m);
-    drawCatcher(catcher.x);
+    for(const p of crowd) drawCatcher(p.x, p.col, 0.82, false, Math.abs(Math.sin(p.bob))*3);   // 拾いに来た人々
+    drawCatcher(catcher.x, '#3f7a4a', 1, true, 0);                                             // 自分
     ctx.textAlign='center'; ctx.font='900 16px sans-serif';
     for(const p of mochiPops){ ctx.globalAlpha=Math.max(0,1-p.t/0.8); ctx.fillStyle=p.col; ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.strokeText('+'+p.val,p.x,p.y); ctx.fillText('+'+p.val,p.x,p.y); }
     ctx.globalAlpha=1;
-    ctx.fillStyle='rgba(27,58,92,.92)'; roundRectS(cssW/2-98,150,196,50,14); ctx.fill();
-    ctx.fillStyle='#fff'; ctx.textAlign='center';
-    ctx.font='900 20px sans-serif'; ctx.fillText('🎉 餅まき！', cssW/2, 172);
-    ctx.font='bold 13px sans-serif'; ctx.fillText(`残り ${Math.max(0,mochiT).toFixed(1)}秒 ・ ボーナス +${mochiScore}`, cssW/2, 190);
+    // 上部の小さなタイマー／得点
+    ctx.fillStyle='rgba(27,58,92,.9)'; roundRectS(8,32,116,26,8); ctx.fill(); ctx.fillStyle='#fff'; ctx.textAlign='left'; ctx.font='bold 13px sans-serif'; ctx.fillText('残り '+Math.max(0,mochiT).toFixed(1)+'秒', 16, 49);
+    ctx.fillStyle='rgba(27,58,92,.9)'; roundRectS(cssW-124,32,116,26,8); ctx.fill(); ctx.fillStyle='#fff'; ctx.textAlign='right'; ctx.font='bold 13px sans-serif'; ctx.fillText('+'+mochiScore+'点', cssW-16, 49);
+    ctx.textAlign='center';
     if(mochiT<=0){
       ctx.fillStyle='rgba(76,154,76,.95)'; roundRectS(cssW/2-120,cssH/2-42,240,84,16); ctx.fill();
       ctx.fillStyle='#fff'; ctx.font='900 26px sans-serif'; ctx.fillText('餅まき終了！', cssW/2, cssH/2-4);
       ctx.font='bold 16px sans-serif'; ctx.fillText(`ボーナス +${mochiScore}点`, cssW/2, cssH/2+24);
     } else {
-      ctx.fillStyle='rgba(27,58,92,.8)'; ctx.font='bold 12px sans-serif'; ctx.fillText('← 動かして餅をキャッチ →', cssW/2, cssH-14);
+      ctx.fillStyle='rgba(27,58,92,.8)'; ctx.font='bold 12px sans-serif'; ctx.fillText('← 動かして餅をキャッチ（みんなと取り合い！）→', cssW/2, cssH-14);
     }
   }
 
