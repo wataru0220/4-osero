@@ -1087,19 +1087,20 @@
 
   // ================= ③ 釘打ち（早打ち） =================
   function initNail(){
-    nail={ need:8+lvl*2, done:0, spawnT:0.3,
-      life:Math.max(1.8,2.8-lvl*0.12), maxOn:4, items:[],
-      rival:{ done:0, target:null, react:0, base:Math.max(0.42,0.9-lvl*0.08) } };   // ライバル大工
+    nail={ need:6+lvl*2, done:0, spawnT:0.3, myBob:0,
+      life:Math.max(2.2,3.2-lvl*0.1), maxOn:4, items:[],
+      rival:{ done:0, target:null, react:0, base:Math.max(0.6,1.2-lvl*0.07), bob:0 } };   // ライバル大工（少しゆっくり）
     tapHint.textContent='ライバルより多く釘を打て！ タップ'; tapHint.style.display='block';
     setTimeout(()=>{ if(mode==='nail') tapHint.style.display='none'; }, 2000);
   }
   function spawnNail(){
     const m=54, top=120, bot=cssH-120;
     nail.items.push({ x:m+Math.random()*(cssW-2*m), y:top+Math.random()*(bot-top),
-      r:Math.max(24,34-lvl*1.2), t:0, life:nail.life, hit:false, by:null, anim:0, rot:Math.random()*0.6-0.3 });
+      r:Math.max(28,38-lvl), t:0, life:nail.life, hit:false, by:null, anim:0, rot:Math.random()*0.6-0.3 });
   }
   function updateNail(dt){
     const n=nail, rv=n.rival; n.spawnT-=dt;
+    if(n.myBob>0) n.myBob-=dt; if(rv.bob>0) rv.bob-=dt;
     const live=n.items.filter(i=>!i.hit).length;
     if(n.spawnT<=0 && live<n.maxOn){ spawnNail(); n.spawnT=Math.max(0.28,0.5-lvl*0.03)+Math.random()*0.3; }
     // ライバルAI（未打の釘を狙って一定時間後に打つ）
@@ -1107,7 +1108,7 @@
     if(!rv.target){ let best=null,bt=-1; for(const it of n.items){ if(it.hit) continue; if(it.t>bt){bt=it.t; best=it;} }
       if(best){ rv.target=best; rv.react=rv.base*(0.7+Math.random()*0.6); } }
     else { rv.react-=dt;
-      if(rv.react<=0){ const it=rv.target; it.hit=true; it.by='rival'; it.anim=0; rv.done++; audio.tone(880,.04,'square',.1); rv.target=null;
+      if(rv.react<=0){ const it=rv.target; it.hit=true; it.by='rival'; it.anim=0; rv.done++; rv.bob=0.25; audio.tone(880,.04,'square',.1); rv.target=null;
         if(rv.done>=n.need){ updateHUD(); gameOver('ライバルに先を越された…'); return; } } }
     for(let i=n.items.length-1;i>=0;i--){ const it=n.items[i];
       if(it.hit){ it.anim+=dt; if(it.anim>0.42) n.items.splice(i,1); continue; }
@@ -1118,7 +1119,7 @@
   function nailTap(px,py){
     const n=nail; let hit=false;
     for(const it of n.items){ if(it.hit) continue;
-      if(Math.hypot(px-it.x,py-it.y)<=it.r+10){ it.hit=true; it.by='me'; it.anim=0; n.done++; score+=60+lvl*15; burst(it.x,it.y,'#cfd6dd',7); audio.tone(1500,.03,'square',.16); audio.tone(520,.06,'square',.12,-260); hit=true;   // カンッ（ハンマー）
+      if(Math.hypot(px-it.x,py-it.y)<=it.r+10){ it.hit=true; it.by='me'; it.anim=0; n.done++; n.myBob=0.25; score+=60+lvl*15; burst(it.x,it.y,'#cfd6dd',7); audio.tone(1500,.03,'square',.16); audio.tone(520,.06,'square',.12,-260); hit=true;   // カンッ（ハンマー）
         if(it===n.rival.target) n.rival.target=null;      // 取られたらライバルは狙い直し
         if(n.done>=n.need){ updateHUD(); stageClear(200+lvl*100+(n.done-n.rival.done)*20,'壁張り勝利！ ライバルに勝った🔨'); return; } break; } }
     if(!hit) audio.tone(200,.05,'square',.1);
@@ -1130,6 +1131,21 @@
     ctx.strokeStyle='rgba(150,120,80,.25)'; ctx.lineWidth=2;
     for(let y=0;y<cssH;y+=46){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cssW,y); ctx.stroke(); }
     ctx.fillStyle='rgba(120,90,55,.16)'; for(let x=cssW*0.2;x<cssW;x+=cssW*0.3) ctx.fillRect(x-6,0,12,cssH);
+  }
+  function drawRivalCarpenter(x, bob){                 // ライバル大工（青・ハンマーを持つ）
+    const baseY=cssH-14-(bob>0?bob*18:0);
+    ctx.fillStyle='rgba(0,0,0,.12)'; ctx.beginPath(); ctx.ellipse(x,cssH-8,24,6,0,0,6.283); ctx.fill();
+    ctx.fillStyle='#221f1b'; ctx.fillRect(x-8,baseY-16,6,16); ctx.fillRect(x+2,baseY-16,6,16);   // 脚
+    ctx.fillStyle='#3a5a8a'; roundRectS(x-15,baseY-42,30,28,6); ctx.fill();                        // 青法被
+    ctx.fillStyle='#e0a63c'; ctx.fillRect(x-15,baseY-20,30,4);                                     // 帯
+    ctx.fillStyle='#f3cf9f'; ctx.beginPath(); ctx.arc(x,baseY-52,12,0,6.283); ctx.fill();          // 頭
+    ctx.fillStyle='#20160f'; ctx.beginPath(); ctx.arc(x,baseY-55,12,Math.PI,0); ctx.fill();        // 髪
+    ctx.fillStyle='#fbfbf7'; ctx.fillRect(x-12,baseY-54,24,4);                                      // 鉢巻
+    ctx.fillStyle='#20160f'; ctx.fillRect(x-6,baseY-52,3,3); ctx.fillRect(x+3,baseY-52,3,3);
+    ctx.strokeStyle='#3a5a8a'; ctx.lineWidth=6; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(x+8,baseY-38); ctx.lineTo(x+18,baseY-56); ctx.stroke();  // 腕
+    ctx.save(); ctx.translate(x+20,baseY-58); ctx.rotate(-0.5);                                      // ハンマー（青）
+    ctx.fillStyle='#a9733f'; roundRectS(-3,0,6,20,2); ctx.fill(); ctx.fillStyle='#5b6b80'; roundRectS(-11,-6,22,11,2); ctx.fill(); ctx.fillStyle='#8a9096'; roundRectS(-11,-6,22,4,2); ctx.fill();
+    ctx.restore();
   }
   function drawNail(){
     const n=nail; drawWall(); if(!n) return;
@@ -1156,6 +1172,9 @@
       const p=1-it.t/it.life; ctx.strokeStyle=p<0.35?'#d1503a':'#4c9a4c'; ctx.lineWidth=3;
       ctx.beginPath(); ctx.arc(it.x,it.y,it.r,-Math.PI/2,-Math.PI/2+p*6.283); ctx.stroke();
     }
+    // 大工さん（あなた＝カケヤを持つ）を左下、ライバルを右下に
+    if(mascotImg.complete && mascotImg.naturalWidth){ const mh=80, mw=mh*260/340, by=cssH-6-mh-(n.myBob>0?n.myBob*22:0); ctx.drawImage(mascotImg, 4, by, mw, mh); }
+    drawRivalCarpenter(cssW-40, n.rival.bob);
     drawSfx();
     drawStatusBar(`あなた ${n.done} ・ ライバル ${n.rival.done}　（目標 ${n.need}）`);
     const bw=150, bx=cssW/2-bw/2, by1=cssH-42, by2=cssH-26;
