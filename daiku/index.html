@@ -843,8 +843,9 @@
   }
 
   // ================= 餅まきボーナス（五重塔完成時の上棟式） =================
-  function mochiThrowX(){ return cssW/2 + 18; }       // 大工さんの上げた手の位置
-  function mochiThrowY(){ return 72; }
+  function mochiRidgeY(){ return 110; }               // 屋根の棟（大工さんが立つ高さ）
+  function mochiThrowX(){ return cssW/2 + 14; }       // 屋根の上・上げた手の位置
+  function mochiThrowY(){ return mochiRidgeY() - 54; }
   function initMochi(){
     mochis=[]; mochiPops=[]; mochiT=20+lvl*3; mochiScore=0; mochiSpawnT=0.3; mochiThrowT=0;
     catcher.x=cssW/2; catcher.tx=cssW/2; catcher.catches=0;
@@ -960,17 +961,40 @@
     if(me){ ctx.fillStyle='#d1503a'; ctx.beginPath(); ctx.moveTo(x,boxY-12); ctx.lineTo(x-7,boxY-22); ctx.lineTo(x+7,boxY-22); ctx.closePath(); ctx.fill();
       ctx.fillStyle='#fff'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center'; ctx.fillText('YOU',x,boxY-24); }   // 自分マーカー
   }
+  function drawMochiHouse(){                          // 建方で建てた家（餅まきの背景）
+    const cx=cssW/2, hw=Math.min(cssW*0.32,124), ridgeY=mochiRidgeY(), eaveY=178, wallBot=266, ridgeHalf=46;
+    ctx.fillStyle='#efe6d0'; ctx.fillRect(cx-hw, eaveY, hw*2, wallBot-eaveY);                 // 壁
+    ctx.fillStyle='#bfe0f0';                                                                   // 窓
+    ctx.fillRect(cx-hw*0.64, eaveY+24, hw*0.5, 44); ctx.fillRect(cx+hw*0.14, eaveY+24, hw*0.5, 44);
+    ctx.strokeStyle='#8a5a2b'; ctx.lineWidth=3;
+    ctx.strokeRect(cx-hw*0.64, eaveY+24, hw*0.5, 44); ctx.strokeRect(cx+hw*0.14, eaveY+24, hw*0.5, 44);
+    ctx.fillStyle='#a9733f'; ctx.fillRect(cx-hw, eaveY, 12, wallBot-eaveY); ctx.fillRect(cx+hw-12, eaveY, 12, wallBot-eaveY); ctx.fillRect(cx-6, eaveY, 12, wallBot-eaveY);   // 柱
+    ctx.fillStyle='#8a5a2b'; ctx.fillRect(cx-hw, eaveY, hw*2, 12); ctx.fillRect(cx-hw, wallBot-12, hw*2, 12);   // 梁
+    const rg=ctx.createLinearGradient(0,ridgeY,0,eaveY); rg.addColorStop(0,'#7a4a30'); rg.addColorStop(1,'#5c3a20');   // 屋根
+    ctx.fillStyle=rg; ctx.beginPath(); ctx.moveTo(cx-hw-16, eaveY+8); ctx.lineTo(cx-ridgeHalf, ridgeY); ctx.lineTo(cx+ridgeHalf, ridgeY); ctx.lineTo(cx+hw+16, eaveY+8); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.14)'; ctx.lineWidth=1;                                        // 瓦ライン
+    for(let k=1;k<=3;k++){ const yy=ridgeY+(eaveY-ridgeY)*k/4, t=k/4, half=ridgeHalf+(hw+16-ridgeHalf)*t; ctx.beginPath(); ctx.moveTo(cx-half-2,yy); ctx.lineTo(cx+half+2,yy); ctx.stroke(); }
+    ctx.fillStyle='#4a2f18'; ctx.fillRect(cx-ridgeHalf, ridgeY-5, ridgeHalf*2, 9);            // 棟木
+    return {cx, ridgeY, ridgeHalf, eaveY, hw};
+  }
+  function drawGoshiki(x, baseY){                     // 屋根の上の五色旗（風になびく）
+    const t=performance.now()*0.004, topY=baseY-98;
+    ctx.strokeStyle='#9ab06a'; ctx.lineWidth=5; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(x,baseY); ctx.lineTo(x,topY); ctx.stroke();   // 竹の柱
+    ctx.strokeStyle='#a9733f'; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(x+6, topY+14); ctx.lineTo(x-42, topY+2); ctx.stroke();             // 横木
+    ctx.fillStyle='#fbfbf7'; ctx.beginPath(); ctx.arc(x, topY-3, 6, 0, 6.283); ctx.fill(); ctx.strokeStyle='#c9a24a'; ctx.lineWidth=1.5; ctx.stroke();   // 御幣
+    const cols=['#6a3fa0','#2f6fd6','#4a9a4c','#e8c531','#d1503a'];                             // 五色（紫青緑黄赤）
+    for(let i=0;i<cols.length;i++){ const y0=topY+8+i*6;
+      ctx.strokeStyle=cols[i]; ctx.lineWidth=7; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(x-2, y0);
+      for(let s=1;s<=6;s++){ const px=x-2-s*11, py=y0 + s*3 + Math.sin(t + s*0.6 + i*0.5)*6; ctx.lineTo(px, py); }
+      ctx.stroke(); }
+  }
   function drawMochiBonus(){
-    const g=ctx.createLinearGradient(0,0,0,cssH); g.addColorStop(0,'#a9def7'); g.addColorStop(.6,'#dff2ff'); g.addColorStop(1,'#eef8ff');
+    const g=ctx.createLinearGradient(0,0,0,cssH); g.addColorStop(0,'#7db8e8'); g.addColorStop(.55,'#bfe0f5'); g.addColorStop(1,'#eef8ff');
     ctx.fillStyle=g; ctx.fillRect(0,0,cssW,cssH);
-    for(let i=0;i<Math.ceil(cssW/40)+1;i++){ ctx.fillStyle=i%2?'#d1503a':'#fff'; ctx.fillRect(i*40,0,40,26); }   // 紅白幕
-    ctx.fillStyle='#e0a63c'; ctx.fillRect(0,26,cssW,4);
-    drawMiniTower(cssW*0.20, 30, Math.min(cssW*0.30,108));                                   // 小さい五重塔（左）
-    // 足場の梁＋大工さん（餅をまく）
-    const feetY=142, beamW=96;
-    ctx.fillStyle='#8a5a2b'; roundRectS(cssW/2-beamW/2, feetY, beamW, 10, 3); ctx.fill();
-    ctx.strokeStyle='#5c3a18'; ctx.lineWidth=2; ctx.strokeRect(cssW/2-beamW/2, feetY, beamW, 10);
-    if(mascotImg.complete && mascotImg.naturalWidth){ const mh=104, mw=mh*260/340, bob=mochiThrowT>0?(mochiThrowT/0.2)*5:0; ctx.drawImage(mascotImg, cssW/2-mw/2, feetY-mh-bob, mw, mh); }
+    drawCloud(cssW*0.78, 60, 30); drawCloud(cssW*0.16, 96, 24);   // 雲
+    const house=drawMochiHouse();                                            // 建方で建てた家＝背景
+    drawGoshiki(house.cx - house.ridgeHalf + 2, house.ridgeY);               // 屋根の上の五色旗
+    if(mascotImg.complete && mascotImg.naturalWidth){ const mh=98, mw=mh*260/340, bob=mochiThrowT>0?(mochiThrowT/0.2)*6:0; ctx.drawImage(mascotImg, cssW/2-mw/2, mochiRidgeY()-mh-bob, mw, mh); }   // 屋根の棟に立つ大工が餅まき
     for(const m of mochis) drawMochi(m);
     for(const p of crowd) drawCatcher(p.x, p.col, 0.82, false, Math.abs(Math.sin(p.bob))*3);   // 拾いに来た人々
     drawCatcher(catcher.x, '#3f7a4a', 1, true, 0);                                             // 自分
