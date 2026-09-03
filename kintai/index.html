@@ -120,6 +120,7 @@
   .cal-day.today:not(.sel){box-shadow:inset 0 0 0 2px var(--brand)}
   .cal-day.lv-pending{box-shadow:inset 0 0 0 3px #e6a23c}            /* 申請中＝オレンジの枠 */
   .cal-day.lv-approved{background:#ffd21e; color:#6b5200; font-weight:800; border-radius:50%}  /* 承認＝黄色い丸 */
+  .cal-day.worked::after{content:''; position:absolute; bottom:3px; left:50%; transform:translateX(-50%); width:7px; height:7px; border-radius:50%; background:#1aa260}  /* 出勤カレンダー：報告済み＝緑丸 */
   .cal-day.sel{background:var(--brand); color:#fff; font-weight:800; border-radius:8px}  /* 選択が最優先 */
   .cal-empty{background:transparent}
   .calsel{margin-top:8px; font-size:13.5px; font-weight:800; color:var(--brand-dark); text-align:center}
@@ -185,8 +186,10 @@
     </div>
 
     <div class="field">
-      <label class="req" for="date">作業日</label>
-      <input type="date" id="date">
+      <label class="req">作業日（カレンダーから選択）</label>
+      <div id="workCal" class="cal"></div>
+      <div class="calsel" id="workSelLabel">日付をタップして選んでください</div>
+      <div class="callegend">🟢 報告済みの日　🔵 青枠＝今日</div>
     </div>
 
     <div class="field">
@@ -313,8 +316,11 @@
   let workersMap = {};          // 氏名 -> {key, granted}（有給の付与日数）
   let myLeavesMap = {};         // key -> 自分の有給
   let _leavesQuery = null;      // 有給のリスナー（氏名切替時に付け替える）
-  let calMonth = null;          // 表示中の月（その月の1日のDate）
-  let selectedLeaveDate = '';   // カレンダーで選択中の日（YYYY-MM-DD）
+  let calMonth = null;          // 有給カレンダー：表示中の月
+  let selectedLeaveDate = '';   // 有給カレンダー：選択中の日
+  let workCalMonth = null;      // 出勤カレンダー：表示中の月
+  let selectedWorkDate = '';    // 出勤カレンダー：選択中の作業日
+  let myWorkDates = new Set();  // 自分が報告済みの日（緑丸表示用）
 
   // ---- Firebase 初期化 ----
   function initFirebase(){
@@ -391,11 +397,13 @@
   // ---- 自分の最近の報告 ----
   function loadMyRecords(){
     const name=$('worker').value; const box=$('myRecords');
-    if(!name){ box.innerHTML='<div class="hint" style="padding:4px">氏名を選ぶと表示されます。</div>'; return; }
+    if(!name){ box.innerHTML='<div class="hint" style="padding:4px">氏名を選ぶと表示されます。</div>'; myWorkDates=new Set(); renderWorkCalendar(); return; }
     ref('records').orderByChild('workerName').equalTo(name).limitToLast(100).on('value', snap=>{
       const cutoff=monthAgoStr(); // 過去1ヶ月以内のみ表示
-      const arr=[]; myRecsMap={}; snap.forEach(c=>{ const r=c.val(); r._key=c.key; myRecsMap[c.key]=r; if((r.date||'')>=cutoff) arr.push(r); });
+      const arr=[]; myRecsMap={}; myWorkDates=new Set();
+      snap.forEach(c=>{ const r=c.val(); r._key=c.key; myRecsMap[c.key]=r; if(r.date) myWorkDates.add(r.date); if((r.date||'')>=cutoff) arr.push(r); });
       arr.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
+      renderWorkCalendar(); // 出勤カレンダーの「報告済み」印を更新
       if(!arr.length){ box.innerHTML='<div class="hint" style="padding:4px">過去1ヶ月の報告はありません。</div>'; return; }
       box.innerHTML = arr.map(r=>{
         const unit = unitLabel(r.dayUnit);
@@ -447,6 +455,38 @@
     if(prev && !prevDisabled) prev.onclick=()=>{ calMonth=new Date(y,m-1,1); renderCalendar(); };
     if(next) next.onclick=()=>{ calMonth=new Date(y,m+1,1); renderCalendar(); };
     cal.querySelectorAll('[data-cald]').forEach(c=> c.onclick=()=>{ selectedLeaveDate=c.dataset.cald; renderCalendar(); });
+  }
+
+  // ---- 出勤カレンダー（作業日をカレンダーで選択） ----
+  function initWorkCalendar(){
+    selectedWorkDate = todayStr();
+    const d=parseYmd(selectedWorkDate);
+    workCalMonth=new Date(d.getFullYear(), d.getMonth(), 1);
+    renderWorkCalendar();
+  }
+  function renderWorkCalendar(){
+    const cal=$('workCal'); if(!cal || !workCalMonth) return;
+    const today=todayStr(), cur=parseYmd(today);
+    const y=workCalMonth.getFullYear(), m=workCalMonth.getMonth();
+    const startWd=new Date(y,m,1).getDay(), daysInMonth=new Date(y,m+1,0).getDate();
+    // 未来の月へは進めない（当月以降を表示中なら「次へ」を無効化）
+    const nextIsFuture = (y>cur.getFullYear()) || (y===cur.getFullYear() && m>=cur.getMonth());
+    let h='<div class="cal-head"><button class="cal-nav" id="wCalPrev">‹</button>'+
+      '<span class="m">'+y+'年 '+(m+1)+'月</span><button class="cal-nav" id="wCalNext"'+(nextIsFuture?' disabled':'')+'>›</button></div><div class="cal-grid">';
+    ['日','月','火','水','木','金','土'].forEach((w,i)=> h+='<div class="cal-wd'+(i===0?' sun':(i===6?' sat':''))+'">'+w+'</div>');
+    for(let i=0;i<startWd;i++) h+='<div class="cal-empty"></div>';
+    for(let d=1; d<=daysInMonth; d++){
+      const ds=ymd(y,m,d), dis=ds>today; // 未来日は選べない
+      const cls=['cal-day']; if(dis) cls.push('dis'); if(ds===selectedWorkDate) cls.push('sel'); if(ds===today) cls.push('today');
+      if(myWorkDates.has(ds)) cls.push('worked');
+      h+='<div class="'+cls.join(' ')+'"'+(dis?'':' data-wcal="'+ds+'"')+'>'+d+'</div>';
+    }
+    h+='</div>'; cal.innerHTML=h;
+    const label=$('workSelLabel'); if(label) label.textContent = selectedWorkDate? ('選択中：'+selectedWorkDate.replace(/-/g,'/')) : '日付をタップして選んでください';
+    const prev=$('wCalPrev'), next=$('wCalNext');
+    if(prev) prev.onclick=()=>{ workCalMonth=new Date(y,m-1,1); renderWorkCalendar(); };
+    if(next && !nextIsFuture) next.onclick=()=>{ workCalMonth=new Date(y,m+1,1); renderWorkCalendar(); };
+    cal.querySelectorAll('[data-wcal]').forEach(c=> c.onclick=()=>{ selectedWorkDate=c.dataset.wcal; renderWorkCalendar(); });
   }
 
   // ---- 有給休暇（申請・承認・残日数） ----
@@ -529,7 +569,8 @@
   function enterEdit(key){
     const r=myRecsMap[key]; if(!r){ toast('記録が見つかりません','err'); return; }
     editingKey=key;
-    $('date').value=r.date||todayStr();
+    selectedWorkDate=r.date||todayStr();
+    { const d=parseYmd(selectedWorkDate); workCalMonth=new Date(d.getFullYear(), d.getMonth(), 1); renderWorkCalendar(); }
     setSiteField(r.siteName||'');
     setDayUnit(r.dayUnit);
     $('work').value=r.work||''; $('note').value=r.note||'';
@@ -545,7 +586,8 @@
     $('cancelEditBtn').style.display='none';
     $('submitBtn').textContent='この内容で報告する';
     $('work').value=''; $('note').value='';
-    $('date').value=todayStr();
+    selectedWorkDate=todayStr();
+    { const d=parseYmd(selectedWorkDate); workCalMonth=new Date(d.getFullYear(), d.getMonth(), 1); renderWorkCalendar(); }
   }
   function deleteMyRecord(key){
     const r=myRecsMap[key]; if(!r) return;
@@ -558,7 +600,7 @@
   // ---- ヘルプ（使い方の検索） ----
   const HELP_TOPICS=[
     {t:'氏名（自分）を選ぶ・変更する', k:'氏名 名前 自分 選択 記憶 本人 変更', a:'初回に自分の氏名を選ぶと、この端末では「あなた本人」に固定され、自分の分だけ報告できます。別の人の分は、その人の端末で選んでください。氏名の右の「変更」から選び直せます（別の人に代わって入力したいときは管理者に依頼してください）。'},
-    {t:'作業日を入れる', k:'作業日 日付 カレンダー 日 過去', a:'「作業日」に現場へ入った日を入れます。初期値は今日です。前の日の分も日付を選んで報告できます。'},
+    {t:'作業日をカレンダーで選ぶ', k:'作業日 日付 カレンダー 日 過去 出勤', a:'「作業日」はカレンダーから日をタップして選びます。初期値は今日で、前の日の分も選べます（未来日は選べません）。緑丸＝すでに報告済みの日、青枠＝今日です。'},
     {t:'現場を選ぶ／その他で自由入力', k:'現場 場所 選択 その他 自由入力', a:'「現場」から選びます。一覧に無い現場は「＋その他（自由入力）」を選ぶと現場名を直接入力できます。'},
     {t:'労働時間（0.25／0.5／0.75／1日）', k:'労働時間 勤務区分 日 0.25 0.5 0.75 1日 工数', a:'その日の労働時間を「0.25日・0.5日・0.75日・1日」から選びます（1日を1.0とした割合）。人件費の日数計算に使われます。'},
     {t:'作業内容・備考を書く', k:'作業内容 備考 メモ 内容', a:'「作業内容」に行った作業（例：2F内装ボード貼り）を書きます。「備考」は任意（例：資材待ちで午前のみ）です。'},
@@ -610,7 +652,7 @@
     let site=$('site').value;
     if(site==='__other__') site=$('siteOther').value.trim();
     const work=$('work').value.trim();
-    const date=$('date').value;
+    const date=selectedWorkDate;
     if(!name){ toast('氏名を選択してください','err'); return; }
     if(!date){ toast('作業日を入力してください','err'); return; }
     if(!site){ toast('現場を選択してください','err'); return; }
@@ -654,7 +696,7 @@
 
   // ---- 起動 ----
   function bindUI(){
-    $('date').value=todayStr();
+    initWorkCalendar();
     // 有給は1週間以上先のみ：カレンダーを初期化（1週間先を初期選択、それより前はグレーで選べない）
     initCalendar();
     $('worker').addEventListener('change', ()=>{ if(editingKey) exitEdit(); const n=$('worker').value;

@@ -104,6 +104,19 @@
   .orgform .f{margin-bottom:12px}
   .orgform label{display:block; font-size:12px; color:var(--sub); font-weight:600; margin-bottom:4px}
   .orgform input{width:100%}
+  /* 出勤カレンダー */
+  .acal{border:1px solid var(--line); border-radius:12px; padding:8px; background:#fff; max-width:520px; user-select:none}
+  .acal-head{display:flex; align-items:center; justify-content:space-between; padding:2px 4px 8px}
+  .acal-head .m{font-weight:800; font-size:15px}
+  .acal-nav{background:#eef3fb; border:0; border-radius:8px; width:34px; height:34px; font-size:18px; cursor:pointer; color:var(--accent)}
+  .acal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:3px}
+  .acal-wd{text-align:center; font-size:11px; color:var(--sub); font-weight:700; padding:2px 0}
+  .acal-day{aspect-ratio:1/1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:8px; font-size:13px; background:#f4f7fb; color:var(--ink); position:relative}
+  .acal-day .dn{line-height:1.05}
+  .acal-day .wu{font-size:10px; font-weight:800; line-height:1; margin-top:1px}
+  .acal-day.worked{background:#eafaf0; color:#178a52; box-shadow:inset 0 0 0 1px #b6e6c8}
+  .acal-day.leave{background:#ffd21e; color:#6b5200; border-radius:50%; font-weight:800}
+  .acal-day.today{box-shadow:inset 0 0 0 2px var(--accent)}
 </style>
 </head>
 <body>
@@ -142,6 +155,7 @@
   <div class="tabs">
     <button data-tab="summary" class="on">📊 集計・Excel出力</button>
     <button data-tab="records">📝 記録一覧</button>
+    <button data-tab="attend">📅 出勤カレンダー</button>
     <button data-tab="workers">👷 従業員</button>
     <button data-tab="sites">📍 勤務管理</button>
     <button data-tab="leave">🏖️ 有給</button>
@@ -219,6 +233,20 @@
           <tbody></tbody>
         </table>
       </div>
+    </div>
+  </section>
+
+  <!-- 出勤カレンダータブ -->
+  <section id="tab-attend" class="hide">
+    <div class="card">
+      <h2>📅 出勤カレンダー</h2>
+      <div class="addrow">
+        <label style="font-size:13px; color:var(--sub); font-weight:600">従業員</label>
+        <select id="atWorker" style="min-width:180px"></select>
+      </div>
+      <div id="atCal" class="acal" style="margin-top:6px"></div>
+      <div class="note" id="atSummary" style="margin-top:10px"></div>
+      <div style="font-size:12px; color:var(--sub); margin-top:4px">🟩 出勤（数字＝工数）　🟡 有給（承認）　枠＝今日。一人ずつ月ごとに出勤状況を確認できます。</div>
     </div>
   </section>
 
@@ -398,9 +426,11 @@
   const round1=n=>Math.round((n||0)*10)/10;
   // 労働時間の表示ラベル（0.25/0.5/0.75/1日）
   const unitLabel=u=>{ const n=Number(u); return (n===0.25?'0.25日':n===0.5?'0.5日':n===0.75?'0.75日':n===1?'1日':(round1(n)+'日')); };
+  const ymd=(y,m,d)=>y+'-'+z(m+1)+'-'+z(d);
 
   let db=null;
   let workers={}, sites={}, records={}, leaves={}; // key -> obj
+  let atWorker='', atMonth=null; // 出勤カレンダー（対象従業員・表示中の月）
 
   // ---------- パスコード ----------
   function gate(){
@@ -653,11 +683,11 @@
     if(ok==='authfail'){ toast('認証に接続できませんでした（Firebaseで匿名ログインの有効化が必要です）','err'); return; }
     if(!ok){ toast('Firebase未設定です（config.js）','err'); return; }
     setThisMonth();
-    bindTabs(); bindFilters(); bindMasters(); bindEditModal(); bindOrg(); $('exportBtn').onclick=exportExcel;
-    ref('workers').on('value',s=>{ workers=s.val()||{}; renderWorkers(); fillWorkerFilter(); renderAll(); renderLeave(); });
+    bindTabs(); bindFilters(); bindMasters(); bindEditModal(); bindOrg(); bindAttend(); $('exportBtn').onclick=exportExcel;
+    ref('workers').on('value',s=>{ workers=s.val()||{}; renderWorkers(); fillWorkerFilter(); fillAtWorker(); renderAll(); renderLeave(); renderAttend(); });
     ref('sites').on('value',s=>{ sites=s.val()||{}; renderSites(); fillSiteFilter(); });
-    ref('records').on('value',s=>{ records=s.val()||{}; renderAll(); });
-    ref('leaves').on('value',s=>{ leaves=s.val()||{}; renderLeave(); });
+    ref('records').on('value',s=>{ records=s.val()||{}; renderAll(); renderAttend(); });
+    ref('leaves').on('value',s=>{ leaves=s.val()||{}; renderLeave(); renderAttend(); });
   }
 
   // ---------- タブ ----------
@@ -666,9 +696,9 @@
       b.onclick=()=>{
         document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
         b.classList.add('on');
-        ['summary','records','workers','sites','leave','org'].forEach(t=>$('tab-'+t).classList.add('hide'));
+        ['summary','records','attend','workers','sites','leave','org'].forEach(t=>$('tab-'+t).classList.add('hide'));
         $('tab-'+b.dataset.tab).classList.remove('hide');
-        $('filterCard').style.display=(b.dataset.tab==='workers'||b.dataset.tab==='sites'||b.dataset.tab==='leave'||b.dataset.tab==='org')?'none':'';
+        $('filterCard').style.display=(b.dataset.tab==='workers'||b.dataset.tab==='sites'||b.dataset.tab==='leave'||b.dataset.tab==='org'||b.dataset.tab==='attend')?'none':'';
       };
     });
   }
@@ -975,6 +1005,46 @@
     box.querySelectorAll('[data-dell]').forEach(b=> b.onclick=()=>{ if(confirm('この有給記録を削除しますか？')) ref('leaves/'+b.dataset.dell).remove().then(()=>toast('削除しました','ok')); });
   }
 
+  // ---------- 出勤カレンダー（従業員ごとの出勤状況を月表示） ----------
+  function fillAtWorker(){
+    const sel=$('atWorker'); if(!sel) return; const cur=sel.value || atWorker;
+    const list=Object.values(workers).filter(w=>w&&w.active!==false).map(w=>w.name).sort((a,b)=>(a||'').localeCompare(b||'','ja'));
+    sel.innerHTML=list.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join('');
+    if(cur && list.indexOf(cur)>=0) sel.value=cur;
+    atWorker=sel.value||'';
+  }
+  function renderAttend(){
+    const cal=$('atCal'); if(!cal) return;
+    if(!atMonth){ const d=new Date(); atMonth=new Date(d.getFullYear(), d.getMonth(), 1); }
+    const name=atWorker || $('atWorker').value || '';
+    const y=atMonth.getFullYear(), m=atMonth.getMonth(), pre=y+'-'+z(m+1)+'-';
+    // その従業員の当月：日ごとの工数合計 と 承認有給
+    const unitByDate={}, leaveByDate={};
+    Object.values(records||{}).forEach(r=>{ if(!r||r.workerName!==name) return; const ds=r.date||''; if(ds.indexOf(pre)!==0) return;
+      unitByDate[ds]=(unitByDate[ds]||0)+(r.dayUnit!=null?Number(r.dayUnit):1); });
+    Object.values(leaves||{}).forEach(l=>{ if(!l||l.workerName!==name) return; if(l.status==='pending'||l.status==='rejected') return; const ds=l.date||''; if(ds.indexOf(pre)!==0) return;
+      leaveByDate[ds]=(leaveByDate[ds]||0)+(Number(l.days)||0); });
+    const today=todayStr(), startWd=new Date(y,m,1).getDay(), daysInMonth=new Date(y,m+1,0).getDate();
+    let h='<div class="acal-head"><button class="acal-nav" id="atPrev">‹</button><span class="m">'+y+'年 '+(m+1)+'月</span><button class="acal-nav" id="atNext">›</button></div><div class="acal-grid">';
+    ['日','月','火','水','木','金','土'].forEach(w=> h+='<div class="acal-wd">'+w+'</div>');
+    for(let i=0;i<startWd;i++) h+='<div></div>';
+    let totDays=0, totUnit=0, totLeave=0;
+    for(let d=1; d<=daysInMonth; d++){
+      const ds=ymd(y,m,d), wu=unitByDate[ds], lv=leaveByDate[ds];
+      const cls=['acal-day']; let inner='<div class="dn">'+d+'</div>';
+      if(wu){ cls.push('worked'); inner+='<div class="wu">'+round1(wu)+'</div>'; totDays++; totUnit+=wu; }
+      else if(lv){ cls.push('leave'); inner+='<div class="wu">有</div>'; totLeave+=lv; }
+      if(ds===today) cls.push('today');
+      h+='<div class="'+cls.join(' ')+'">'+inner+'</div>';
+    }
+    h+='</div>'; cal.innerHTML=h;
+    $('atSummary').innerHTML= name ? ('<b>'+esc(name)+'</b>　'+y+'年'+(m+1)+'月：出勤 <b>'+totDays+'</b> 日・工数計 <b>'+round1(totUnit)+'</b>'+(totLeave?'・有給 <b>'+round1(totLeave)+'</b> 日':'')) : '従業員を選んでください。';
+    const prev=$('atPrev'), next=$('atNext');
+    if(prev) prev.onclick=()=>{ atMonth=new Date(y,m-1,1); renderAttend(); };
+    if(next) next.onclick=()=>{ atMonth=new Date(y,m+1,1); renderAttend(); };
+  }
+  function bindAttend(){ $('atWorker').onchange=()=>{ atWorker=$('atWorker').value; renderAttend(); }; }
+
   // ---------- Excel出力（数式入り） ----------
   function exportExcel(){
     if(typeof XLSX==='undefined'){ toast('Excelライブラリ未読込（ネット接続を確認）','err'); return; }
@@ -1067,6 +1137,7 @@
     {t:'従業員を追加・管理する', k:'従業員 追加 登録 氏名 マスタ 無効 削除', a:'「従業員」タブで氏名を入れて「追加」します（クラウド共有）。氏名はセルで直接編集、無効化・削除もできます（過去の記録は残ります）。'},
     {t:'勤務管理（工事・現場）を追加・状態を変える', k:'勤務管理 現場 工事 追加 編集 着工前 工事中 工事完了 完了 状態 タブ 事務所勤務', a:'「🏗️勤務管理」タブで工事現場を追加できます。工事名の脇のタブで「着工前／工事中／工事完了」を切り替えます。表には着工前・工事中だけが並び、「工事完了」にすると「完了した工事」に保存され、入力フォームの現場一覧からも外れます。「🏢事務所勤務」は常に選べる固定項目で、状態タブはありません。'},
     {t:'記録を修正・削除・代理入力する', k:'記録 修正 編集 削除 訂正 一覧 代理 追加 入力', a:'「記録一覧」タブで各行の「修正」から内容を直せます（管理者は全員の記録を修正可）。「削除」で消せます。上の「➕代理で報告を追加」から、全職員の分を管理者が代理で入力（時間・休憩も入力可）できます。'},
+    {t:'出勤カレンダーで確認する', k:'出勤 カレンダー 出勤状況 一人 従業員 月 工数 有給', a:'「📅出勤カレンダー」タブで従業員を選ぶと、その人の月ごとの出勤状況を確認できます。出勤日は緑（数字＝工数）、承認済みの有給は黄色い「有」で表示。下に出勤日数・工数計・有給日数が出ます。‹ ›で月を切り替えます。'},
     {t:'Excelを出力する', k:'excel エクセル 出力 ダウンロード 帳票 集計', a:'「集計・Excel出力」タブの「📊Excelファイルをダウンロード」で、現在の絞り込み範囲を「勤怠記録・集計サマリ・現場別集計・現場×氏名」の複数シートで出力します（金額は含みません）。'},
     {t:'現場×氏名クロス集計の見方', k:'クロス 集計 現場 氏名 出勤日数 表', a:'「現場×氏名（出勤日数）」表で、どの現場に誰が何日入ったかを一覧できます。行＝現場、列＝氏名、数字＝出勤日数です。'},
     {t:'アプリにする（ホーム画面に追加）', k:'アプリにする ホーム画面 アイコン インストール アプリ pwa 追加', a:'ヘッダーの「⬇️アプリにする」を押すと追加できます（Android/PCは1タップ）。iPhoneはSafariの共有ボタン→「ホーム画面に追加」。'},
