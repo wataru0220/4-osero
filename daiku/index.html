@@ -94,13 +94,13 @@
   .hud{position:absolute; top:0; left:0; right:0; padding:calc(env(safe-area-inset-top) + 10px) 12px 0; pointer-events:none;}
   .hud-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
   .score-box{
-    background:rgba(27,58,92,.9); color:#fff; border-radius:14px; padding:8px 14px;
-    box-shadow:0 6px 16px rgba(0,0,0,.22); min-width:104px;
+    background:rgba(27,58,92,.85); color:#fff; border-radius:11px; padding:5px 11px;
+    box-shadow:0 4px 10px rgba(0,0,0,.18); min-width:84px;
   }
-  .score-box .lbl{font-size:11px; opacity:.85; letter-spacing:.1em;}
-  .score-box .val{font-size:30px; font-weight:900; line-height:1.05;}
-  .score-box .val small{font-size:15px; font-weight:800; margin-left:2px;}
-  .score-box .best{font-size:11px; opacity:.85; margin-top:1px;}
+  .score-box .lbl{font-size:10px; opacity:.85; letter-spacing:.08em;}
+  .score-box .val{font-size:19px; font-weight:800; line-height:1.05;}
+  .score-box .val small{font-size:11px; font-weight:700; margin-left:2px; opacity:.9;}
+  .score-box .best{font-size:10px; opacity:.8; margin-top:1px;}
   .hud-right{display:flex; flex-direction:column; align-items:flex-end; gap:8px; pointer-events:auto;}
   .icon-btn{
     width:44px; height:44px; border-radius:12px; font-size:20px; color:#fff;
@@ -722,9 +722,9 @@
     const g=$('game'); g.classList.remove('mode-build','mode-crane','mode-nail','mode-saw','mode-mochi'); g.classList.add('mode-'+mode);
     tapHint.style.display='none';
     if(mode!=='build'){                       // 棟梁・弟子・アイテム枠は建方専用
-      gameMascot.style.left=''; gameMascot.style.top=''; gameMascot.style.width='';
+      gameMascot.style.display='none';
       deshiEl.classList.remove('show'); itemSlot.classList.remove('show');
-    } else if(heldItem){ itemSlot.classList.add('show'); }
+    } else { gameMascot.style.display=''; if(heldItem) itemSlot.classList.add('show'); }
     if(mode==='build') initBuild();
     else if(mode==='crane') initCrane();
     else if(mode==='nail') initNail();
@@ -1440,7 +1440,8 @@
   // 大工を「組んでいる材の上」に立たせる（カケヤで叩き入れる）
   function positionMascot(){
     const el=gameMascot;
-    if(state!=='play' || !current){ el.style.left=''; el.style.top=''; el.style.width=''; el.style.bottom=''; return; }
+    if(state!=='play' || !current){ el.style.display='none'; return; }   // 作業中の材が無ければ隠す
+    el.style.display='';
     const t=current.t, f=current.slot.f;
     const footY = (f!=null) ? floorBaseY(f) : postTopY(floors-1);   // 作業中の床（＝下階の上）
     // 建物の footprint 内に収める（端からはみ出して空中に浮かないように）
