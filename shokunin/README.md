@@ -42,7 +42,7 @@
 ### A. すぐ試す（お試しモード）
 `config.js` の Firebase を未設定のまま `index.html` を開くと、**この端末内だけで動くお試しモード**で起動します。同じ端末の別タブとは同期しますが、他端末とは共有されません。操作感の確認用です。
 
-> 管理画面のアクセスは Firebase ログイン＋管理者登録（最初に登録した人が管理者）で保護されます。簡易パスコードは廃止しました。
+> 管理画面のアクセスは Firebase ログイン＋管理者登録で保護されます。簡易パスコードは廃止しました。本番の厳格ルールでは「最初の1人」の自己登録はできないため、下記「管理者の登録」の手順に従ってください。
 
 ### B. 本番運用（複数の工務店で共有）
 1. `config.js` の `firebase` に Firebase Realtime Database の設定を入れる
@@ -52,12 +52,17 @@
 4. **`admin.html` を開いて管理者アカウントを作る**（次項）
 5. 各工務店の担当者に **`index.html` のURL** を共有（LINEグループに貼る運用も可）
 
-### 管理者の登録（とても簡単・3ステップ）
+### 管理者の登録（初回のみ・下記ルール反映の**前に**行う）
 1. `admin.html` を開く
 2. メールアドレスと**新しく決めたパスワード（6文字以上）**を入れて **「新規登録」** を押す
 3. 「このアカウントを管理者にする」ボタンを押す → 完了（以後このアカウントで全件管理）
 
-> **最初に登録した人が管理者**になります。`config.js` やルールにメールを書き込む必要はありません。2回目以降は「ログイン」を押すだけ。管理者を増やしたい場合は、Firebaseコンソール → Realtime Database の `shokunin/admins` に、追加したい人の `ユーザーUID: true` を足します（UIDは Authentication → Users で確認）。
+> ⚠️ 上記の3ステップは **下の「本番反映」でルールを差し替える前**に、まだ緩い初期状態のルール
+> （または `"shokunin": { ".read": true, ".write": true }` の簡易ルール）で行ってください。本番用の
+> 厳格ルールは「既存の管理者だけが `admins` を追加できる」方式のため、**先に最低1人の管理者を
+> 登録してからでないと、誰も admin を追加できなくなります**。2回目以降は「ログイン」を押すだけ。
+> 管理者を増やしたい場合は、Firebaseコンソール → Realtime Database の `shokunin/admins` に、
+> 追加したい人の `ユーザーUID: true` を足します（UIDは Authentication → Users で確認）。
 
 ### 権限モデル（だれが何をできるか）
 - **工務店アカウント**：`index.html`でメール/パスワードでログイン。各工務店の `ownerEmail` ＝ 自分のメールの場合だけ、**自社の大工を登録・編集・削除**できます（ルールで強制）。
@@ -90,7 +95,7 @@
       "admins": {
         ".read": "auth != null",
         "$uid": {
-          ".write": "auth != null && auth.uid === $uid && (!root.child('shokunin/admins').exists() || root.child('shokunin/admins').child(auth.uid).val() === true)"
+          ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
         }
       },
       "members": {
@@ -110,18 +115,21 @@
       "companies": {
         ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
         "$cid": {
-          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( ( root.child('shokunin/members').child(auth.uid).exists() ) && (!data.exists() || data.child('ownerEmail').val() === auth.token.email) && (!newData.exists() || newData.child('ownerEmail').val() === auth.token.email) ) )"
+          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( root.child('shokunin/members').child(auth.uid).exists() && newData.exists() && (!data.exists() || data.child('ownerEmail').val() === auth.token.email) && newData.child('ownerEmail').val() === auth.token.email && (!data.exists() || newData.child('name').val() === data.child('name').val()) ) )"
         }
       },
       "craftsmen": {
         ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
         "$kid": {
-          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( (!data.exists() || root.child('shokunin/companies').child(data.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) && (!newData.exists() || root.child('shokunin/companies').child(newData.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) ) )"
+          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( root.child('shokunin/members').child(auth.uid).exists() && (!data.exists() || root.child('shokunin/companies').child(data.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) && (!newData.exists() || root.child('shokunin/companies').child(newData.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) ) )"
         }
       },
       "reviews": {
         ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
-        "$rid": { ".write": "auth != null && ( (!data.exists() && newData.child('byUid').val() === auth.uid) || (data.exists() && (data.child('byUid').val() === auth.uid || root.child('shokunin/admins').child(auth.uid).val() === true)) )" }
+        "$rid": {
+          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( root.child('shokunin/members').child(auth.uid).exists() && ( (!data.exists() && newData.child('byUid').val() === auth.uid) || (data.exists() && data.child('byUid').val() === auth.uid) ) ) )",
+          ".validate": "newData.child('rating').val() >= 1 && newData.child('rating').val() <= 5 && ( newData.child('type').val() === 'company' ? root.child('shokunin/companies').child(newData.child('targetKey').val()).child('ownerEmail').val() !== auth.token.email : root.child('shokunin/companies').child(root.child('shokunin/craftsmen').child(newData.child('targetKey').val()).child('companyKey').val()).child('ownerEmail').val() !== auth.token.email )"
+        }
       },
       "approvals": {
         ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
@@ -130,28 +138,32 @@
       "reqIndex": {
         "$ck": {
           ".read": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || root.child('shokunin/companies').child($ck).child('ownerEmail').val() === auth.token.email )",
-          ".write": "auth != null"
+          "$rid": {
+            ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( root.child('shokunin/members').child(auth.uid).exists() && ( root.child('shokunin/requests').child($rid).child('fromCompanyKey').val() === $ck || root.child('shokunin/requests').child($rid).child('toCompanyKey').val() === $ck ) && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email ) ) )"
+          }
         }
       },
       "requests": {
         ".read": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true",
         "$rid": {
           ".read": "auth != null && ( data.child('fromEmail').val() === auth.token.email || data.child('toOwnerEmail').val() === auth.token.email )",
-          ".write": "auth != null && ( (!data.exists() && newData.child('fromEmail').val() === auth.token.email) || (data.exists() && (data.child('fromEmail').val() === auth.token.email || data.child('toOwnerEmail').val() === auth.token.email)) || root.child('shokunin/admins').child(auth.uid).val() === true )"
+          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( root.child('shokunin/members').child(auth.uid).exists() && ( (!data.exists() && newData.child('fromEmail').val() === auth.token.email && newData.child('fromUid').val() === auth.uid) || (data.exists() && (data.child('fromEmail').val() === auth.token.email || data.child('toOwnerEmail').val() === auth.token.email)) ) ) ) && ( !data.exists() || !newData.exists() || ( newData.child('fromEmail').val() === data.child('fromEmail').val() && newData.child('toOwnerEmail').val() === data.child('toOwnerEmail').val() && newData.child('fromCompanyKey').val() === data.child('fromCompanyKey').val() && newData.child('toCompanyKey').val() === data.child('toCompanyKey').val() && newData.child('fromUid').val() === data.child('fromUid').val() ) )"
         }
       },
       "deals": {
         "$rid": {
           ".read": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email )",
           "$mid": {
-            ".write": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email ) && ( (!data.exists() && newData.child('byUid').val() === auth.uid) || (data.exists() && data.child('byUid').val() === auth.uid) )"
+            ".write": "auth != null && root.child('shokunin/members').child(auth.uid).exists() && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email ) && ( (!data.exists() && newData.child('byUid').val() === auth.uid) || (data.exists() && data.child('byUid').val() === auth.uid) )"
           }
         }
       },
       "companyChats": {
         "$ck": {
           ".read": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || root.child('shokunin/companies').child($ck).child('ownerEmail').val() === auth.token.email )",
-          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || root.child('shokunin/companies').child($ck).child('ownerEmail').val() === auth.token.email )"
+          "$mid": {
+            ".write": "auth != null && ( ( root.child('shokunin/admins').child(auth.uid).val() === true && !data.exists() && newData.exists() && newData.child('byUid').val() === auth.uid && newData.child('byAdmin').val() === true && newData.child('byName').val() === '管理者' ) || ( root.child('shokunin/members').child(auth.uid).exists() && root.child('shokunin/members').child(auth.uid).child('companyKey').val() === $ck && root.child('shokunin/companies').child($ck).child('ownerEmail').val() === auth.token.email && !data.exists() && newData.exists() && newData.child('byUid').val() === auth.uid && newData.child('byAdmin').val() === false && newData.child('byName').val() === root.child('shokunin/companies').child($ck).child('name').val() ) || ( data.exists() && newData.exists() && data.child('byUid').val() === auth.uid && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( root.child('shokunin/members').child(auth.uid).exists() && root.child('shokunin/members').child(auth.uid).child('companyKey').val() === $ck ) ) && newData.child('byUid').val() === data.child('byUid').val() && newData.child('byAdmin').val() === data.child('byAdmin').val() && newData.child('byName').val() === data.child('byName').val() ) || ( data.exists() && !newData.exists() && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( data.child('byUid').val() === auth.uid && root.child('shokunin/members').child(auth.uid).exists() && root.child('shokunin/members').child(auth.uid).child('companyKey').val() === $ck ) ) ) )"
+          }
         }
       },
       "deletedCompanies": {
@@ -164,9 +176,9 @@
       },
       "contracts": {
         "$rid": {
-          ".read": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email )",
-          ".write": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email )",
-          ".validate": "( root.child('shokunin/requests').child($rid).child('fromEmail').val() !== auth.token.email || !newData.child('toSign').exists() || newData.child('toSign/at').val() === data.child('toSign/at').val() ) && ( root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() !== auth.token.email || !newData.child('fromSign').exists() || newData.child('fromSign/at').val() === data.child('fromSign/at').val() )"
+          ".read": "auth != null && ( data.child('fromEmail').val() === auth.token.email || data.child('toOwnerEmail').val() === auth.token.email )",
+          ".write": "auth != null && root.child('shokunin/members').child(auth.uid).exists() && newData.exists() && ( ( !data.exists() && newData.child('fromEmail').val() === root.child('shokunin/requests').child($rid).child('fromEmail').val() && newData.child('toOwnerEmail').val() === root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() && newData.child('fromUid').val() === root.child('shokunin/requests').child($rid).child('fromUid').val() && ( newData.child('fromEmail').val() === auth.token.email || newData.child('toOwnerEmail').val() === auth.token.email ) ) || ( data.exists() && ( data.child('fromEmail').val() === auth.token.email || data.child('toOwnerEmail').val() === auth.token.email ) && !(data.child('fromSign').exists() && data.child('toSign').exists()) ) )",
+          ".validate": "( !data.exists() || ( newData.child('fromEmail').val() === data.child('fromEmail').val() && newData.child('toOwnerEmail').val() === data.child('toOwnerEmail').val() && newData.child('fromUid').val() === data.child('fromUid').val() ) ) && ( !data.exists() || !( data.child('fromSign').exists() || data.child('toSign').exists() ) || ( newData.child('rid').val() === data.child('rid').val() && newData.child('fromCompanyKey').val() === data.child('fromCompanyKey').val() && newData.child('fromCompanyName').val() === data.child('fromCompanyName').val() && newData.child('toCompanyKey').val() === data.child('toCompanyKey').val() && newData.child('toCompanyName').val() === data.child('toCompanyName').val() && newData.child('craftsmanKey').val() === data.child('craftsmanKey').val() && newData.child('craftsmanName').val() === data.child('craftsmanName').val() && newData.child('site').val() === data.child('site').val() && newData.child('dateText').val() === data.child('dateText').val() && newData.child('projectName').val() === data.child('projectName').val() && newData.child('siteDetail').val() === data.child('siteDetail').val() && newData.child('work').val() === data.child('work').val() && newData.child('amount').val() === data.child('amount').val() && newData.child('payTerm').val() === data.child('payTerm').val() && newData.child('foreman').val() === data.child('foreman').val() && newData.child('notes').val() === data.child('notes').val() ) ) && ( data.child('fromSign').exists() ? ( newData.child('fromSign/at').val() === data.child('fromSign/at').val() && newData.child('fromSign/byUid').val() === data.child('fromSign/byUid').val() && newData.child('fromSign/role').val() === data.child('fromSign/role').val() && newData.child('fromSign/name').val() === data.child('fromSign/name').val() && newData.child('fromSign/companyName').val() === data.child('fromSign/companyName').val() ) : ( !newData.child('fromSign').exists() || ( (data.exists() ? data.child('fromEmail').val() : root.child('shokunin/requests').child($rid).child('fromEmail').val()) === auth.token.email && newData.child('fromSign/byUid').val() === auth.uid ) ) ) && ( data.child('toSign').exists() ? ( newData.child('toSign/at').val() === data.child('toSign/at').val() && newData.child('toSign/byUid').val() === data.child('toSign/byUid').val() && newData.child('toSign/role').val() === data.child('toSign/role').val() && newData.child('toSign/name').val() === data.child('toSign/name').val() && newData.child('toSign/companyName').val() === data.child('toSign/companyName').val() ) : ( !newData.child('toSign').exists() || ( (data.exists() ? data.child('toOwnerEmail').val() : root.child('shokunin/requests').child($rid).child('toOwnerEmail').val()) === auth.token.email && newData.child('toSign/byUid').val() === auth.uid ) ) )"
         }
       },
       "adminMeta": {
@@ -177,16 +189,23 @@
   }
 }
 ```
-- **電子請負契約**：`contracts` は各応援要請（`requests/$rid`）の当事者2社だけが読み書きできます（`deals` と同じ考え方。管理者は対象外＝契約内容は見られません）。承認済みの要請カードの「📝請負契約」から、工事名・詳細な現場住所（発注者側のみ入力可）、請負内容・請負代金・支払方法・作業指示者（受注者側のみ入力可。職人へ指揮命令を行う担当者）などを入力し、発注者・受注者の双方が電子署名すると締結されます。相手方専用の項目が未入力の間は署名できません。
-  - **電子署名の偽造防止（`.validate`）**：上のルールの `contracts/$rid` には `.validate` を追加しています。**発注者（fromEmail）は相手の署名 `toSign` を、受注者（toOwnerEmail）は相手の署名 `fromSign` を、勝手に作成・改変できません**（各当事者は自分の署名だけを書け、相手の署名欄は「未入力のまま」か「既存の値を維持」しかできない）。これにより、一方の当事者が相手になりすまして両者署名済みに見せかける偽造を防ぎます。内容を編集して署名リセットする既存動作（自分の署名を消す／両者 nullにする）は引き続き可能です。
-    - **検収**：本番反映後、当事者Aでログインし、ブラウザのコンソールから相手（B）の署名だけを書き込もうとする操作（例：`DB.set('contracts/<rid>', {... , toSign:{name:'X',companyName:'X',at:Date.now()}})` を A=from 側で実行）が **`permission_denied`（`.validate` 違反）で失敗**することを確認してください。通常の「自分の署名→相手の署名→取引成立」の流れは成功します。
+- **電子請負契約**：`contracts` は各応援要請（`requests/$rid`）の当事者2社だけが読み書きできます（`deals` と同じ考え方。管理者は対象外＝契約内容は見られません）。承認済みの要請カードの「📝請負契約」から、工事名・詳細な現場住所（発注者側のみ入力可）、請負内容・請負代金・支払方法・作業指示者（受注者側のみ入力可。職人へ指揮命令を行う担当者）などを入力し、発注者・受注者の双方が電子署名すると締結されます。相手方専用の項目が未入力の間は署名できません。署名には氏名・会社名に加えて **署名者のUID（`byUid`）・役割（`role`：`from`/`to`）・日時（`at`）** を記録します。
+  - **電子署名の偽造防止（`.validate`）**：上のルールの `contracts/$rid` には `.validate` を追加しています。**発注者（fromEmail）は相手の署名 `toSign` を、受注者（toOwnerEmail）は相手の署名 `fromSign` を、勝手に作成・改変できません**（各当事者は自分の署名だけを書け、相手の署名欄は「未入力のまま」か「既存の値を維持」しかできない）。これにより、一方の当事者が相手になりすまして両者署名済みに見せかける偽造を防ぎます。自分の署名を新規作成・変更する際は `byUid` が実際のログインUIDと一致することも `.validate` で強制します。
+  - **成立後の不変化（`.write`）**：`fromSign`・`toSign` の両方が既に存在する（＝契約成立済み）契約は、`.write` ルールにより **本文・金額・当事者・工事内容・支払条件・両署名を含め、以後一切の書き込みができません**（署名リセットも不可）。また `newData.exists()` を要求しているため **契約全体の削除も成立前後を問わず常に禁止**です。**契約成立後は応援要請の日程変更自体ができません**（`applyChange` が成立済み契約を検知した時点で、requests側の日程も含め一切更新しません。日程を変えたい場合は新しい応援要請を作成して契約を結び直してください＝β運用の安全策。requestsとcontractsの日程が食い違う状態を作らないための措置です）。応援要請の削除（`deleteRequest`）や180日後の自動整理（`cleanupOldRequests`）からも `contracts` の削除は行いません（そもそもルール上できません）。
+  - **requestsに依存しない権限判定**：`contracts/$rid` の read/write/validate は、当事者情報（`fromEmail`/`toOwnerEmail`/`fromUid`）を**契約自身にも複製・不変フィールドとして保持**しており、`requests/$rid` が将来削除されても契約の閲覧・（成立前なら）書き込みができなくなることはありません。新規作成の瞬間だけは `root.child('shokunin/requests').child($rid)` と突き合わせて真正性（本当にその要請の当事者かどうか）を検証し、以後は契約自身に保存された値のみを参照します。
+    - **検収**：本番反映後、当事者Aでログインし、ブラウザのコンソールから相手（B）の署名だけを書き込もうとする操作（例：`DB.set('contracts/<rid>', {... , toSign:{name:'X',companyName:'X',at:Date.now()}})` を A=from 側で実行）が **`permission_denied`（`.validate` 違反）で失敗**することを確認してください。通常の「自分の署名→相手の署名→取引成立」の流れは成功します。両者署名済みの契約に対する追加の `DB.update`/`DB.remove` も `permission_denied` になることを確認してください。
 - **一斉配信（お知らせ）**：`announcements` は全会員が閲覧でき、書き込みは管理者のみ（上記ルールに含まれています）。管理アプリの「📢一斉配信」タブから、内容確認→最終確認の2段階を経て配信します。利用規約（`TERMS_VERSION`）またはアプリの版（`APP_VERSION`）が更新されると、管理アプリが自動でお知らせ文の下書きを生成して表示します。管理者はその内容を確認し、「配信する」か「配信しない（削除）」かを判断します（自動送信はされません）。判断済みの版は `adminMeta/versionTracker`（管理者のみ読み書き可。上記ルールに含まれています）に記録され、同じ版で再度表示されることはありません。それ以外のお知らせは、これまでどおり管理者が自由入力して配信できます。★index.html の `APP_VERSION` / `TERMS_VERSION` を更新した際は、admin.html 側の `CURRENT_APP_VERSION` / `CURRENT_TERMS_VERSION` も必ず同じ値に更新してください。
 - **退会した工務店の呼び戻し**：`deletedCompanies` は管理者のみ読み書きできます（上記ルールに含まれています。別途追加は不要）。管理者が工務店を削除すると、まずここに元データが退避され、退避の保存が確認できてから実データが削除されます。1か月以内なら管理アプリの「🗑退会した工務店」から**管理者の操作だけで元データのまま復元**できます。もし退会・呼び戻しが失敗する場合は、上記ルールに `deletedCompanies` が含まれているか（特に以前このルールを個別に追加していた場合、上記の統合版に更新されているか）をご確認ください。
-- **会員制**：`companies`/`craftsmen`/`reviews`/`approvals` の閲覧は「**`members` に登録された会員**または管理者」だけに限定されます。会員でないログインユーザーはマッチング画面を一切読めません（アプリ側でも門番が表示されます）。
-- `members`（利用者＝会員）と `memberApplications`（入会申請）を追加。会員登録は**管理者のみ**が書き込めます。入会申請は本人が作成でき、管理者が承認（`members` に登録＝入会審査）または却下します。**利用者＝会員**として扱うため独立した「会員」タブは設けず、入会申請の審査・アカウント発行・利用者（会員）一覧は **admin.html の「🏢工務店」タブ**に統合しています。
+- **会員制**：`companies`/`craftsmen`/`reviews`/`approvals` の閲覧は「**`members` に登録された会員**または管理者」だけに限定されます。会員でないログインユーザーはマッチング画面を一切読めません（アプリ側でも門番が表示されます）。**業務データの書き込み**（`companies`/`craftsmen`/`requests`/`reqIndex`/`deals`/`contracts`/`reviews`/`companyChats`）も同様に、管理者を除き **`members/{uid}` が存在する承認済み会員でなければ**できません。Authenticationアカウントを作れても、`members` に登録される（＝管理者に承認される）までは業務データを一切書き込めません。管理者が `revokeMember()` で会員を外す（利用停止）と、その時点から即座にこれらの書き込みができなくなります（既存データの閲覧は当事者判定のみに依存するため、必要な範囲で引き続き可能です）。
+- `members`（利用者＝会員）と `memberApplications`（入会申請）を追加。会員登録は**管理者のみ**が書き込めます。入会申請は本人が作成でき、管理者が承認（`members` に登録＝入会審査）または却下します。**利用者＝会員**として扱うため独立した「会員」タブは設けず、入会申請の審査・アカウント発行・利用者（会員）一覧は **admin.html の「🏢工務店」タブ**に統合しています。`memberApplications` は承認前ユーザーが唯一書き込める例外パスです。
 - **認証プロバイダ**：Firebaseコンソールで「**メール/パスワード**」を有効化。会員制のため「**匿名**」は不要（無効のままでOK。有効でも会員以外は読めません）。
-- `admins` は「最初の1人だけ自分を登録でき、その後は既存管理者しか追加できない」ルール。**運営が最初に admin.html で登録**してください。
+- `admins` は **既存の管理者だけが admin.html を通じて admin を追加できる**ルールです（最初の1人だけ自分を登録できる bootstrap は本番では廃止済み）。そのため、このルールを本番に反映する**前に**、少なくとも1人の正規管理者UIDが `shokunin/admins` に登録済みである必要があります（未登録のままこのルールを公開すると、誰も二度と admin を追加できなくなります）。運営が最初の管理者を登録する手順は次のいずれか：
+  1. 上記の会員制限ルールがまだ無い/緩い段階で `admin.html` を開き、メール/パスワードで新規登録 → 「このアカウントを管理者にする」を押す。
+  2. Firebaseコンソール → Authentication → Users でUIDを確認 → Realtime Database → `shokunin/admins` に `<UID>: true` を手動追加する。
 - `deals`（条件のやり取り）は当事者2社だけが読み書き可。**管理者は対象外**＝取引内容は見られません。
+- `reqIndex` は各社の索引（自社の応援要請を引くための一覧）です。書き込みは「自社が索引先に含まれる応援要請の当事者（発注者・受注者いずれか）」のみに限定しており、無関係な会社が他社の索引を書き換えたり消したりすることはできません。
+- `reviews` は `rating` を1〜5の数値に、また評価対象（会社／その大工が所属する会社）の `ownerEmail` が自分自身と一致しないことをサーバー側 `.validate` で強制します（自己評価の禁止）。「実際の取引当事者だけに評価を限定する」判定はクライアント側の `canEvaluate()`（取引実績チェック）にとどまり、Rules側では横断的な取引履歴参照ができないため未実装です（今後の課題）。
+- `companyChats` はメッセージ単位（`companyChats/$ck/$mid`）で権限を判定します。新規投稿は自分の `byUid` を記録した本人（工務店担当者または管理者）のみ、既存メッセージの**編集は投稿した本人のみ**（管理者も他人の発言は編集不可）、**削除は投稿本人または管理者**（モデレーション目的の例外）に限定されます。
 - 旧バージョンから更新する場合は、`shokunin` 直下の `".read": "auth != null"` を**消して**上記の各コレクションごとの `.read` に置き換えてください（会員制・当事者限定にするため）。
 - ルール公開後、反映まで数十秒かかることがあります。
 
@@ -242,11 +261,13 @@ service firebase.storage {
 - `companies/{id}` … 工務店（name, tel, area, contact, **ownerEmail**, notes, createdAt）
 - `craftsmen/{id}` … 大工（name, companyKey, age, gender, quals[], good[], ng[], price, unit, status, availMemo, createdAt）
 - `reviews/{id}` … 評価（type, targetKey, targetName, rating, note, byCompany, at）
-- `admins/{uid}: true` … 管理者（最初に登録した人）
+- `admins/{uid}: true` … 管理者（既存の管理者だけが追加可能。最初の1人は本番反映前に登録が必要）
+- `members/{uid}` … 承認済み会員。`companies`/`craftsmen`/`requests`/`reqIndex`/`deals`/`contracts`/`reviews`/`companyChats` への書き込みはこれが存在することが前提
 - `approvals/craftsman/{kid}: true` … 管理者が認証した大工（管理者のみ書込）
-- `requests/{rid}` … 応援要請の概要（from/to 会社・大工・現場・希望日・連絡先・メッセージ・status）。当事者2社＋管理者が閲覧
-- `reqIndex/{companyKey}/{rid}: true` … 各社が自社関連の要請を引くための索引
+- `requests/{rid}` … 応援要請の概要（from/to 会社・大工・現場・希望日・連絡先・メッセージ・status・**fromUid**）。当事者2社＋管理者が閲覧。`fromEmail`/`toOwnerEmail`/`fromCompanyKey`/`toCompanyKey`/`fromUid` は作成後変更不可
+- `reqIndex/{companyKey}/{rid}: true` … 各社が自社関連の要請を引くための索引。書き込みはその要請の当事者のみ
 - `deals/{rid}/{mid}` … **労働条件・支払い条件のやり取り（当事者2社のみ閲覧、管理者は不可）**
+- `contracts/{rid}` … 電子請負契約。当事者情報（`fromEmail`/`toOwnerEmail`/`fromUid`。作成後不変・requestsとは独立に保持）と署名 `{name, companyName, byUid, role, at}` を持つ。両者署名済みになると以後すべて変更・削除不可
 
 > ★平均は集計値を持たず `reviews` から都度計算（改ざん防止）。`ownerEmail` がその工務店の編集権限を持つログインメール。大工は `approvals` に載るまで検索に出ません。
 
@@ -289,16 +310,8 @@ service firebase.storage {
    メール/パスワード登録は所有権を確認しないため、他人のメールを `ownerEmail` として先取り登録できます。`sendEmailVerification()` を導入し、ルールで `auth.token.email_verified === true` を書き込み条件に加えてください。
 
 ### 🟡 重要（不正・改ざん・濫用対策）
-4. **`.validate` によるデータ検証を追加**（現在は型・長さ・値域の検証がなく、任意の巨大データ・不正な型を書き込める）。例：
-   ```json
-   "reviews": {
-     "$rid": {
-       ".validate": "newData.hasChildren(['type','targetKey','rating','byUid']) && newData.child('rating').isNumber() && newData.child('rating').val() >= 1 && newData.child('rating').val() <= 5 && newData.child('byUid').val() === auth.uid"
-     }
-   }
-   ```
-   氏名・メモ・メッセージ等の文字列にも `.val().length < 2000` 等の上限を付けてください。
-5. **`reqIndex` の書き込みを当事者に限定**（現在 `".write": "auth != null"` で誰でも任意社の索引に書き込め、スパム・汚染が可能）。索引先の要請の当事者メールと一致する場合のみ許可する条件に変更。
+4. **`.validate` によるデータ検証を追加**（✅ `reviews` の `rating`（1〜5・数値）と自己評価防止は上記ルールに追加済み。氏名・メモ・メッセージ等その他の文字列フィールドへの `.val().length < 2000` 等の長さ上限や型検証は未対応で、引き続き課題です）。
+5. **`reqIndex` の書き込みを当事者に限定**（✅ 対応済み。`$ck/$rid` 単位に細分化し、書き込み者がその応援要請の当事者（発注者・受注者いずれか）である場合のみ許可するよう変更しました。無関係な会社が他社索引を書き込む・消すことはできません）。
 6. **Firebase App Check を有効化**（reCAPTCHA / App Attest）。正規アプリ以外からの API 直叩き（自動スクレイピング・書き込み濫用）を大幅に抑止できます。法人提供では実質必須。
 7. **添付ファイルの取り扱い**：チャットの `fileUrl` は相手クライアントが直接書ける値のため、表示側で許可スキーム（`http(s)` / `data:image` / `data:application`）のみ通すよう対策済み（`common.js` の `H.safeUrl`）。Storage を使う場合はサイズ・拡張子・Content-Type をルールで制限してください。
 

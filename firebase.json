@@ -1,0 +1,15 @@
+{
+  "hosting": {
+    "public": "shokunin",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "database.rules.json",
+      "serve.ps1"
+    ]
+  },
+  "database": {
+    "rules": "shokunin/database.rules.json"
+  }
+}

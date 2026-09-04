@@ -1,0 +1,99 @@
+{
+  "rules": {
+    "shokunin": {
+      "admins": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
+        }
+      },
+      "members": {
+        ".read": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true",
+        "$uid": {
+          ".read": "auth != null && ( auth.uid === $uid || root.child('shokunin/admins').child(auth.uid).val() === true )",
+          ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
+        }
+      },
+      "memberApplications": {
+        ".read": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true",
+        "$uid": {
+          ".read": "auth != null && ( auth.uid === $uid || root.child('shokunin/admins').child(auth.uid).val() === true )",
+          ".write": "auth != null && ( auth.uid === $uid || root.child('shokunin/admins').child(auth.uid).val() === true )"
+        }
+      },
+      "companies": {
+        ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
+        "$cid": {
+          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( root.child('shokunin/members').child(auth.uid).exists() && newData.exists() && (!data.exists() || data.child('ownerEmail').val() === auth.token.email) && newData.child('ownerEmail').val() === auth.token.email && (!data.exists() || newData.child('name').val() === data.child('name').val()) ) )"
+        }
+      },
+      "craftsmen": {
+        ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
+        "$kid": {
+          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( root.child('shokunin/members').child(auth.uid).exists() && (!data.exists() || root.child('shokunin/companies').child(data.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) && (!newData.exists() || root.child('shokunin/companies').child(newData.child('companyKey').val()).child('ownerEmail').val() === auth.token.email) ) )"
+        }
+      },
+      "reviews": {
+        ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
+        "$rid": {
+          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( root.child('shokunin/members').child(auth.uid).exists() && ( (!data.exists() && newData.child('byUid').val() === auth.uid) || (data.exists() && data.child('byUid').val() === auth.uid) ) ) )",
+          ".validate": "newData.child('rating').val() >= 1 && newData.child('rating').val() <= 5 && ( newData.child('type').val() === 'company' ? root.child('shokunin/companies').child(newData.child('targetKey').val()).child('ownerEmail').val() !== auth.token.email : root.child('shokunin/companies').child(root.child('shokunin/craftsmen').child(newData.child('targetKey').val()).child('companyKey').val()).child('ownerEmail').val() !== auth.token.email )"
+        }
+      },
+      "approvals": {
+        ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
+        ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
+      },
+      "reqIndex": {
+        "$ck": {
+          ".read": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || root.child('shokunin/companies').child($ck).child('ownerEmail').val() === auth.token.email )",
+          "$rid": {
+            ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( root.child('shokunin/members').child(auth.uid).exists() && ( root.child('shokunin/requests').child($rid).child('fromCompanyKey').val() === $ck || root.child('shokunin/requests').child($rid).child('toCompanyKey').val() === $ck ) && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email ) ) )"
+          }
+        }
+      },
+      "requests": {
+        ".read": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true",
+        "$rid": {
+          ".read": "auth != null && ( data.child('fromEmail').val() === auth.token.email || data.child('toOwnerEmail').val() === auth.token.email )",
+          ".write": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( root.child('shokunin/members').child(auth.uid).exists() && ( (!data.exists() && newData.child('fromEmail').val() === auth.token.email && newData.child('fromUid').val() === auth.uid) || (data.exists() && (data.child('fromEmail').val() === auth.token.email || data.child('toOwnerEmail').val() === auth.token.email)) ) ) ) && ( !data.exists() || !newData.exists() || ( newData.child('fromEmail').val() === data.child('fromEmail').val() && newData.child('toOwnerEmail').val() === data.child('toOwnerEmail').val() && newData.child('fromCompanyKey').val() === data.child('fromCompanyKey').val() && newData.child('toCompanyKey').val() === data.child('toCompanyKey').val() && newData.child('fromUid').val() === data.child('fromUid').val() ) )"
+        }
+      },
+      "deals": {
+        "$rid": {
+          ".read": "auth != null && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email )",
+          "$mid": {
+            ".write": "auth != null && root.child('shokunin/members').child(auth.uid).exists() && ( root.child('shokunin/requests').child($rid).child('fromEmail').val() === auth.token.email || root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() === auth.token.email ) && ( (!data.exists() && newData.child('byUid').val() === auth.uid) || (data.exists() && data.child('byUid').val() === auth.uid) )"
+          }
+        }
+      },
+      "companyChats": {
+        "$ck": {
+          ".read": "auth != null && ( root.child('shokunin/admins').child(auth.uid).val() === true || root.child('shokunin/companies').child($ck).child('ownerEmail').val() === auth.token.email )",
+          "$mid": {
+            ".write": "auth != null && ( ( root.child('shokunin/admins').child(auth.uid).val() === true && !data.exists() && newData.exists() && newData.child('byUid').val() === auth.uid && newData.child('byAdmin').val() === true && newData.child('byName').val() === '管理者' ) || ( root.child('shokunin/members').child(auth.uid).exists() && root.child('shokunin/members').child(auth.uid).child('companyKey').val() === $ck && root.child('shokunin/companies').child($ck).child('ownerEmail').val() === auth.token.email && !data.exists() && newData.exists() && newData.child('byUid').val() === auth.uid && newData.child('byAdmin').val() === false && newData.child('byName').val() === root.child('shokunin/companies').child($ck).child('name').val() ) || ( data.exists() && newData.exists() && data.child('byUid').val() === auth.uid && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( root.child('shokunin/members').child(auth.uid).exists() && root.child('shokunin/members').child(auth.uid).child('companyKey').val() === $ck ) ) && newData.child('byUid').val() === data.child('byUid').val() && newData.child('byAdmin').val() === data.child('byAdmin').val() && newData.child('byName').val() === data.child('byName').val() ) || ( data.exists() && !newData.exists() && ( root.child('shokunin/admins').child(auth.uid).val() === true || ( data.child('byUid').val() === auth.uid && root.child('shokunin/members').child(auth.uid).exists() && root.child('shokunin/members').child(auth.uid).child('companyKey').val() === $ck ) ) ) )"
+          }
+        }
+      },
+      "deletedCompanies": {
+        ".read": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true",
+        ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
+      },
+      "announcements": {
+        ".read": "auth != null && ( root.child('shokunin/members').child(auth.uid).exists() || root.child('shokunin/admins').child(auth.uid).val() === true )",
+        ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
+      },
+      "contracts": {
+        "$rid": {
+          ".read": "auth != null && ( data.child('fromEmail').val() === auth.token.email || data.child('toOwnerEmail').val() === auth.token.email )",
+          ".write": "auth != null && root.child('shokunin/members').child(auth.uid).exists() && newData.exists() && ( ( !data.exists() && newData.child('fromEmail').val() === root.child('shokunin/requests').child($rid).child('fromEmail').val() && newData.child('toOwnerEmail').val() === root.child('shokunin/requests').child($rid).child('toOwnerEmail').val() && newData.child('fromUid').val() === root.child('shokunin/requests').child($rid).child('fromUid').val() && ( newData.child('fromEmail').val() === auth.token.email || newData.child('toOwnerEmail').val() === auth.token.email ) ) || ( data.exists() && ( data.child('fromEmail').val() === auth.token.email || data.child('toOwnerEmail').val() === auth.token.email ) && !(data.child('fromSign').exists() && data.child('toSign').exists()) ) )",
+          ".validate": "( !data.exists() || ( newData.child('fromEmail').val() === data.child('fromEmail').val() && newData.child('toOwnerEmail').val() === data.child('toOwnerEmail').val() && newData.child('fromUid').val() === data.child('fromUid').val() ) ) && ( !data.exists() || !( data.child('fromSign').exists() || data.child('toSign').exists() ) || ( newData.child('rid').val() === data.child('rid').val() && newData.child('fromCompanyKey').val() === data.child('fromCompanyKey').val() && newData.child('fromCompanyName').val() === data.child('fromCompanyName').val() && newData.child('toCompanyKey').val() === data.child('toCompanyKey').val() && newData.child('toCompanyName').val() === data.child('toCompanyName').val() && newData.child('craftsmanKey').val() === data.child('craftsmanKey').val() && newData.child('craftsmanName').val() === data.child('craftsmanName').val() && newData.child('site').val() === data.child('site').val() && newData.child('dateText').val() === data.child('dateText').val() && newData.child('projectName').val() === data.child('projectName').val() && newData.child('siteDetail').val() === data.child('siteDetail').val() && newData.child('work').val() === data.child('work').val() && newData.child('amount').val() === data.child('amount').val() && newData.child('payTerm').val() === data.child('payTerm').val() && newData.child('foreman').val() === data.child('foreman').val() && newData.child('notes').val() === data.child('notes').val() ) ) && ( data.child('fromSign').exists() ? ( newData.child('fromSign/at').val() === data.child('fromSign/at').val() && newData.child('fromSign/byUid').val() === data.child('fromSign/byUid').val() && newData.child('fromSign/role').val() === data.child('fromSign/role').val() && newData.child('fromSign/name').val() === data.child('fromSign/name').val() && newData.child('fromSign/companyName').val() === data.child('fromSign/companyName').val() ) : ( !newData.child('fromSign').exists() || ( (data.exists() ? data.child('fromEmail').val() : root.child('shokunin/requests').child($rid).child('fromEmail').val()) === auth.token.email && newData.child('fromSign/byUid').val() === auth.uid ) ) ) && ( data.child('toSign').exists() ? ( newData.child('toSign/at').val() === data.child('toSign/at').val() && newData.child('toSign/byUid').val() === data.child('toSign/byUid').val() && newData.child('toSign/role').val() === data.child('toSign/role').val() && newData.child('toSign/name').val() === data.child('toSign/name').val() && newData.child('toSign/companyName').val() === data.child('toSign/companyName').val() ) : ( !newData.child('toSign').exists() || ( (data.exists() ? data.child('toOwnerEmail').val() : root.child('shokunin/requests').child($rid).child('toOwnerEmail').val()) === auth.token.email && newData.child('toSign/byUid').val() === auth.uid ) ) )"
+        }
+      },
+      "adminMeta": {
+        ".read": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true",
+        ".write": "auth != null && root.child('shokunin/admins').child(auth.uid).val() === true"
+      }
+    }
+  }
+}

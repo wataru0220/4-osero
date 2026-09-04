@@ -1555,7 +1555,12 @@ function openCompanyForm(key){
   const c=key?(companies[key]||{}):{};
   document.getElementById('coeTitle').textContent=key?'会社情報を編集':'工務店を登録';
   document.getElementById('coeSub').textContent='オーナー：'+myUser.email;
-  document.getElementById('coeName').value=c.name||'';
+  const coeNameEl=document.getElementById('coeName');
+  coeNameEl.value=c.name||'';
+  // 社名（チャット等での自社の表示名の元）は、登録後は管理者のみが変更できる
+  // （なりすまし防止のためセキュリティルールで強制。登録直後の新規作成時のみ自由入力可）。
+  coeNameEl.disabled=!!key;
+  coeNameEl.title=key?'社名の変更は管理者にお問い合わせください':'';
   document.getElementById('coeNameKana').value=c.nameKana||'';
   document.getElementById('coeContact').value=c.contact||'';
   document.getElementById('coeTel').value=c.tel||'';
@@ -2066,7 +2071,7 @@ function ensureContactSubscription(){
 function contactUnread(){
   const ck=contactCompanyKey; if(!ck) return 0;
   const seen=+(localStorage.getItem('shokunin_seen_contact_'+ck)||0);
-  return contactMsgs.filter(m=>m.byAdmin && (m.at||0)>seen).length;
+  return contactMsgs.filter(m=>m.byAdmin===true && (m.at||0)>seen).length;
 }
 function markContactSeen(){
   if(contactCompanyKey) localStorage.setItem('shokunin_seen_contact_'+contactCompanyKey, Date.now());
@@ -2079,8 +2084,11 @@ function renderContact(){
   const uid=DB.auth.user&&DB.auth.user.uid;
   let h='<div class="card"><div class="chatwrap">';
   h+= chatBubblesHTML(contactMsgs, {
-    mineFn:m=>!m.byAdmin&&m.byUid===uid,
-    nameFn:m=>m.byAdmin?'🛠 管理者':(m.byName||'自社'),
+    mineFn:m=>m.byAdmin!==true&&m.byUid===uid,
+    // 表示名はメッセージに保存された byName（一時的な会社名変更で偽装され得る）を信用せず、
+    // 自社チャットは常に自社（＝閲覧者自身）なので mine.name（現在の companies データ）を使う。
+    // byAdmin は真偽値のみを信用する（"true" 等の文字列を送っても管理者表示にはしない）。
+    nameFn:m=>m.byAdmin===true?'🛠 管理者':(mine.name||'自社'),
     actionsFn:(m,mine)=>mine?` ・<a class="deallink ctEdit" data-mid="${H.esc(m._key)}">編集</a> ・<a class="deallink ctDel" data-mid="${H.esc(m._key)}">削除</a>`:'',
     empty:'まだやり取りはありません。管理者へ連絡できます。'
   });
@@ -2191,14 +2199,17 @@ function openRequestEdit(rid){
 }
 function deleteRequest(rid){
   const r=reqByMe[rid]; if(!r) return;
+  // 契約情報（下書き・成立済み問わず）がある要請は削除しない。requestsを消すと、
+  // 契約自体は残っても画面上その契約に辿り着く導線がなくなるため。
+  if(contractsByRid[rid]){ H.toast('この応援要請には契約情報があるため削除できません。必要な場合は管理者へお問い合わせください。','err'); return; }
   if(!confirm('この応援要請を削除しますか？（条件のやり取りも削除されます）')) return;
+  // reqIndex/deals の削除ルールは requests/{rid} の当事者情報を参照するため、
+  // 先にそれらを削除し、最後に requests 本体を削除する。
   Promise.all([
-    DB.remove('requests/'+rid),
     DB.remove('reqIndex/'+r.fromCompanyKey+'/'+rid),
     DB.remove('reqIndex/'+r.toCompanyKey+'/'+rid),
-    DB.remove('deals/'+rid),
-    DB.remove('contracts/'+rid)
-  ]).then(()=>H.toast('削除しました','ok'));
+    DB.remove('deals/'+rid)
+  ]).then(()=>DB.remove('requests/'+rid)).then(()=>H.toast('削除しました','ok'));
 }
 // 作業内容（選択したもの＋その他自由入力）を「、」でつないだ文字列にする
 function reqWorkValue(){
@@ -2229,7 +2240,7 @@ document.getElementById('reqSend').onclick=()=>{
   }
   const toCo=companies[k.companyKey]||{};
   const rec=Object.assign({
-    fromCompanyKey:mine._key, fromCompanyName:mine.name||'', fromEmail:myUser.email,
+    fromCompanyKey:mine._key, fromCompanyName:mine.name||'', fromEmail:myUser.email, fromUid:(DB.auth.user&&DB.auth.user.uid)||null,
     toCompanyKey:k.companyKey, toCompanyName:k.companyName||toCo.name||'', toOwnerEmail:toCo.ownerEmail||'',
     craftsmanKey:k._key, craftsmanName:k.name||'',
     status:'pending', createdAt:Date.now()
@@ -2270,16 +2281,21 @@ function dealDayCount(o){
 }
 function applyChange(rid){
   const r=reqByMe[rid], cr=r&&r.changeReq; if(!cr) return;
+  const c=contractsByRid[rid];
+  // 片方でも署名済みの契約は、以後いっさい書き込めない（署名済み内容の不変化）ため、
+  // 日程変更そのものを適用しない（requests側の日程も変更しない）。
+  // 日程を変えたい場合は新しい応援要請を作成して契約を結び直してもらう。
+  if(c && (c.fromSign || c.toSign)){
+    H.toast('契約の署名が開始されているため、この応援要請の日程は変更できません。日程を変えたい場合は新しい応援要請を作成してください','err');
+    return;
+  }
   if(!confirm('活用日を「'+(cr.dateText||'')+'」に変更しますか？')) return;
   const uid=DB.auth.user&&DB.auth.user.uid;
   const oldDays=dealDayCount(r), newDays=dealDayCount(cr); // 日数の変化を先に把握（請負金額の再計算用）
   Object.assign(r,{dateFrom:cr.dateFrom,dateTo:cr.dateTo,dateText:cr.dateText,dates:cr.dates||null,changeReq:null}); scheduleRender('req'); // 即時反映
   const ps=[ DB.update('requests/'+rid, { dateFrom:cr.dateFrom, dateTo:cr.dateTo, dateText:cr.dateText, dates:cr.dates||null, changeReq:null, lastMsgAt:Date.now(), lastMsgByUid:uid }) ];
-  // 活用日（条件）が変わったら、既存の電子請負契約は内容が古くなるため、同じ契約レコード（rid）を
-  // 更新して日程を反映し、双方の署名をリセットする＝③取引条件確認〜④電子請負締結〜⑤取引成立を
-  // やり直してもらう。新しい要請・新しい契約を別途作らないので、取引が重複することはない。
-  const c=contractsByRid[rid];
-  const wasFullySigned = !!(c && c.fromSign && c.toSign);
+  // ここに到達する時点で契約はまだ未着手（どちらの署名もない下書き）のみ。片方でも署名済みなら
+  // 上のガードで既にreturnしているため、日程反映は契約本文の自由な書き換えとして安全に行える。
   let recalcAmount=null;
   if(c){
     const upd={ dateText:cr.dateText, fromSign:null, toSign:null, updatedAt:Date.now() };
@@ -2297,9 +2313,7 @@ function applyChange(rid){
     ps.push(DB.update('contracts/'+rid, upd));
   }
   Promise.all(ps).then(()=>{
-    let msg = wasFullySigned
-      ? '活用日を変更しました。契約内容が変わったため、電子請負契約の署名がリセットされました。お手数ですが結び直してください'
-      : '活用日を変更しました';
+    let msg = '活用日を変更しました';
     if(recalcAmount!=null) msg += '。請負金額を'+recalcAmount.toLocaleString('ja-JP')+'円（税込）に自動再計算しました';
     H.toast(msg, 'ok');
     markSeen(rid);
@@ -2483,9 +2497,11 @@ function renderContractModal(){
   document.getElementById('ctrSub').textContent=(role==='from'?'発注者：':'受注者：')+((mine&&mine.name)||'')+'／大工「'+reqCraftLabel(r,mine&&mine._key)+'」の応援に関する契約';
   document.getElementById('ctrBase').textContent='📍 '+(r.site||'—')+'　🗓 '+(r.dateText||'—')+(r.work?('\n🛠 '+r.work):'');
   document.getElementById('ctrSubStep').innerHTML = contractSubStepHTML(c, role);
-  const signed=!!(c.fromSign && c.toSign);
+  const signed=!!(c.fromSign && c.toSign); // 双方署名済み（契約成立）
+  const anySigned=!!(c.fromSign || c.toSign); // 片方でも署名済み（以後、本文は不変）
+  const mySigned = role==='from' ? !!c.fromSign : (role==='to' ? !!c.toSign : false);
   document.getElementById('ctrSignedBand').style.display=signed?'block':'none';
-  const locked=signed && !contractEditMode;
+  const locked=anySigned && !contractEditMode;
   ['ctrProjectName','ctrSiteDetail','ctrWork','ctrAmount','ctrForeman','ctrNotes','ctrConsent','ctrSignerName'].forEach(id=>{
     document.getElementById(id).disabled=locked;
   });
@@ -2530,11 +2546,21 @@ function renderContractModal(){
     if(siteDetailEl.disabled) siteDetailEl.value = c.siteDetail || '';
     if(payTermDisabled) setContractPayTerm(c.payTerm || '');
     if(foremanEl.disabled) foremanEl.value = c.foreman || '';
+    // 片方でも署名されたら本文は不変になるため、まだ画面を開いたままの相手の入力欄も
+    // （役割に関係なく）保存済みの内容へ同期し直す。ここが最新値と食い違ったまま署名すると、
+    // サーバー側の不変チェックにより保存が拒否されるため。
+    if(locked){
+      document.getElementById('ctrWork').value = c.work || '';
+      document.getElementById('ctrAmount').value = c.amount!=null ? c.amount : '';
+      document.getElementById('ctrNotes').value = c.notes || '';
+    }
   }
   renderContractSavedNames();
-  document.getElementById('ctrEditToggle').style.display = (signed && !contractEditMode) ? 'block' : 'none';
+  // 署名開始後は内容修正が一切できないため、修正トグル自体を表示しない
+  document.getElementById('ctrEditToggle').style.display = 'none';
   document.getElementById('ctrSave').style.display = locked ? 'none' : '';
-  document.getElementById('ctrSign').style.display = locked ? 'none' : '';
+  // 署名ボタンは「自分がまだ署名していない」間だけ表示する（相手が署名済みでも自分の番は残る）
+  document.getElementById('ctrSign').style.display = mySigned ? 'none' : '';
   // 保存済みの契約（下書き・締結済みのいずれか）があればダウンロード／印刷を出す
   const hasSaved = !!contractsByRid[rid];
   document.getElementById('ctrDownload').style.display = hasSaved ? '' : 'none';
@@ -2852,7 +2878,12 @@ function contractFieldsFromForm(){
   };
 }
 function contractBaseFields(r){
+  // fromEmail/toOwnerEmail/fromUid は、requests/$rid が将来（180日整理等で）削除された後も
+  // contracts が単独で権限判定できるよう、作成時点のrequestsから複製して契約自身に保持する
+  // （セキュリティルールは新規作成時のみrequestsと突き合わせて真正性を検証し、以後は契約自身の
+  // この保存値を不変フィールドとして参照する）。
   return { rid:r._key, fromCompanyKey:r.fromCompanyKey, fromCompanyName:r.fromCompanyName, toCompanyKey:r.toCompanyKey, toCompanyName:r.toCompanyName,
+    fromEmail:r.fromEmail, toOwnerEmail:r.toOwnerEmail, fromUid:r.fromUid||null,
     craftsmanKey:r.craftsmanKey, craftsmanName:r.craftsmanName, site:r.site, dateText:r.dateText };
 }
 // draft:true のときは下書き保存用の緩い検証（相手方専用の項目は必須にしない＝先に保存できるように）。
@@ -2883,6 +2914,8 @@ function validateContractForm(f, opts){
 }
 function saveContractDraft(){
   const rid=contractRid; const r=reqByMe[rid]; if(!rid||!r) return;
+  const c0=contractsByRid[rid];
+  if(c0 && (c0.fromSign || c0.toSign)){ H.toast('署名が開始されているため内容は変更できません','err'); return; }
   const f=contractFieldsFromForm();
   if(!validateContractForm(f, {draft:true})) return;
   if(contractRole(r)==='to' && f.foreman) addSavedName(FOREMAN_KEY, f.foreman);
@@ -2897,6 +2930,8 @@ function saveContractDraft(){
 function signContract(){
   const rid=contractRid; const r=reqByMe[rid]; if(!rid||!r) return;
   const role=contractRole(r); if(!role) return;
+  const c0=contractsByRid[rid]||{};
+  if(role==='from' ? c0.fromSign : c0.toSign){ H.toast('すでに署名済みです','err'); return; }
   const f=contractFieldsFromForm();
   if(!validateContractForm(f, {role})) return;
   if(!f.signerNameDraft){ H.toast('署名者名（ご担当者名）を入力してください','err'); return; }
@@ -2906,7 +2941,7 @@ function signContract(){
   if(role==='to' && f.foreman) addSavedName(FOREMAN_KEY, f.foreman);
   const mine=myCompanyEntry(); const uid=DB.auth.user&&DB.auth.user.uid;
   const c=contractsByRid[rid]||{};
-  const sign={ name:f.signerNameDraft, companyName:(mine&&mine.name)||'', at:Date.now() };
+  const sign={ name:f.signerNameDraft, companyName:(mine&&mine.name)||'', byUid:uid, role:role, at:Date.now() };
   const payload=Object.assign(contractBaseFields(r), f, { updatedAt:Date.now(), updatedBy:(mine&&mine.name)||'' });
   payload.fromSign = role==='from' ? sign : (c.fromSign||null);
   payload.toSign = role==='to' ? sign : (c.toSign||null);
@@ -3410,17 +3445,17 @@ function cleanupOldRequests(){
   H.toArr(reqByMe).forEach(r=>{
     if(_cleanupTried[r._key]) return;
     if(!reqIsFinished(r) || reqFinishedAt(r)>cut) return;
+    // 契約情報（下書き・成立済み問わず）がある要請は自動削除しない（契約への導線を残すため）。
+    // _cleanupTried は立てず、購読がまだ届いていないだけの場合は次回の再描画で再判定する。
+    if(contractsByRid[r._key]) return;
     _cleanupTried[r._key]=1;
-    // 関連する contracts も一緒に削除する（requests を消すと contracts のルールが
-    // requests/$rid を参照できず「誰も読めない孤児データ」になるため）。締結済み契約書は
-    // 規約どおり当事者が事前にPDF等で保存している前提（アプリ内の永続保存は保証しない）。
+    // reqIndex/deals は requests/$rid の当事者情報を参照するルールのため、
+    // 先に削除してから最後に requests 本体を削除する。
     Promise.all([
-      DB.remove('requests/'+r._key),
       DB.remove('reqIndex/'+r.fromCompanyKey+'/'+r._key),
       DB.remove('reqIndex/'+r.toCompanyKey+'/'+r._key),
-      DB.remove('deals/'+r._key),
-      DB.remove('contracts/'+r._key)
-    ]).catch(()=>{});
+      DB.remove('deals/'+r._key)
+    ]).then(()=>DB.remove('requests/'+r._key)).catch(()=>{});
   });
 }
 // ===== ダブルブッキング防止：自社の大工の「予約済み日(booked)」を承認済みの応援から整える =====

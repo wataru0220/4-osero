@@ -418,16 +418,13 @@ function renderGate(mode){
     return;
   }
   if(mode==='claim'){
+    // セキュリティルール上、本番では「最初の1人が自分をadminにする」自己登録はできません
+    // （既存adminのみがadminsを追加できる方式に変更済み）。Firebaseコンソールでの登録が必要です。
     b.innerHTML=`
-      <h2 class="sec" style="font-size:15px">👑 管理者になる</h2>
-      <div class="count" style="margin-bottom:10px">ログイン中：<b>${H.esc(myUser.email)}</b><br>まだ管理者がいません。下のボタンであなたを管理者として登録します。</div>
-      <button class="btn full" id="claimBtn">このアカウントを管理者にする</button>
-      <button class="btn ghost full" id="switchBtn" style="margin-top:8px">別のアカウントでログインし直す</button>
+      <h2 class="sec" style="font-size:15px">👑 管理者が未登録です</h2>
+      <div class="count" style="margin-bottom:10px">ログイン中：<b>${H.esc(myUser.email)}</b><br>まだ管理者が登録されていません。セキュリティ上、このアプリからの自己登録はできません。<br><br>Firebaseコンソール → Authentication → Users で、このアカウントのUIDを確認し、Realtime Database → <code>shokunin/admins</code> に <code>UID: true</code> を追加してください。</div>
+      <button class="btn ghost full" id="switchBtn">別のアカウントでログインし直す</button>
       <div id="gateErr" class="gateerr" style="display:none"></div>`;
-    document.getElementById('claimBtn').onclick=()=>{
-      DB.set('admins/'+myUser.uid, true).then(()=>H.toast('管理者として登録しました','ok'))
-        .catch(e=>gateError(H.authErrMsg(e)));
-    };
     document.getElementById('switchBtn').onclick=()=>DB.auth.signOut();
     return;
   }
@@ -857,7 +854,7 @@ function subscribeAllChats(){
   Object.keys(ctChatSubs).forEach(ck=>{ if(keys.indexOf(ck)<0){ try{ ctChatSubs[ck](); }catch(_){ } delete ctChatSubs[ck]; delete ctChats[ck]; } });
 }
 function ctSeenAt(ck){ return +(localStorage.getItem('shokunin_admin_seen_contact_'+ck)||0); }
-function ctUnreadFor(ck){ return (ctChats[ck]||[]).filter(m=>!m.byAdmin && (m.at||0)>ctSeenAt(ck)).length; }
+function ctUnreadFor(ck){ return (ctChats[ck]||[]).filter(m=>m.byAdmin!==true && (m.at||0)>ctSeenAt(ck)).length; }
 function ctUnreadCompanies(){ return H.toArr(companies).filter(c=>ctUnreadFor(c._key)>0).length; }
 function renderCtOverview(){
   const box=document.getElementById('ctOverview'); if(!box) return;
@@ -868,7 +865,7 @@ function renderCtOverview(){
   if(!rows.length){ box.innerHTML='<div class="count">まだ連絡はありません。下の選択から工務店へ連絡できます。</div>'; return; }
   box.innerHTML='<div class="count" style="margin-bottom:6px">連絡のある工務店（新着順）</div>'+rows.map(r=>{
     const body=r.last.text||(r.last.fileUrl?'📎 '+(r.last.fileName||'ファイル'):'');
-    const prev=H.esc(((r.last.byAdmin?'自分: ':'')+body).slice(0,40));
+    const prev=H.esc(((r.last.byAdmin===true?'自分: ':'')+body).slice(0,40));
     return `<button class="btn ghost sm ct-open" data-key="${H.esc(r.c._key)}" style="width:100%;text-align:left;margin-bottom:6px;${r.unread?'border-color:var(--warn)':''}">${r.unread?'🔴 ':''}<b>${H.esc(r.c.name)}</b>${r.unread?'（新着'+r.unread+'）':''}<div class="meta" style="margin-top:2px">${prev}・${H.fmtDate(r.last.at)}</div></button>`;
   }).join('');
   box.querySelectorAll('.ct-open').forEach(b=>b.onclick=()=>{ const sel=document.getElementById('ctCompany'); if(sel) sel.value=b.dataset.key; openContact(b.dataset.key); });
@@ -886,8 +883,12 @@ function renderContactAdmin(){
   let h='<div class="card"><div class="chatwrap">';
   h+= ctMsgs.length
     ? ctMsgs.map(m=>{
-        const mine=m.byAdmin&&m.byUid===uid;
-        return `<div class="bubble ${mine?'mine':'them'}"><div class="who">${m.byAdmin?'🛠 管理者':H.esc(m.byName||'工務店')}</div>${attachHTML(m)}${m.text?`<div class="bx">${H.linkify(m.text)}</div>`:''}<div class="bt">${H.fmtDate(m.at)}${mine?` ・<a class="ctlink ctEdit" data-mid="${H.esc(m._key)}" style="cursor:pointer;text-decoration:underline">編集</a> ・<a class="ctlink ctDel" data-mid="${H.esc(m._key)}" style="cursor:pointer;text-decoration:underline">削除</a>`:''}</div></div>`;
+        const mine=m.byAdmin===true&&m.byUid===uid;
+        // 表示名はメッセージに保存された byName（一時的な会社名変更で偽装され得る）を信用せず、
+        // 現在の companies データ（ctCompanyKey＝表示中の工務店）から都度解決する。
+        // byAdmin は真偽値のみを信用する（"true" 等の文字列を送っても管理者表示にはしない）。
+        const coName=(companies[ctCompanyKey]&&companies[ctCompanyKey].name)||'工務店';
+        return `<div class="bubble ${mine?'mine':'them'}"><div class="who">${m.byAdmin===true?'🛠 管理者':H.esc(coName)}</div>${attachHTML(m)}${m.text?`<div class="bx">${H.linkify(m.text)}</div>`:''}<div class="bt">${H.fmtDate(m.at)}${mine?` ・<a class="ctlink ctEdit" data-mid="${H.esc(m._key)}" style="cursor:pointer;text-decoration:underline">編集</a> ・<a class="ctlink ctDel" data-mid="${H.esc(m._key)}" style="cursor:pointer;text-decoration:underline">削除</a>`:''}</div></div>`;
       }).join('')
     : '<div class="empty">まだやり取りはありません。下から連絡できます。</div>';
   h+='</div>';
@@ -993,15 +994,24 @@ function approveMember(uid){
     : '「'+(company||a.email||'')+'」を会員として承認しますか？';
   if(!confirm(confirmMsg)) return;
   const me=DB.auth.user&&DB.auth.user.email;
-  const ops=[ DB.set('members/'+uid, { email:a.email||'', company:company, contact:contact, tel:tel, approvedAt:Date.now(), approvedBy:me, via:'application' }) ];
+  const memberRec={ email:a.email||'', company:company, contact:contact, tel:tel, approvedAt:Date.now(), approvedBy:me, via:'application' };
+  // 既存の自社データが見つかった場合は、その companyKey を「正式companyKey」として即時割当する
+  // （companyChats への投稿は、admin が割り当てたこの companyKey に限定されるため）。
+  if(existing) memberRec.companyKey=existing._key;
+  let p;
   if(willCreateCompany){
-    ops.push(
-      DB.push('companies', { name:company, nameKana:a.nameKana||'', contact:contact, tel:tel, area:a.area||'', notes:'', ownerEmail:a.email, createdAt:Date.now() })
-        .then(newKey=>DB.push('craftsmen', { companyKey:newKey, companyName:company, name:a.craftsman.name, price:a.craftsman.price||null, unit:'day', age:null, gender:'', good:[], ng:[], quals:[], availMemo:'', avail:{}, createdAt:Date.now(), updatedAt:Date.now() }))
-    );
+    p=DB.push('companies', { name:company, nameKana:a.nameKana||'', contact:contact, tel:tel, area:a.area||'', notes:'', ownerEmail:a.email, createdAt:Date.now() })
+      .then(newKey=>{
+        memberRec.companyKey=newKey; // 新規作成した工務店を正式companyKeyとして割当
+        return Promise.all([
+          DB.set('members/'+uid, memberRec),
+          DB.push('craftsmen', { companyKey:newKey, companyName:company, name:a.craftsman.name, price:a.craftsman.price||null, unit:'day', age:null, gender:'', good:[], ng:[], quals:[], availMemo:'', avail:{}, createdAt:Date.now(), updatedAt:Date.now() })
+        ]);
+      });
+  } else {
+    p=DB.set('members/'+uid, memberRec);
   }
-  Promise.all(ops)
-    .then(()=>DB.remove('memberApplications/'+uid))
+  p.then(()=>DB.remove('memberApplications/'+uid))
     .then(()=>H.toast(willCreateCompany?'会員として承認し、工務店・大工を登録しました':'会員として承認しました','ok'))
     .catch(e=>H.toast('承認できませんでした：'+((e&&e.message)||e),'err'));
 }
@@ -1016,11 +1026,25 @@ function renderMembers(){
   let arr=H.toArr(members).sort((a,b)=>(b.approvedAt||0)-(a.approvedAt||0));
   if(q) arr=arr.filter(m=>((m.company||'')+' '+(m.email||'')).toLowerCase().includes(q));
   if(!arr.length){ box.innerHTML='<div class="empty" style="padding:12px">会員はまだいません。上の「会員アカウントを発行する」または申請の承認で追加されます。</div>'; return; }
+  // companyChats への投稿は、ここで割り当てる「正式companyKey」（members/{uid}/companyKey）に
+  // 限定される。会員が自由に作った companies レコードの ownerEmail 一致だけでは投稿できない
+  // （なりすまし防止）ため、工務店登録後は必ずここで正式な会社を割り当てる。
+  const coOptions=cur=>'<option value="">（未割当）</option>'+H.toArr(companies).map(c=>
+    `<option value="${H.esc(c._key)}"${c._key===cur?' selected':''}>${H.esc(c.name)}${c.ownerEmail?'（'+H.esc(c.ownerEmail)+'）':''}</option>`).join('');
   box.innerHTML=arr.map(m=>`<div class="item">
     <div class="top"><div><div class="nm">${H.esc(m.company||'(工務店名なし)')}</div>
-      <div class="meta">🔑${H.esc(m.email||'—')}　${m.via==='issued'?'発行':'承認'}：${H.fmtDate(m.approvedAt)}</div></div></div>
+      <div class="meta">🔑${H.esc(m.email||'—')}　${m.via==='issued'?'発行':'承認'}：${H.fmtDate(m.approvedAt)}</div>
+      <div class="meta" style="margin-top:4px">正式company：<select class="mcoSel" data-uid="${H.esc(m._key)}" style="max-width:220px">${coOptions(m.companyKey||'')}</select>
+        <button class="btn ghost sm mcoSet" data-uid="${H.esc(m._key)}">割当</button>
+        ${m.companyKey?' <span class="count">✅割当済み</span>':' <span class="count" style="color:var(--warn)">未割当（チャット投稿不可）</span>'}</div>
+    </div></div>
     <div class="acts"><button class="btn danger sm" onclick="revokeMember('${m._key}')">🚫 利用停止（会員から外す）</button></div>
   </div>`).join('');
+  box.querySelectorAll('.mcoSet').forEach(b=>b.onclick=()=>{
+    const uid=b.dataset.uid;
+    const sel=box.querySelector('.mcoSel[data-uid="'+uid+'"]');
+    DB.update('members/'+uid, {companyKey:(sel&&sel.value)||null}).then(()=>H.toast('正式companyKeyを更新しました','ok'));
+  });
 }
 function revokeMember(uid){
   const m=members[uid]||{};

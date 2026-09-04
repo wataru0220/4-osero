@@ -9,19 +9,18 @@
 window.SHOKUNIN_CONFIG = {
   // -------------------------------------------------------------------
   // (1) Firebase Realtime Database の設定
-  //   既存のオセロ／勤怠アプリのプロジェクトをそのまま流用してOKです。
-  //   データは別パス "shokunin/" に保存されるので他アプリと混ざりません。
+  //   本番専用 Firebase Project（shokunin-prod-45145）を使用します。
   //   ↓ 未設定（apiKey が空）の場合は自動で「お試しモード（端末内保存）」になります。
   // -------------------------------------------------------------------
   firebase: {
-    apiKey: "AIzaSyACeVUzUS_lBw6YL95w8JkkUCNwN1ST_Gs",
-    authDomain: "osero-77308.firebaseapp.com",
-    databaseURL: "https://osero-77308-default-rtdb.firebaseio.com",
-    projectId: "osero-77308",
-    storageBucket: "osero-77308.firebasestorage.app",
-    messagingSenderId: "401249829167",
-    appId: "1:401249829167:web:c2649df6ff67f35958a1da",
-    measurementId: "G-VQPXQVRHDG"
+    apiKey: "AIzaSyAodN4y4XeogEYoDQM4-GyNb1p3wDxmoqQ",
+    authDomain: "shokunin-prod-45145.firebaseapp.com",
+    databaseURL: "https://shokunin-prod-45145-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "shokunin-prod-45145",
+    storageBucket: "shokunin-prod-45145.firebasestorage.app",
+    messagingSenderId: "542789508680",
+    appId: "1:542789508680:web:058218c90219ca0537027d",
+    measurementId: "G-8CBWRNF1Z8"
   },
 
   // Firebase 内でこのアプリが使うルートパス（変更不要）
