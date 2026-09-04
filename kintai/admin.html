@@ -114,6 +114,9 @@
   .acal-day{aspect-ratio:1/1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:8px; font-size:13px; background:#f4f7fb; color:var(--ink); position:relative}
   .acal-day .dn{line-height:1.05}
   .acal-day .wu{font-size:10px; font-weight:800; line-height:1; margin-top:1px}
+  .acal-day .st{font-size:9px; line-height:1.05; margin-top:1px; max-width:100%; padding:0 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; box-sizing:border-box}
+  .acal-day[data-adate]{cursor:pointer}
+  #atDetail{min-height:1.3em; font-size:13px}
   .acal-day.worked{background:#eafaf0; color:#178a52; box-shadow:inset 0 0 0 1px #b6e6c8}
   .acal-day.leave{background:#ffd21e; color:#6b5200; border-radius:50%; font-weight:800}
   .acal-day.today{box-shadow:inset 0 0 0 2px var(--accent)}
@@ -246,7 +249,8 @@
       </div>
       <div id="atCal" class="acal" style="margin-top:6px"></div>
       <div class="note" id="atSummary" style="margin-top:10px"></div>
-      <div style="font-size:12px; color:var(--sub); margin-top:4px">🟩 出勤（数字＝工数）　🟡 有給（承認）　枠＝今日。一人ずつ月ごとに出勤状況を確認できます。</div>
+      <div class="note" id="atDetail" style="margin-top:4px; color:var(--accent)"></div>
+      <div style="font-size:12px; color:var(--sub); margin-top:4px">🟩 出勤（現場名を表示）　🟡 有給（承認）　枠＝今日。日をタップすると現場名・工数の詳細が出ます。</div>
     </div>
   </section>
 
@@ -1018,12 +1022,14 @@
     if(!atMonth){ const d=new Date(); atMonth=new Date(d.getFullYear(), d.getMonth(), 1); }
     const name=atWorker || $('atWorker').value || '';
     const y=atMonth.getFullYear(), m=atMonth.getMonth(), pre=y+'-'+z(m+1)+'-';
-    // その従業員の当月：日ごとの工数合計 と 承認有給
-    const unitByDate={}, leaveByDate={};
+    // その従業員の当月：日ごとの工数合計・現場名・承認有給
+    const unitByDate={}, sitesByDate={}, leaveByDate={};
     Object.values(records||{}).forEach(r=>{ if(!r||r.workerName!==name) return; const ds=r.date||''; if(ds.indexOf(pre)!==0) return;
-      unitByDate[ds]=(unitByDate[ds]||0)+(r.dayUnit!=null?Number(r.dayUnit):1); });
+      unitByDate[ds]=(unitByDate[ds]||0)+(r.dayUnit!=null?Number(r.dayUnit):1);
+      (sitesByDate[ds]=sitesByDate[ds]||[]).push(r.siteName||'(未設定)'); });
     Object.values(leaves||{}).forEach(l=>{ if(!l||l.workerName!==name) return; if(l.status==='pending'||l.status==='rejected') return; const ds=l.date||''; if(ds.indexOf(pre)!==0) return;
       leaveByDate[ds]=(leaveByDate[ds]||0)+(Number(l.days)||0); });
+    const siteText=ds=>[...new Set(sitesByDate[ds]||[])].join('・');
     const today=todayStr(), startWd=new Date(y,m,1).getDay(), daysInMonth=new Date(y,m+1,0).getDate();
     let h='<div class="acal-head"><button class="acal-nav" id="atPrev">‹</button><span class="m">'+y+'年 '+(m+1)+'月</span><button class="acal-nav" id="atNext">›</button></div><div class="acal-grid">';
     ['日','月','火','水','木','金','土'].forEach(w=> h+='<div class="acal-wd">'+w+'</div>');
@@ -1031,17 +1037,27 @@
     let totDays=0, totUnit=0, totLeave=0;
     for(let d=1; d<=daysInMonth; d++){
       const ds=ymd(y,m,d), wu=unitByDate[ds], lv=leaveByDate[ds];
-      const cls=['acal-day']; let inner='<div class="dn">'+d+'</div>';
-      if(wu){ cls.push('worked'); inner+='<div class="wu">'+round1(wu)+'</div>'; totDays++; totUnit+=wu; }
-      else if(lv){ cls.push('leave'); inner+='<div class="wu">有</div>'; totLeave+=lv; }
+      const cls=['acal-day']; let inner='<div class="dn">'+d+'</div>'; let attr='';
+      if(wu){ const st=siteText(ds); cls.push('worked'); inner+='<div class="st">'+esc(st)+'</div>';
+        attr=' data-adate="'+ds+'" title="'+esc(st+'（工数'+round1(wu)+'日）')+'"'; totDays++; totUnit+=wu; }
+      else if(lv){ cls.push('leave'); inner+='<div class="wu">有</div>'; attr=' data-adate="'+ds+'" title="有給休暇"'; totLeave+=lv; }
       if(ds===today) cls.push('today');
-      h+='<div class="'+cls.join(' ')+'">'+inner+'</div>';
+      h+='<div class="'+cls.join(' ')+'"'+attr+'>'+inner+'</div>';
     }
     h+='</div>'; cal.innerHTML=h;
     $('atSummary').innerHTML= name ? ('<b>'+esc(name)+'</b>　'+y+'年'+(m+1)+'月：出勤 <b>'+totDays+'</b> 日・工数計 <b>'+round1(totUnit)+'</b>'+(totLeave?'・有給 <b>'+round1(totLeave)+'</b> 日':'')) : '従業員を選んでください。';
+    $('atDetail').textContent='';
     const prev=$('atPrev'), next=$('atNext');
     if(prev) prev.onclick=()=>{ atMonth=new Date(y,m-1,1); renderAttend(); };
     if(next) next.onclick=()=>{ atMonth=new Date(y,m+1,1); renderAttend(); };
+    // 日をタップで詳細（現場名・工数）を下に表示
+    const WD=['日','月','火','水','木','金','土'];
+    cal.querySelectorAll('[data-adate]').forEach(c=> c.onclick=()=>{
+      const ds=c.dataset.adate, p=ds.split('-'), wd=WD[new Date(+p[0],+p[1]-1,+p[2]).getDay()];
+      const label=(+p[1])+'/'+(+p[2])+'（'+wd+'）';
+      if(unitByDate[ds]) $('atDetail').innerHTML='📍 <b>'+label+'</b>：'+esc(siteText(ds))+' ／ 工数 '+round1(unitByDate[ds])+'日';
+      else if(leaveByDate[ds]) $('atDetail').innerHTML='🏖️ <b>'+label+'</b>：有給休暇';
+    });
   }
   function bindAttend(){ $('atWorker').onchange=()=>{ atWorker=$('atWorker').value; renderAttend(); }; }
 
