@@ -59,6 +59,12 @@
       signUp: function (email, pass) { return fauth.createUserWithEmailAndPassword(email, pass); },
       // パスワード再設定メールを送信（救済措置）
       resetPassword: function (email) { return fauth.sendPasswordResetEmail(email); },
+      // Googleでログイン（認証できるだけで、会員としての利用可否は members/{uid} の有無で
+      // 従来どおり別途判定される＝門番(applyGate)のロジックは一切変更していない）。
+      signInWithGoogle: function () {
+        var provider = new firebase.auth.GoogleAuthProvider();
+        return fauth.signInWithPopup(provider);
+      },
       signOut: function () { return fauth.signOut(); }
     };
     DB.ready = new Promise(function (resolve) {

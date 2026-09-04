@@ -67,8 +67,11 @@
   // Firebase認証エラーを分かりやすい日本語に変換
   H.authErrMsg = (e) => {
     const m = (e && (e.code || e.message)) ? (e.code || e.message) : String(e);
-    if (/operation-not-allowed/.test(m)) return "メール/パスワード認証が有効化されていません。Firebaseコンソール → Authentication → ログイン方法 で「メール/パスワード」を有効にしてください。";
+    if (/operation-not-allowed/.test(m)) return "この認証方法が有効化されていません。Firebaseコンソール → Authentication → Sign-in method で、使用する認証方法（メール/パスワード・Googleなど）を有効にしてください。";
     if (/configuration-not-found/.test(m)) return "認証が設定されていません。Firebaseコンソールで「メール/パスワード」と「匿名」を有効にしてください。";
+    if (/account-exists-with-different-credential/.test(m)) return "このメールアドレスは既に別のログイン方法（メール/パスワード等）で登録されています。そちらでログインしてください。";
+    if (/(popup-closed-by-user|cancelled-popup-request)/.test(m)) return "ログイン画面が閉じられました。もう一度お試しください。";
+    if (/popup-blocked/.test(m)) return "ポップアップがブロックされました。ブラウザの設定でポップアップを許可してから、もう一度お試しください。";
     if (/email-already-in-use/.test(m)) return "このメールは登録済みです。「ログイン」を押してください。";
     if (/invalid-email/.test(m)) return "メールアドレスの形式が正しくありません。";
     if (/(weak-password|password.*6)/i.test(m)) return "パスワードは6文字以上にしてください。";

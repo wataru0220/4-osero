@@ -1057,7 +1057,9 @@ function showGate(mode){
   if(mode==='login'){
     b.innerHTML=head+`
       <h2>🔒 会員ログイン</h2>
-      <div class="gsub">ご利用には<b>事務局が発行した会員アカウント</b>（メール・パスワード）が必要です。審査を通過した会員のみマッチング画面をご利用いただけます。</div>
+      <div class="gsub">ご利用には<b>事務局が発行・承認した会員アカウント</b>が必要です。審査を通過した会員のみマッチング画面をご利用いただけます。</div>
+      <button class="btn ghost full" id="gGoogleLoginBtn" style="margin-top:8px">Googleでログイン</button>
+      <div class="gsub" style="text-align:center;margin:10px 0;color:var(--sub)">ーーーー または ーーーー</div>
       <div class="field"><label>メールアドレス</label><input type="email" id="gEmail" autocomplete="username" placeholder="you@example.com"></div>
       <div class="field"><label>パスワード</label><input type="password" id="gPass" autocomplete="current-password" placeholder="パスワード"></div>
       <div class="row"><button class="btn full" id="gLoginBtn">ログイン</button></div>
@@ -1066,10 +1068,11 @@ function showGate(mode){
       <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
       <div class="gsub" style="margin:0 0 8px">以前ご利用いただいていた方（退会・利用停止等で会員権限が外れた方）はこちら。</div>
       <button class="btn full" id="gToRejoin" style="margin-bottom:10px">🔁 再入会する（以前ご利用の方）</button>
-      <div class="gsub" style="margin:0 0 8px">まだ一度もご利用でない方（工務店）は、入会をご申請ください。事務局の審査後にご利用いただけます。</div>
+      <div class="gsub" style="margin:0 0 8px">まだ一度もご利用でない方（工務店）は、入会をご申請ください。事務局の審査後にご利用いただけます（Googleでログインしただけでは利用できません）。</div>
       <button class="btn ghost full" id="gToApply">✍️ 新規のお申し込み（申込フォーム）</button>
       ${pricePlanHTML()}
       ${officeContactHTML()}`;
+    document.getElementById('gGoogleLoginBtn').onclick=gateGoogleLogin;
     document.getElementById('gLoginBtn').onclick=gateLogin;
     document.getElementById('gPass').addEventListener('keydown',e=>{ if(e.key==='Enter') gateLogin(); });
     document.getElementById('gReset').onclick=gateReset;
@@ -1148,6 +1151,12 @@ function gateLogin(){
   const email=(document.getElementById('gEmail').value||'').trim(), pass=(document.getElementById('gPass').value||'');
   if(!email||!pass){ gateErr('メールアドレスとパスワードを入力してください'); return; }
   DB.auth.signIn(email,pass).catch(e=>gateErr(H.authErrMsg?H.authErrMsg(e):((e&&e.message)||String(e))));
+}
+// Googleでログイン（認証できるだけで、会員としての利用可否は従来どおり事務局の承認が必要。
+// applyGate() が members/{uid} の有無で判定するため、ここでは認証を試みるだけでよい）。
+function gateGoogleLogin(){
+  if(!DB.auth.signInWithGoogle){ gateErr('Googleログインは現在ご利用いただけません'); return; }
+  DB.auth.signInWithGoogle().catch(e=>gateErr(H.authErrMsg?H.authErrMsg(e):((e&&e.message)||String(e))));
 }
 function gateReset(){
   const email=(document.getElementById('gEmail').value||'').trim();
