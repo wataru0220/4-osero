@@ -1026,6 +1026,7 @@ function resubMembership(u){
     v=>{ amAdminUser=!!v; adminChecked=true; applyGate(); },
     ()=>{ amAdminUser=false; adminChecked=true; applyGate(); });
 }
+let _autoApplyUid=null;
 function applyGate(){
   const gate=document.getElementById('memberGate'); if(!gate) return;
   if(gateExempt()){ document.body.classList.remove('gated'); maybeShowInstallBanner(); return; }   // 体験/ローカルは常に開放
@@ -1037,6 +1038,17 @@ function applyGate(){
   // （ボタンを押した際に失敗すれば、そこで具体的なエラー内容が表示される）
   if(amAdminUser){ showGate('adminBootstrap'); return; }
   if(memberCheckError){ showGate('error'); return; }                       // ルール未設定等で確認自体が失敗
+  if(!myApplication){
+    // 新規登録（Google／メール自己登録）は memberApplications に何も残さないため、このままでは
+    // 事務局の審査キュー（admin.html「審査待ちの申請」）に一切現れず、承認する手段がなくなってしまう。
+    // 自己書込み（auth.uid===$uid）は既存ルールで許可済みなので、最小限の情報だけ自動登録する
+    // （同一uidでの二重送信は_autoApplyUidで防止。既存の申請データがあれば絶対に上書きしない＝
+    // myApplicationがnullの場合のみ実行）。
+    if(_autoApplyUid!==u.uid){
+      _autoApplyUid=u.uid;
+      DB.set('memberApplications/'+u.uid, { email:u.email, at:Date.now(), via:'auto-signup' }).catch(()=>{});
+    }
+  }
   showGate(myApplication ? 'pending' : 'apply');                          // 未会員→申請状況で分岐
 }
 // 管理者アカウントが自分自身を会員登録する（ルール上 members への書込は管理者に許可されている）
@@ -1056,24 +1068,25 @@ function showGate(mode){
   if(mode==='loading'){ b.innerHTML=head+'<div class="gsub" style="text-align:center">確認中…</div>'; return; }
   if(mode==='login'){
     b.innerHTML=head+`
-      <h2>🔒 会員ログイン</h2>
-      <div class="gsub">ご利用には<b>事務局が発行・承認した会員アカウント</b>が必要です。審査を通過した会員のみマッチング画面をご利用いただけます。</div>
-      <button class="btn ghost full" id="gGoogleLoginBtn" style="margin-top:8px">Googleでログイン</button>
+      <h2>🔒 ログイン／新規登録</h2>
+      <div class="gsub">既存会員は<b>ログイン</b>、初めての方は<b>新規登録</b>してください。新規登録・Googleログインだけではご利用いただけず、<b>事務局の審査（承認）後</b>にマッチング画面が使えるようになります。</div>
+      <button class="btn ghost full" id="gGoogleLoginBtn" style="margin-top:8px">Googleでログイン／新規登録</button>
       <div class="gsub" style="text-align:center;margin:10px 0;color:var(--sub)">ーーーー または ーーーー</div>
       <div class="field"><label>メールアドレス</label><input type="email" id="gEmail" autocomplete="username" placeholder="you@example.com"></div>
-      <div class="field"><label>パスワード</label><input type="password" id="gPass" autocomplete="current-password" placeholder="パスワード"></div>
-      <div class="row"><button class="btn full" id="gLoginBtn">ログイン</button></div>
+      <div class="field"><label>パスワード</label><input type="password" id="gPass" autocomplete="current-password" placeholder="6文字以上"></div>
+      <div class="row"><button class="btn ghost" id="gSignupBtn">新規登録</button><button class="btn" id="gLoginBtn">ログイン</button></div>
       <div class="gerr" id="gErr"></div>
       <div style="margin-top:12px"><a class="deallink" id="gReset" style="cursor:pointer">🔑 パスワードを忘れた方はこちら</a></div>
       <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
       <div class="gsub" style="margin:0 0 8px">以前ご利用いただいていた方（退会・利用停止等で会員権限が外れた方）はこちら。</div>
       <button class="btn full" id="gToRejoin" style="margin-bottom:10px">🔁 再入会する（以前ご利用の方）</button>
-      <div class="gsub" style="margin:0 0 8px">まだ一度もご利用でない方（工務店）は、入会をご申請ください。事務局の審査後にご利用いただけます（Googleでログインしただけでは利用できません）。</div>
-      <button class="btn ghost full" id="gToApply">✍️ 新規のお申し込み（申込フォーム）</button>
+      <div class="gsub" style="margin:0 0 8px">会社情報を先にまとめてお伝えしたい方は、申込フォームからでも登録いただけます。</div>
+      <button class="btn ghost full" id="gToApply">✍️ 申込フォームから登録</button>
       ${pricePlanHTML()}
       ${officeContactHTML()}`;
     document.getElementById('gGoogleLoginBtn').onclick=gateGoogleLogin;
     document.getElementById('gLoginBtn').onclick=gateLogin;
+    document.getElementById('gSignupBtn').onclick=gateSignup;
     document.getElementById('gPass').addEventListener('keydown',e=>{ if(e.key==='Enter') gateLogin(); });
     document.getElementById('gReset').onclick=gateReset;
     document.getElementById('gToRejoin').onclick=()=>showGate('rejoin');
@@ -1151,6 +1164,15 @@ function gateLogin(){
   const email=(document.getElementById('gEmail').value||'').trim(), pass=(document.getElementById('gPass').value||'');
   if(!email||!pass){ gateErr('メールアドレスとパスワードを入力してください'); return; }
   DB.auth.signIn(email,pass).catch(e=>gateErr(H.authErrMsg?H.authErrMsg(e):((e&&e.message)||String(e))));
+}
+// メールアドレス＋パスワードで新規登録（Firebase Authenticationにアカウントを作成するだけ）。
+// 認証できても会員としての利用可否は従来どおり事務局の承認が必要（applyGate()がmembers/{uid}の
+// 有無で判定するロジックは無変更）。新規登録直後は「新規のお申し込み」画面に自動で案内される。
+function gateSignup(){
+  const email=(document.getElementById('gEmail').value||'').trim(), pass=(document.getElementById('gPass').value||'');
+  if(!email||!pass){ gateErr('メールアドレスとパスワードを入力してください'); return; }
+  if(pass.length<6){ gateErr('パスワードは6文字以上にしてください'); return; }
+  DB.auth.signUp(email,pass).catch(e=>gateErr(H.authErrMsg?H.authErrMsg(e):((e&&e.message)||String(e))));
 }
 // Googleでログイン（認証できるだけで、会員としての利用可否は従来どおり事務局の承認が必要。
 // applyGate() が members/{uid} の有無で判定するため、ここでは認証を試みるだけでよい）。
