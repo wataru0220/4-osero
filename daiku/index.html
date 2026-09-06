@@ -271,7 +271,7 @@
           ステージごとに<b>大工仕事が変わる</b>よ。3種を1周したら、少しずつ難しくなってくり返し！<br>
           <b>① 建方</b>：ゆれる木材を<b>タップで落として</b>軸組を組む。ど真ん中は<b>ピタリ！＝高得点＋コンボ</b>、傾き過ぎると倒壊。弟子が<b>はしごで登って</b>くる（タップで入手→揺れ対策アイテム）。<br>
           <b>② 釘打ち（早打ち）</b>：<b>ライバル大工と競争！</b>光る釘を<b>すばやくタップ</b>し、相手より先に規定本数を打て（負けると脱落）。<br>
-          <b>③ 餅ひろい（上棟式）</b>：大工さんがまく<b>紅白・金の餅</b>を、みんなと<b>取り合ってキャッチ</b>！ <b>最下位は脱落</b>だ。
+          <b>③ 餅ひろい（上棟式）</b>：大工さんがまく<b>紅白・金の餅</b>を、みんなと<b>取り合ってキャッチ</b>！ <b>2位以内に入らないと脱落</b>だ。
         </p>
         <div style="text-align:center; margin-top:14px;">
           <button class="btn-primary" id="howClose">とじる</button>
@@ -849,7 +849,7 @@
   function initMochi(){
     mochis=[]; mochiPops=[]; mochiT=20+lvl*3; mochiScore=0; mochiSpawnT=0.3; mochiThrowT=0;
     catcher.x=cssW/2; catcher.tx=cssW/2; catcher.catches=0;
-    const n=Math.min(4,2+lvl), cols=['#b0532a','#b03a76','#4a6ab0','#7a5cc0'];   // 拾いに来る人々
+    const n=Math.min(5,3+lvl), cols=['#b0532a','#b03a76','#4a6ab0','#7a5cc0','#3f7a4a'];   // 拾いに来る人々
     crowd=[]; for(let i=0;i<n;i++) crowd.push({ x:cssW*(0.15+0.7*(i+1)/(n+1)), sp:150+Math.random()*50+lvl*20, col:cols[i%4], catches:0, target:null, bob:Math.random()*6 });
     showToast('🎉 上棟式！大工さんが餅をまくよ〜 拾え！', '#e0a63c'); audio.milestone();
   }
@@ -899,8 +899,8 @@
   function mochiRank(){ const above=crowd.filter(p=>p.catches>(catcher.catches||0)).length; return {rank:above+1, total:crowd.length+1}; }
   function endMochiBonus(){
     const {rank,total}=mochiRank();
-    if(total>1 && rank>=total){ gameOver(`餅ひろい ${rank}位／${total}人…最下位で脱落！`); return; }
-    stageClear((total-rank+1)*100, `餅ひろい ${rank}位／${total}人！ +${mochiScore}`, 1300);
+    if(total>2 && rank>2){ gameOver(`餅ひろい ${rank}位／${total}人…2位以内に入れず脱落！`); return; }
+    stageClear((3-rank)*150+100, `餅ひろい ${rank}位／${total}人！ +${mochiScore}`, 1300);
   }
   function roundRectS(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
   function drawMiniTower(cx, topY, baseW){
@@ -1009,16 +1009,16 @@
     ctx.globalAlpha=1;
     // 上部の小さなタイマー／得点
     ctx.fillStyle='rgba(27,58,92,.9)'; roundRectS(8,32,116,26,8); ctx.fill(); ctx.fillStyle='#fff'; ctx.textAlign='left'; ctx.font='bold 13px sans-serif'; ctx.fillText('残り '+Math.max(0,mochiT).toFixed(1)+'秒', 16, 49);
-    const rk=mochiRank(), last=(rk.total>1 && rk.rank>=rk.total);
-    ctx.fillStyle=last?'rgba(209,80,58,.95)':(rk.rank===1?'rgba(76,154,76,.95)':'rgba(27,58,92,.9)'); roundRectS(cssW-124,32,116,26,8); ctx.fill();
-    ctx.fillStyle='#fff'; ctx.textAlign='right'; ctx.font='bold 14px sans-serif'; ctx.fillText((last?'最下位 ':'')+rk.rank+'/'+rk.total+'位', cssW-16, 50);
+    const rk=mochiRank(), danger=(rk.total>2 && rk.rank>2);
+    ctx.fillStyle=danger?'rgba(209,80,58,.95)':(rk.rank<=2?'rgba(76,154,76,.95)':'rgba(27,58,92,.9)'); roundRectS(cssW-128,32,120,26,8); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.textAlign='right'; ctx.font='bold 14px sans-serif'; ctx.fillText((danger?'圏外 ':'')+rk.rank+'/'+rk.total+'位', cssW-16, 50);
     ctx.textAlign='center';
     if(mochiT<=0){
       ctx.fillStyle='rgba(76,154,76,.95)'; roundRectS(cssW/2-120,cssH/2-42,240,84,16); ctx.fill();
       ctx.fillStyle='#fff'; ctx.font='900 26px sans-serif'; ctx.fillText('餅まき終了！', cssW/2, cssH/2-4);
       ctx.font='bold 16px sans-serif'; ctx.fillText(`ボーナス +${mochiScore}点`, cssW/2, cssH/2+24);
     } else {
-      ctx.fillStyle='rgba(27,58,92,.8)'; ctx.font='bold 12px sans-serif'; ctx.fillText('← 動いて餅を拾え！ 最下位は脱落 →', cssW/2, cssH-14);
+      ctx.fillStyle='rgba(27,58,92,.8)'; ctx.font='bold 12px sans-serif'; ctx.fillText('← 動いて餅を拾え！ 2位以内で生存 →', cssW/2, cssH-14);
     }
   }
 
@@ -1138,7 +1138,7 @@
 
   // ================= ③ 釘打ち（早打ち） =================
   function initNail(){
-    nail={ need:6+lvl*2, done:0, spawnT:0.3, myBob:0,
+    nail={ need:12+lvl*3, done:0, spawnT:0.3, myBob:0,
       life:Math.max(2.2,3.2-lvl*0.1), maxOn:4, items:[],
       rival:{ done:0, target:null, react:0, base:Math.max(0.6,1.2-lvl*0.07), bob:0 } };   // ライバル大工（少しゆっくり）
     tapHint.textContent='ライバルより多く釘を打て！ タップ'; tapHint.style.display='block';
