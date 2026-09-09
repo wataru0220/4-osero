@@ -250,7 +250,7 @@
       <h1 class="brush title-main">上棟バランス</h1>
       <p class="title-sub">じょうとう ばらんす</p>
       <p class="title-tag">ステージごとに大工仕事が変わる3種のミニゲーム！<br>①建方 ②釘打ち ③餅ひろい …くり返してレベルUP！</p>
-      <div class="best-chip">🏆 ハイスコア <span id="titleBest">0</span></div>
+      <div class="best-chip">🏆 ハイスコア <span id="titleBest">0</span> ・ 🔥最高 <span id="titleStreak">0</span>連勝</div>
       <div class="title-btns">
         <button class="btn-primary" id="startBtn">▶ 棟上げ開始</button>
         <div class="row">
@@ -271,7 +271,8 @@
           ステージごとに<b>大工仕事が変わる</b>よ。3種を1周したら、少しずつ難しくなってくり返し！<br>
           <b>① 建方</b>：ゆれる木材を<b>タップで落として</b>軸組を組む。ど真ん中は<b>ピタリ！＝高得点＋コンボ</b>、傾き過ぎると倒壊。弟子が<b>はしごで登って</b>くる（タップで入手→揺れ対策アイテム）。<br>
           <b>② 釘打ち（早打ち）</b>：<b>ライバル大工と競争！</b>光る釘を<b>すばやくタップ</b>し、相手より先に規定本数を打て（負けると脱落）。<br>
-          <b>③ 餅ひろい（上棟式）</b>：大工さんがまく<b>紅白・金の餅</b>を、みんなと<b>取り合ってキャッチ</b>！ <b>2位以内に入らないと脱落</b>だ。
+          <b>③ 餅ひろい（上棟式）</b>：大工さんがまく<b>紅白・金の餅</b>を、みんなと<b>取り合ってキャッチ</b>！ <b>2位以内に入らないと脱落</b>だ。<br>
+          🔥 <b>連続クリアで「連勝ボーナス」</b>が増える（失敗でリセット）。<b>金の釘</b>は3倍、<b>特大餅「大」</b>は大量得点、建方で<b>全部ピタリ＝神業ボーナス</b>！ジャックポットを狙え。
         </p>
         <div style="text-align:center; margin-top:14px;">
           <button class="btn-primary" id="howClose">とじる</button>
@@ -305,7 +306,7 @@
           <div class="lbl">ステージ <span id="stageNo">1</span>　<span id="hudSub">建方</span></div>
           <span id="placed" style="display:none"></span><span id="goal" style="display:none"></span>
           <div class="val"><span id="score">0</span><small>点</small></div>
-          <div class="best">完成 <span id="built">0</span> ・ 最高 <span id="best">0</span></div>
+          <div class="best">完成 <span id="built">0</span> ・ 最高 <span id="best">0</span><span id="hudStreak" style="color:#ffd24a; font-weight:800;"></span></div>
         </div>
         <div class="hud-right">
           <div class="icon-btn" id="muteBtn">🔊</div>
@@ -365,6 +366,7 @@
           <div>今回 <b id="srBonus">+0</b></div>
           <div>ハイスコア <b id="srBest">0</b></div>
         </div>
+        <div id="srStreak" style="color:#c9871f; font-weight:800; font-size:14px; margin-top:6px;"></div>
         <button class="btn-primary" id="srNextBtn" style="width:100%; margin-top:6px;">▶ <span id="srNextLabel">次のステージ</span>スタート</button>
         <button class="btn-ghost" id="srQuitBtn" style="width:100%; margin-top:8px;">タイトルへ</button>
       </div>
@@ -572,6 +574,7 @@
   let seq=[], seqI=0, current=null;         // 組み立て順・落下/揺れ中の材
   let placed=0, total=0;                    // 進捗（本数）
   let score=0, combo=0, maxCombo=0, bestScore=0;   // スコア・連続ピタリ
+  let streak=0, bestStreak=0, buildFlawless=true, srTimer=null;  // 連勝・全ピタリ判定・結果パネル遅延タイマー
   let lean=0, leanRatio=0;                  // 重心バランス（水平器）
   let swayT=0, curSway=0;                   // 傾くほど建物が揺れ続ける（難化）
   let deshi=null, deshiSpawnT=10, heldItem=null;      // 動き回る弟子・出現タイマー・所持アイテム
@@ -590,7 +593,9 @@
 
   bestStage = Math.max(1, +(localStorage.getItem('daiku_beststage')||1));
   bestScore = Math.max(0, +(localStorage.getItem('daiku_bestscore')||0));
+  bestStreak = Math.max(0, +(localStorage.getItem('daiku_beststreak')||0));
   $('titleBest').textContent = bestScore; bestEl.textContent = bestScore;
+  if($('titleStreak')) $('titleStreak').textContent = bestStreak;
 
   // ================= サウンド（軽量シンセ） =================
   const audio = {
@@ -696,6 +701,7 @@
   function bumpBest(){
     if(stage>bestStage){ bestStage=stage; localStorage.setItem('daiku_beststage', bestStage); }
     if(score>bestScore){ bestScore=score; localStorage.setItem('daiku_bestscore', bestScore); }
+    if(streak>bestStreak){ bestStreak=streak; localStorage.setItem('daiku_beststreak', bestStreak); }
   }
   // 現ステージの軸組を用意（下から組む順を作り、最初の材を吊る）
   function modeForStage(s){ return MODES[(s-1)%MODES.length]; }
@@ -708,14 +714,14 @@
     floors=c.floors; cols=c.cols; bays=cols-1; postTh=c.postTh; swingSpeed=c.swing;
     setGeometry();
     beams=[sillTimber()]; lean=0; leanRatio=0; swayT=0; curSway=0;
-    seq=buildSequence(); seqI=0; total=seq.length; placed=0;
+    seq=buildSequence(); seqI=0; total=seq.length; placed=0; buildFlawless=true;
     resetDeshi(false);
     frameCamera(); setMascot(''); spawnCurrent();
     tapHint.textContent='タップで落とす！'; tapHint.style.display='block';
   }
   // ステージ開始（種別を判定してミニゲームを初期化）
   function startStage(){
-    $('srOverlay').classList.remove('show');   // 結果パネルを閉じる
+    clearTimeout(srTimer); $('srOverlay').classList.remove('show');   // 結果パネルを閉じる（保留タイマーも解除）
     mode=modeForStage(stage); lvl=stageLevel(stage);
     combo=0; effects=[]; sfx=[]; shake=0; collapsing=false; overTimer=0;
     completed=null; dims=null; current=null;
@@ -736,27 +742,31 @@
   function startGame(){
     audio.ensure(); show('game');
     overOverlay.classList.remove('show'); pauseOverlay.classList.remove('show');
-    stage=1; built=0; score=0; combo=0; maxCombo=0;
+    stage=1; built=0; score=0; combo=0; maxCombo=0; streak=0;
     resetDeshi(true);
     startStage();
   }
   function nextStage(){ stage++; bumpBest(); startStage(); }
   // ステージ共通クリア処理（各ミニゲームから呼ぶ）→ 結果発表してスタート待ち
   function stageClear(bonus, msg, delay){
-    if(bonus) score+=bonus;
+    streak++;
+    const sb = streak>=2 ? streak*100 : 0;             // 連勝ボーナス
+    score += (bonus||0) + sb;
     bumpBest(); updateHUD(); state='clear';
-    showToast(msg || `ステージ${stage} クリア！`, '#4c9a4c'); audio.milestone();
+    showToast((streak>=2?`🔥${streak}連勝！ `:'')+(msg||`ステージ${stage} クリア！`), streak>=3?'#e0a63c':'#4c9a4c'); audio.milestone();
     tapHint.style.display='none';
-    const head=msg||`ステージ${stage} クリア！`, gained=bonus||0;
-    setTimeout(()=>{ if(state==='clear') showStageResult(head, gained); }, delay||900);   // 演出を見せてから結果発表
+    const head=msg||`ステージ${stage} クリア！`, gained=(bonus||0)+sb;
+    clearTimeout(srTimer);
+    srTimer=setTimeout(()=>{ if(state==='clear') showStageResult(head, gained, sb); }, delay||900);   // 演出を見せてから結果発表
   }
-  function showStageResult(head, gained){
+  function showStageResult(head, gained, sb){
     $('srStage').textContent=stage;
     $('srTitle').textContent=head;
     $('srScore').textContent=score;
     $('srBonus').textContent='+'+gained;
     $('srBest').textContent=bestScore;
     $('srNextLabel').textContent=MODE_LABEL[modeForStage(stage+1)]+'を';
+    if($('srStreak')) $('srStreak').textContent = (streak>=2 ? `🔥 ${streak}連勝中！（連勝ボーナス +${sb||0}）` : '');
     $('srOverlay').classList.add('show');
     audio.milestone();
   }
@@ -819,7 +829,7 @@
       if(wasLeaning>25 && combo>=2) showToast(`ピタリ！ ${combo}連★ 立て直し +${bonus}`, '#3a76c0');
       else showToast(combo>=2?`ピタリ！ ${combo}連★ +${bonus}`:'ピタリ！ +30', '#4c9a4c');
     } else {
-      combo=0;
+      combo=0; buildFlawless=false;                    // 一度でもズレたら「全ピタリ」は消える
       // ピタリ以外は必ず傾きを悪化させる（反対側に落としても立て直せない＝回復はピタリ限定）
       const dir = Math.abs(lean)>0.5 ? Math.sign(lean) : (Math.sign(err)||1);
       lean = dir * (Math.abs(lean) + Math.abs(err)*0.72);
@@ -836,10 +846,12 @@
   function onComplete(){
     current=null; built++; completed=makeDims(); dims=completed; fitWholeBuilding();
     const straight = Math.abs(lean)<18;
-    const bonus = 100 + floors*100 + (straight?300:0);   // 上棟＋まっすぐボーナス
+    const flawless = buildFlawless;                       // 全部ピタリ＝神業
+    const mega = flawless ? 500+floors*100 : 0;
+    const bonus = 100 + floors*100 + (straight?300:0) + mega;
     reactMascot('good');
-    spawnConfetti(); setTimeout(spawnConfetti, 250);     // 多めにお祝い
-    stageClear(bonus, `🎏 ${buildingName(floors)} 上棟！ +${bonus}${straight?' まっすぐ★':''}`, 2600);
+    spawnConfetti(); setTimeout(spawnConfetti, 250); if(flawless){ setTimeout(spawnConfetti,450); setTimeout(spawnConfetti,650); }
+    stageClear(bonus, `🎏 ${buildingName(floors)} 上棟！${flawless?` 🌟神業！全ピタリ +${mega}`:(straight?' まっすぐ★':'')}`, 2600);
   }
 
   // ================= 餅まきボーナス（五重塔完成時の上棟式） =================
@@ -854,13 +866,14 @@
     showToast('🎉 上棟式！大工さんが餅をまくよ〜 拾え！', '#e0a63c'); audio.milestone();
   }
   function spawnMochi(){
-    const r=Math.random(); let type,val,col;
-    if(r<0.10){ type='gold'; val=300; col='#ffe08a'; }
-    else if(r<0.42){ type='red'; val=100; col='#ffd9d0'; }
+    const r=Math.random(); let type,val,col,rr=13+Math.random()*4;
+    if(r<0.05){ type='big'; val=400; col='#ffe8a0'; rr=25; }        // 特大餅（レア・大量得点）
+    else if(r<0.13){ type='gold'; val=300; col='#ffe08a'; }
+    else if(r<0.44){ type='red'; val=100; col='#ffd9d0'; }
     else { type='white'; val=50; col='#ffffff'; }
     mochis.push({ x:mochiThrowX()+(Math.random()*2-1)*10, y:mochiThrowY(),
       vx:(Math.random()*2-1)*(100+Math.random()*110), vy:-(70+Math.random()*120),   // 放り投げる（上＋横へ散る）
-      val, col, type, rot:0, vr:(Math.random()*2-1)*4, r:13+Math.random()*4 });
+      val, col, type, rot:0, vr:(Math.random()*2-1)*4, r:rr });
     mochiThrowT=0.2;                                    // 投げモーション
   }
   function updateMochiBonus(dt){
@@ -884,7 +897,8 @@
       if(m.y>=catchY && m.y<=catchY+40){
         if(Math.abs(m.x-catcher.x)<catchHalf){        // 自分が拾う
           mochiScore+=m.val; score+=m.val; catcher.catches++;
-          mochiPops.push({x:m.x,y:catchY-6,val:m.val,t:0,col:m.type==='gold'?'#e0a63c':(m.type==='red'?'#d1503a':'#4c9a4c')});
+          mochiPops.push({x:m.x,y:catchY-6,val:m.val,t:0,col:(m.type==='gold'||m.type==='big')?'#e0a63c':(m.type==='red'?'#d1503a':'#4c9a4c')});
+          if(m.type==='big'){ ring(m.x,catchY,'#ffd24a'); showToast('🎉 特大餅！ +'+m.val,'#e0a63c'); }
           audio.combo(2); mochis.splice(i,1); continue;
         }
         let bestP=null, bd=npcHalf;                   // 一番近い人が拾う（偏り防止）
@@ -939,6 +953,7 @@
     ctx.beginPath(); ctx.ellipse(0,0,m.r,m.r*0.82,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
     ctx.fillStyle='rgba(255,255,255,.6)'; ctx.beginPath(); ctx.ellipse(-m.r*0.3,-m.r*0.3,m.r*0.3,m.r*0.2,0,0,Math.PI*2); ctx.fill();
     if(m.type==='gold'){ ctx.fillStyle='#b8860b'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('¥',0,1); }
+    else if(m.type==='big'){ ctx.fillStyle='#d1503a'; ctx.font='bold 22px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('大',0,1); }
     else if(m.type==='red'){ ctx.fillStyle='#d1503a'; ctx.beginPath(); ctx.arc(0,0,m.r*0.35,0,Math.PI*2); ctx.fill(); }
     ctx.restore();
   }
@@ -1147,7 +1162,7 @@
   function spawnNail(){
     const m=54, top=120, bot=cssH-120;
     nail.items.push({ x:m+Math.random()*(cssW-2*m), y:top+Math.random()*(bot-top),
-      r:Math.max(28,38-lvl), t:0, life:nail.life, hit:false, by:null, anim:0, rot:Math.random()*0.6-0.3 });
+      r:Math.max(28,38-lvl), t:0, life:nail.life, hit:false, by:null, anim:0, rot:Math.random()*0.6-0.3, gold:(Math.random()<0.14) });
   }
   function updateNail(dt){
     const n=nail, rv=n.rival; n.spawnT-=dt;
@@ -1156,7 +1171,7 @@
     if(n.spawnT<=0 && live<n.maxOn){ spawnNail(); n.spawnT=Math.max(0.28,0.5-lvl*0.03)+Math.random()*0.3; }
     // ライバルAI（未打の釘を狙って一定時間後に打つ）
     if(rv.target && (n.items.indexOf(rv.target)<0 || rv.target.hit)) rv.target=null;
-    if(!rv.target){ let best=null,bt=-1; for(const it of n.items){ if(it.hit) continue; if(it.t>bt){bt=it.t; best=it;} }
+    if(!rv.target){ let best=null,bt=1e9; for(const it of n.items){ if(it.hit) continue; if(it.t<bt){bt=it.t; best=it;} }   // 新しい（寿命が長い）釘を狙う＝確実に打てる
       if(best){ rv.target=best; rv.react=rv.base*(0.7+Math.random()*0.6); } }
     else { rv.react-=dt;
       if(rv.react<=0){ const it=rv.target; it.hit=true; it.by='rival'; it.anim=0; rv.done++; rv.bob=0.25; audio.tone(880,.04,'square',.1); rv.target=null;
@@ -1170,7 +1185,10 @@
   function nailTap(px,py){
     const n=nail; let hit=false;
     for(const it of n.items){ if(it.hit) continue;
-      if(Math.hypot(px-it.x,py-it.y)<=it.r+10){ it.hit=true; it.by='me'; it.anim=0; n.done++; n.myBob=0.25; score+=60+lvl*15; burst(it.x,it.y,'#cfd6dd',7); audio.tone(1500,.03,'square',.16); audio.tone(520,.06,'square',.12,-260); hit=true;   // カンッ（ハンマー）
+      if(Math.hypot(px-it.x,py-it.y)<=it.r+10){ it.hit=true; it.by='me'; it.anim=0; n.done++; n.myBob=0.25; hit=true;
+        const base=60+lvl*15;
+        if(it.gold){ score+=base*3; burst(it.x,it.y,'#ffe08a',16); ring(it.x,it.y,'#ffd24a'); showToast('🌟金の釘！ +'+(base*3),'#e0a63c'); audio.combo(4); audio.tone(1500,.03,'square',.18); }
+        else { score+=base; burst(it.x,it.y,'#cfd6dd',7); audio.tone(1500,.03,'square',.16); audio.tone(520,.06,'square',.12,-260); }   // カンッ（ハンマー）
         if(it===n.rival.target) n.rival.target=null;      // 取られたらライバルは狙い直し
         if(n.done>=n.need){ updateHUD(); stageClear(200+lvl*100+(n.done-n.rival.done)*20,'壁張り勝利！ ライバルに勝った🔨'); return; } break; } }
     if(!hit) audio.tone(200,.05,'square',.1);
@@ -1216,10 +1234,11 @@
         ctx.fillStyle='#565b60'; roundRectS(11,38,8,16,2); ctx.fill();
         ctx.restore(); continue; }
       ctx.save(); ctx.translate(it.x,it.y); ctx.rotate(it.rot);
-      ctx.fillStyle='#d9b877'; roundRectS(-it.r*1.3,-it.r*0.7,it.r*2.6,it.r*1.4,4); ctx.fill();
-      ctx.strokeStyle='rgba(90,55,20,.4)'; ctx.lineWidth=2; ctx.strokeRect(-it.r*1.3,-it.r*0.7,it.r*2.6,it.r*1.4); ctx.restore();
-      ctx.fillStyle='#8a8f96'; ctx.beginPath(); ctx.arc(it.x,it.y,it.r*0.34,0,6.283); ctx.fill();
-      ctx.fillStyle='#cfd6dd'; ctx.beginPath(); ctx.arc(it.x-it.r*0.1,it.y-it.r*0.1,it.r*0.14,0,6.283); ctx.fill();
+      ctx.fillStyle=it.gold?'#f0d488':'#d9b877'; roundRectS(-it.r*1.3,-it.r*0.7,it.r*2.6,it.r*1.4,4); ctx.fill();
+      ctx.strokeStyle=it.gold?'rgba(150,100,20,.6)':'rgba(90,55,20,.4)'; ctx.lineWidth=2; ctx.strokeRect(-it.r*1.3,-it.r*0.7,it.r*2.6,it.r*1.4); ctx.restore();
+      ctx.fillStyle=it.gold?'#d99a2c':'#8a8f96'; ctx.beginPath(); ctx.arc(it.x,it.y,it.r*0.34,0,6.283); ctx.fill();
+      ctx.fillStyle=it.gold?'#ffe9a8':'#cfd6dd'; ctx.beginPath(); ctx.arc(it.x-it.r*0.1,it.y-it.r*0.1,it.r*0.14,0,6.283); ctx.fill();
+      if(it.gold){ ctx.fillStyle='#fff8dc'; ctx.font='bold '+Math.round(it.r*0.55)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('✦', it.x+it.r*0.66, it.y-it.r*0.6); }
       const p=1-it.t/it.life; ctx.strokeStyle=p<0.35?'#d1503a':'#4c9a4c'; ctx.lineWidth=3;
       ctx.beginPath(); ctx.arc(it.x,it.y,it.r,-Math.PI/2,-Math.PI/2+p*6.283); ctx.stroke();
     }
@@ -1330,6 +1349,7 @@
   // ================= 倒壊 =================
   function gameOver(reason, dir){
     state='over'; collapsing=true; overTimer=0; audio.crash(); reactMascot('fell');
+    streak=0;                                          // 連勝リセット
     tapHint.style.display='none';
     const push=dir||Math.sign(lean)||1;
     for(const b of beams){ if(b.kind==='sill') continue;
@@ -1356,7 +1376,7 @@
     $('newBest').style.display = (score>0 && score>=bestScore) ? 'inline-block':'none';
     $('overTitle').textContent = (built>=3) ? '見事な棟梁だ！' : (built>=1?'まずまずの仕事だ':'残念…倒れた');
     overOverlay.classList.add('show');
-    bestEl.textContent=bestScore; $('titleBest').textContent=bestScore;
+    bestEl.textContent=bestScore; $('titleBest').textContent=bestScore; if($('titleStreak'))$('titleStreak').textContent=bestStreak;
   }
 
   // ================= 演出 =================
@@ -1418,6 +1438,7 @@
     scoreEl.textContent=score;
     builtEl.textContent=built;
     bestEl.textContent=bestScore;
+    const hs=$('hudStreak'); if(hs) hs.textContent = streak>=2 ? ('　🔥'+streak+'連勝') : '';
     hudSub.textContent = MODE_LABEL[mode] + (lvl>0?(' Lv'+(lvl+1)):'') + '　' + hudProgress();
   }
   function hudProgress(){
@@ -1885,9 +1906,9 @@
   $('startBtn').onclick=()=>{ resize(); startGame(); };
   $('retryBtn').onclick=()=>{ startGame(); };
   $('srNextBtn').onclick=()=>{ if(state==='clear') nextStage(); };            // 結果発表→スタートで次のステージ
-  $('srQuitBtn').onclick=()=>{ $('srOverlay').classList.remove('show'); state='title'; show('title'); $('titleBest').textContent=bestScore; };
-  $('toTitleBtn').onclick=()=>{ state='title'; show('title'); $('titleBest').textContent=bestScore; };
-  $('quitBtn').onclick=()=>{ state='title'; pauseOverlay.classList.remove('show'); show('title'); $('titleBest').textContent=bestScore; };
+  $('srQuitBtn').onclick=()=>{ $('srOverlay').classList.remove('show'); state='title'; show('title'); $('titleBest').textContent=bestScore; if($('titleStreak'))$('titleStreak').textContent=bestStreak; };
+  $('toTitleBtn').onclick=()=>{ state='title'; show('title'); $('titleBest').textContent=bestScore; if($('titleStreak'))$('titleStreak').textContent=bestStreak; };
+  $('quitBtn').onclick=()=>{ state='title'; pauseOverlay.classList.remove('show'); show('title'); $('titleBest').textContent=bestScore; if($('titleStreak'))$('titleStreak').textContent=bestStreak; };
   $('resumeBtn').onclick=()=>{ pauseOverlay.classList.remove('show'); state='play'; last=performance.now(); };
   $('pauseBtn').onclick=()=>{ if(state==='play'){ state='pause'; $('pauseScore').textContent=score; pauseOverlay.classList.add('show'); } };
   $('howBtn').onclick=()=>$('howOverlay').classList.add('show');
@@ -1958,7 +1979,7 @@
       sawState(){ return saw&&{cut:Math.round(saw.cut), need:saw.cutNeeded, done:saw.done, T:+saw.T.toFixed(1), splitting:+(saw.splitting||0).toFixed(2)}; },
       giveItem(type){ heldItem=type; const d=DESHI[type]; $('itemChip').textContent=d.badge; $('itemLbl').textContent=d.name+' 発動'; itemSlot.classList.add('show'); },
       deshiState(){ return {deshi:deshi&&deshi.type, life:deshi&&+deshi.life.toFixed(1), held:heldItem, swayDamp:+swayDamp.toFixed(2), swayDampT:+swayDampT.toFixed(1), timeScale:+timeScale.toFixed(2), slowT:+slowT.toFixed(1)}; },
-      snap(){ return {state, mode, lvl, stage, floors, placed, total, score, combo, maxCombo, bestScore, lean:Math.round(lean), leanRatio:+leanRatio.toFixed(2), built, bestStage, pieces:beams.length,
+      snap(){ return {state, mode, lvl, stage, floors, placed, total, score, combo, maxCombo, bestScore, streak, bestStreak, lean:Math.round(lean), leanRatio:+leanRatio.toFixed(2), built, bestStage, pieces:beams.length,
         cur: current&&{type:current.slot.type, f:current.slot.f, mode:current.mode, x:Math.round(current.x), tx:Math.round(current.t.tx)}}; },
       dataURL(scale){ scale=scale||0.5; const o=document.createElement('canvas');
         o.width=Math.round(cssW*scale); o.height=Math.round(cssH*scale);
