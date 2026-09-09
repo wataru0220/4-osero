@@ -257,6 +257,7 @@
           <button class="btn-ghost" id="howBtn">遊び方</button>
           <button class="btn-ghost" id="lineBtn">📱 LINEで共有</button>
           <button class="btn-ghost" id="muteBtn2">🔊 音 ON</button>
+          <button class="btn-ghost" id="updateBtn">🔄 更新</button>
         </div>
         <div class="row">
           <button class="btn-install" id="installBtn">📲 アプリにする（ホーム画面に追加）</button>
@@ -269,9 +270,9 @@
         <h2 class="brush" style="text-align:center;">遊び方</h2>
         <p style="line-height:1.9; font-size:15px; color:#4a4030;">
           ステージごとに<b>大工仕事が変わる</b>よ。3種を1周したら、少しずつ難しくなってくり返し！<br>
-          <b>① 建方</b>：ゆれる木材を<b>タップで落として</b>軸組を組む。ど真ん中は<b>ピタリ！＝高得点＋コンボ</b>、傾き過ぎると倒壊。弟子が<b>はしごで登って</b>くる（タップで入手→揺れ対策アイテム）。<br>
-          <b>② 釘打ち（早打ち）</b>：<b>ライバル大工と競争！</b>光る釘を<b>すばやくタップ</b>し、相手より先に規定本数を打て（負けると脱落）。<br>
-          <b>③ 餅ひろい（上棟式）</b>：大工さんがまく<b>紅白・金の餅</b>を、みんなと<b>取り合ってキャッチ</b>！ <b>2位以内に入らないと脱落</b>だ。<br>
+          <b>① 建方</b>：ゆれる木材を<b>タップで落として</b>軸組を組む。ど真ん中は<b>ピタリ！</b>。<b>💨風が吹くと落下中に流される</b>ので、風向き（上の矢印）を読んで<b>風上に落とす</b>のがコツ。傾き過ぎると倒壊。<br>
+          <b>② 釘打ち（早打ち）</b>：ライバルと競争！光る釘を<b>すばやくタップ</b>。ただし<b>🐝蜂を叩くと大損（ライバルに1本！）</b>——狙って打て。連打でボーナス。<br>
+          <b>③ 餅ひろい（上棟式）</b>：まかれる<b>紅白・金の餅</b>を取り合ってキャッチ！ でも<b>🪨炭を拾うと減点</b>。<b>2位以内に入らないと脱落</b>だ。<br>
           🔥 <b>連続クリアで「連勝ボーナス」</b>が増える（失敗でリセット）。<b>金の釘</b>は3倍、<b>特大餅「大」</b>は大量得点、建方で<b>全部ピタリ＝神業ボーナス</b>！ジャックポットを狙え。<br>
           ❤️ <b>ライフは3つ</b>。しくじっても残りがあれば<b>同じステージに再挑戦</b>できる。進むと<b>昇格（見習い→…→伝説の棟梁）＝ハート+1</b>！ たまに<b>得点2倍のボーナスチャンス</b>ステージも来るぞ。
         </p>
@@ -583,6 +584,7 @@
   function addScore(n){ score += Math.round(n*scoreMul); }   // 倍率つき加点
   let lean=0, leanRatio=0;                  // 重心バランス（水平器）
   let swayT=0, curSway=0;                   // 傾くほど建物が揺れ続ける（難化）
+  let windPhase=0, windAmp=0, curWind=0;    // 建方の風（落下中に材が流される）
   let deshi=null, deshiSpawnT=10, heldItem=null;      // 動き回る弟子・出現タイマー・所持アイテム
   let swayDamp=1, swayDampT=0, timeScale=1, slowT=0;  // 弟子の効果（揺れ抑制・スロー）
   let mochis=[], mochiPops=[], catcher={x:0,tx:0}, mochiT=0, mochiScore=0, mochiSpawnT=0;  // 餅ひろい
@@ -721,6 +723,7 @@
     setGeometry();
     beams=[sillTimber()]; lean=0; leanRatio=0; swayT=0; curSway=0;
     seq=buildSequence(); seqI=0; total=seq.length; placed=0; buildFlawless=true;
+    windPhase=Math.random()*6.283; windAmp=28+lvl*10; curWind=0;   // 風（レベルで強く）
     resetDeshi(false);
     frameCamera(); setMascot(''); spawnCurrent();
     tapHint.textContent='タップで落とす！'; tapHint.style.display='block';
@@ -885,7 +888,8 @@
     const r=Math.random(); let type,val,col,rr=13+Math.random()*4;
     if(r<0.05){ type='big'; val=400; col='#ffe8a0'; rr=25; }        // 特大餅（レア・大量得点）
     else if(r<0.13){ type='gold'; val=300; col='#ffe08a'; }
-    else if(r<0.44){ type='red'; val=100; col='#ffd9d0'; }
+    else if(r<0.27){ type='coal'; val=0; col='#333333'; rr=15; }    // 炭＝拾ってはいけない
+    else if(r<0.55){ type='red'; val=100; col='#ffd9d0'; }
     else { type='white'; val=50; col='#ffffff'; }
     mochis.push({ x:mochiThrowX()+(Math.random()*2-1)*10, y:mochiThrowY(),
       vx:(Math.random()*2-1)*(100+Math.random()*110), vy:-(70+Math.random()*120),   // 放り投げる（上＋横へ散る）
@@ -901,7 +905,7 @@
     for(const p of crowd){ if(p.target && (mochis.indexOf(p.target)<0 || p.target.hit || p.target.y>cssH-45)) p.target=null; }
     const claimed=new Set(crowd.map(p=>p.target).filter(Boolean));
     for(const p of crowd){ if(p.target) continue; let best=null,by=-1;
-      for(const m of mochis){ if(m.y<cssH*0.32 || claimed.has(m)) continue; if(m.y>by){by=m.y; best=m;} }
+      for(const m of mochis){ if(m.y<cssH*0.32 || claimed.has(m) || m.type==='coal') continue; if(m.y>by){by=m.y; best=m;} }   // 炭は狙わない
       if(best){ p.target=best; claimed.add(best); } }
     for(const p of crowd){ let goal=p.x;
       if(p.target){ const m=p.target, tt=Math.max(0,Math.min(1.3,((cssH-90)-m.y)/Math.max(60,m.vy))); goal=Math.max(28,Math.min(cssW-28, m.x+m.vx*tt*0.7)); }   // 落下地点を予測
@@ -912,11 +916,17 @@
       if(m.x<20){m.x=20;m.vx*=-1;} if(m.x>cssW-20){m.x=cssW-20;m.vx*=-1;}
       if(m.y>=catchY && m.y<=catchY+40){
         if(Math.abs(m.x-catcher.x)<catchHalf){        // 自分が拾う
+          if(m.type==='coal'){                        // 炭を拾った＝ペナルティ
+            catcher.catches=Math.max(0,catcher.catches-2); score=Math.max(0,score-120); shake=8;
+            mochiPops.push({x:m.x,y:catchY-6,val:-120,t:0,col:'#d1503a'}); audio.tone(120,.2,'sawtooth',.3,-50); showToast('💥 炭を拾った！ -120','#d1503a');
+            mochis.splice(i,1); continue;
+          }
           mochiScore+=m.val; addScore(m.val); catcher.catches++;
           mochiPops.push({x:m.x,y:catchY-6,val:m.val,t:0,col:(m.type==='gold'||m.type==='big')?'#e0a63c':(m.type==='red'?'#d1503a':'#4c9a4c')});
           if(m.type==='big'){ ring(m.x,catchY,'#ffd24a'); showToast('🎉 特大餅！ +'+m.val,'#e0a63c'); }
           audio.combo(2); mochis.splice(i,1); continue;
         }
+        if(m.type==='coal') continue;                 // 炭はNPCも拾わずすり抜ける
         let bestP=null, bd=npcHalf;                   // 一番近い人が拾う（偏り防止）
         for(const p of crowd){ const dd=Math.abs(m.x-p.x); if(dd<bd){ bd=dd; bestP=p; } }
         if(bestP){ bestP.catches++; bestP.bob=0; burst(m.x,catchY,'#cdd2d8',5); mochis.splice(i,1); continue; }
@@ -965,6 +975,12 @@
   }
   function drawMochi(m){
     ctx.save(); ctx.translate(m.x,m.y); ctx.rotate(m.rot||0);
+    if(m.type==='coal'){                               // 炭（ゴツゴツした黒い塊＝避ける）
+      ctx.fillStyle='#333'; ctx.strokeStyle='#111'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(-m.r,0); ctx.lineTo(-m.r*0.5,-m.r*0.85); ctx.lineTo(m.r*0.4,-m.r*0.7); ctx.lineTo(m.r,m.r*0.1); ctx.lineTo(m.r*0.5,m.r*0.85); ctx.lineTo(-m.r*0.6,m.r*0.7); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='rgba(150,150,150,.5)'; ctx.beginPath(); ctx.arc(-m.r*0.2,-m.r*0.25,2,0,6.283); ctx.arc(m.r*0.3,m.r*0.2,1.5,0,6.283); ctx.fill();
+      ctx.restore(); return;
+    }
     ctx.fillStyle=m.col; ctx.strokeStyle='rgba(120,90,60,.35)'; ctx.lineWidth=1.5;
     ctx.beginPath(); ctx.ellipse(0,0,m.r,m.r*0.82,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
     ctx.fillStyle='rgba(255,255,255,.6)'; ctx.beginPath(); ctx.ellipse(-m.r*0.3,-m.r*0.3,m.r*0.3,m.r*0.2,0,0,Math.PI*2); ctx.fill();
@@ -1036,7 +1052,7 @@
     ctx.font='bold 14px sans-serif'; ctx.fillStyle='#1b3a5c'; ctx.fillText((catcher.catches||0), catcher.x, cssH-73);
     ctx.textBaseline='alphabetic';
     ctx.textAlign='center'; ctx.font='900 16px sans-serif';
-    for(const p of mochiPops){ ctx.globalAlpha=Math.max(0,1-p.t/0.8); ctx.fillStyle=p.col; ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.strokeText('+'+p.val,p.x,p.y); ctx.fillText('+'+p.val,p.x,p.y); }
+    for(const p of mochiPops){ const txt=(p.val<0?'':'+')+p.val; ctx.globalAlpha=Math.max(0,1-p.t/0.8); ctx.fillStyle=p.col; ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.strokeText(txt,p.x,p.y); ctx.fillText(txt,p.x,p.y); }
     ctx.globalAlpha=1;
     // 上部の小さなタイマー／得点
     ctx.fillStyle='rgba(27,58,92,.9)'; roundRectS(8,32,116,26,8); ctx.fill(); ctx.fillStyle='#fff'; ctx.textAlign='left'; ctx.font='bold 13px sans-serif'; ctx.fillText('残り '+Math.max(0,mochiT).toFixed(1)+'秒', 16, 49);
@@ -1049,7 +1065,7 @@
       ctx.fillStyle='#fff'; ctx.font='900 26px sans-serif'; ctx.fillText('餅まき終了！', cssW/2, cssH/2-4);
       ctx.font='bold 16px sans-serif'; ctx.fillText(`ボーナス +${mochiScore}点`, cssW/2, cssH/2+24);
     } else {
-      ctx.fillStyle='rgba(27,58,92,.8)'; ctx.font='bold 12px sans-serif'; ctx.fillText('← 動いて餅を拾え！ 2位以内で生存 →', cssW/2, cssH-14);
+      ctx.fillStyle='rgba(27,58,92,.8)'; ctx.font='bold 12px sans-serif'; ctx.fillText('← 餅を拾え！ 炭は拾うな！ 2位以内で生存 →', cssW/2, cssH-14);
     }
   }
 
@@ -1169,16 +1185,16 @@
 
   // ================= ③ 釘打ち（早打ち） =================
   function initNail(){
-    nail={ need:12+lvl*3, done:0, spawnT:0.3, myBob:0,
+    nail={ need:12+lvl*3, done:0, combo:0, spawnT:0.3, myBob:0, beeChance:0.10+lvl*0.03,
       life:Math.max(2.2,3.2-lvl*0.1), maxOn:4, items:[],
       rival:{ done:0, target:null, react:0, base:Math.max(0.6,1.2-lvl*0.07), bob:0 } };   // ライバル大工（少しゆっくり）
-    tapHint.textContent='ライバルより多く釘を打て！ タップ'; tapHint.style.display='block';
+    tapHint.textContent='釘を打て！ 蜂🐝は叩くな！ タップ'; tapHint.style.display='block';
     setTimeout(()=>{ if(mode==='nail') tapHint.style.display='none'; }, 2000);
   }
   function spawnNail(){
-    const m=54, top=120, bot=cssH-120;
+    const m=54, top=120, bot=cssH-120, bee=(Math.random()<nail.beeChance);
     nail.items.push({ x:m+Math.random()*(cssW-2*m), y:top+Math.random()*(bot-top),
-      r:Math.max(28,38-lvl), t:0, life:nail.life, hit:false, by:null, anim:0, rot:Math.random()*0.6-0.3, gold:(Math.random()<0.14) });
+      r:Math.max(28,38-lvl), t:0, life: bee?Math.max(1.4,2.2-lvl*0.1):nail.life, hit:false, by:null, anim:0, rot:Math.random()*0.6-0.3, bee, gold: bee?false:(Math.random()<0.14) });
   }
   function updateNail(dt){
     const n=nail, rv=n.rival; n.spawnT-=dt;
@@ -1187,7 +1203,7 @@
     if(n.spawnT<=0 && live<n.maxOn){ spawnNail(); n.spawnT=Math.max(0.28,0.5-lvl*0.03)+Math.random()*0.3; }
     // ライバルAI（未打の釘を狙って一定時間後に打つ）
     if(rv.target && (n.items.indexOf(rv.target)<0 || rv.target.hit)) rv.target=null;
-    if(!rv.target){ let best=null,bt=1e9; for(const it of n.items){ if(it.hit) continue; if(it.t<bt){bt=it.t; best=it;} }   // 新しい（寿命が長い）釘を狙う＝確実に打てる
+    if(!rv.target){ let best=null,bt=1e9; for(const it of n.items){ if(it.hit||it.bee) continue; if(it.t<bt){bt=it.t; best=it;} }   // 新しい釘を狙う（蜂は避ける）
       if(best){ rv.target=best; rv.react=rv.base*(0.7+Math.random()*0.6); } }
     else { rv.react-=dt;
       if(rv.react<=0){ const it=rv.target; it.hit=true; it.by='rival'; it.anim=0; rv.done++; rv.bob=0.25; audio.tone(880,.04,'square',.1); rv.target=null;
@@ -1201,13 +1217,18 @@
   function nailTap(px,py){
     const n=nail; let hit=false;
     for(const it of n.items){ if(it.hit) continue;
-      if(Math.hypot(px-it.x,py-it.y)<=it.r+10){ it.hit=true; it.by='me'; it.anim=0; n.done++; n.myBob=0.25; hit=true;
-        const base=60+lvl*15;
+      if(Math.hypot(px-it.x,py-it.y)<=it.r+10){ hit=true; it.hit=true; it.anim=0;
+        if(it.bee){                                     // 蜂を叩いた＝ペナルティ（コンボ消滅＋ライバルに1本）
+          it.by='bee'; n.combo=0; shake=8; audio.tone(180,.2,'sawtooth',.3,-50); burst(it.x,it.y,'#d1503a',12); showToast('🐝 蜂を叩いた！ ライバルに1本！','#d1503a');
+          n.rival.done++; updateHUD(); if(n.rival.done>=n.need){ gameOver('蜂にやられて負けた…'); return; } break;
+        }
+        it.by='me'; n.done++; n.myBob=0.25; n.combo++;
+        const base=(60+lvl*15)*(1+Math.min(n.combo,12)*0.1);   // 連打で加点UP
         if(it.gold){ addScore(base*3); burst(it.x,it.y,'#ffe08a',16); ring(it.x,it.y,'#ffd24a'); showToast('🌟金の釘！ +'+Math.round(base*3*scoreMul),'#e0a63c'); audio.combo(4); audio.tone(1500,.03,'square',.18); }
-        else { addScore(base); burst(it.x,it.y,'#cfd6dd',7); audio.tone(1500,.03,'square',.16); audio.tone(520,.06,'square',.12,-260); }   // カンッ（ハンマー）
+        else { addScore(base); burst(it.x,it.y,'#cfd6dd',7); audio.tone(1500,.03,'square',.16); audio.tone(520,.06,'square',.12,-260); if(n.combo>=4 && n.combo%2===0) showToast(n.combo+'連打！','#3a76c0'); }
         if(it===n.rival.target) n.rival.target=null;      // 取られたらライバルは狙い直し
-        if(n.done>=n.need){ updateHUD(); stageClear(200+lvl*100+(n.done-n.rival.done)*20,'壁張り勝利！ ライバルに勝った🔨'); return; } break; } }
-    if(!hit) audio.tone(200,.05,'square',.1);
+        if(n.done>=n.need){ updateHUD(); stageClear(200+lvl*100+(n.done-n.rival.done)*20+n.combo*10,'壁張り勝利！ ライバルに勝った🔨'); return; } break; } }
+    if(!hit){ audio.tone(200,.05,'square',.1); n.combo=0; }   // 空振りは連打リセット
     updateHUD();
   }
   function drawWall(){
@@ -1235,6 +1256,13 @@
   function drawNail(){
     const n=nail; drawWall(); if(!n) return;
     for(const it of n.items){
+      if(it.bee){                                     // 蜂＝叩いてはいけない
+        if(it.hit){ const a=1-it.anim/0.42; ctx.save(); ctx.globalAlpha=Math.max(0,a); ctx.strokeStyle='#d1503a'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(it.x-11,it.y-11); ctx.lineTo(it.x+11,it.y+11); ctx.moveTo(it.x+11,it.y-11); ctx.lineTo(it.x-11,it.y+11); ctx.stroke(); ctx.restore(); continue; }
+        const wob=Math.sin(it.t*14)*3;
+        ctx.save(); ctx.strokeStyle='rgba(209,80,58,.7)'; ctx.setLineDash([4,4]); ctx.lineWidth=2; ctx.beginPath(); ctx.arc(it.x,it.y,it.r*0.92,0,6.283); ctx.stroke(); ctx.restore();
+        ctx.font=Math.round(it.r*1.5)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🐝', it.x+wob, it.y);
+        continue;
+      }
       if(it.hit){                                     // ハンマーで打つ演出
         const ph=Math.min(1,it.anim/0.34), down=ph<0.4?(ph/0.4):1, ang=-0.7+down*0.95;
         // 打ち込まれた釘（頭だけ）
@@ -1262,7 +1290,7 @@
     if(mascotImg.complete && mascotImg.naturalWidth){ const mh=80, mw=mh*260/340, by=cssH-6-mh-(n.myBob>0?n.myBob*22:0); ctx.drawImage(mascotImg, 4, by, mw, mh); }
     drawRivalCarpenter(cssW-40, n.rival.bob);
     drawSfx();
-    drawStatusBar(`あなた ${n.done} ・ ライバル ${n.rival.done}　（目標 ${n.need}）`);
+    drawStatusBar(`あなた ${n.done} ・ ライバル ${n.rival.done}（目標${n.need}）${n.combo>=3?'　🔥'+n.combo+'連打':''}`);
     const bw=150, bx=cssW/2-bw/2, by1=cssH-42, by2=cssH-26;
     ctx.fillStyle='rgba(0,0,0,.12)'; roundRectS(bx,by1,bw,10,5); ctx.fill(); roundRectS(bx,by2,bw,10,5); ctx.fill();
     ctx.fillStyle='#4c9a4c'; roundRectS(bx,by1,bw*Math.min(1,n.done/n.need),10,5); ctx.fill();
@@ -1603,6 +1631,15 @@
       g.addColorStop(0,'rgba(209,80,58,0)'); g.addColorStop(1,`rgba(209,80,58,${0.28*a})`);
       ctx.fillStyle=g; ctx.fillRect(0,0,cssW,cssH); ctx.restore();
     }
+    // 風インジケータ（落下中に材が流される。矢印の数＝強さ）
+    if(state==='play' && windAmp>0){
+      const dir=curWind>=0?1:-1, mag=Math.max(1,Math.min(3,Math.round(Math.abs(curWind)/(windAmp/3))));
+      ctx.save(); ctx.fillStyle='rgba(27,58,92,.6)'; roundRectS(cssW/2-64,30,128,26,9); ctx.fill();
+      ctx.fillStyle='#dff2ff'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      const arrows=(dir>0?'▶':'◀').repeat(mag);
+      ctx.fillText(dir>0?('風 '+arrows):(arrows+' 風'), cssW/2, 44);
+      ctx.textBaseline='alphabetic'; ctx.restore();
+    }
     ctx.restore();
   }
 
@@ -1881,6 +1918,7 @@
   function updateBuild(mdt,dt){
     swayT += (3.0 + Math.abs(leanRatio)*3.5)*mdt;      // 傾くほど揺れ続ける
     curSway = (leanRatio*0.09 + Math.abs(leanRatio)*0.14*Math.sin(swayT)) * swayDamp;
+    windPhase += 0.5*mdt; curWind = windAmp*Math.sin(windPhase);   // ゆっくり変わる風
     if(current){
       if(current.mode==='swing'){
         current.x += current.dir*swingSpeed*mdt;
@@ -1889,6 +1927,7 @@
         if(current.x>=maxX){ current.x=maxX; current.dir=-1; }
       } else if(current.mode==='drop'){
         current.vy += GRAVITY*mdt; current.y += current.vy*mdt;
+        current.x += curWind*mdt;                      // 落下中は風で流される
         if(current.y>=current.t.ty){ current.y=current.t.ty; land(); }
       }
       if(current){
@@ -1959,6 +1998,13 @@
   if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
     window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   }
+  // 更新（最新版を取り直す）：SW解除＋キャッシュ削除＋キャッシュ回避で再読込
+  $('updateBtn').onclick=async ()=>{
+    $('updateBtn').textContent='🔄 更新中…';
+    try{ if('serviceWorker' in navigator){ const rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r=>r.unregister())); } }catch(e){}
+    try{ if(window.caches){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); } }catch(e){}
+    location.replace(location.pathname + '?v=' + Date.now());
+  };
 
   // ===== LINEで共有（押すとLINEの共有画面が開き、スコア＋ゲームURLが入る）=====
   function shareLINE(kind){
@@ -1989,6 +2035,8 @@
       spawnDeshi:()=>spawnDeshi(), catchDeshi:()=>catchDeshi(), useItem:()=>useItem(),
       moveCatcher(x){ catcher.tx=x; },
       mochiState(){ return {state, mode, mochiT:+mochiT.toFixed(2), n:mochis.length, mochiScore, catcher:Math.round(catcher.x), myCatches:catcher.catches||0, crowd:crowd.map(p=>p.catches), rank:crowd.length?mochiRank():null}; },
+      mochiItems(){ return mochis.map(m=>({x:Math.round(m.x),y:Math.round(m.y),type:m.type})); },
+      setCatcher(x){ catcher.x=x; catcher.tx=x; },
       setStage(n){ stage=n; startStage(); return {mode:modeForStage(n), lvl:stageLevel(n)}; },
       modeInfo(){ return {stage, mode, lvl, state}; },
       // クレーン
@@ -1997,7 +2045,9 @@
       craneTimber(){ const n=crane&&craneNearestTimber(); return n? {x:Math.round(n.x), dx:Math.round(n.dx), slot:n.tm.slot, gold:n.tm.gold} : null; },
       craneState(){ return crane&&{x:Math.round(crane.x), bob:Math.round(craneBobX()), theta:+crane.theta.toFixed(3), frameX:crane.frameX, load:crane.load, gold:crane.loadGold, stack:crane.stack, done:crane.done, need:crane.need, miss:crane.miss, combo, drop:!!crane.dropObj, grabAnim:+crane.grabAnim.toFixed(2), timbers:crane.truck?crane.truck.timbers.length:0}; },
       // 釘打ち
-      nailHitAll(){ if(nail) for(const it of nail.items.slice()) if(!it.hit) nailTap(it.x,it.y); return nail&&{done:nail.done,rival:nail.rival.done,need:nail.need}; },
+      nailHitAll(){ if(nail) for(const it of nail.items.slice()) if(!it.hit && !it.bee) nailTap(it.x,it.y); return nail&&{done:nail.done,rival:nail.rival.done,need:nail.need}; },
+      nailItems(){ return nail? nail.items.filter(i=>!i.hit).map(i=>({x:Math.round(i.x),y:Math.round(i.y),bee:!!i.bee,gold:!!i.gold})) : []; },
+      nailTapAt(x,y){ nailTap(x,y); return nail&&{done:nail.done,rival:nail.rival.done,combo:nail.combo}; },
       nailState(){ return nail&&{done:nail.done, rival:nail.rival.done, need:nail.need, on:nail.items.filter(i=>!i.hit).length}; },
       // 丸太切り
       sawStroke(px){ if(saw){ saw.sawing=true; saw.lastX=(saw.lastX||cssW/2); sawMove(px); } },
