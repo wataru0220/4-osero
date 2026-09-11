@@ -318,7 +318,8 @@
         </table>
       </div>
       <div class="note">付与日数は年次の付与や繰越を含めた「その人が使える合計日数」を入れてください。年度更新のときは数字を書き換えます。</div>
-      <h2 style="margin-top:16px">申請・取得の記録</h2>
+      <h2 style="margin-top:16px">申請・取得の記録 <button class="act" id="addLeaveBtn" style="font-size:13px; padding:6px 12px; margin-left:8px">➕ 有給を代理で登録</button></h2>
+      <div class="note" style="margin:0 0 8px">各記録の「修正」から、日付・終日/半日・状態（承認/申請中/却下）を管理者が後付けで変更できます。休日出勤など勤怠は「記録一覧」タブで修正・追加します。</div>
       <div class="scroll" id="leaveRecords"></div>
     </div>
   </section>
@@ -410,6 +411,25 @@
       <p style="margin:0 0 12px"><b>📱 iPhone（Safari）</b><br>下の「共有」ボタン（□に↑）→「ホーム画面に追加」</p>
       <p style="margin:0"><b>🤖 Android（Chrome）</b><br>右上メニュー <b>⋮</b> →「アプリをインストール」または「ホーム画面に追加」</p>
       <div class="note" style="margin-top:12px">追加すると、ホーム画面/デスクトップのアイコンから全画面のアプリとして起動できます。</div>
+    </div>
+  </div>
+</div>
+
+<!-- 有給の登録・修正モーダル（管理者が後付けで編集） -->
+<div class="modal-ov" id="leaveModal">
+  <div class="modal">
+    <h3 id="leaveModalTitle">🏖️ 有給を登録</h3>
+    <div class="mf"><label>氏名</label><input type="text" id="lvWorker" list="lvWorkerList"><datalist id="lvWorkerList"></datalist></div>
+    <div class="mf"><label>取得日</label><input type="date" id="lvDate"></div>
+    <div class="mrow">
+      <div class="mf"><label>単位</label><select id="lvUnit"><option value="1">終日（1.0日）</option><option value="0.5">半日（0.5日）</option></select></div>
+      <div class="mf"><label>状態</label><select id="lvStatus"><option value="approved">承認</option><option value="pending">申請中</option><option value="rejected">却下</option></select></div>
+    </div>
+    <div class="mf"><label>備考</label><input type="text" id="lvNote"></div>
+    <div class="mbtns">
+      <button class="cancel" id="lvDelete" type="button" style="color:var(--warn); border-color:#f0c4c0">削除</button>
+      <button class="cancel" id="lvCancel" type="button">キャンセル</button>
+      <button class="save" id="lvSave" type="button">保存する</button>
     </div>
   </div>
 </div>
@@ -687,7 +707,7 @@
     if(ok==='authfail'){ toast('認証に接続できませんでした（Firebaseで匿名ログインの有効化が必要です）','err'); return; }
     if(!ok){ toast('Firebase未設定です（config.js）','err'); return; }
     setThisMonth();
-    bindTabs(); bindFilters(); bindMasters(); bindEditModal(); bindOrg(); bindAttend(); $('exportBtn').onclick=exportExcel;
+    bindTabs(); bindFilters(); bindMasters(); bindEditModal(); bindOrg(); bindAttend(); bindLeaveModal(); $('exportBtn').onclick=exportExcel;
     ref('workers').on('value',s=>{ workers=s.val()||{}; renderWorkers(); fillWorkerFilter(); fillAtWorker(); renderAll(); renderLeave(); renderAttend(); });
     ref('sites').on('value',s=>{ sites=s.val()||{}; renderSites(); fillSiteFilter(); });
     ref('records').on('value',s=>{ records=s.val()||{}; renderAll(); renderAttend(); });
@@ -1005,8 +1025,46 @@
     box.innerHTML='<table><thead><tr><th>希望日</th><th>氏名</th><th class="num">日数</th><th>状態</th><th>備考</th><th></th></tr></thead><tbody>'+
       arr.map(l=>'<tr><td>'+esc(l.date)+'</td><td>'+esc(l.workerName)+'</td><td class="num">'+(Number(l.days)===0.5?'0.5':'1')+'</td>'+
         '<td>'+leaveStatusPill(l.status||'approved')+'</td><td>'+esc(l.note||'')+'</td>'+
-        '<td><button class="sm del" data-dell="'+l._key+'">削除</button></td></tr>').join('')+'</tbody></table>';
+        '<td style="white-space:nowrap"><button class="sm" data-lvedit="'+l._key+'">修正</button> <button class="sm del" data-dell="'+l._key+'">削除</button></td></tr>').join('')+'</tbody></table>';
+    box.querySelectorAll('[data-lvedit]').forEach(b=> b.onclick=()=> openLeaveModal(b.dataset.lvedit));
     box.querySelectorAll('[data-dell]').forEach(b=> b.onclick=()=>{ if(confirm('この有給記録を削除しますか？')) ref('leaves/'+b.dataset.dell).remove().then(()=>toast('削除しました','ok')); });
+  }
+  // 有給の代理登録・後付け修正（管理者は日付・単位・状態を自由に変更可）
+  let leaveEditKey=null;
+  function fillLeaveWorkerList(){ const dl=$('lvWorkerList'); if(!dl) return;
+    dl.innerHTML=Object.values(workers).filter(w=>w&&w.active!==false).map(w=>w.name).sort((a,b)=>(a||'').localeCompare(b||'','ja')).map(n=>'<option value="'+esc(n)+'"></option>').join(''); }
+  function openLeaveModal(key){
+    fillLeaveWorkerList();
+    if(key){ const l=leaves[key]; if(!l){ toast('記録が見つかりません','err'); return; } leaveEditKey=key;
+      $('leaveModalTitle').textContent='🏖️ 有給を修正';
+      $('lvWorker').value=l.workerName||''; $('lvDate').value=l.date||''; $('lvUnit').value=String(Number(l.days)===0.5?0.5:1);
+      $('lvStatus').value=l.status||'approved'; $('lvNote').value=l.note||''; $('lvDelete').style.display='';
+    } else { leaveEditKey=null;
+      $('leaveModalTitle').textContent='🏖️ 有給を代理で登録';
+      $('lvWorker').value=''; $('lvDate').value=todayStr(); $('lvUnit').value='1'; $('lvStatus').value='approved'; $('lvNote').value=''; $('lvDelete').style.display='none';
+    }
+    $('leaveModal').classList.add('show'); $('lvWorker').focus();
+  }
+  function closeLeaveModal(){ leaveEditKey=null; $('leaveModal').classList.remove('show'); }
+  function saveLeaveModal(){
+    const worker=$('lvWorker').value.trim(), date=$('lvDate').value, days=parseFloat($('lvUnit').value), status=$('lvStatus').value, note=$('lvNote').value.trim()||null;
+    if(!worker){ toast('氏名を入力','err'); return; }
+    if(!date){ toast('取得日を入力','err'); return; }
+    const data={ workerName:worker, date, days, status, note };
+    if(leaveEditKey){
+      ref('leaves/'+leaveEditKey).update(Object.assign({}, data, {updatedAt:Date.now()}))
+        .then(()=>{ toast('保存しました','ok'); closeLeaveModal(); }).catch(()=>toast('保存に失敗しました','err'));
+    }else{
+      ref('leaves').push(Object.assign({}, data, {createdAt:Date.now(), decidedAt:Date.now(), byAdmin:true}))
+        .then(()=>{ toast('有給を登録しました','ok'); closeLeaveModal(); }).catch(()=>toast('登録に失敗しました','err'));
+    }
+  }
+  function bindLeaveModal(){
+    $('lvSave').onclick=saveLeaveModal;
+    $('lvCancel').onclick=closeLeaveModal;
+    $('lvDelete').onclick=()=>{ if(leaveEditKey && confirm('この有給記録を削除しますか？')) ref('leaves/'+leaveEditKey).remove().then(()=>{ toast('削除しました','ok'); closeLeaveModal(); }); };
+    $('addLeaveBtn').onclick=()=> openLeaveModal(null);
+    $('leaveModal').addEventListener('click', e=>{ if(e.target===$('leaveModal')) closeLeaveModal(); });
   }
 
   // ---------- 出勤カレンダー（従業員ごとの出勤状況を月表示） ----------
@@ -1158,7 +1216,7 @@
     {t:'現場×氏名クロス集計の見方', k:'クロス 集計 現場 氏名 出勤日数 表', a:'「現場×氏名（出勤日数）」表で、どの現場に誰が何日入ったかを一覧できます。行＝現場、列＝氏名、数字＝出勤日数です。'},
     {t:'アプリにする（ホーム画面に追加）', k:'アプリにする ホーム画面 アイコン インストール アプリ pwa 追加', a:'ヘッダーの「⬇️アプリにする」を押すと追加できます（Android/PCは1タップ）。iPhoneはSafariの共有ボタン→「ホーム画面に追加」。'},
     {t:'会社情報・管理者を登録する', k:'会社 会社名 住所 電話 管理者 氏名 メール 登録 設定', a:'「🏢 会社情報」タブで会社名・住所・電話・管理者氏名・管理者メールを登録できます（クラウド共有）。登録した管理者メールは「パスコードを忘れた方はこちら」のリンク送信先になります。'},
-    {t:'有給休暇の承認・付与・残日数', k:'有給 有休 休暇 付与 残 日数 取得 申請 承認 却下', a:'「🏖️ 有給」タブで各人の付与日数を入力します。職員の申請（1週間以上前）は「承認待ちの申請」に届き、承認/却下を選べます。承認した分だけ取得・残（＝付与−取得）に反映。申請中の日数も一覧で確認でき、記録は削除で修正できます。'}
+    {t:'有給休暇の承認・付与・代理登録・修正', k:'有給 有休 休暇 付与 残 日数 取得 申請 承認 却下 代理 登録 修正 後付け', a:'「🏖️ 有給」タブで各人の付与日数を入力します。職員の申請は「承認待ち」に届き承認/却下、承認分だけ取得・残に反映。「➕有給を代理で登録」で管理者が有給を直接登録でき、各記録の「修正」から日付・終日/半日・状態を後付けで変更できます（管理者は1週間前ルールなし）。'}
   ];
   function renderHelp(){
     const q=($('helpSearch').value||'').trim().toLowerCase();
