@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1b1b3a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="消える〇×">
+<title>消える〇×</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root{
+    --maru:#ff4d6d;
+    --batsu:#3d8bff;
+    --bg1:#20204a;
+    --bg2:#12122e;
+    --ink:#25264a;
+    --gold:#ffcf4d;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,sans-serif;
+    color:#fff;
+    background:radial-gradient(1200px 600px at 50% -10%,#3a2b6b 0%,var(--bg1) 40%,var(--bg2) 100%);
+    background-attachment:fixed;
+    min-height:100dvh;
+    display:flex;flex-direction:column;align-items:center;
+    padding:14px;
+    padding-top:max(14px,env(safe-area-inset-top));
+    padding-bottom:max(14px,env(safe-area-inset-bottom));
+    overflow-x:hidden;
+  }
+  .app{width:100%;max-width:460px;display:flex;flex-direction:column;gap:14px;flex:1;}
+
+  /* ---------- タイトル ---------- */
+  .brand{text-align:center;padding-top:4px;}
+  .brand h1{
+    margin:0;font-size:clamp(32px,9.5vw,44px);font-weight:900;letter-spacing:2px;line-height:1.05;
+    text-shadow:0 4px 18px rgba(0,0,0,.35);
+  }
+  .brand h1 .m{color:var(--maru);} .brand h1 .b{color:var(--batsu);}
+  .brand .tag{margin-top:8px;font-size:13px;color:#cfd0ee;font-weight:600;}
+  .badge{display:inline-block;background:var(--gold);color:#5a3d00;font-weight:900;
+    font-size:11px;padding:3px 10px;border-radius:999px;margin-bottom:8px;letter-spacing:1px;}
+
+  /* ---------- カード / ボタン ---------- */
+  .card{
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:20px;padding:16px;
+  }
+  .card h2{margin:0 0 4px;font-size:16px;font-weight:800;}
+  .card p.sub{margin:0 0 12px;font-size:12px;color:#c7c8ea;}
+  .btns{display:flex;gap:10px;}
+  .btns.col{flex-direction:column;}
+  button{font-family:inherit;cursor:pointer;border:none;}
+  .btn{
+    flex:1;padding:14px 12px;border-radius:14px;font-size:16px;font-weight:800;
+    color:#fff;background:linear-gradient(180deg,#5b5be0,#4646c9);
+    box-shadow:0 6px 0 #2e2e8f,0 8px 16px rgba(0,0,0,.35);
+    transition:transform .06s ease, box-shadow .06s ease;
+  }
+  .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #2e2e8f,0 4px 10px rgba(0,0,0,.35);}
+  .btn:disabled{opacity:.5;cursor:default;transform:none;}
+  .btn.easy{background:linear-gradient(180deg,#38c67a,#25a862);box-shadow:0 6px 0 #167a44,0 8px 16px rgba(0,0,0,.3);}
+  .btn.easy:active{box-shadow:0 2px 0 #167a44;}
+  .btn.normal{background:linear-gradient(180deg,#ffa63d,#f18a20);box-shadow:0 6px 0 #b56410,0 8px 16px rgba(0,0,0,.3);}
+  .btn.normal:active{box-shadow:0 2px 0 #b56410;}
+  .btn.hard{background:linear-gradient(180deg,#ff5a7a,#e53a5f);box-shadow:0 6px 0 #a4213c,0 8px 16px rgba(0,0,0,.3);}
+  .btn.hard:active{box-shadow:0 2px 0 #a4213c;}
+  .btn.net{background:linear-gradient(180deg,#2fb6c9,#1b93a6);box-shadow:0 6px 0 #11616f,0 8px 16px rgba(0,0,0,.3);}
+  .btn.net:active{box-shadow:0 2px 0 #11616f;}
+  .btn.ghost{background:rgba(255,255,255,.1);box-shadow:none;border:1px solid rgba(255,255,255,.25);font-size:14px;}
+  .btn.ghost:active{transform:translateY(2px);}
+  .link{background:none;color:#c7c8ea;text-decoration:underline;font-size:13px;padding:8px;font-weight:700;}
+
+  input[type=text]{
+    width:100%;padding:13px 14px;border-radius:13px;border:1px solid rgba(255,255,255,.25);
+    background:rgba(0,0,0,.25);color:#fff;font-size:16px;font-family:inherit;font-weight:700;
+  }
+  input[type=text]::placeholder{color:#8a8bb0;font-weight:600;}
+  input#codeInput{text-align:center;letter-spacing:8px;font-size:26px;font-weight:900;text-transform:uppercase;}
+  label.fl{display:block;font-size:12px;color:#c7c8ea;font-weight:700;margin:0 0 6px;}
+
+  /* ---------- ゲーム画面ヘッダ ---------- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .iconbtn{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.2);font-size:18px;color:#fff;display:grid;place-items:center;}
+  .iconbtn:active{transform:scale(.92);}
+
+  /* ---------- スコアボード ---------- */
+  .score{display:flex;gap:10px;}
+  .side{
+    flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+    border-radius:16px;padding:10px 8px;text-align:center;position:relative;overflow:hidden;
+    transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease, opacity .2s ease;
+  }
+  .side .who{font-size:12px;font-weight:800;color:#cfd0ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .side .mk{font-size:26px;font-weight:900;line-height:1;margin:2px 0;}
+  .side.o .mk{color:var(--maru);} .side.x .mk{color:var(--batsu);}
+  .side .num{font-size:26px;font-weight:900;}
+  .side.active{transform:translateY(-3px);border-color:var(--gold);box-shadow:0 0 0 2px var(--gold),0 8px 18px rgba(0,0,0,.35);}
+  .side.active::after{content:"";position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:50%;
+    background:var(--gold);box-shadow:0 0 8px var(--gold);animation:blink 1s infinite;}
+  .side.off{opacity:.45;}
+  @keyframes blink{50%{opacity:.3;}}
+
+  .turnmsg{text-align:center;font-size:15px;font-weight:800;min-height:22px;color:#ffe;}
+  .streak{text-align:center;font-size:13px;font-weight:800;color:var(--gold);min-height:18px;}
+
+  /* ---------- 盤面 ---------- */
+  .board-wrap{position:relative;display:flex;justify-content:center;}
+  .board{
+    width:min(88vw,58vh,400px);aspect-ratio:1/1;
+    display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:10px;
+    background:linear-gradient(180deg,#ffffff,#eef0fb);
+    border-radius:22px;padding:12px;
+    box-shadow:0 14px 34px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,255,255,.6);
+    transition:opacity .2s ease;
+  }
+  .board.waiting{opacity:.55;}
+  .cell{
+    position:relative;border-radius:14px;background:#f5f6ff;
+    box-shadow:inset 0 2px 5px rgba(60,60,120,.14);
+    display:grid;place-items:center;cursor:pointer;
+    transition:background .15s ease, transform .06s ease;
+  }
+  .cell:active{transform:scale(.97);}
+  .cell.filled{cursor:default;}
+  .cell.win{background:#fff7d6;box-shadow:inset 0 0 0 3px var(--gold),0 0 22px rgba(255,207,77,.7);animation:winpulse .6s ease infinite alternate;}
+  @keyframes winpulse{to{box-shadow:inset 0 0 0 4px var(--gold),0 0 30px rgba(255,207,77,.95);}}
+  .cell.warn::after{
+    content:"";position:absolute;inset:8px;border-radius:10px;
+    border:2px dashed rgba(120,120,160,.55);animation:warnpulse 1s ease infinite;
+  }
+  @keyframes warnpulse{0%,100%{opacity:.25;}50%{opacity:.9;}}
+
+  .mark{width:78%;height:78%;animation:pop .26s cubic-bezier(.2,1.4,.5,1);}
+  @keyframes pop{from{transform:scale(.3);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .mark.fading{opacity:.32;}
+  .mark.maru circle{fill:none;stroke:var(--maru);stroke-width:10;stroke-linecap:round;
+    stroke-dasharray:220;stroke-dashoffset:220;animation:draw .4s ease forwards;}
+  .mark.batsu line{stroke:var(--batsu);stroke-width:10;stroke-linecap:round;
+    stroke-dasharray:66;stroke-dashoffset:66;animation:draw .28s ease forwards;}
+  .mark.batsu line:nth-child(2){animation-delay:.16s;}
+  @keyframes draw{to{stroke-dashoffset:0;}}
+  .cell.vanishing .mark{animation:vanish .34s ease forwards;}
+  @keyframes vanish{to{transform:scale(.15) rotate(28deg);opacity:0;filter:blur(2px);}}
+
+  .hint{text-align:center;font-size:11.5px;color:#b9bae0;margin-top:2px;}
+
+  /* ---------- 合言葉表示 ---------- */
+  .codebox{
+    background:rgba(0,0,0,.28);border:1px dashed rgba(255,255,255,.35);border-radius:16px;
+    padding:14px;text-align:center;margin-bottom:12px;
+  }
+  .codebox .lbl{font-size:12px;color:#c7c8ea;font-weight:700;}
+  .codebox .code{font-size:42px;font-weight:900;letter-spacing:10px;margin:4px 0 2px;color:var(--gold);}
+  .spinner{width:22px;height:22px;border:3px solid rgba(255,255,255,.25);border-top-color:var(--gold);
+    border-radius:50%;animation:spin .8s linear infinite;display:inline-block;vertical-align:middle;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .waitmsg{text-align:center;font-size:14px;font-weight:700;color:#e6e7ff;margin:10px 0 14px;}
+  .errmsg{background:rgba(255,77,109,.18);border:1px solid rgba(255,77,109,.5);border-radius:12px;
+    padding:10px 12px;font-size:13px;font-weight:700;margin-bottom:12px;}
+
+  /* ---------- 結果 / モーダル ---------- */
+  .result,.modal{position:fixed;inset:0;display:none;place-items:center;z-index:30;
+    background:rgba(10,10,30,.65);padding:20px;}
+  .result.show,.modal.show{display:grid;animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0;}}
+  .result .panel{
+    background:linear-gradient(180deg,#2a2a5c,#1c1c40);border:1px solid rgba(255,255,255,.15);
+    border-radius:24px;padding:26px 22px;text-align:center;width:100%;max-width:340px;
+    box-shadow:0 20px 50px rgba(0,0,0,.5);animation:panelin .3s cubic-bezier(.2,1.3,.4,1);
+  }
+  @keyframes panelin{from{transform:scale(.7) translateY(20px);opacity:0;}}
+  .result .rmark{font-size:60px;line-height:1;margin-bottom:6px;}
+  .result h2{margin:0 0 6px;font-size:26px;font-weight:900;}
+  .result p{margin:0 0 18px;font-size:14px;color:#cfd0ee;}
+  .modal .panel{background:#fff;color:var(--ink);border-radius:22px;padding:22px;
+    width:100%;max-width:360px;box-shadow:0 20px 50px rgba(0,0,0,.5);}
+  .modal h2{margin:0 0 14px;font-size:20px;color:var(--ink);}
+  .modal ol{margin:0 0 16px;padding-left:20px;}
+  .modal li{margin-bottom:10px;font-size:14px;line-height:1.5;}
+  .modal .tip{background:#fff3d6;border-radius:12px;padding:10px 12px;font-size:13px;font-weight:700;color:#8a5a00;}
+
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);
+    background:rgba(0,0,0,.85);color:#fff;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:700;
+    opacity:0;pointer-events:none;transition:all .25s ease;z-index:50;max-width:86vw;text-align:center;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .hidden{display:none!important;}
+  .confetti{position:fixed;top:-12px;width:10px;height:14px;z-index:35;pointer-events:none;border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== メニュー ===== -->
+  <div id="menu">
+    <div class="brand">
+      <div class="badge">新感覚ルール</div>
+      <h1><span class="m">〇</span>が消える<span class="b">×</span></h1>
+      <div class="tag">印は3つまで。4つ目を置くと、いちばん古い印が消える。<br>だから引き分けナシの〇×！</div>
+    </div>
+
+    <div class="card">
+      <h2>🤖 CPUと対戦</h2>
+      <p class="sub">強さをえらんでスタート</p>
+      <div class="btns">
+        <button class="btn easy"   onclick="startGame('cpu','easy')">よわい</button>
+        <button class="btn normal" onclick="startGame('cpu','normal')">ふつう</button>
+        <button class="btn hard"   onclick="startGame('cpu','hard')">つよい</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🌐 オンライン対戦</h2>
+      <p class="sub">合言葉を伝えて、離れた相手とリアルタイム対戦</p>
+      <div class="btns">
+        <button class="btn net" onclick="showOnlineMenu()">はじめる</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>👥 ふたりで対戦</h2>
+      <p class="sub">おなじ端末で交代しながら遊ぶ</p>
+      <div class="btns">
+        <button class="btn" onclick="startGame('2p')">スタート</button>
+      </div>
+    </div>
+
+    <div class="btns col">
+      <button class="btn ghost hidden" id="installBtn" onclick="doInstall()">📲 アプリとして追加する</button>
+    </div>
+    <div style="text-align:center;">
+      <button class="link" onclick="openHelp()">▶ あそびかた を見る</button>
+      <div id="iosHint" class="hint hidden">iPhone は <b>共有ボタン → ホーム画面に追加</b> でアプリになります</div>
+    </div>
+  </div>
+
+  <!-- ===== オンライン メニュー ===== -->
+  <div id="onlineMenu" class="hidden">
+    <div class="topbar">
+      <button class="iconbtn" onclick="showMenu()">←</button>
+      <div style="font-weight:900;font-size:16px;">🌐 オンライン対戦</div>
+      <div style="width:42px"></div>
+    </div>
+    <div id="netError" class="errmsg hidden"></div>
+    <div class="card">
+      <label class="fl" for="nameInput">あなたの名前（ニックネーム）</label>
+      <input type="text" id="nameInput" maxlength="10" placeholder="なまえ">
+    </div>
+    <div class="card">
+      <h2>部屋をつくる</h2>
+      <p class="sub">合言葉が出ます。相手に伝えてください</p>
+      <div class="btns"><button class="btn net" id="createBtn" onclick="createRoom()">部屋をつくる</button></div>
+    </div>
+    <div class="card">
+      <h2>合言葉で参加する</h2>
+      <p class="sub">相手からもらった4文字を入力</p>
+      <input type="text" id="codeInput" maxlength="4" placeholder="----" autocomplete="off" autocapitalize="characters">
+      <div class="btns" style="margin-top:12px;"><button class="btn" id="joinBtn" onclick="joinRoom()">参加する</button></div>
+    </div>
+  </div>
+
+  <!-- ===== 待機ロビー ===== -->
+  <div id="lobby" class="hidden">
+    <div class="topbar">
+      <button class="iconbtn" onclick="leaveRoom(true)">←</button>
+      <div style="font-weight:900;font-size:16px;">相手を待っています</div>
+      <div style="width:42px"></div>
+    </div>
+    <div class="card">
+      <div class="codebox">
+        <div class="lbl">あいことば</div>
+        <div class="code" id="lobbyCode">----</div>
+        <div class="lbl">この4文字を相手に伝えてください</div>
+      </div>
+      <div class="waitmsg"><span class="spinner"></span>　相手の参加を待っています…</div>
+      <div class="btns col">
+        <button class="btn ghost" onclick="copyInvite()">🔗 招待リンクをコピー</button>
+        <button class="btn ghost" onclick="leaveRoom(true)">やめる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ゲーム ===== -->
+  <div id="game" class="hidden">
+    <div class="topbar">
+      <button class="iconbtn" onclick="quitGame()" title="メニュー">≡</button>
+      <div style="font-weight:900;font-size:15px;letter-spacing:1px;">
+        <span style="color:var(--maru)">〇</span>が消える<span style="color:var(--batsu)">×</span>
+        <span id="roomTag" class="hidden" style="font-size:11px;color:var(--gold);margin-left:6px;"></span>
+      </div>
+      <button class="iconbtn" id="muteBtn" onclick="toggleMute()" title="音">🔊</button>
+    </div>
+
+    <div class="score">
+      <div class="side o" id="sideO">
+        <div class="who" id="whoO">あなた</div>
+        <div class="mk">〇</div>
+        <div class="num" id="scoreO">0</div>
+      </div>
+      <div class="side x" id="sideX">
+        <div class="who" id="whoX">CPU</div>
+        <div class="mk">×</div>
+        <div class="num" id="scoreX">0</div>
+      </div>
+    </div>
+
+    <div class="turnmsg" id="turnMsg"></div>
+    <div class="streak" id="streakMsg"></div>
+
+    <div class="board-wrap">
+      <div class="board" id="board"></div>
+    </div>
+    <div class="hint">💡 うすい印は、そのプレイヤーが次に置くと消えます</div>
+  </div>
+
+</div>
+
+<!-- ===== 結果 ===== -->
+<div class="result" id="result">
+  <div class="panel">
+    <div class="rmark" id="rMark">🎉</div>
+    <h2 id="rTitle">かち！</h2>
+    <p id="rSub"></p>
+    <div class="btns col">
+      <button class="btn" id="againBtn" onclick="againPressed()">もう一回</button>
+      <button class="btn ghost" onclick="quitGame()">メニューへ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== あそびかた ===== -->
+<div class="modal" id="help">
+  <div class="panel">
+    <h2>あそびかた</h2>
+    <ol>
+      <li>タテ・ヨコ・ナナメに自分の印を<b>3つそろえたら勝ち</b>。（ふつうの〇×と同じ）</li>
+      <li>ただし印は<b>1人3つまで</b>。<b>4つ目</b>を置くと、自分の<b>いちばん古い印が消えます</b>。</li>
+      <li>次に消える印は<b>うすく点滅</b>して予告。消える印ではそろえられないので注意！</li>
+      <li><b>オンライン対戦</b>は、片方が「部屋をつくる」で出た<b>合言葉4文字</b>を、もう片方が入力すれば始まります。</li>
+    </ol>
+    <div class="tip">💡 盤がずっと動くから引き分けナシ。消す位置とタイミングの読み合いがカギ！</div>
+    <div class="btns col" style="margin-top:16px;">
+      <button class="btn" onclick="closeHelp()">とじる</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="config.js"></script>
+<script>
+/* ================= 定数・状態 ================= */
+const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+const ORDER=[4,0,2,6,8,1,3,5,7];            // 探索の手番順（中央→角→辺）
+const HUMAN='○', CPU='×';
+const other=p=>p==='○'?'×':'○';
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const W={'○':'O','×':'X'}, U={'O':'○','X':'×'};   // 内部表記 <-> 通信表記
+
+const state={
+  board:Array(9).fill(null),
+  seq:{'○':[],'×':[]},
+  turn:'○', mode:'cpu', diff:'normal',
+  playing:false, busy:false, starter:'○',
+  score:{'○':0,'×':0}, streak:0,
+};
+
+/* ================= 保存（サンドボックスで例外を投げるので保護） ================= */
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+
+let muted=(lsGet('mb_mute')==='1'), actx=null;
+
+/* ================= 音 ================= */
+function beep(f,d,t='sine',v=.15){
+  if(muted)return;
+  try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.type=t;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(actx.destination);
+    o.start();g.gain.exponentialRampToValueAtTime(0.0001,actx.currentTime+d);o.stop(actx.currentTime+d);
+  }catch(e){}
+}
+function playSound(k){
+  if(k==='place')beep(540,.12,'triangle',.16);
+  else if(k==='vanish')beep(180,.22,'sawtooth',.09);
+  else if(k==='win'){[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.2,'triangle',.18),i*95));}
+  else if(k==='lose')beep(200,.5,'sine',.14);
+  else if(k==='join'){[660,880].forEach((f,i)=>setTimeout(()=>beep(f,.15,'triangle',.16),i*120));}
+}
+function toggleMute(){
+  muted=!muted; lsSet('mb_mute',muted?'1':'0');
+  document.getElementById('muteBtn').textContent=muted?'🔈':'🔊';
+}
+
+/* ================= 盤 DOM ================= */
+const boardEl=document.getElementById('board');
+let cells=[];
+function buildBoard(){
+  boardEl.innerHTML=''; cells=[];
+  for(let i=0;i<9;i++){
+    const c=document.createElement('div');
+    c.className='cell'; c.dataset.i=i;
+    c.addEventListener('click',()=>humanMove(i));
+    boardEl.appendChild(c); cells.push(c);
+  }
+}
+function clearBoardDOM(){ cells.forEach(c=>{c.className='cell';c.innerHTML='';}); }
+function markSVG(player){
+  if(player==='○')
+    return '<svg class="mark maru" viewBox="0 0 100 100"><circle cx="50" cy="50" r="35"/></svg>';
+  return '<svg class="mark batsu" viewBox="0 0 100 100"><line x1="28" y1="28" x2="72" y2="72"/><line x1="72" y1="28" x2="28" y2="72"/></svg>';
+}
+function placeMark(i,player){ cells[i].innerHTML=markSVG(player); cells[i].classList.add('filled'); }
+function vanishMark(i){
+  const c=cells[i];
+  c.classList.add('vanishing'); playSound('vanish');
+  setTimeout(()=>{ c.classList.remove('vanishing','filled'); c.innerHTML=''; },340);
+}
+function updateHints(){
+  cells.forEach((c,i)=>{
+    const owner=state.board[i];
+    const isOldest=!!(owner && state.seq[owner] && state.seq[owner].length===3 && state.seq[owner][0]===i);
+    c.classList.toggle('warn',isOldest);
+    const mk=c.querySelector('.mark');
+    if(mk) mk.classList.toggle('fading',isOldest);
+  });
+}
+
+/* ================= 勝敗判定・AI（検証済みエンジン） ================= */
+function winnerLine(board,player){
+  for(const L of LINES) if(L.every(i=>board[i]===player)) return L;
+  return null;
+}
+function simMove(board,seq,cell,player){
+  const b=board.slice();
+  const s={'○':seq['○'].slice(),'×':seq['×'].slice()};
+  b[cell]=player; s[player].push(cell);
+  if(s[player].length>3){ const rm=s[player].shift(); b[rm]=null; }
+  return {b,s};
+}
+function evaluate(board,me,op){
+  let sc=0;
+  for(const L of LINES){
+    let m=0,o=0;
+    for(const i of L){ if(board[i]===me)m++; else if(board[i]===op)o++; }
+    if(m&&o)continue;
+    if(m===2)sc+=10; else if(m===1)sc+=1;
+    if(o===2)sc-=10; else if(o===1)sc-=1;
+  }
+  if(board[4]===me)sc+=1; else if(board[4]===op)sc-=1;
+  return sc;
+}
+function moves(board){ return ORDER.filter(i=>board[i]===null); }
+function minimax(board,seq,toMove,me,op,depth,a,b){
+  const justMoved=other(toMove);
+  if(winnerLine(board,justMoved)) return justMoved===me ? 1000+depth : -1000-depth;
+  if(depth===0) return evaluate(board,me,op);
+  const mv=moves(board);
+  if(toMove===me){
+    let best=-Infinity;
+    for(const c of mv){
+      const {b:nb,s:ns}=simMove(board,seq,c,me);
+      const v=minimax(nb,ns,op,me,op,depth-1,a,b);
+      if(v>best)best=v; if(best>a)a=best; if(a>=b)break;
+    }
+    return best;
+  }else{
+    let best=Infinity;
+    for(const c of mv){
+      const {b:nb,s:ns}=simMove(board,seq,c,op);
+      const v=minimax(nb,ns,me,me,op,depth-1,a,b);
+      if(v<best)best=v; if(best<b)b=best; if(a>=b)break;
+    }
+    return best;
+  }
+}
+function bestMove(player){
+  const me=player, op=other(player);
+  const mv=moves(state.board);
+  const depth={easy:2,normal:4,hard:6}[state.diff];
+  const scored=mv.map(c=>{
+    const {b:nb,s:ns}=simMove(state.board,state.seq,c,me);
+    return {c,v:minimax(nb,ns,op,me,op,depth-1,-Infinity,Infinity)};
+  }).sort((x,y)=>y.v-x.v);
+  if(state.diff==='easy'){
+    const win=scored.find(x=>x.v>=1000); if(win)return win.c;
+    if(Math.random()<0.45) return mv[Math.floor(Math.random()*mv.length)];
+    return scored[Math.floor(Math.random()*Math.min(3,scored.length))].c;
+  }
+  if(state.diff==='normal'){
+    if(scored.length>1 && scored[0].v-scored[1].v<2 && Math.random()<0.3) return scored[1].c;
+    return scored[0].c;
+  }
+  const top=scored[0].v;
+  const tops=scored.filter(x=>x.v===top);
+  return tops[Math.floor(Math.random()*tops.length)].c;
+}
+
+/* ================= ローカル対戦の進行 ================= */
+async function applyMove(i,player){
+  state.board[i]=player; state.seq[player].push(i);
+  let removed=null;
+  if(state.seq[player].length>3){ removed=state.seq[player].shift(); state.board[removed]=null; }
+  placeMark(i,player); playSound('place');
+  if(removed!==null) vanishMark(removed);
+  updateHints();
+  await sleep(270);
+  const line=winnerLine(state.board,player);
+  if(line){ await sleep(160); endRound(player,line); return true; }
+  state.turn=other(player); updateTurnUI();
+  return false;
+}
+
+async function humanMove(i){
+  if(actx&&actx.state==='suspended')actx.resume();
+  if(state.mode==='online'){ netMove(i); return; }
+  if(state.busy||!state.playing) return;
+  if(state.mode==='cpu' && state.turn!==HUMAN) return;
+  if(state.board[i]!==null) return;
+  state.busy=true;
+  const won=await applyMove(i,state.turn);
+  if(won) return;
+  if(state.mode==='cpu'){
+    await sleep(480);
+    await applyMove(bestMove(CPU),CPU);
+  }
+  state.busy=false;
+}
+
+/* ================= 画面遷移 ================= */
+function show(id){
+  ['menu','onlineMenu','lobby','game'].forEach(s=>
+    document.getElementById(s).classList.toggle('hidden', s!==id));
+}
+function startGame(mode,diff){
+  state.mode=mode; state.diff=diff||'normal';
+  state.score={'○':0,'×':0}; state.streak=0; state.starter='○';
+  document.getElementById('roomTag').classList.add('hidden');
+  if(mode==='cpu'){ whoO.textContent='あなた'; whoX.textContent='CPU'; }
+  else{ whoO.textContent='プレイヤー1'; whoX.textContent='プレイヤー2'; }
+  sideO.classList.remove('off'); sideX.classList.remove('off');
+  document.getElementById('board').classList.remove('waiting');
+  show('game'); buildBoard(); newRound();
+}
+function newRound(){
+  state.board=Array(9).fill(null);
+  state.seq={'○':[],'×':[]};
+  state.turn=state.starter;
+  state.playing=true; state.busy=false;
+  clearBoardDOM(); updateScoreUI(); updateTurnUI();
+  document.getElementById('result').classList.remove('show');
+  if(state.mode==='cpu' && state.turn===CPU){
+    state.busy=true;
+    setTimeout(async()=>{ await applyMove(bestMove(CPU),CPU); state.busy=false; },650);
+  }
+}
+function againPressed(){ if(state.mode==='online') netRematch(); else newRound(); }
+function quitGame(){ if(state.mode==='online') leaveRoom(true); else showMenu(); }
+function showMenu(){
+  state.playing=false; state.mode='cpu';
+  document.getElementById('result').classList.remove('show');
+  show('menu');
+}
+function openHelp(){document.getElementById('help').classList.add('show');}
+function closeHelp(){document.getElementById('help').classList.remove('show');}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1900);
+}
+
+function endRound(player,line){
+  state.playing=false; state.busy=true;
+  line.forEach(i=>cells[i].classList.add('win'));
+  // オンラインではサーバ側（着手トランザクション）で加算済みなので二重に足さない
+  if(state.mode!=='online') state.score[player]++;
+  updateScoreUI();
+  const iWon = state.mode==='online' ? (W[player]===net.seat)
+             : state.mode==='cpu'    ? (player===HUMAN) : null;
+  if(iWon===false) playSound('lose'); else { playSound('win'); confetti(); }
+
+  if(state.mode==='cpu'){
+    if(player===HUMAN){ state.streak++;
+      rMark.textContent='🎉'; rTitle.textContent='あなたの勝ち！';
+      rSub.textContent=state.streak>=2?state.streak+'連勝中！ 🔥':'ナイス！';
+    }else{ state.streak=0;
+      rMark.textContent='🤖'; rTitle.textContent='CPUの勝ち…';
+      rSub.textContent='もう一回チャレンジ！';
+    }
+  }else if(state.mode==='online'){
+    if(iWon){ rMark.textContent='🎉'; rTitle.textContent='あなたの勝ち！'; rSub.textContent='ナイス！'; }
+    else    { rMark.textContent='😖'; rTitle.textContent='あなたの負け…'; rSub.textContent='リベンジしよう！'; }
+  }else{
+    rMark.textContent=player==='○'?'🔴':'🔵';
+    rTitle.textContent=(player==='○'?'プレイヤー1':'プレイヤー2')+'の勝ち！';
+    rSub.textContent='おめでとう！';
+  }
+  updateStreakUI(); updateTurnUI();
+  if(state.mode!=='online') state.starter=other(state.starter);
+  const ab=document.getElementById('againBtn');
+  ab.disabled=false; ab.textContent='もう一回';
+  setTimeout(()=>document.getElementById('result').classList.add('show'),650);
+}
+
+function updateScoreUI(){
+  scoreO.textContent=state.score['○'];
+  scoreX.textContent=state.score['×'];
+}
+function updateTurnUI(){
+  sideO.classList.toggle('active',state.turn==='○'&&state.playing);
+  sideX.classList.toggle('active',state.turn==='×'&&state.playing);
+  const t=document.getElementById('turnMsg');
+  if(!state.playing){ t.textContent=(state.mode==='online'&&net.waiting)?'⏳ 相手の参加を待っています…':''; return; }
+  if(state.mode==='cpu')
+    t.textContent = state.turn===HUMAN ? '👉 あなたの番' : '🤖 CPUが考え中…';
+  else if(state.mode==='online')
+    t.textContent = state.turn===U[net.seat] ? '👉 あなたの番' : '⏳ 相手の番…';
+  else
+    t.textContent = (state.turn==='○'?'🔴 プレイヤー1':'🔵 プレイヤー2')+'の番';
+  updateStreakUI();
+}
+function updateStreakUI(){
+  document.getElementById('streakMsg').textContent=
+    (state.mode==='cpu'&&state.streak>=2)?('🔥 '+state.streak+'連勝中'):'';
+}
+
+/* ================= 紙吹雪 ================= */
+function confetti(){
+  const colors=['#ff4d6d','#3d8bff','#ffcf4d','#38c67a','#a86bff'];
+  for(let i=0;i<28;i++){
+    const el=document.createElement('div');
+    el.className='confetti';
+    el.style.left=Math.random()*100+'vw';
+    el.style.background=colors[i%colors.length];
+    document.body.appendChild(el);
+    const dx=(Math.random()-0.5)*160;
+    el.animate(
+      [{transform:'translate(0,0) rotate(0)',opacity:1},
+       {transform:'translate('+dx+'px,'+(window.innerHeight+40)+'px) rotate('+(Math.random()*720)+'deg)',opacity:.9}],
+      {duration:1100+Math.random()*700,easing:'cubic-bezier(.3,.6,.6,1)'}
+    ).onfinish=()=>el.remove();
+  }
+}
+
+/* ======================================================================
+   オンライン対戦（Firebase Realtime Database）
+   部屋は rooms/mb-<合言葉> 配下。ルートのオセロと同じDBルールで動く。
+     seats : 席(O/X)   online : 接続中のuid   play : 盤面・スコア
+   着手は play へのトランザクションなので、同時押しや回線落ちでも壊れない。
+   ====================================================================== */
+const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // I,O,0,1 は除外
+const net={ db:null, roomRef:null, playRef:null, code:null, seat:null, uid:null,
+            name:'', seats:null, onlineMap:null, waiting:true,
+            lastBoard:'.........', lastMoveNo:-1, shownWinner:'', oppName:'' };
+
+function ssGet(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } }
+function ssSet(k,v){ try{ sessionStorage.setItem(k,v); }catch(e){} }
+function myUid(){
+  // タブごとに別ID。リロードでは維持され、同じブラウザの別タブ同士でも対戦できる
+  let u=ssGet('mb_uid');
+  if(!u){ u='u'+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ssSet('mb_uid',u); }
+  return u;
+}
+function encBoard(b){ return b.map(v=>v?W[v]:'.').join(''); }
+function decBoard(s){ return String(s||'.........').split('').map(c=>U[c]||null); }
+function decSeq(s){ return String(s||'').split('').map(Number).filter(n=>!isNaN(n)); }
+function randCode(){ let s=''; for(let i=0;i<4;i++) s+=CODE_CHARS[Math.floor(Math.random()*CODE_CHARS.length)]; return s; }
+function freshPlay(starter){
+  return { board:'.........', seqO:'', seqX:'', turn:starter, starter:starter,
+           winner:'', line:'', moveNo:0, scoreO:0, scoreX:0, rematchO:false, rematchX:false };
+}
+function netError(msg){
+  const e=document.getElementById('netError');
+  if(!msg){ e.classList.add('hidden'); return; }
+  e.textContent=msg; e.classList.remove('hidden');
+}
+function fbReady(){
+  if(net.db) return true;
+  const c=window.FIREBASE_CONFIG;
+  if(typeof firebase==='undefined'){ netError('通信ライブラリを読み込めませんでした。ネット接続を確認してください。'); return false; }
+  if(!c || !c.apiKey || !c.databaseURL){ netError('オンライン設定（config.js）が見つかりません。'); return false; }
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(c);
+    net.db=firebase.database(); net.uid=myUid();
+    return true;
+  }catch(e){ netError('オンラインに接続できませんでした：'+e.message); return false; }
+}
+function showOnlineMenu(){
+  netError('');
+  document.getElementById('nameInput').value = lsGet('mb_name')||'';
+  show('onlineMenu');
+  fbReady();
+}
+function currentName(){
+  const v=(document.getElementById('nameInput').value||'').trim().slice(0,10);
+  lsSet('mb_name',v);
+  return v||'なまえなし';
+}
+
+async function createRoom(){
+  if(!fbReady()) return;
+  netError('');
+  const btn=document.getElementById('createBtn'); btn.disabled=true; btn.textContent='作成中…';
+  net.name=currentName();
+  try{
+    let code=null;
+    for(let tries=0; tries<6 && !code; tries++){
+      const c=randCode();
+      const ref=net.db.ref('rooms/mb-'+c);
+      const res=await ref.transaction(cur=>{
+        if(cur) return;                       // 既にある → 中止して別コードへ
+        return { game:'marubatsu', createdAt:Date.now(),
+                 seats:{ O:{ uid:net.uid, name:net.name } },
+                 play:freshPlay('O') };
+      });
+      if(res.committed) code=c;
+    }
+    if(!code){ netError('部屋を作れませんでした。もう一度お試しください。'); return; }
+    net.code=code; net.seat='O';
+    attachRoom(code); markOnline();
+    net.roomRef.onDisconnect().remove();      // 相手が来る前に閉じたら部屋を残さない
+    document.getElementById('lobbyCode').textContent=code;
+    show('lobby');
+  }catch(e){
+    netError('接続に失敗しました：'+e.message);
+  }finally{ btn.disabled=false; btn.textContent='部屋をつくる'; }
+}
+
+async function joinRoom(codeArg){
+  if(!fbReady()) return;
+  netError('');
+  const raw=(typeof codeArg==='string'? codeArg : document.getElementById('codeInput').value)||'';
+  const code=raw.trim().toUpperCase();
+  if(code.length!==4){ netError('合言葉は4文字です。'); return; }
+  const btn=document.getElementById('joinBtn'); btn.disabled=true; btn.textContent='参加中…';
+  net.name=currentName();
+  try{
+    net.code=code;
+    attachRoom(code);                          // 先に購読してキャッシュを温める
+    const snap=await net.seatsReady;
+    if(!snap.exists()){ detachRoom(); netError('その合言葉の部屋は見つかりません。文字を確認してください。'); return; }
+    let mySeat=null;
+    const res=await net.roomRef.child('seats').transaction(seats=>{
+      if(!seats) return;
+      for(const s of ['O','X']) if(seats[s] && seats[s].uid===net.uid){ mySeat=s; return seats; }
+      for(const s of ['O','X']) if(!seats[s]){ seats[s]={uid:net.uid,name:net.name}; mySeat=s; return seats; }
+      return;                                 // 満席 → 中止
+    });
+    if(!res.committed || !mySeat){ detachRoom(); netError('その部屋は満員です。'); return; }
+    net.seat=mySeat; markOnline();
+    onSeats(net.seats||{});
+    startOnlineGame();
+  }catch(e){
+    netError('参加に失敗しました：'+e.message);
+  }finally{ btn.disabled=false; btn.textContent='参加する'; }
+}
+
+// 部屋を購読する。※ once() ではなく on() を張るのが重要：
+// once は直後にキャッシュを捨てるため、続く transaction の初回呼び出しが null になり
+// 「中止」と判定されてしまう（Firebase RTDB の既知の落とし穴）。
+function attachRoom(code){
+  net.roomRef=net.db.ref('rooms/mb-'+code);
+  net.playRef=net.roomRef.child('play');
+  net.lastBoard='.........'; net.lastMoveNo=-1; net.shownWinner=''; net.waiting=true;
+  let seatsSeen=null;
+  net.seatsReady=new Promise(res=>{ seatsSeen=res; });
+  net.roomRef.child('seats').on('value',s=>{
+    onSeats(s.val()||{});
+    if(seatsSeen){ seatsSeen(s); seatsSeen=null; }
+  });
+  net.playRef.on('value',s=>{ const p=s.val(); if(p) renderNet(p); });
+  net.roomRef.child('online').on('value',s=>{ net.onlineMap=s.val()||{}; updateSeatUI(); });
+}
+function markOnline(){
+  const me=net.roomRef.child('online/'+net.uid);
+  me.set(true); me.onDisconnect().remove();
+}
+function detachRoom(){
+  if(!net.roomRef) return;
+  try{ net.roomRef.child('seats').off(); net.roomRef.child('online').off(); net.playRef.off(); }catch(e){}
+  net.roomRef=null; net.playRef=null; net.code=null; net.seats=null;
+}
+
+function onSeats(seats){
+  net.seats=seats;
+  if(!net.seat) return;                        // 参加処理中（席が未確定）
+  const oppSeat = net.seat==='O'?'X':'O';
+  const opp=seats[oppSeat];
+  const wasWaiting=net.waiting;
+  net.waiting=!opp;
+  if(opp){
+    net.oppName=opp.name||'あいて';
+    if(wasWaiting){
+      // 相手が来た → 部屋の自動削除を解除
+      try{ net.roomRef.onDisconnect().cancel(); }catch(e){}
+      net.roomRef.child('online/'+net.uid).onDisconnect().remove();
+      playSound('join');
+      if(!document.getElementById('lobby').classList.contains('hidden')){
+        toast(net.oppName+' さんが参加しました！');
+        startOnlineGame();
+      }
+    }
+  }else if(!wasWaiting && net.seat){
+    toast('相手が退出しました');
+  }
+  updateSeatUI();
+  if(state.mode==='online') updateTurnUI();
+}
+
+function startOnlineGame(){
+  state.mode='online'; state.busy=false;
+  state.score={'○':0,'×':0}; state.streak=0;
+  show('game'); buildBoard(); clearBoardDOM();
+  const tag=document.getElementById('roomTag');
+  tag.textContent='合言葉 '+net.code; tag.classList.remove('hidden');
+  net.lastBoard='.........'; net.lastMoveNo=-1; net.shownWinner='';
+  updateSeatUI();
+  net.playRef.once('value').then(s=>{ const p=s.val(); if(p) renderNet(p); });
+}
+
+function updateSeatUI(){
+  if(state.mode!=='online' || !net.seats) return;
+  const om=net.onlineMap||{};
+  const nameOf=s=>{
+    const st=net.seats[s];
+    if(!st) return '（空席）';
+    return (st.name||'あいて')+(st.uid===net.uid?'（あなた）':'');
+  };
+  whoO.textContent=nameOf('O'); whoX.textContent=nameOf('X');
+  const offOf=s=>{ const st=net.seats[s]; return !st || !om[st.uid]; };
+  sideO.classList.toggle('off',offOf('O'));
+  sideX.classList.toggle('off',offOf('X'));
+  document.getElementById('board').classList.toggle('waiting',net.waiting);
+}
+
+function netMove(cell){
+  if(!net.playRef || !net.seat) return;
+  if(net.waiting){ toast('相手の参加を待っています'); return; }
+  if(state.board[cell]!==null) return;
+  if(state.turn!==U[net.seat]){ toast('いまは相手の番です'); return; }
+  const seat=net.seat;
+  net.playRef.transaction(p=>{
+    if(!p) return;
+    if(p.winner) return;
+    if(p.turn!==seat) return;
+    if(String(p.board||'').charAt(cell)!=='.') return;
+    const b=decBoard(p.board);
+    const key=seat==='O'?'seqO':'seqX';
+    const seq=decSeq(p[key]);
+    const sym=U[seat];
+    b[cell]=sym; seq.push(cell);
+    if(seq.length>3){ b[seq.shift()]=null; }
+    p.board=encBoard(b); p[key]=seq.join('');
+    const line=winnerLine(b,sym);
+    if(line){
+      p.winner=seat; p.line=line.join('');
+      if(seat==='O') p.scoreO=(p.scoreO||0)+1; else p.scoreX=(p.scoreX||0)+1;
+    }else{
+      p.turn=seat==='O'?'X':'O';
+    }
+    p.moveNo=(p.moveNo||0)+1;
+    return p;
+  }).catch(()=>toast('通信エラー。もう一度どうぞ'));
+}
+
+function netRematch(){
+  const ab=document.getElementById('againBtn');
+  ab.disabled=true; ab.textContent='相手を待っています…';
+  const seat=net.seat;
+  net.playRef.transaction(p=>{
+    if(!p) return;
+    p[seat==='O'?'rematchO':'rematchX']=true;
+    if(p.rematchO && p.rematchX){
+      const st=p.starter==='O'?'X':'O';       // 先手は毎回交代
+      const fresh=freshPlay(st);
+      fresh.scoreO=p.scoreO||0; fresh.scoreX=p.scoreX||0;
+      return fresh;
+    }
+    return p;
+  }).catch(()=>{ ab.disabled=false; ab.textContent='もう一回'; });
+}
+
+function renderNet(p){
+  const next=String(p.board||'.........');
+  const prev=net.lastBoard;
+  if((p.moveNo||0)===0 && net.lastMoveNo>0){          // 新しい対局が始まった
+    clearBoardDOM();
+    document.getElementById('result').classList.remove('show');
+    net.shownWinner='';
+    const ab=document.getElementById('againBtn'); ab.disabled=false; ab.textContent='もう一回';
+  }else if(prev!==next){
+    for(let i=0;i<9;i++) if(prev[i]!=='.' && next[i]==='.') vanishMark(i);
+    for(let i=0;i<9;i++) if(prev[i]!==next[i] && next[i]!=='.'){ placeMark(i,U[next[i]]); playSound('place'); }
+  }
+  net.lastBoard=next; net.lastMoveNo=p.moveNo||0;
+
+  state.board=decBoard(next);
+  state.seq={'○':decSeq(p.seqO),'×':decSeq(p.seqX)};
+  state.turn=U[p.turn]||'○';
+  state.score={'○':p.scoreO||0,'×':p.scoreX||0};
+  state.playing=!p.winner && !net.waiting;
+  updateHints(); updateScoreUI(); updateTurnUI(); updateSeatUI();
+
+  if(p.winner && net.shownWinner!==p.winner+'#'+p.moveNo){
+    net.shownWinner=p.winner+'#'+p.moveNo;
+    const line=String(p.line||'').split('').map(Number);
+    endRound(U[p.winner], line.length===3?line:[]);
+  }
+  const ab=document.getElementById('againBtn');
+  if(!p.winner){
+    if(ab.disabled){ ab.disabled=false; ab.textContent='もう一回'; }
+  }else if(net.seat==='O'? p.rematchO : p.rematchX){
+    ab.disabled=true; ab.textContent='相手を待っています…';
+  }
+}
+
+function leaveRoom(backToMenu){
+  try{
+    if(net.roomRef){
+      const room=net.roomRef, seat=net.seat, uid=net.uid;
+      room.child('seats').off(); room.child('online').off(); net.playRef.off();
+      try{ room.onDisconnect().cancel(); }catch(e){}
+      room.child('online/'+uid).remove();
+      if(seat) room.child('seats/'+seat).remove();
+      room.child('seats').once('value').then(s=>{      // 最後の一人なら部屋ごと片付ける
+        const v=s.val()||{};
+        if(!v.O && !v.X) room.remove();
+      }).catch(()=>{});
+    }
+  }catch(e){}
+  net.roomRef=null; net.playRef=null; net.seat=null; net.code=null;
+  net.seats=null; net.onlineMap=null; net.waiting=true; net.oppName='';
+  state.mode='cpu'; state.playing=false;
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('roomTag').classList.add('hidden');
+  if(backToMenu!==false) show('menu');
+}
+
+function copyInvite(){
+  const url=location.origin+location.pathname+'?r='+net.code;
+  const done=()=>toast('招待リンクをコピーしました');
+  if(navigator.clipboard && location.protocol!=='file:'){
+    navigator.clipboard.writeText(url).then(done).catch(()=>fallbackCopy(url,done));
+  }else fallbackCopy(url,done);
+}
+function fallbackCopy(text,done){
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); done();
+  }catch(e){ toast('コピーできませんでした'); }
+}
+
+/* ================= PWA ================= */
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault(); deferredPrompt=e;
+  document.getElementById('installBtn').classList.remove('hidden');
+});
+async function doInstall(){
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt(); await deferredPrompt.userChoice;
+  deferredPrompt=null;
+  document.getElementById('installBtn').classList.add('hidden');
+}
+if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+(function(){
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  const standalone=window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if(isIOS && !standalone) document.getElementById('iosHint').classList.remove('hidden');
+})();
+
+/* ================= 初期化 ================= */
+document.getElementById('muteBtn').textContent=muted?'🔈':'🔊';
+document.getElementById('help').addEventListener('click',e=>{if(e.target.id==='help')closeHelp();});
+document.getElementById('codeInput').addEventListener('input',e=>{
+  e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+});
+// ※ beforeunload では退室しない。タブのバックグラウンド化やbfcacheでも発火するため、
+//    対戦中に勝手に退室してしまう。切断後の後片付けは Firebase の onDisconnect に任せる。
+//    （同じタブでリロードした場合は sessionStorage のIDで同じ席に復帰できる）
+
+// 招待リンク（?r=CODE）で開かれたとき
+(function(){
+  const m=/[?&]r=([A-Za-z0-9]{4})/.exec(location.search);
+  if(!m) return;
+  const code=m[1].toUpperCase();
+  showOnlineMenu();
+  document.getElementById('codeInput').value=code;
+  setTimeout(()=>{ if(fbReady()) joinRoom(code); },300);
+})();
+</script>
+</body>
+</html>

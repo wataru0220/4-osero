@@ -1,0 +1,16 @@
+{
+  "name": "消える〇×｜新感覚まるばつ",
+  "short_name": "消える〇×",
+  "description": "印は3つまで。4つ目を置くと一番古い印が消える、引き分けなしの新感覚〇×ゲーム。CPU対戦・ふたり対戦・オンライン対戦。",
+  "lang": "ja",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#12122e",
+  "theme_color": "#1b1b3a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
