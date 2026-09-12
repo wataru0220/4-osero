@@ -96,6 +96,7 @@
   .chip{display:inline-block; background:var(--chip); color:var(--brand-dark); border-radius:18px; padding:3px 9px; font-size:12px; font-weight:700; margin:0 4px 4px 0}
   .chip.q{background:#eef6f8; color:var(--accent)}
   .chip.ng{background:#fdeceb; color:var(--warn)}
+  .chip.reg{background:#e9f7ee; color:#15803d}
   .stars{color:#f5a623; letter-spacing:1px} .starnum{font-weight:800; font-size:13px}
   .nostar{color:#9aa7b5; font-size:12px; font-weight:700}
   .kcard .actions{display:flex; gap:8px; margin-top:11px}
@@ -400,6 +401,10 @@
         <button class="btn ghost" id="ceQualAddBtn" style="flex:none">追加</button>
       </div>
       <div id="ceQualCustom" style="margin-top:6px"></div>
+    </div>
+    <div class="field"><label>登録状況の確認</label>
+      <div class="count" style="margin:0 0 6px">登録済みのものにチェックしてください。</div>
+      <div class="checkgrid" id="ceRegs"></div>
     </div>
     <div class="row">
       <button class="btn ghost" id="ceCancel">キャンセル</button>
@@ -1331,6 +1336,7 @@ function kCardHTML(k){
     ${(k.good&&k.good.length)?`<div class="seclabel">得意作業</div>${H.chips(k.good)}`:''}
     ${(k.ng&&k.ng.length)?`<div class="seclabel">NG作業</div>${H.chips(k.ng,'ng')}`:''}
     ${(k.quals&&k.quals.length)?`<div class="seclabel">保有資格</div>${H.chips(k.quals,'q')}`:''}
+    ${(k.regs&&k.regs.length)?`<div class="seclabel">登録状況</div>${H.chips(k.regs.map(x=>'✓ '+x),'reg')}`:''}
     <button class="btn ghost sm avail-toggle" data-key="${H.esc(k._key)}" style="width:100%;margin-top:8px">📅 3ヶ月の空き予定を${openAvailView===k._key?'閉じる':'見る'}</button>
     ${openAvailView===k._key?`<div style="margin-top:8px">${calHTML(k.avail,false,null,craftBookedSet(k))}</div>`:''}
     <button class="btn sm req-btn" data-key="${H.esc(k._key)}" style="width:100%;background:var(--accent);color:#fff;margin-top:8px">🤝 この大工に応援要請</button>
@@ -1616,6 +1622,7 @@ let editCraftKey=null;
   buildChecks('ceGood', H.workTypes);
   buildChecks('ceNg', H.workTypes);
   buildChecks('ceQual', H.qualifications);
+  buildChecks('ceRegs', H.regChecks); // 登録状況の確認（グリーンサイト等）
   buildChecks('coCkGood', H.workTypes); // 工務店登録時の最初の大工の得意作業
   buildChecks('reqWorkGrid', H.constructionWorks); // 応援要請の作業内容
 })();
@@ -1673,6 +1680,7 @@ function openCraftForm(key){
   const sg=splitByMaster(k.good,H.workTypes); setChecked('ceGood',sg.checked); ceGoodCustom.set(sg.custom);
   const sn=splitByMaster(k.ng,H.workTypes); setChecked('ceNg',sn.checked); ceNgCustom.set(sn.custom);
   const sq=splitQuals(k.quals); setChecked('ceQual',sq.checked); ceCustomQuals.set(sq.custom);
+  setChecked('ceRegs', k.regs||[]);
   // 新規登録のときだけ、前回の下書き（保存前の入力）を復元
   const note=document.getElementById('ceDraftNote');
   if(!key){ const d=loadCraftDraft(); if(d){ applyCraftDraft(d); } note.style.display='block'; }
@@ -1682,7 +1690,7 @@ function openCraftForm(key){
 function closeCraftForm(){ editCraftKey=null; document.getElementById('craftOv').classList.remove('on'); }
 // ===== 大工入力の下書き自動保存（新規登録のみ・保存前でも消えない） =====
 function loadCraftDraft(){ try{ const d=JSON.parse(localStorage.getItem('shokunin_craft_draft')||'null'); return (d&&hasCraftDraftContent(d))?d:null; }catch(_){ return null; } }
-function hasCraftDraftContent(d){ return !!(d && ((d.name||'').trim()||d.birth||d.gender||d.price||(d.good&&d.good.length)||(d.ng&&d.ng.length)||(d.quals&&d.quals.length)||(d.goodCustom&&d.goodCustom.length)||(d.ngCustom&&d.ngCustom.length)||(d.qualCustom&&d.qualCustom.length))); }
+function hasCraftDraftContent(d){ return !!(d && ((d.name||'').trim()||d.birth||d.gender||d.price||(d.good&&d.good.length)||(d.ng&&d.ng.length)||(d.quals&&d.quals.length)||(d.regs&&d.regs.length)||(d.goodCustom&&d.goodCustom.length)||(d.ngCustom&&d.ngCustom.length)||(d.qualCustom&&d.qualCustom.length))); }
 function updateAgeShow(){
   const el=document.getElementById('ceAgeShow'); if(!el) return;
   const a=H.ageFromBirth(document.getElementById('ceBirth').value);
@@ -1691,7 +1699,7 @@ function updateAgeShow(){
 function collectCraftForm(){
   const v=id=>document.getElementById(id).value;
   return { name:v('ceName'), surname:v('ceSurname'), birth:v('ceBirth'), gender:v('ceGender'), price:v('cePrice'),
-    good:getChecked('ceGood'), ng:getChecked('ceNg'), quals:getChecked('ceQual'),
+    good:getChecked('ceGood'), ng:getChecked('ceNg'), quals:getChecked('ceQual'), regs:getChecked('ceRegs'),
     goodCustom:ceGoodCustom.get(), ngCustom:ceNgCustom.get(), qualCustom:ceCustomQuals.get() };
 }
 function applyCraftDraft(d){
@@ -1702,6 +1710,7 @@ function applyCraftDraft(d){
   document.getElementById('ceGender').value=d.gender||'';
   document.getElementById('cePrice').value=d.price||'';
   setChecked('ceGood',d.good||[]); setChecked('ceNg',d.ng||[]); setChecked('ceQual',d.quals||[]);
+  setChecked('ceRegs',d.regs||[]);
   ceGoodCustom.set(d.goodCustom||[]); ceNgCustom.set(d.ngCustom||[]); ceCustomQuals.set(d.qualCustom||[]);
 }
 function saveCraftDraft(){
@@ -1734,7 +1743,7 @@ document.getElementById('ceDraftDiscard').onclick=()=>{
   // フォームを空に戻す
   ['ceName','ceSurname','ceBirth','ceGender','cePrice'].forEach(id=>document.getElementById(id).value=''); updateAgeShow();
   ceSurnameTouched=false;
-  setChecked('ceGood',[]); setChecked('ceNg',[]); setChecked('ceQual',[]);
+  setChecked('ceGood',[]); setChecked('ceNg',[]); setChecked('ceQual',[]); setChecked('ceRegs',[]);
   ceGoodCustom.set([]); ceNgCustom.set([]); ceCustomQuals.set([]);
   H.toast('下書きを破棄しました','ok');
 };
@@ -1755,6 +1764,7 @@ document.getElementById('ceSave').onclick=()=>{
     good:getChecked('ceGood').concat(ceGoodCustom.get()),
     ng:getChecked('ceNg').concat(ceNgCustom.get()),
     quals:getChecked('ceQual').concat(ceCustomQuals.get()),
+    regs:getChecked('ceRegs'),
     updatedAt:Date.now()
   };
   const wasNew=!editCraftKey;

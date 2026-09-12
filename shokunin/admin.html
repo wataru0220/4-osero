@@ -77,6 +77,7 @@
   .item .acts{display:flex; gap:7px; margin-top:9px}
   .chip{display:inline-block; background:var(--chip); color:var(--brand-dark); border-radius:18px; padding:2px 9px; font-size:12px; font-weight:700; margin:3px 4px 0 0}
   .chip.ng{background:#fdeceb; color:var(--warn)} .chip.o{background:#fdf0e7; color:var(--accent)}
+  .chip.reg{background:#e9f7ee; color:#15803d}
   .stars{color:#f5a623; letter-spacing:1px} .starnum{font-weight:800; font-size:13px}
   .nostar{color:#9aa7b5; font-size:12px; font-weight:700}
   .empty{text-align:center; color:var(--sub); padding:26px 10px; font-size:14px}
@@ -666,6 +667,7 @@ function kItemHTML(k){
     </div>
     <div>${H.chips(k.good,'o')}${H.chips(k.ng,'ng')}</div>
     ${(k.quals&&k.quals.length)?`<div>${H.chips(k.quals)}</div>`:''}
+    ${(k.regs&&k.regs.length)?`<div>${H.chips(k.regs.map(x=>'✓ '+x),'reg')}</div>`:''}
     <div class="acts">
       ${ok
         ? `<button class="btn ghost sm k-unapprove" data-key="${H.esc(k._key)}">認証を取消</button>`
