@@ -119,7 +119,10 @@
   #atDetail{min-height:1.3em; font-size:13px}
   .acal-day.worked{background:#eafaf0; color:#178a52; box-shadow:inset 0 0 0 1px #b6e6c8}
   .acal-day.leave{background:#ffd21e; color:#6b5200; border-radius:50%; font-weight:800}
+  .acal-day.sick{background:#d6f0f7; color:#0b3a4a; border-radius:50%; font-weight:800}
   .acal-day.today{box-shadow:inset 0 0 0 2px var(--accent)}
+  .acal-day.holiday{background:#fdecec; color:#c0392b; box-shadow:inset 0 0 0 1px #f0c4c0}
+  .acal-wd.sun{color:#c0392b} .acal-wd.sat{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -161,6 +164,7 @@
     <button data-tab="attend">📅 出勤カレンダー</button>
     <button data-tab="workers">👷 従業員</button>
     <button data-tab="sites">📍 勤務管理</button>
+    <button data-tab="holiday">🗓️ 休日設定</button>
     <button data-tab="leave">🏖️ 有給</button>
     <button data-tab="org">🏢 会社情報</button>
   </div>
@@ -302,6 +306,15 @@
     </div>
   </section>
 
+  <!-- 休日設定タブ -->
+  <section id="tab-holiday" class="hide">
+    <div class="card">
+      <h2>🗓️ 休日設定</h2>
+      <div class="note" style="margin:0 0 8px">日をタップすると<b>会社の休日</b>に設定／解除できます（管理者のみ）。設定した休日は職員の入力カレンダーに<b style="color:#c0392b">赤</b>で表示されます。‹ ›で月を切り替えます。</div>
+      <div id="holCal" class="acal"></div>
+    </div>
+  </section>
+
   <!-- 有給休暇タブ -->
   <section id="tab-leave" class="hide">
     <div class="card">
@@ -420,7 +433,10 @@
   <div class="modal">
     <h3 id="leaveModalTitle">🏖️ 有給を登録</h3>
     <div class="mf"><label>氏名</label><input type="text" id="lvWorker" list="lvWorkerList"><datalist id="lvWorkerList"></datalist></div>
-    <div class="mf"><label>取得日</label><input type="date" id="lvDate"></div>
+    <div class="mrow">
+      <div class="mf"><label>種類</label><select id="lvType"><option value="paid">🏖️ 有給</option><option value="sick">🤒 病欠</option></select></div>
+      <div class="mf"><label>取得日</label><input type="date" id="lvDate"></div>
+    </div>
     <div class="mrow">
       <div class="mf"><label>単位</label><select id="lvUnit"><option value="1">終日（1.0日）</option><option value="0.5">半日（0.5日）</option></select></div>
       <div class="mf"><label>状態</label><select id="lvStatus"><option value="approved">承認</option><option value="pending">申請中</option><option value="rejected">却下</option></select></div>
@@ -455,6 +471,7 @@
   let db=null;
   let workers={}, sites={}, records={}, leaves={}; // key -> obj
   let atWorker='', atMonth=null; // 出勤カレンダー（対象従業員・表示中の月）
+  let holidays={}, holCalMonth=null; // 休日設定（日付→true・表示中の月）
 
   // ---------- パスコード ----------
   function gate(){
@@ -712,6 +729,7 @@
     ref('sites').on('value',s=>{ sites=s.val()||{}; renderSites(); fillSiteFilter(); });
     ref('records').on('value',s=>{ records=s.val()||{}; renderAll(); renderAttend(); });
     ref('leaves').on('value',s=>{ leaves=s.val()||{}; renderLeave(); renderAttend(); });
+    ref('holidays').on('value',s=>{ holidays=s.val()||{}; renderHolidayCal(); renderAttend(); });
   }
 
   // ---------- タブ ----------
@@ -720,9 +738,9 @@
       b.onclick=()=>{
         document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
         b.classList.add('on');
-        ['summary','records','attend','workers','sites','leave','org'].forEach(t=>$('tab-'+t).classList.add('hide'));
+        ['summary','records','attend','workers','sites','holiday','leave','org'].forEach(t=>$('tab-'+t).classList.add('hide'));
         $('tab-'+b.dataset.tab).classList.remove('hide');
-        $('filterCard').style.display=(b.dataset.tab==='workers'||b.dataset.tab==='sites'||b.dataset.tab==='leave'||b.dataset.tab==='org'||b.dataset.tab==='attend')?'none':'';
+        $('filterCard').style.display=(b.dataset.tab==='workers'||b.dataset.tab==='sites'||b.dataset.tab==='leave'||b.dataset.tab==='org'||b.dataset.tab==='attend'||b.dataset.tab==='holiday')?'none':'';
       };
     });
   }
@@ -989,11 +1007,12 @@
   function renderLeave(){
     const tb=$('tblLeave'); if(!tb) return; const body=tb.querySelector('tbody');
     const appr={}, pend={};
-    Object.values(leaves||{}).forEach(l=>{ if(!l) return; const n=l.workerName||'', d=Number(l.days)||0;
+    Object.values(leaves||{}).forEach(l=>{ if(!l) return; if((l.type||'paid')==='sick') return; /* 病欠は有給残に影響しない */
+      const n=l.workerName||'', d=Number(l.days)||0;
       if(l.status==='pending') pend[n]=(pend[n]||0)+d;
       else if(l.status!=='rejected') appr[n]=(appr[n]||0)+d; });
-    // 承認待ちの申請
-    const pendList=Object.entries(leaves||{}).map(([k,l])=>Object.assign({_key:k},l)).filter(l=>l.status==='pending')
+    // 承認待ちの申請（有給のみ。病欠は承認不要）
+    const pendList=Object.entries(leaves||{}).map(([k,l])=>Object.assign({_key:k},l)).filter(l=>l.status==='pending' && (l.type||'paid')!=='sick')
       .sort((a,b)=>(a.date||'').localeCompare(b.date||''));
     const pbox=$('leavePending');
     if(!pendList.length){ pbox.innerHTML='<div class="muted" style="padding:8px; background:#f7f9fc; border-radius:8px">承認待ちの申請はありません。</div>'; }
@@ -1021,11 +1040,13 @@
   function renderLeaveList(){
     const box=$('leaveRecords'); if(!box) return;
     const arr=Object.entries(leaves||{}).map(([k,l])=>Object.assign({_key:k},l)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,80);
-    if(!arr.length){ box.innerHTML='<div class="muted" style="padding:8px">有給の申請・取得記録はありません。</div>'; return; }
-    box.innerHTML='<table><thead><tr><th>希望日</th><th>氏名</th><th class="num">日数</th><th>状態</th><th>備考</th><th></th></tr></thead><tbody>'+
-      arr.map(l=>'<tr><td>'+esc(l.date)+'</td><td>'+esc(l.workerName)+'</td><td class="num">'+(Number(l.days)===0.5?'0.5':'1')+'</td>'+
-        '<td>'+leaveStatusPill(l.status||'approved')+'</td><td>'+esc(l.note||'')+'</td>'+
-        '<td style="white-space:nowrap"><button class="sm" data-lvedit="'+l._key+'">修正</button> <button class="sm del" data-dell="'+l._key+'">削除</button></td></tr>').join('')+'</tbody></table>';
+    if(!arr.length){ box.innerHTML='<div class="muted" style="padding:8px">有給・病欠の記録はありません。</div>'; return; }
+    box.innerHTML='<table><thead><tr><th>日付</th><th>氏名</th><th>種類</th><th class="num">日数</th><th>状態</th><th>備考</th><th></th></tr></thead><tbody>'+
+      arr.map(l=>{ const sick=(l.type||'paid')==='sick';
+        const typePill=sick?'<span class="pill" style="background:#e0f2f9;color:#0b3a4a">🤒病欠</span>':'<span class="pill" style="background:#f3e8ff;color:#7a3ea8">🏖️有給</span>';
+        return '<tr><td>'+esc(l.date)+'</td><td>'+esc(l.workerName)+'</td><td>'+typePill+'</td><td class="num">'+(Number(l.days)===0.5?'0.5':'1')+'</td>'+
+        '<td>'+(sick?'<span class="pill" style="background:#eafaf0;color:#178a52">記録</span>':leaveStatusPill(l.status||'approved'))+'</td><td>'+esc(l.note||'')+'</td>'+
+        '<td style="white-space:nowrap"><button class="sm" data-lvedit="'+l._key+'">修正</button> <button class="sm del" data-dell="'+l._key+'">削除</button></td></tr>'; }).join('')+'</tbody></table>';
     box.querySelectorAll('[data-lvedit]').forEach(b=> b.onclick=()=> openLeaveModal(b.dataset.lvedit));
     box.querySelectorAll('[data-dell]').forEach(b=> b.onclick=()=>{ if(confirm('この有給記録を削除しますか？')) ref('leaves/'+b.dataset.dell).remove().then(()=>toast('削除しました','ok')); });
   }
@@ -1036,27 +1057,27 @@
   function openLeaveModal(key){
     fillLeaveWorkerList();
     if(key){ const l=leaves[key]; if(!l){ toast('記録が見つかりません','err'); return; } leaveEditKey=key;
-      $('leaveModalTitle').textContent='🏖️ 有給を修正';
-      $('lvWorker').value=l.workerName||''; $('lvDate').value=l.date||''; $('lvUnit').value=String(Number(l.days)===0.5?0.5:1);
+      $('leaveModalTitle').textContent='🗓️ 有給・病欠を修正';
+      $('lvWorker').value=l.workerName||''; $('lvType').value=(l.type||'paid'); $('lvDate').value=l.date||''; $('lvUnit').value=String(Number(l.days)===0.5?0.5:1);
       $('lvStatus').value=l.status||'approved'; $('lvNote').value=l.note||''; $('lvDelete').style.display='';
     } else { leaveEditKey=null;
-      $('leaveModalTitle').textContent='🏖️ 有給を代理で登録';
-      $('lvWorker').value=''; $('lvDate').value=todayStr(); $('lvUnit').value='1'; $('lvStatus').value='approved'; $('lvNote').value=''; $('lvDelete').style.display='none';
+      $('leaveModalTitle').textContent='🗓️ 有給・病欠を代理で登録';
+      $('lvWorker').value=''; $('lvType').value='paid'; $('lvDate').value=todayStr(); $('lvUnit').value='1'; $('lvStatus').value='approved'; $('lvNote').value=''; $('lvDelete').style.display='none';
     }
     $('leaveModal').classList.add('show'); $('lvWorker').focus();
   }
   function closeLeaveModal(){ leaveEditKey=null; $('leaveModal').classList.remove('show'); }
   function saveLeaveModal(){
-    const worker=$('lvWorker').value.trim(), date=$('lvDate').value, days=parseFloat($('lvUnit').value), status=$('lvStatus').value, note=$('lvNote').value.trim()||null;
+    const worker=$('lvWorker').value.trim(), type=$('lvType').value, date=$('lvDate').value, days=parseFloat($('lvUnit').value), status=$('lvStatus').value, note=$('lvNote').value.trim()||null;
     if(!worker){ toast('氏名を入力','err'); return; }
     if(!date){ toast('取得日を入力','err'); return; }
-    const data={ workerName:worker, date, days, status, note };
+    const data={ workerName:worker, type, date, days, status, note };
     if(leaveEditKey){
       ref('leaves/'+leaveEditKey).update(Object.assign({}, data, {updatedAt:Date.now()}))
         .then(()=>{ toast('保存しました','ok'); closeLeaveModal(); }).catch(()=>toast('保存に失敗しました','err'));
     }else{
       ref('leaves').push(Object.assign({}, data, {createdAt:Date.now(), decidedAt:Date.now(), byAdmin:true}))
-        .then(()=>{ toast('有給を登録しました','ok'); closeLeaveModal(); }).catch(()=>toast('登録に失敗しました','err'));
+        .then(()=>{ toast('登録しました','ok'); closeLeaveModal(); }).catch(()=>toast('登録に失敗しました','err'));
     }
   }
   function bindLeaveModal(){
@@ -1081,29 +1102,32 @@
     const name=atWorker || $('atWorker').value || '';
     const y=atMonth.getFullYear(), m=atMonth.getMonth(), pre=y+'-'+z(m+1)+'-';
     // その従業員の当月：日ごとの工数合計・現場名・承認有給
-    const unitByDate={}, sitesByDate={}, leaveByDate={};
+    const unitByDate={}, sitesByDate={}, leaveByDate={}, sickByDate={};
     Object.values(records||{}).forEach(r=>{ if(!r||r.workerName!==name) return; const ds=r.date||''; if(ds.indexOf(pre)!==0) return;
       unitByDate[ds]=(unitByDate[ds]||0)+(r.dayUnit!=null?Number(r.dayUnit):1);
       (sitesByDate[ds]=sitesByDate[ds]||[]).push(r.siteName||'(未設定)'); });
     Object.values(leaves||{}).forEach(l=>{ if(!l||l.workerName!==name) return; if(l.status==='pending'||l.status==='rejected') return; const ds=l.date||''; if(ds.indexOf(pre)!==0) return;
-      leaveByDate[ds]=(leaveByDate[ds]||0)+(Number(l.days)||0); });
+      if((l.type||'paid')==='sick') sickByDate[ds]=(sickByDate[ds]||0)+(Number(l.days)||0);
+      else leaveByDate[ds]=(leaveByDate[ds]||0)+(Number(l.days)||0); });
     const siteText=ds=>[...new Set(sitesByDate[ds]||[])].join('・');
     const today=todayStr(), startWd=new Date(y,m,1).getDay(), daysInMonth=new Date(y,m+1,0).getDate();
     let h='<div class="acal-head"><button class="acal-nav" id="atPrev">‹</button><span class="m">'+y+'年 '+(m+1)+'月</span><button class="acal-nav" id="atNext">›</button></div><div class="acal-grid">';
     ['日','月','火','水','木','金','土'].forEach(w=> h+='<div class="acal-wd">'+w+'</div>');
     for(let i=0;i<startWd;i++) h+='<div></div>';
-    let totDays=0, totUnit=0, totLeave=0;
+    let totDays=0, totUnit=0, totLeave=0, totSick=0;
     for(let d=1; d<=daysInMonth; d++){
-      const ds=ymd(y,m,d), wu=unitByDate[ds], lv=leaveByDate[ds];
+      const ds=ymd(y,m,d), wu=unitByDate[ds], lv=leaveByDate[ds], sk=sickByDate[ds];
       const cls=['acal-day']; let inner='<div class="dn">'+d+'</div>'; let attr='';
       if(wu){ const st=siteText(ds); cls.push('worked'); inner+='<div class="st">'+esc(st)+'</div>';
         attr=' data-adate="'+ds+'" title="'+esc(st+'（工数'+round1(wu)+'日）')+'"'; totDays++; totUnit+=wu; }
       else if(lv){ cls.push('leave'); inner+='<div class="wu">有</div>'; attr=' data-adate="'+ds+'" title="有給休暇"'; totLeave+=lv; }
+      else if(sk){ cls.push('sick'); inner+='<div class="wu">病</div>'; attr=' data-adate="'+ds+'" title="病欠"'; totSick+=sk; }
+      else if(holidays[ds]){ cls.push('holiday'); inner+='<div class="wu">休</div>'; }
       if(ds===today) cls.push('today');
       h+='<div class="'+cls.join(' ')+'"'+attr+'>'+inner+'</div>';
     }
     h+='</div>'; cal.innerHTML=h;
-    $('atSummary').innerHTML= name ? ('<b>'+esc(name)+'</b>　'+y+'年'+(m+1)+'月：出勤 <b>'+totDays+'</b> 日・工数計 <b>'+round1(totUnit)+'</b>'+(totLeave?'・有給 <b>'+round1(totLeave)+'</b> 日':'')) : '従業員を選んでください。';
+    $('atSummary').innerHTML= name ? ('<b>'+esc(name)+'</b>　'+y+'年'+(m+1)+'月：出勤 <b>'+totDays+'</b> 日・工数計 <b>'+round1(totUnit)+'</b>'+(totLeave?'・有給 <b>'+round1(totLeave)+'</b> 日':'')+(totSick?'・病欠 <b>'+round1(totSick)+'</b> 日':'')) : '従業員を選んでください。';
     $('atDetail').textContent='';
     const prev=$('atPrev'), next=$('atNext');
     if(prev) prev.onclick=()=>{ atMonth=new Date(y,m-1,1); renderAttend(); };
@@ -1115,9 +1139,32 @@
       const label=(+p[1])+'/'+(+p[2])+'（'+wd+'）';
       if(unitByDate[ds]) $('atDetail').innerHTML='📍 <b>'+label+'</b>：'+esc(siteText(ds))+' ／ 工数 '+round1(unitByDate[ds])+'日';
       else if(leaveByDate[ds]) $('atDetail').innerHTML='🏖️ <b>'+label+'</b>：有給休暇';
+      else if(sickByDate[ds]) $('atDetail').innerHTML='🤒 <b>'+label+'</b>：病欠';
     });
   }
   function bindAttend(){ $('atWorker').onchange=()=>{ atWorker=$('atWorker').value; renderAttend(); }; }
+
+  // ---------- 休日設定（管理者のみ。職員カレンダーに反映） ----------
+  function renderHolidayCal(){
+    const cal=$('holCal'); if(!cal) return;
+    if(!holCalMonth){ const d=new Date(); holCalMonth=new Date(d.getFullYear(),d.getMonth(),1); }
+    const y=holCalMonth.getFullYear(), m=holCalMonth.getMonth(), today=todayStr();
+    const startWd=new Date(y,m,1).getDay(), daysInMonth=new Date(y,m+1,0).getDate();
+    let h='<div class="acal-head"><button class="acal-nav" id="holPrev">‹</button><span class="m">'+y+'年 '+(m+1)+'月</span><button class="acal-nav" id="holNext">›</button></div><div class="acal-grid">';
+    ['日','月','火','水','木','金','土'].forEach((w,i)=> h+='<div class="acal-wd'+(i===0?' sun':(i===6?' sat':''))+'">'+w+'</div>');
+    for(let i=0;i<startWd;i++) h+='<div></div>';
+    for(let d=1; d<=daysInMonth; d++){ const ds=ymd(y,m,d);
+      const cls=['acal-day']; if(holidays[ds]) cls.push('holiday'); if(ds===today) cls.push('today');
+      h+='<div class="'+cls.join(' ')+'" data-hol="'+ds+'" style="cursor:pointer"><div class="dn">'+d+'</div></div>';
+    }
+    h+='</div>'; cal.innerHTML=h;
+    $('holPrev').onclick=()=>{ holCalMonth=new Date(y,m-1,1); renderHolidayCal(); };
+    $('holNext').onclick=()=>{ holCalMonth=new Date(y,m+1,1); renderHolidayCal(); };
+    cal.querySelectorAll('[data-hol]').forEach(c=> c.onclick=()=>{ const ds=c.dataset.hol;
+      if(holidays[ds]) ref('holidays/'+ds).remove().then(()=>toast('休日を解除しました','ok'));
+      else ref('holidays/'+ds).set(true).then(()=>toast('休日に設定しました','ok'));
+    });
+  }
 
   // ---------- Excel出力（数式入り） ----------
   function exportExcel(){
@@ -1211,12 +1258,13 @@
     {t:'従業員を追加・管理する', k:'従業員 追加 登録 氏名 マスタ 無効 削除', a:'「従業員」タブで氏名を入れて「追加」します（クラウド共有）。氏名はセルで直接編集、無効化・削除もできます（過去の記録は残ります）。'},
     {t:'勤務管理（工事・現場）を追加・状態を変える', k:'勤務管理 現場 工事 追加 編集 着工前 工事中 工事完了 完了 状態 タブ 事務所勤務', a:'「🏗️勤務管理」タブで工事現場を追加できます。工事名の脇のタブで「着工前／工事中／工事完了」を切り替えます。表には着工前・工事中だけが並び、「工事完了」にすると「完了した工事」に保存され、入力フォームの現場一覧からも外れます。「🏢事務所勤務」は常に選べる固定項目で、状態タブはありません。'},
     {t:'記録を修正・削除・代理入力する', k:'記録 修正 編集 削除 訂正 一覧 代理 追加 入力', a:'「記録一覧」タブで各行の「修正」から内容を直せます（管理者は全員の記録を修正可）。「削除」で消せます。上の「➕代理で報告を追加」から、全職員の分を管理者が代理で入力（時間・休憩も入力可）できます。'},
-    {t:'出勤カレンダーで確認する', k:'出勤 カレンダー 出勤状況 一人 従業員 月 工数 有給', a:'「📅出勤カレンダー」タブで従業員を選ぶと、その人の月ごとの出勤状況を確認できます。出勤日は緑（数字＝工数）、承認済みの有給は黄色い「有」で表示。下に出勤日数・工数計・有給日数が出ます。‹ ›で月を切り替えます。'},
+    {t:'出勤カレンダーで確認する', k:'出勤 カレンダー 出勤状況 一人 従業員 月 工数 有給', a:'「📅出勤カレンダー」タブで従業員を選ぶと、その人の月ごとの出勤状況を確認できます。出勤日は緑（数字＝工数）、承認済みの有給は黄色い「有」、会社の休日は赤「休」で表示。下に出勤日数・工数計・有給日数が出ます。‹ ›で月を切り替えます。'},
+    {t:'休日を設定する（会社の休日）', k:'休日 休み 会社 設定 カレンダー 赤', a:'「🗓️休日設定」タブで日をタップすると会社の休日に設定／解除できます（管理者のみ）。設定した休日は職員の入力カレンダーに赤で表示され、職員はその日を選んで報告できなくなります（休日出勤があった場合は「記録一覧」の代理入力で登録します）。'},
     {t:'Excelを出力する', k:'excel エクセル 出力 ダウンロード 帳票 集計', a:'「集計・Excel出力」タブの「📊Excelファイルをダウンロード」で、現在の絞り込み範囲を「勤怠記録・集計サマリ・現場別集計・現場×氏名」の複数シートで出力します（金額は含みません）。'},
     {t:'現場×氏名クロス集計の見方', k:'クロス 集計 現場 氏名 出勤日数 表', a:'「現場×氏名（出勤日数）」表で、どの現場に誰が何日入ったかを一覧できます。行＝現場、列＝氏名、数字＝出勤日数です。'},
     {t:'アプリにする（ホーム画面に追加）', k:'アプリにする ホーム画面 アイコン インストール アプリ pwa 追加', a:'ヘッダーの「⬇️アプリにする」を押すと追加できます（Android/PCは1タップ）。iPhoneはSafariの共有ボタン→「ホーム画面に追加」。'},
     {t:'会社情報・管理者を登録する', k:'会社 会社名 住所 電話 管理者 氏名 メール 登録 設定', a:'「🏢 会社情報」タブで会社名・住所・電話・管理者氏名・管理者メールを登録できます（クラウド共有）。登録した管理者メールは「パスコードを忘れた方はこちら」のリンク送信先になります。'},
-    {t:'有給休暇の承認・付与・代理登録・修正', k:'有給 有休 休暇 付与 残 日数 取得 申請 承認 却下 代理 登録 修正 後付け', a:'「🏖️ 有給」タブで各人の付与日数を入力します。職員の申請は「承認待ち」に届き承認/却下、承認分だけ取得・残に反映。「➕有給を代理で登録」で管理者が有給を直接登録でき、各記録の「修正」から日付・終日/半日・状態を後付けで変更できます（管理者は1週間前ルールなし）。'}
+    {t:'有給・病欠の承認・付与・代理登録・修正', k:'有給 有休 休暇 病欠 病気 欠勤 付与 残 日数 取得 申請 承認 却下 代理 登録 修正 後付け', a:'「🏖️ 有給」タブで各人の付与日数を入力。職員の有給申請は「承認待ち」に届き承認/却下、承認分だけ取得・残に反映（病欠は残日数の対象外）。職員は入力側で病欠も登録でき、記録一覧に表示されます。「➕有給を代理で登録」で管理者が有給・病欠を直接登録でき、各記録の「修正」で種類・日付・単位・状態を後付け変更できます。'}
   ];
   function renderHelp(){
     const q=($('helpSearch').value||'').trim().toLowerCase();

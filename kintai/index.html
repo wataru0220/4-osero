@@ -117,9 +117,11 @@
   .cal-wd.sun{color:#c0392b} .cal-wd.sat{color:#1f6feb}
   .cal-day{aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; border-radius:8px; font-size:14px; cursor:pointer; position:relative; background:#f4f7fb; color:var(--ink)}
   .cal-day.dis{color:#c3ccd6; background:#fff; cursor:default}
+  .cal-day.holiday{background:#fdecec; color:#c0392b}  /* 会社の休日（管理者設定） */
   .cal-day.today:not(.sel){box-shadow:inset 0 0 0 2px var(--brand)}
   .cal-day.lv-pending{box-shadow:inset 0 0 0 3px #e6a23c}            /* 申請中＝オレンジの枠 */
   .cal-day.lv-approved{background:#ffd21e; color:#6b5200; font-weight:800; border-radius:50%}  /* 承認＝黄色い丸 */
+  .cal-day.lv-sick{background:#8ecae6; color:#0b3a4a; font-weight:800; border-radius:50%}  /* 病欠＝水色の丸 */
   .cal-day.worked::after{content:''; position:absolute; bottom:3px; left:50%; transform:translateX(-50%); width:7px; height:7px; border-radius:50%; background:#1aa260}  /* 出勤カレンダー：報告済み＝緑丸 */
   .cal-day.sel{background:var(--brand); color:#fff; font-weight:800; border-radius:8px}  /* 選択が最優先 */
   .cal-empty{background:transparent}
@@ -189,7 +191,7 @@
       <label class="req">作業日（カレンダーから選択）</label>
       <div id="workCal" class="cal"></div>
       <div class="calsel" id="workSelLabel">日付をタップして選んでください</div>
-      <div class="callegend">🟢 報告済みの日　🔵 青枠＝今日</div>
+      <div class="callegend">🟢 報告済みの日　🔵 青枠＝今日　🟥 赤＝会社の休日（選べません）</div>
     </div>
 
     <div class="field">
@@ -225,16 +227,20 @@
   <h2 class="sec">最近の報告（自分・過去1ヶ月）</h2>
   <div id="myRecords"><div class="hint" style="padding:4px">氏名を選ぶと表示されます。</div></div>
 
-  <!-- 有給休暇 -->
+  <!-- 有給休暇・病欠 -->
   <div class="card" style="margin-top:8px">
-    <label style="margin-bottom:8px">🏖️ 有給休暇</label>
+    <label style="margin-bottom:8px">🏖️ 休暇の申請</label>
+    <div class="seg" id="leaveTypeSeg" style="margin-bottom:10px">
+      <button type="button" data-lt="paid" class="on">🏖️ 有給休暇</button>
+      <button type="button" data-lt="sick">🤒 病欠</button>
+    </div>
     <div id="leaveSummary" class="banner info" style="margin-bottom:12px">氏名を選ぶと残日数が表示されます。</div>
     <div class="field">
-      <label class="req">取得を希望する日（カレンダーから選択）</label>
+      <label class="req" id="leaveDateLabel">取得を希望する日（カレンダーから選択）</label>
       <div id="leaveCal" class="cal"></div>
       <div class="calsel" id="leaveSelLabel">日付をタップして選んでください</div>
-      <div class="callegend">🟡 有給が取れた日（承認）　🟧 オレンジ枠＝申請中　🔵 青枠＝今日</div>
-      <div class="hint">※ 有給は<b>1週間以上前</b>に申請してください（1週間先より前の日は選べません）。</div>
+      <div class="callegend" id="leaveLegend">🟡 有給が取れた日（承認）　🟧 オレンジ枠＝申請中　🔵 青枠＝今日</div>
+      <div class="hint" id="leaveHint">※ 有給は<b>1週間以上前</b>に申請してください（1週間先より前の日は選べません）。</div>
     </div>
     <div class="field">
       <label>取得単位</label>
@@ -248,8 +254,8 @@
       <input type="text" id="leaveNote" placeholder="例）私用のため など">
     </div>
     <button class="submit" id="leaveTakeBtn" style="background:#7a3ea8; box-shadow:0 4px 12px rgba(122,62,168,.3)">🏖️ 有給休暇を申請する</button>
-    <div class="hint" style="text-align:center; margin-top:6px">申請後、管理者が承認すると残日数から引かれます。</div>
-    <h2 class="sec" style="margin-top:16px">申請した有給（自分）</h2>
+    <div class="hint" id="leaveFoot" style="text-align:center; margin-top:6px">申請後、管理者が承認すると残日数から引かれます。</div>
+    <h2 class="sec" style="margin-top:16px">申請した休暇（自分）</h2>
     <div id="myLeaves"><div class="hint" style="padding:4px">氏名を選ぶと表示されます。</div></div>
   </div>
 
@@ -316,11 +322,14 @@
   let workersMap = {};          // 氏名 -> {key, granted}（有給の付与日数）
   let myLeavesMap = {};         // key -> 自分の有給
   let _leavesQuery = null;      // 有給のリスナー（氏名切替時に付け替える）
-  let calMonth = null;          // 有給カレンダー：表示中の月
-  let selectedLeaveDate = '';   // 有給カレンダー：選択中の日
+  let calMonth = null;          // 休暇カレンダー：表示中の月
+  let selectedLeaveDate = '';   // 休暇カレンダー：選択中の日
+  let leaveType = 'paid';       // 休暇の種類：paid=有給 / sick=病欠
+  let lvPaidApproved=0, lvPaidPending=0, lvSickCount=0; // 集計（残日数表示用）
   let workCalMonth = null;      // 出勤カレンダー：表示中の月
   let selectedWorkDate = '';    // 出勤カレンダー：選択中の作業日
   let myWorkDates = new Set();  // 自分が報告済みの日（緑丸表示用）
+  let holidays = {};            // 会社の休日（管理者設定・日付→true）
 
   // ---- Firebase 初期化 ----
   function initFirebase(){
@@ -425,36 +434,64 @@
   function parseYmd(s){ const p=String(s).split('-'); return new Date(+p[0], (+p[1])-1, +p[2]); }
   function ymd(y,m,d){ return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
   function initCalendar(){
-    selectedLeaveDate = plusDaysStr(LEAVE_MIN_DAYS); // 初期値＝申請可能な最初の日
-    const min=parseYmd(selectedLeaveDate);
-    calMonth = new Date(min.getFullYear(), min.getMonth(), 1);
+    selectedLeaveDate = (leaveType==='sick') ? todayStr() : plusDaysStr(LEAVE_MIN_DAYS); // 病欠=今日 / 有給=1週間先
+    const d0=parseYmd(selectedLeaveDate);
+    calMonth = new Date(d0.getFullYear(), d0.getMonth(), 1);
     renderCalendar();
   }
   function renderCalendar(){
     const cal=$('leaveCal'); if(!cal || !calMonth) return;
-    const minStr=plusDaysStr(LEAVE_MIN_DAYS), today=todayStr();
+    const today=todayStr(), sick=(leaveType==='sick'), minStr=plusDaysStr(LEAVE_MIN_DAYS);
     const y=calMonth.getFullYear(), m=calMonth.getMonth();
     const startWd=new Date(y,m,1).getDay(), daysInMonth=new Date(y,m+1,0).getDate();
-    const minD=parseYmd(minStr);
-    const prevDisabled = (y<minD.getFullYear()) || (y===minD.getFullYear() && m<=minD.getMonth());
-    // 自分の申請済みの日（date -> status）
-    const applied={}; Object.values(myLeavesMap||{}).forEach(l=>{ if(l&&l.date) applied[l.date]=l.status||'approved'; });
+    const cur=parseYmd(today), minD=parseYmd(minStr);
+    let prevDisabled=false, nextDisabled=false;
+    if(sick){ nextDisabled = (y>cur.getFullYear()) || (y===cur.getFullYear() && m>=cur.getMonth()); } // 病欠：未来へは行けない
+    else { prevDisabled = (y<minD.getFullYear()) || (y===minD.getFullYear() && m<=minD.getMonth()); } // 有給：min月より前へは行けない
+    // 自分の申請済みの日（date -> {status,type}）
+    const applied={}; Object.values(myLeavesMap||{}).forEach(l=>{ if(l&&l.date) applied[l.date]={status:(l.status||'approved'), type:(l.type||'paid')}; });
     let h='<div class="cal-head"><button class="cal-nav" id="calPrev"'+(prevDisabled?' disabled':'')+'>‹</button>'+
-      '<span class="m">'+y+'年 '+(m+1)+'月</span><button class="cal-nav" id="calNext">›</button></div><div class="cal-grid">';
+      '<span class="m">'+y+'年 '+(m+1)+'月</span><button class="cal-nav" id="calNext"'+(nextDisabled?' disabled':'')+'>›</button></div><div class="cal-grid">';
     ['日','月','火','水','木','金','土'].forEach((w,i)=> h+='<div class="cal-wd'+(i===0?' sun':(i===6?' sat':''))+'">'+w+'</div>');
     for(let i=0;i<startWd;i++) h+='<div class="cal-empty"></div>';
     for(let d=1; d<=daysInMonth; d++){
-      const ds=ymd(y,m,d), dis=ds<minStr, st=applied[ds];
-      const cls=['cal-day']; if(dis) cls.push('dis'); if(ds===selectedLeaveDate) cls.push('sel'); if(ds===today) cls.push('today');
-      if(st==='pending') cls.push('lv-pending'); else if(st && st!=='rejected') cls.push('lv-approved');
+      const ds=ymd(y,m,d), dis = sick ? (ds>today) : (ds<minStr), a=applied[ds];
+      const cls=['cal-day']; if(dis) cls.push('dis'); if(ds===selectedLeaveDate && !dis) cls.push('sel'); if(ds===today) cls.push('today');
+      if(a){ if(a.status==='pending') cls.push('lv-pending'); else if(a.status!=='rejected') cls.push(a.type==='sick'?'lv-sick':'lv-approved'); }
       h+='<div class="'+cls.join(' ')+'"'+(dis?'':' data-cald="'+ds+'"')+'>'+d+'</div>';
     }
     h+='</div>'; cal.innerHTML=h;
     const label=$('leaveSelLabel'); if(label) label.textContent = selectedLeaveDate? ('選択中：'+selectedLeaveDate.replace(/-/g,'/')) : '日付をタップして選んでください';
     const prev=$('calPrev'), next=$('calNext');
     if(prev && !prevDisabled) prev.onclick=()=>{ calMonth=new Date(y,m-1,1); renderCalendar(); };
-    if(next) next.onclick=()=>{ calMonth=new Date(y,m+1,1); renderCalendar(); };
+    if(next && !nextDisabled) next.onclick=()=>{ calMonth=new Date(y,m+1,1); renderCalendar(); };
     cal.querySelectorAll('[data-cald]').forEach(c=> c.onclick=()=>{ selectedLeaveDate=c.dataset.cald; renderCalendar(); });
+  }
+  // 休暇の種類（有給/病欠）を切り替え
+  function setLeaveType(t){
+    leaveType = (t==='sick')?'sick':'paid';
+    [...$('leaveTypeSeg').children].forEach(b=> b.classList.toggle('on', b.dataset.lt===leaveType));
+    const sick=leaveType==='sick';
+    $('leaveDateLabel').textContent = sick ? '病欠の日（カレンダーから選択）' : '取得を希望する日（カレンダーから選択）';
+    $('leaveHint').innerHTML = sick ? '※ 当日・過去の日を選べます（体調不良などで休んだ日）。' : '※ 有給は<b>1週間以上前</b>に申請してください（1週間先より前の日は選べません）。';
+    $('leaveLegend').innerHTML = sick ? '🟦 病欠の日　🔵 青枠＝今日' : '🟡 有給が取れた日（承認）　🟧 オレンジ枠＝申請中　🔵 青枠＝今日';
+    $('leaveTakeBtn').textContent = sick ? '🤒 病欠を登録する' : '🏖️ 有給休暇を申請する';
+    $('leaveTakeBtn').style.background = sick ? '#2a7f9e' : '#7a3ea8';
+    $('leaveFoot').textContent = sick ? '病欠は残日数の対象外です。登録すると管理者に共有されます。' : '申請後、管理者が承認すると残日数から引かれます。';
+    initCalendar();
+    renderLeaveSummaryForType();
+  }
+  function renderLeaveSummaryForType(){
+    const name=$('worker').value; const box=$('leaveSummary');
+    if(!name){ box.innerHTML = (leaveType==='sick') ? '氏名を選ぶと表示されます。' : '氏名を選ぶと残日数が表示されます。'; return; }
+    if(leaveType==='sick'){
+      box.innerHTML='🤒 <b>'+esc(name)+'</b> さんの病欠：合計 <b style="font-size:18px">'+r1(lvSickCount)+'</b> 日（記録用・残日数には影響しません）';
+    } else {
+      const granted=(workersMap[name]&&workersMap[name].granted)||0, remain=r1(granted-lvPaidApproved);
+      box.innerHTML='🏖️ <b>'+esc(name)+'</b> さんの有給休暇：残り <b style="font-size:18px">'+remain+'</b> 日 '+
+        '<span style="opacity:.85">（付与 '+granted+' 日・取得 '+r1(lvPaidApproved)+' 日'+(lvPaidPending>0?'・申請中 '+r1(lvPaidPending)+' 日':'')+'）</span>'+
+        (granted===0?'<br><span style="font-size:12px">※ 付与日数は管理者が設定します。</span>':'');
+    }
   }
 
   // ---- 出勤カレンダー（作業日をカレンダーで選択） ----
@@ -466,18 +503,17 @@
   }
   function renderWorkCalendar(){
     const cal=$('workCal'); if(!cal || !workCalMonth) return;
-    const today=todayStr(), cur=parseYmd(today);
+    const today=todayStr();
     const y=workCalMonth.getFullYear(), m=workCalMonth.getMonth();
     const startWd=new Date(y,m,1).getDay(), daysInMonth=new Date(y,m+1,0).getDate();
-    // 未来の月へは進めない（当月以降を表示中なら「次へ」を無効化）
-    const nextIsFuture = (y>cur.getFullYear()) || (y===cur.getFullYear() && m>=cur.getMonth());
     let h='<div class="cal-head"><button class="cal-nav" id="wCalPrev">‹</button>'+
-      '<span class="m">'+y+'年 '+(m+1)+'月</span><button class="cal-nav" id="wCalNext"'+(nextIsFuture?' disabled':'')+'>›</button></div><div class="cal-grid">';
+      '<span class="m">'+y+'年 '+(m+1)+'月</span><button class="cal-nav" id="wCalNext">›</button></div><div class="cal-grid">';
     ['日','月','火','水','木','金','土'].forEach((w,i)=> h+='<div class="cal-wd'+(i===0?' sun':(i===6?' sat':''))+'">'+w+'</div>');
     for(let i=0;i<startWd;i++) h+='<div class="cal-empty"></div>';
     for(let d=1; d<=daysInMonth; d++){
-      const ds=ymd(y,m,d), dis=ds>today; // 未来日は選べない
-      const cls=['cal-day']; if(dis) cls.push('dis'); if(ds===selectedWorkDate) cls.push('sel'); if(ds===today) cls.push('today');
+      const ds=ymd(y,m,d), isHol=!!holidays[ds], dis=(ds>today)||isHol; // 未来日・会社の休日は選べない
+      const cls=['cal-day']; if(dis) cls.push('dis'); if(isHol) cls.push('holiday');
+      if(ds===selectedWorkDate && !dis) cls.push('sel'); if(ds===today) cls.push('today');
       if(myWorkDates.has(ds)) cls.push('worked');
       h+='<div class="'+cls.join(' ')+'"'+(dis?'':' data-wcal="'+ds+'"')+'>'+d+'</div>';
     }
@@ -485,7 +521,7 @@
     const label=$('workSelLabel'); if(label) label.textContent = selectedWorkDate? ('選択中：'+selectedWorkDate.replace(/-/g,'/')) : '日付をタップして選んでください';
     const prev=$('wCalPrev'), next=$('wCalNext');
     if(prev) prev.onclick=()=>{ workCalMonth=new Date(y,m-1,1); renderWorkCalendar(); };
-    if(next && !nextIsFuture) next.onclick=()=>{ workCalMonth=new Date(y,m+1,1); renderWorkCalendar(); };
+    if(next) next.onclick=()=>{ workCalMonth=new Date(y,m+1,1); renderWorkCalendar(); };
     cal.querySelectorAll('[data-wcal]').forEach(c=> c.onclick=()=>{ selectedWorkDate=c.dataset.wcal; renderWorkCalendar(); });
   }
 
@@ -495,63 +531,59 @@
     if(st==='rejected') return '<span class="chip" style="background:#fdeceb;color:#c0392b">却下</span>';
     return '<span class="chip" style="background:#fff4e5;color:#8a5a00">申請中</span>';
   }
-  function renderLeaveSummary(approved, pending){
-    const name=$('worker').value; const box=$('leaveSummary');
-    if(!name){ box.innerHTML='氏名を選ぶと残日数が表示されます。'; return; }
-    const granted=(workersMap[name]&&workersMap[name].granted)||0;
-    const remain=r1(granted-(approved||0));
-    box.innerHTML='🏖️ <b>'+esc(name)+'</b> さんの有給休暇：残り <b style="font-size:18px">'+remain+'</b> 日 '+
-      '<span style="opacity:.85">（付与 '+granted+' 日・取得 '+r1(approved)+' 日'+((pending||0)>0?'・申請中 '+r1(pending)+' 日':'')+'）</span>'+
-      (granted===0?'<br><span style="font-size:12px">※ 付与日数は管理者が設定します。</span>':'');
-  }
   function loadMyLeaves(){
     if(_leavesQuery){ _leavesQuery.off(); _leavesQuery=null; }
     const name=$('worker').value; const box=$('myLeaves');
-    if(!name){ box.innerHTML='<div class="hint" style="padding:4px">氏名を選ぶと表示されます。</div>'; myLeavesMap={}; renderLeaveSummary(0,0); renderCalendar(); return; }
+    if(!name){ box.innerHTML='<div class="hint" style="padding:4px">氏名を選ぶと表示されます。</div>'; myLeavesMap={}; lvPaidApproved=0;lvPaidPending=0;lvSickCount=0; renderLeaveSummaryForType(); renderCalendar(); return; }
     _leavesQuery=ref('leaves').orderByChild('workerName').equalTo(name);
     _leavesQuery.on('value', snap=>{
-      const arr=[]; myLeavesMap={}; let approved=0, pending=0;
+      const arr=[]; myLeavesMap={}; lvPaidApproved=0; lvPaidPending=0; lvSickCount=0;
       snap.forEach(c=>{ const l=c.val(); l._key=c.key; myLeavesMap[c.key]=l;
-        const d=Number(l.days)||0;
-        if(l.status==='pending') pending+=d; else if(l.status!=='rejected') approved+=d; // 承認済み or 旧データ(status無し)
+        const d=Number(l.days)||0, type=(l.type||'paid');
+        if(type==='sick'){ if(l.status!=='rejected') lvSickCount+=d; }
+        else { if(l.status==='pending') lvPaidPending+=d; else if(l.status!=='rejected') lvPaidApproved+=d; }
         arr.push(l); });
       arr.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
-      renderLeaveSummary(approved, pending);
-      renderCalendar(); // カレンダーの申請済みマークを更新
-      if(!arr.length){ box.innerHTML='<div class="hint" style="padding:4px">まだ有給の申請はありません。</div>'; return; }
+      renderLeaveSummaryForType();
+      renderCalendar(); // カレンダーのマークを更新
+      if(!arr.length){ box.innerHTML='<div class="hint" style="padding:4px">まだ休暇の記録はありません。</div>'; return; }
       box.innerHTML=arr.map(l=>{
         const u=Number(l.days)===0.5?'半日':'終日';
-        const st=l.status||'approved';
-        const canCancel = st!=='approved'; // 承認済みは管理者に取消を依頼
-        return '<div class="rec"><div class="top"><span>'+esc(l.date)+'</span><span>'+leaveBadge(st)+' <span class="chip">'+u+'</span></span></div>'+
+        const type=(l.type||'paid'), st=l.status||'approved';
+        const typeBadge = type==='sick' ? '<span class="chip" style="background:#e0f2f9;color:#0b3a4a">🤒病欠</span>' : '<span class="chip" style="background:#f3e8ff;color:#7a3ea8">🏖️有給</span>';
+        const statusBadge = type==='sick' ? '' : (' '+leaveBadge(st));
+        const canCancel = type==='sick' || st!=='approved'; // 有給の承認済みは管理者に取消を依頼
+        return '<div class="rec"><div class="top"><span>'+esc(l.date)+'</span><span>'+typeBadge+statusBadge+' <span class="chip">'+u+'</span></span></div>'+
           (l.note?'<div class="wk">'+esc(l.note)+'</div>':'')+
-          (canCancel?'<div class="recbtns"><button class="del" data-delleave="'+l._key+'">🗑 申請を取り消す</button></div>':'')+'</div>';
+          (canCancel?'<div class="recbtns"><button class="del" data-delleave="'+l._key+'">🗑 取り消す</button></div>':'')+'</div>';
       }).join('');
       box.querySelectorAll('[data-delleave]').forEach(b=> b.onclick=()=> deleteLeave(b.dataset.delleave));
     });
   }
   async function takeLeave(){
-    const name=$('worker').value.trim(); const date=selectedLeaveDate;
+    const name=$('worker').value.trim(); const date=selectedLeaveDate; const sick=(leaveType==='sick');
     if(!name){ toast('氏名を選択してください','err'); return; }
-    if(!date){ toast('カレンダーから希望日を選んでください','err'); return; }
-    const minDate=plusDaysStr(LEAVE_MIN_DAYS);
-    if(date<minDate){ toast('有給は1週間以上前に申請してください（'+minDate+' 以降）','err'); return; }
+    if(!date){ toast('カレンダーから日を選んでください','err'); return; }
+    if(sick){ if(date>todayStr()){ toast('病欠は当日・過去の日を選んでください','err'); return; } }
+    else { const minDate=plusDaysStr(LEAVE_MIN_DAYS); if(date<minDate){ toast('有給は1週間以上前に申請してください（'+minDate+' 以降）','err'); return; } }
     if(!db){ toast('サーバー未接続です','err'); return; }
     const selOpt=$('worker').selectedOptions[0];
-    const btn=$('leaveTakeBtn'); btn.disabled=true; const lb=btn.textContent; btn.textContent='申請中…';
+    const btn=$('leaveTakeBtn'); btn.disabled=true; const lb=btn.textContent; btn.textContent=sick?'登録中…':'申請中…';
     try{
       await ref('leaves').push({ workerName:name, workerId: selOpt?(selOpt.dataset.id||null):null,
-        date, days:leaveUnit, note:$('leaveNote').value.trim()||null, status:'pending', createdAt:Date.now() });
+        date, days:leaveUnit, note:$('leaveNote').value.trim()||null,
+        type: sick?'sick':'paid', status: sick?'approved':'pending', createdAt:Date.now() });
       localStorage.setItem('kintai_worker', name);
       $('leaveNote').value='';
-      toast('有給休暇を申請しました（承認待ち）','ok');
-    }catch(e){ console.error(e); toast('申請に失敗しました','err'); }
+      toast(sick?'病欠を登録しました':'有給休暇を申請しました（承認待ち）','ok');
+    }catch(e){ console.error(e); toast(sick?'登録に失敗しました':'申請に失敗しました','err'); }
     finally{ btn.disabled=false; btn.textContent=lb; }
   }
   function deleteLeave(key){
     const l=myLeavesMap[key]; if(!l) return;
-    if((l.status||'approved')==='approved'){ toast('承認済みの取消は管理者に依頼してください','err'); return; }
-    if(!confirm('この申請を取り消しますか？\n'+(l.date||''))) return;
+    const type=(l.type||'paid');
+    if(type!=='sick' && (l.status||'approved')==='approved'){ toast('承認済みの取消は管理者に依頼してください','err'); return; }
+    if(!confirm('この記録を取り消しますか？\n'+(l.date||''))) return;
     ref('leaves/'+key).remove().then(()=>toast('取り消しました','ok')).catch(()=>toast('取り消しに失敗しました','err'));
   }
 
@@ -600,14 +632,14 @@
   // ---- ヘルプ（使い方の検索） ----
   const HELP_TOPICS=[
     {t:'氏名（自分）を選ぶ・変更する', k:'氏名 名前 自分 選択 記憶 本人 変更', a:'初回に自分の氏名を選ぶと、この端末では「あなた本人」に固定され、自分の分だけ報告できます。別の人の分は、その人の端末で選んでください。氏名の右の「変更」から選び直せます（別の人に代わって入力したいときは管理者に依頼してください）。'},
-    {t:'作業日をカレンダーで選ぶ', k:'作業日 日付 カレンダー 日 過去 出勤', a:'「作業日」はカレンダーから日をタップして選びます。初期値は今日で、前の日の分も選べます（未来日は選べません）。緑丸＝すでに報告済みの日、青枠＝今日です。'},
+    {t:'作業日をカレンダーで選ぶ', k:'作業日 日付 カレンダー 日 過去 出勤 休日', a:'「作業日」はカレンダーから日をタップして選びます。初期値は今日で、前の日の分も選べます（未来日は選べません）。緑丸＝報告済み、青枠＝今日、赤＝会社の休日（選べません。休日出勤は管理者に連絡）。'},
     {t:'現場を選ぶ／その他で自由入力', k:'現場 場所 選択 その他 自由入力', a:'「現場」から選びます。一覧に無い現場は「＋その他（自由入力）」を選ぶと現場名を直接入力できます。'},
     {t:'労働時間（0.25／0.5／0.75／1日）', k:'労働時間 勤務区分 日 0.25 0.5 0.75 1日 工数', a:'その日の労働時間を「0.25日・0.5日・0.75日・1日」から選びます（1日を1.0とした割合）。人件費の日数計算に使われます。'},
     {t:'作業内容・備考を書く', k:'作業内容 備考 メモ 内容', a:'「作業内容」に行った作業（例：2F内装ボード貼り）を書きます。「備考」は任意（例：資材待ちで午前のみ）です。'},
     {t:'報告する（送信）', k:'報告 送信 提出 登録 保存', a:'入力できたら「この内容で報告する」を押します。送信後に報告した内容が表示されます。'},
     {t:'過去の報告を修正する', k:'修正 編集 直す 訂正', a:'画面下の「最近の報告（自分）」で対象の「✏️修正」を押すと内容が読み込まれます。直したら「修正を保存」を押してください。'},
     {t:'報告を削除する', k:'削除 消す 取り消し', a:'「最近の報告（自分）」で「🗑削除」を押すと、その報告を削除できます（確認あり）。'},
-    {t:'有給休暇を申請する・残日数を見る', k:'有給 有休 休暇 残 日数 申請 承認 半日 1週間', a:'画面下の「🏖️有給休暇」で、希望日（1週間以上先）と終日/半日を選び「有給休暇を申請する」を押します。管理者が承認すると残日数から引かれます。上に「残り◯日（付与◯・取得◯・申請中◯）」が表示されます。承認前の申請は自分で取り消せます。'},
+    {t:'有給休暇・病欠を申請する', k:'有給 有休 休暇 病欠 病気 欠勤 残 日数 申請 承認 半日 1週間', a:'画面下の「休暇の申請」で「🏖️有給休暇」か「🤒病欠」を選びます。有給は希望日（1週間以上先）を選んで申請→管理者の承認で残日数から引かれます。病欠は当日・過去の日を選んで登録でき（残日数の対象外）、そのまま記録されます。終日/半日も選べます。'},
     {t:'アプリにする（ホーム画面に追加）', k:'アプリにする ホーム画面 アイコン インストール アプリ pwa 追加', a:'右上の「⬇️アプリにする」を押すと追加できます（Android/PCは1タップ）。iPhoneはSafariの共有ボタン→「ホーム画面に追加」。次回からアイコンで全画面起動できます。'},
     {t:'報告できない・保存されないとき', k:'保存 できない エラー 接続 オフライン firebase 未設定 失敗', a:'「Firebase未設定」と出るときは管理者に連絡してください。電波が悪いと送信に失敗します。電波の良い場所でもう一度お試しください。'}
   ];
@@ -655,6 +687,7 @@
     const date=selectedWorkDate;
     if(!name){ toast('氏名を選択してください','err'); return; }
     if(!date){ toast('作業日を入力してください','err'); return; }
+    if(holidays[date]){ toast('その日は会社の休日です。休日の勤務は管理者にご連絡ください','err'); return; }
     if(!site){ toast('現場を選択してください','err'); return; }
     if(!work){ toast('作業内容を入力してください','err'); return; }
     if(!db){ toast('サーバー未接続です（設定を確認）','err'); return; }
@@ -715,6 +748,7 @@
       [...$('leaveUnitSeg').children].forEach(x=>x.classList.remove('on'));
       b.classList.add('on'); leaveUnit=parseFloat(b.dataset.v);
     });
+    $('leaveTypeSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return; setLeaveType(b.dataset.lt); });
     $('leaveTakeBtn').addEventListener('click', takeLeave);
     // ヘルプ
     $('helpBtn').addEventListener('click', openHelp);
@@ -732,6 +766,8 @@
     if(ok===true){
       banner.innerHTML='<div class="banner info">📲 このページのURLを各自に共有すると、それぞれが自分の報告に使えます。</div>';
       loadWorkers(); loadSites();
+      ref('holidays').on('value', s=>{ holidays=s.val()||{}; renderWorkCalendar(); }); // 会社の休日を反映
+
     }else if(ok==='authfail'){
       banner.innerHTML='<div class="banner warn">⚠ 認証に接続できませんでした。少し時間をおいて再読み込みしてください（Firebaseコンソールで「匿名」ログインの有効化が必要です）。</div>';
     }else{
