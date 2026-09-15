@@ -75,6 +75,20 @@
   .btn.hard:active{box-shadow:0 2px 0 #a4213c;}
   .btn.net{background:linear-gradient(180deg,#2fb6c9,#1b93a6);box-shadow:0 6px 0 #11616f,0 8px 16px rgba(0,0,0,.3);}
   .btn.net:active{box-shadow:0 2px 0 #11616f;}
+  /* レベル1〜5 */
+  .btns.lv{gap:8px;}
+  .btns.lv .btn{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;font-size:15px;}
+  .btns.lv .btn em{font-style:normal;font-size:12px;letter-spacing:2px;opacity:.95;}
+  .btn.lv1{background:linear-gradient(180deg,#4fd1a5,#2bb489);box-shadow:0 5px 0 #17765a,0 8px 16px rgba(0,0,0,.3);}
+  .btn.lv1:active{box-shadow:0 2px 0 #17765a;}
+  .btn.lv2{background:linear-gradient(180deg,#8ed24f,#66b02c);box-shadow:0 5px 0 #3f7a17,0 8px 16px rgba(0,0,0,.3);}
+  .btn.lv2:active{box-shadow:0 2px 0 #3f7a17;}
+  .btn.lv3{background:linear-gradient(180deg,#ffa63d,#f18a20);box-shadow:0 5px 0 #b56410,0 8px 16px rgba(0,0,0,.3);}
+  .btn.lv3:active{box-shadow:0 2px 0 #b56410;}
+  .btn.lv4{background:linear-gradient(180deg,#ff5a7a,#e53a5f);box-shadow:0 5px 0 #a4213c,0 8px 16px rgba(0,0,0,.3);}
+  .btn.lv4:active{box-shadow:0 2px 0 #a4213c;}
+  .btn.lv5{background:linear-gradient(180deg,#a56bff,#7d3fe0);box-shadow:0 5px 0 #52209c,0 8px 16px rgba(0,0,0,.3);}
+  .btn.lv5:active{box-shadow:0 2px 0 #52209c;}
   .btn.ghost{background:rgba(255,255,255,.1);box-shadow:none;border:1px solid rgba(255,255,255,.25);font-size:14px;}
   .btn.ghost:active{transform:translateY(2px);}
   .link{background:none;color:#c7c8ea;text-decoration:underline;font-size:13px;padding:8px;font-weight:700;}
@@ -109,9 +123,14 @@
     background:var(--gold);box-shadow:0 0 8px var(--gold);animation:blink 1s infinite;}
   .side.off{opacity:.45;}
   @keyframes blink{50%{opacity:.3;}}
+  /* 3勝先取のしるし */
+  .pips{display:flex;gap:5px;justify-content:center;margin-top:6px;}
+  .pips i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.18);transition:all .25s ease;}
+  .side.o .pips i.on{background:var(--maru);box-shadow:0 0 8px var(--maru);}
+  .side.x .pips i.on{background:var(--batsu);box-shadow:0 0 8px var(--batsu);}
 
   .turnmsg{text-align:center;font-size:15px;font-weight:800;min-height:22px;color:#ffe;}
-  .streak{text-align:center;font-size:13px;font-weight:800;color:var(--gold);min-height:18px;}
+  .matchmsg{text-align:center;font-size:13px;font-weight:800;color:var(--gold);min-height:18px;}
 
   /* ---------- 盤面 ---------- */
   .board-wrap{position:relative;display:flex;justify-content:center;}
@@ -211,17 +230,19 @@
 
     <div class="card">
       <h2>🤖 CPUと対戦</h2>
-      <p class="sub">強さをえらんでスタート</p>
-      <div class="btns">
-        <button class="btn easy"   onclick="startGame('cpu','easy')">よわい</button>
-        <button class="btn normal" onclick="startGame('cpu','normal')">ふつう</button>
-        <button class="btn hard"   onclick="startGame('cpu','hard')">つよい</button>
+      <p class="sub">強さをえらんでスタート（5回勝負・3勝先取）</p>
+      <div class="btns col lv">
+        <button class="btn lv1" onclick="startGame('cpu','lv1')"><span>🌱 れんしゅう</span><em>★☆☆☆☆</em></button>
+        <button class="btn lv2" onclick="startGame('cpu','lv2')"><span>😊 かんたん</span><em>★★☆☆☆</em></button>
+        <button class="btn lv3" onclick="startGame('cpu','lv3')"><span>🙂 ふつう</span><em>★★★☆☆</em></button>
+        <button class="btn lv4" onclick="startGame('cpu','lv4')"><span>😤 つよい</span><em>★★★★☆</em></button>
+        <button class="btn lv5" onclick="startGame('cpu','lv5')"><span>👹 おに</span><em>★★★★★</em></button>
       </div>
     </div>
 
     <div class="card">
       <h2>🌐 オンライン対戦</h2>
-      <p class="sub">合言葉を伝えて、離れた相手とリアルタイム対戦</p>
+      <p class="sub">合言葉を伝えて、離れた相手と5回勝負</p>
       <div class="btns">
         <button class="btn net" onclick="showOnlineMenu()">はじめる</button>
       </div>
@@ -229,7 +250,7 @@
 
     <div class="card">
       <h2>👥 ふたりで対戦</h2>
-      <p class="sub">おなじ端末で交代しながら遊ぶ</p>
+      <p class="sub">おなじ端末で交代しながら5回勝負</p>
       <div class="btns">
         <button class="btn" onclick="startGame('2p')">スタート</button>
       </div>
@@ -306,16 +327,18 @@
         <div class="who" id="whoO">あなた</div>
         <div class="mk">〇</div>
         <div class="num" id="scoreO">0</div>
+        <div class="pips" id="pipsO"><i></i><i></i><i></i></div>
       </div>
       <div class="side x" id="sideX">
         <div class="who" id="whoX">CPU</div>
         <div class="mk">×</div>
         <div class="num" id="scoreX">0</div>
+        <div class="pips" id="pipsX"><i></i><i></i><i></i></div>
       </div>
     </div>
 
     <div class="turnmsg" id="turnMsg"></div>
-    <div class="streak" id="streakMsg"></div>
+    <div class="matchmsg" id="matchMsg"></div>
 
     <div class="board-wrap">
       <div class="board" id="board"></div>
@@ -346,6 +369,7 @@
       <li>タテ・ヨコ・ナナメに自分の印を<b>3つそろえたら勝ち</b>。（ふつうの〇×と同じ）</li>
       <li>ただし印は<b>1人3つまで</b>。<b>4つ目</b>を置くと、自分の<b>いちばん古い印が消えます</b>。</li>
       <li>次に消える印は<b>うすく点滅</b>して予告。消える印ではそろえられないので注意！</li>
+      <li>勝負は<b>5回勝負</b>。先に<b>3勝</b>した方が優勝です。（スコア下の●が勝ち数）</li>
       <li><b>オンライン対戦</b>は、片方が「部屋をつくる」で出た<b>合言葉4文字</b>を、もう片方が入力すれば始まります。</li>
     </ol>
     <div class="tip">💡 盤がずっと動くから引き分けナシ。消す位置とタイミングの読み合いがカギ！</div>
@@ -369,12 +393,25 @@ const other=p=>p==='○'?'×':'○';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const W={'○':'O','×':'X'}, U={'O':'○','X':'×'};   // 内部表記 <-> 通信表記
 
+// CPUの強さ5段階。depth=先読み手数、blunder=わざとランダムに打つ確率。
+// depth1 は「自分が勝てる手」しか見えない＝相手のリーチを止められない（＝入門用）。
+// depth2 以上でブロックができるようになり、depth が増えるほど消滅ルールの読みが深くなる。
+const LEVELS={
+  lv1:{label:'れんしゅう', depth:1, blunder:0.65},
+  lv2:{label:'かんたん',   depth:2, blunder:0.35},
+  lv3:{label:'ふつう',     depth:4, blunder:0.10},
+  lv4:{label:'つよい',     depth:6, blunder:0},
+  lv5:{label:'おに',       depth:8, blunder:0}
+};
+const MATCH_WIN=3;                    // 3勝先取＝5回勝負
+function matchOver(){ return state.score['○']>=MATCH_WIN || state.score['×']>=MATCH_WIN; }
+
 const state={
   board:Array(9).fill(null),
   seq:{'○':[],'×':[]},
-  turn:'○', mode:'cpu', diff:'normal',
+  turn:'○', mode:'cpu', diff:'lv3',
   playing:false, busy:false, starter:'○',
-  score:{'○':0,'×':0}, streak:0,
+  score:{'○':0,'×':0},
 };
 
 /* ================= 保存（サンドボックスで例外を投げるので保護） ================= */
@@ -489,20 +526,15 @@ function minimax(board,seq,toMove,me,op,depth,a,b){
 function bestMove(player){
   const me=player, op=other(player);
   const mv=moves(state.board);
-  const depth={easy:2,normal:4,hard:6}[state.diff];
+  const L=LEVELS[state.diff]||LEVELS.lv3;
   const scored=mv.map(c=>{
     const {b:nb,s:ns}=simMove(state.board,state.seq,c,me);
-    return {c,v:minimax(nb,ns,op,me,op,depth-1,-Infinity,Infinity)};
+    return {c,v:minimax(nb,ns,op,me,op,L.depth-1,-Infinity,Infinity)};
   }).sort((x,y)=>y.v-x.v);
-  if(state.diff==='easy'){
-    const win=scored.find(x=>x.v>=1000); if(win)return win.c;
-    if(Math.random()<0.45) return mv[Math.floor(Math.random()*mv.length)];
-    return scored[Math.floor(Math.random()*Math.min(3,scored.length))].c;
-  }
-  if(state.diff==='normal'){
-    if(scored.length>1 && scored[0].v-scored[1].v<2 && Math.random()<0.3) return scored[1].c;
-    return scored[0].c;
-  }
+  // 勝てる手はどのレベルでも必ず取る（勝負がダラダラ続かないように）
+  const win=scored.find(x=>x.v>=1000); if(win) return win.c;
+  // 弱いレベルはときどきわざと適当に打つ
+  if(L.blunder>0 && Math.random()<L.blunder) return mv[Math.floor(Math.random()*mv.length)];
   const top=scored[0].v;
   const tops=scored.filter(x=>x.v===top);
   return tops[Math.floor(Math.random()*tops.length)].c;
@@ -545,14 +577,19 @@ function show(id){
     document.getElementById(s).classList.toggle('hidden', s!==id));
 }
 function startGame(mode,diff){
-  state.mode=mode; state.diff=diff||'normal';
-  state.score={'○':0,'×':0}; state.streak=0; state.starter='○';
+  state.mode=mode; state.diff=diff||'lv3';
   document.getElementById('roomTag').classList.add('hidden');
   if(mode==='cpu'){ whoO.textContent='あなた'; whoX.textContent='CPU'; }
   else{ whoO.textContent='プレイヤー1'; whoX.textContent='プレイヤー2'; }
   sideO.classList.remove('off'); sideX.classList.remove('off');
   document.getElementById('board').classList.remove('waiting');
-  show('game'); buildBoard(); newRound();
+  show('game'); buildBoard(); startMatch();
+}
+
+// 5回勝負を最初から
+function startMatch(){
+  state.score={'○':0,'×':0}; state.starter='○';
+  newRound();
 }
 function newRound(){
   state.board=Array(9).fill(null);
@@ -566,7 +603,15 @@ function newRound(){
     setTimeout(async()=>{ await applyMove(bestMove(CPU),CPU); state.busy=false; },650);
   }
 }
-function againPressed(){ if(state.mode==='online') netRematch(); else newRound(); }
+function againPressed(){
+  if(state.mode==='online'){ netRematch(); return; }
+  if(matchOver()) startMatch(); else newRound();
+}
+function setAgainLabel(){
+  const ab=document.getElementById('againBtn');
+  ab.disabled=false;
+  ab.textContent = matchOver() ? 'もう一度 5回勝負' : '次の試合へ';
+}
 function quitGame(){ if(state.mode==='online') leaveRoom(true); else showMenu(); }
 function showMenu(){
   state.playing=false; state.mode='cpu';
@@ -587,36 +632,47 @@ function endRound(player,line){
   // オンラインではサーバ側（着手トランザクション）で加算済みなので二重に足さない
   if(state.mode!=='online') state.score[player]++;
   updateScoreUI();
+
+  const so=state.score['○'], sx=state.score['×'];
+  const gameNo=so+sx;                 // いま終わった試合の番号
+  const over=matchOver();
   const iWon = state.mode==='online' ? (W[player]===net.seat)
              : state.mode==='cpu'    ? (player===HUMAN) : null;
-  if(iWon===false) playSound('lose'); else { playSound('win'); confetti(); }
+  const winnerName = state.mode==='cpu'    ? (player===HUMAN?'あなた':'CPU')
+                   : state.mode==='online' ? (iWon?'あなた':'相手')
+                   : (player==='○'?'プレイヤー1':'プレイヤー2');
 
-  if(state.mode==='cpu'){
-    if(player===HUMAN){ state.streak++;
-      rMark.textContent='🎉'; rTitle.textContent='あなたの勝ち！';
-      rSub.textContent=state.streak>=2?state.streak+'連勝中！ 🔥':'ナイス！';
-    }else{ state.streak=0;
-      rMark.textContent='🤖'; rTitle.textContent='CPUの勝ち…';
-      rSub.textContent='もう一回チャレンジ！';
-    }
-  }else if(state.mode==='online'){
-    if(iWon){ rMark.textContent='🎉'; rTitle.textContent='あなたの勝ち！'; rSub.textContent='ナイス！'; }
-    else    { rMark.textContent='😖'; rTitle.textContent='あなたの負け…'; rSub.textContent='リベンジしよう！'; }
+  if(iWon===false){ playSound('lose'); }
+  else { playSound('win'); confetti(over?70:28); }
+
+  if(over){
+    if(iWon===false){ rMark.textContent='😢'; rTitle.textContent='まけ…'; }
+    else{ rMark.textContent='🏆'; rTitle.textContent=(iWon===null? winnerName+'の優勝！' : '優勝！'); }
+    rSub.textContent='5回勝負　'+so+' - '+sx+' で決着！';
   }else{
-    rMark.textContent=player==='○'?'🔴':'🔵';
-    rTitle.textContent=(player==='○'?'プレイヤー1':'プレイヤー2')+'の勝ち！';
-    rSub.textContent='おめでとう！';
+    if(iWon===false){ rMark.textContent = state.mode==='cpu' ? '🤖' : '😖'; }
+    else if(iWon===true){ rMark.textContent='🎉'; }
+    else { rMark.textContent = player==='○'?'🔴':'🔵'; }
+    rTitle.textContent = (iWon===null)
+      ? '第'+gameNo+'戦　'+winnerName+'の勝ち！'
+      : '第'+gameNo+'戦　'+(iWon?'勝ち！':'負け…');
+    rSub.textContent='3勝先取　いま '+so+' - '+sx;
   }
-  updateStreakUI(); updateTurnUI();
+  updateMatchUI(); updateTurnUI();
   if(state.mode!=='online') state.starter=other(state.starter);
-  const ab=document.getElementById('againBtn');
-  ab.disabled=false; ab.textContent='もう一回';
+  setAgainLabel();
   setTimeout(()=>document.getElementById('result').classList.add('show'),650);
 }
 
 function updateScoreUI(){
   scoreO.textContent=state.score['○'];
   scoreX.textContent=state.score['×'];
+  renderPips('pipsO',state.score['○']);
+  renderPips('pipsX',state.score['×']);
+}
+function renderPips(id,won){
+  const el=document.getElementById(id);
+  for(let i=0;i<el.children.length;i++) el.children[i].classList.toggle('on', i<won);
 }
 function updateTurnUI(){
   sideO.classList.toggle('active',state.turn==='○'&&state.playing);
@@ -629,17 +685,20 @@ function updateTurnUI(){
     t.textContent = state.turn===U[net.seat] ? '👉 あなたの番' : '⏳ 相手の番…';
   else
     t.textContent = (state.turn==='○'?'🔴 プレイヤー1':'🔵 プレイヤー2')+'の番';
-  updateStreakUI();
+  updateMatchUI();
 }
-function updateStreakUI(){
-  document.getElementById('streakMsg').textContent=
-    (state.mode==='cpu'&&state.streak>=2)?('🔥 '+state.streak+'連勝中'):'';
+function updateMatchUI(){
+  const el=document.getElementById('matchMsg');
+  if(state.mode==='online' && net.waiting){ el.textContent=''; return; }
+  const so=state.score['○'], sx=state.score['×'];
+  el.textContent = matchOver() ? '🏆 5回勝負 決着！'
+                               : '5回勝負（3勝先取）　第'+(so+sx+1)+'戦';
 }
 
 /* ================= 紙吹雪 ================= */
-function confetti(){
+function confetti(count){
   const colors=['#ff4d6d','#3d8bff','#ffcf4d','#38c67a','#a86bff'];
-  for(let i=0;i<28;i++){
+  for(let i=0;i<(count||28);i++){
     const el=document.createElement('div');
     el.className='confetti';
     el.style.left=Math.random()*100+'vw';
@@ -821,7 +880,7 @@ function onSeats(seats){
 
 function startOnlineGame(){
   state.mode='online'; state.busy=false;
-  state.score={'○':0,'×':0}; state.streak=0;
+  state.score={'○':0,'×':0};
   show('game'); buildBoard(); clearBoardDOM();
   const tag=document.getElementById('roomTag');
   tag.textContent='合言葉 '+net.code; tag.classList.remove('hidden');
@@ -883,13 +942,14 @@ function netRematch(){
     if(!p) return;
     p[seat==='O'?'rematchO':'rematchX']=true;
     if(p.rematchO && p.rematchX){
-      const st=p.starter==='O'?'X':'O';       // 先手は毎回交代
+      const done=(p.scoreO||0)>=MATCH_WIN || (p.scoreX||0)>=MATCH_WIN;
+      const st=done ? 'O' : (p.starter==='O'?'X':'O');   // 先手は毎試合交代／新勝負は〇から
       const fresh=freshPlay(st);
-      fresh.scoreO=p.scoreO||0; fresh.scoreX=p.scoreX||0;
+      if(!done){ fresh.scoreO=p.scoreO||0; fresh.scoreX=p.scoreX||0; }
       return fresh;
     }
     return p;
-  }).catch(()=>{ ab.disabled=false; ab.textContent='もう一回'; });
+  }).catch(()=>{ setAgainLabel(); });
 }
 
 function renderNet(p){
@@ -899,7 +959,6 @@ function renderNet(p){
     clearBoardDOM();
     document.getElementById('result').classList.remove('show');
     net.shownWinner='';
-    const ab=document.getElementById('againBtn'); ab.disabled=false; ab.textContent='もう一回';
   }else if(prev!==next){
     for(let i=0;i<9;i++) if(prev[i]!=='.' && next[i]==='.') vanishMark(i);
     for(let i=0;i<9;i++) if(prev[i]!==next[i] && next[i]!=='.'){ placeMark(i,U[next[i]]); playSound('place'); }
@@ -920,7 +979,7 @@ function renderNet(p){
   }
   const ab=document.getElementById('againBtn');
   if(!p.winner){
-    if(ab.disabled){ ab.disabled=false; ab.textContent='もう一回'; }
+    setAgainLabel();                 // state.score 同期後なので正しいラベルになる
   }else if(net.seat==='O'? p.rematchO : p.rematchX){
     ab.disabled=true; ab.textContent='相手を待っています…';
   }
