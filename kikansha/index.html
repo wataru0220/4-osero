@@ -114,6 +114,20 @@
   @keyframes kanapop{0%{transform:scale(.55) rotate(-12deg);}70%{transform:scale(1.15);}100%{transform:scale(1);}}
   .next .kana.pop{animation:kanapop .3s ease;}
 
+  /* ---------- 石炭ゲージ ---------- */
+  .coal{position:relative;height:28px;border-radius:999px;background:rgba(0,0,0,.42);
+    border:1px solid var(--line);overflow:hidden;flex:0 0 auto;}
+  .coal .fill{position:absolute;left:0;top:0;bottom:0;width:100%;transform-origin:left center;
+    background:linear-gradient(90deg,#ff8f2e,#ffc63d);}
+  .coal .lab{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;
+    height:100%;font-size:12.5px;font-weight:900;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.75);}
+  .coal .lab b{font-size:15px;font-variant-numeric:tabular-nums;}
+  .coal.low .fill{background:linear-gradient(90deg,#d63b48,#ff7a8a);}
+  .coal.low{animation:coalpulse .7s ease-in-out infinite;}
+  @keyframes coalpulse{50%{box-shadow:0 0 16px rgba(233,79,90,.85);}}
+  @keyframes coalgain{0%{filter:brightness(2.1);}100%{filter:brightness(1);}}
+  .coal.gain .fill{animation:coalgain .45s ease-out;}
+
   /* ---------- 線路レーン ---------- */
   .yard{background:rgba(0,0,0,.26);border:1px solid var(--line);border-radius:16px;padding:7px;
     display:flex;flex-direction:column;gap:6px;overflow:hidden;flex:1;}
@@ -191,10 +205,11 @@
   <!-- ===== ホーム ===== -->
   <section id="home">
     <div class="brand">
-      <span class="badge">流れてくる貨車を連結せよ</span>
+      <span class="badge">石炭が尽きるまで 連結せよ</span>
       <div id="homeLoco" style="display:flex;justify-content:center;margin-top:6px"></div>
       <h1>しりとり<em>機関車</em></h1>
-      <p class="tag">線路を流れる貨車から、しりとりでつながる<br>ことばをタップして連結。何両つなげる？</p>
+      <p class="tag">線路を流れる貨車から、しりとりでつながる<br>
+        ことばをタップして連結。石炭が尽きる前に何両つなげる？</p>
     </div>
 
     <div class="card" style="margin-top:10px">
@@ -228,6 +243,11 @@
         <b id="lastWord">さいごは「サクラ」</b>
       </div>
       <div class="combo" id="comboBox" style="visibility:hidden">コンボ<b id="comboNum">×2</b></div>
+    </div>
+
+    <div class="coal" id="coal">
+      <div class="fill" id="coalFill"></div>
+      <div class="lab">🔥 石炭 <b id="coalNum">20</b> 秒</div>
     </div>
 
     <div class="yard" id="yard"></div>
@@ -270,6 +290,8 @@
     <li>連結できたら、こんどは<b>その ことばの最後の字</b>が次のお題になります。</li>
     <li><b>「ン」で終わることばをつなぐと脱線！</b>（のんびりは1ミスですみます）</li>
     <li>ちがう貨車をタップするとミス。ミスが尽きると終着駅です。</li>
+    <li><b>石炭は走っているあいだ減り続けます。</b>連結すると補給されます
+      （長いことばほどたくさん）。空になったら終着です。</li>
     <li>つづけて成功すると<b>コンボ</b>がついて得点アップ。長いことばほど高得点。</li>
     <li>濁点・半濁点はおおめに見ます（「カ」に「ガ」をつないでもOK）。小さい字と「ー」は前の字であつかいます。</li>
   </ul>

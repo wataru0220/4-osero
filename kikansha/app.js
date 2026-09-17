@@ -48,9 +48,12 @@
 
   /* ---------------- 難易度 ---------------- */
   var LEVELS = {
-    easy:   { name: 'のんびり',   speed: 40, accel: 1.035, miss: 5, conn: .40, trap: .07, look: .30, hint: true,  nDeath: false, gap: [50, 104] },
-    normal: { name: 'ふつう',     speed: 58, accel: 1.050, miss: 3, conn: .30, trap: .14, look: .30, hint: false, nDeath: true,  gap: [42, 92] },
-    rapid:  { name: 'とっきゅう', speed: 78, accel: 1.060, miss: 3, conn: .24, trap: .20, look: .28, hint: false, nDeath: true,  gap: [34, 80] }
+    easy:   { name: 'のんびり',   speed: 40, accel: 1.035, miss: 5, conn: .40, trap: .07, look: .30, hint: true,  nDeath: false, gap: [50, 104],
+              coal: 26, gainBase: 2.0, gainPer: 0.6 },
+    normal: { name: 'ふつう',     speed: 58, accel: 1.050, miss: 3, conn: .30, trap: .14, look: .30, hint: false, nDeath: true,  gap: [42, 92],
+              coal: 20, gainBase: 1.3, gainPer: 0.5 },
+    rapid:  { name: 'とっきゅう', speed: 78, accel: 1.060, miss: 3, conn: .24, trap: .20, look: .28, hint: false, nDeath: true,  gap: [34, 80],
+              coal: 16, gainBase: 1.0, gainPer: 0.45 }
   };
   var LANES = 4;          // 高さが測れないときの本数
   var COLORS = ['#ffd27a', '#ffb3a7', '#a9e6a3', '#a9d8ff', '#f4b8e4', '#ffe08a', '#bfe6d4', '#d7c4ff'];
@@ -99,7 +102,7 @@
   var S = {
     lv: 'normal', cfg: LEVELS.normal, speed: 0, score: 0, combo: 0, best: 0,
     miss: 0, need: '', chain: [], used: {}, onScreen: {},
-    cars: [], lanes: [], running: false, raf: 0, lastT: 0, tie: 0, noConn: 0
+    coal: 0, cars: [], lanes: [], running: false, raf: 0, lastT: 0, tie: 0, noConn: 0
   };
 
   /* ---------------- ホーム ---------------- */
@@ -110,8 +113,8 @@
     Object.keys(LEVELS).forEach(function (key) {
       var cfg = LEVELS[key], b = document.createElement('button'), rec = best[key];
       b.className = 'btn ' + cls[i++];
-      b.innerHTML = '<span>' + cfg.name + ' <em>ミス' + cfg.miss + 'まで' +
-        (cfg.nDeath ? '／「ン」で脱線' : '／やさしい判定') + '</em></span>' +
+      b.innerHTML = '<span>' + cfg.name + ' <em>石炭' + cfg.coal + '秒／ミス' + cfg.miss + 'まで' +
+        (cfg.nDeath ? '／「ン」で脱線' : '') + '</em></span>' +
         '<span class="best">' + (rec ? rec.cars + '両・' + rec.score + '点' : 'はじめて') + '</span>';
       b.onclick = function () { start(key); };
       box.appendChild(b);
@@ -129,6 +132,7 @@
   function start(lv) {
     S.lv = lv; S.cfg = LEVELS[lv];
     S.speed = S.cfg.speed; S.score = 0; S.combo = 0; S.miss = S.cfg.miss;
+    S.coal = S.cfg.coal;                 // 石炭は満タンから
     S.chain = []; S.used = {}; S.onScreen = {}; S.cars = []; S.tie = 0; S.noConn = 0;
     show('game');                 // 先に出す＝線路の幅・高さが測れる
     buildLanes();
@@ -175,6 +179,7 @@
       k.classList.remove('pop'); void k.offsetWidth; k.classList.add('pop');
     }
     $('lastWord').textContent = 'さいごは「' + S.chain[S.chain.length - 1] + '」';
+    paintCoal();
     var cb = $('comboBox');
     if (S.combo >= 3) {
       cb.style.visibility = 'visible';
@@ -182,6 +187,20 @@
     } else cb.style.visibility = 'hidden';
   }
   function mult() { return Math.min(3, 1 + Math.floor(S.combo / 3) * 0.5); }
+
+  // 石炭ゲージ
+  function paintCoal() {
+    var r = Math.max(0, Math.min(1, S.coal / S.cfg.coal));
+    $('coalFill').style.transform = 'scaleX(' + r + ')';
+    $('coalNum').textContent = Math.ceil(Math.max(0, S.coal));
+    $('coal').classList.toggle('low', r < 0.28);
+  }
+  // 走っているあいだは減り続ける。長く走るほど減りが早い
+  function drainRate() { return 1 + (S.chain.length - 1) / 70; }
+  // 連結したときの補給量（長いことばほど多い）
+  function refill(word) {
+    return S.cfg.gainBase + word.length * S.cfg.gainPer;
+  }
 
   /* ---------------- 貨車 ---------------- */
   function pickFrom(list) {
@@ -329,6 +348,9 @@
       c.el.style.setProperty('--x', c.x + 'px');
       if (c.x + c.w < -40) kill(c);
     }
+    S.coal -= dt * drainRate();
+    paintCoal();
+    if (S.coal <= 0) { S.coal = 0; over('石炭が尽きて 立ち往生…'); return; }
     S.tie = (S.tie - dx) % 22;
     for (i = 0; i < S.lanes.length; i++) S.lanes[i].ties.style.backgroundPositionX = S.tie + 'px';
     spawnCheck();
@@ -358,10 +380,14 @@
     S.combo++;
     var pt = Math.round(w.length * 10 * mult());
     S.score += pt;
+    var add = refill(w);                       // 石炭を補給
+    S.coal = Math.min(S.cfg.coal, S.coal + add);
+    var cg = $('coal');
+    cg.classList.remove('gain'); void cg.offsetWidth; cg.classList.add('gain');
     S.chain.push(w);
     S.used[w] = 1;
     S.need = endOf(w);
-    fx(car, '+' + pt, '#ffc63d');
+    fx(car, '+' + pt + '　🔥+' + add.toFixed(1) + '秒', '#ffc63d');
     car.el.classList.add('taken');
     car.el.style.setProperty('--y', '80px');
     detach(car);                           // 盤からはずす（絵は消えるアニメのあと片づける）
@@ -418,7 +444,8 @@
     var best = load(K_BEST, {}), rec = best[S.lv], isNew = false;
     if (!rec || S.score > rec.score) { best[S.lv] = { score: S.score, cars: cars }; store(K_BEST, best); isNew = true; }
     $('recBadge').classList.toggle('hidden', !isNew);
-    $('overTitle').textContent = cars >= 10 ? '大編成で 終着！' : '終着駅';
+    $('overTitle').textContent = reason.indexOf('石炭') === 0 ? '石炭ぎれ'
+      : (cars >= 10 ? '大編成で 終着！' : '終着駅');
     $('overReason').textContent = reason;
     $('overScore').textContent = S.score;
     $('overSub').textContent = cars + '両つなぎました' +
