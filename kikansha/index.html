@@ -128,6 +128,21 @@
   @keyframes coalgain{0%{filter:brightness(2.1);}100%{filter:brightness(1);}}
   .coal.gain .fill{animation:coalgain .45s ease-out;}
 
+  /* ---------- つぎの駅（路線表示） ---------- */
+  .route{display:flex;align-items:center;justify-content:center;gap:7px;flex:0 0 auto;
+    font-size:11.5px;font-weight:800;color:#aab4e0;letter-spacing:.3px;}
+  .route b{color:var(--gold);font-size:13.5px;}
+  .route .rest{color:#fff;}
+
+  /* ---------- 駅とうちゃく ---------- */
+  .mapbox{background:rgba(0,0,0,.32);border:1px solid var(--line);border-radius:14px;
+    padding:8px 6px;margin:0 0 12px;}
+  .mapbox svg{display:block;margin:0 auto;}
+  .mapbox .ping{transform-origin:center;transform-box:fill-box;animation:ping 1.5s ease-out infinite;}
+  @keyframes ping{0%{transform:scale(.6);opacity:.9;}100%{transform:scale(3);opacity:0;}}
+  .stinfo{font-size:13px;color:#cdd4f5;line-height:1.8;margin:0 0 13px;}
+  .stinfo b{color:var(--gold);}
+
   /* ---------- 線路レーン ---------- */
   .yard{background:rgba(0,0,0,.26);border:1px solid var(--line);border-radius:16px;padding:7px;
     display:flex;flex-direction:column;gap:6px;overflow:hidden;flex:1;}
@@ -250,6 +265,8 @@
       <div class="lab">🔥 石炭 <b id="coalNum">20</b> 秒</div>
     </div>
 
+    <div class="route" id="route"></div>
+
     <div class="yard" id="yard"></div>
 
     <div class="train">
@@ -273,6 +290,14 @@
   </div>
 </div></div>
 
+<div class="ov" id="ovStation"><div class="modal">
+  <div class="newrec hidden" id="stLap">日本一周 2周目！</div>
+  <h2 id="stTitle">とうちゃく！</h2>
+  <div class="mapbox" id="stMap"></div>
+  <p class="stinfo" id="stInfo"></p>
+  <div class="btns"><button class="btn" id="stGo">発車！ <em>GO</em></button></div>
+</div></div>
+
 <div class="ov" id="ovPause"><div class="modal">
   <h2>ひとやすみ</h2>
   <p>線路は止まっています。</p>
@@ -290,8 +315,11 @@
     <li>連結できたら、こんどは<b>その ことばの最後の字</b>が次のお題になります。</li>
     <li><b>「ン」で終わることばをつなぐと脱線！</b>（のんびりは1ミスですみます）</li>
     <li>ちがう貨車をタップするとミス。ミスが尽きると終着駅です。</li>
-    <li><b>石炭は走っているあいだ減り続けます。</b>連結すると補給されます
-      （長いことばほどたくさん）。空になったら終着です。</li>
+    <li><b>石炭は走っているあいだ減り続けます。</b>連結すると補給され、
+      <b>長いことばほどたくさん入ります</b>（2文字より6文字のほうがずっとお得）。
+      空になったら終着です。</li>
+    <li><b>10両つなぐごとに駅に到着</b>。石炭は満タンになり、ボーナス点も入ります。
+      札幌から那覇まで、日本地図をどこまで南下できるか挑戦してみてください。</li>
     <li>つづけて成功すると<b>コンボ</b>がついて得点アップ。長いことばほど高得点。</li>
     <li>濁点・半濁点はおおめに見ます（「カ」に「ガ」をつないでもOK）。小さい字と「ー」は前の字であつかいます。</li>
   </ul>

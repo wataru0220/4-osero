@@ -49,11 +49,11 @@
   /* ---------------- 難易度 ---------------- */
   var LEVELS = {
     easy:   { name: 'のんびり',   speed: 40, accel: 1.035, miss: 5, conn: .40, trap: .07, look: .30, hint: true,  nDeath: false, gap: [50, 104],
-              coal: 26, gainBase: 2.0, gainPer: 0.6 },
+              coal: 26, gainBase: 1.4, gainPer: 0.80 },
     normal: { name: 'ふつう',     speed: 58, accel: 1.050, miss: 3, conn: .30, trap: .14, look: .30, hint: false, nDeath: true,  gap: [42, 92],
-              coal: 20, gainBase: 1.3, gainPer: 0.5 },
+              coal: 20, gainBase: 0.8, gainPer: 0.70 },
     rapid:  { name: 'とっきゅう', speed: 78, accel: 1.060, miss: 3, conn: .24, trap: .20, look: .28, hint: false, nDeath: true,  gap: [34, 80],
-              coal: 16, gainBase: 1.0, gainPer: 0.45 }
+              coal: 16, gainBase: 0.5, gainPer: 0.65 }
   };
   var LANES = 4;          // 高さが測れないときの本数
   var COLORS = ['#ffd27a', '#ffb3a7', '#a9e6a3', '#a9d8ff', '#f4b8e4', '#ffe08a', '#bfe6d4', '#d7c4ff'];
@@ -61,6 +61,65 @@
     var h = 0;
     for (var i = 0; i < w.length; i++) h = (h * 31 + w.charCodeAt(i)) % 9973;
     return h % COLORS.length;
+  }
+
+  /* ---------------- 日本地図と駅 ---------------- */
+  // 10両つなぐごとに1駅すすむ。x,y は下の日本地図（viewBox 0 0 200 262）の座標
+  var STATIONS = [
+    { n: '札幌',   x: 156, y: 30,  m: 'ラーメンとカニ' },
+    { n: '函館',   x: 140, y: 56,  m: '夜景とイカ' },
+    { n: '青森',   x: 131, y: 73,  m: 'ねぶたとリンゴ' },
+    { n: '仙台',   x: 122, y: 101, m: '牛タンと七夕' },
+    { n: '東京',   x: 112, y: 128, m: 'スカイツリー' },
+    { n: '静岡',   x: 103, y: 137, m: '富士山とお茶' },
+    { n: '名古屋', x: 92,  y: 141, m: 'しゃちほこと手羽先' },
+    { n: '京都',   x: 81,  y: 144, m: '金閣寺と八ツ橋' },
+    { n: '大阪',   x: 77,  y: 149, m: 'たこ焼きと通天閣' },
+    { n: '岡山',   x: 66,  y: 152, m: 'きびだんご' },
+    { n: '広島',   x: 54,  y: 157, m: 'お好み焼きと宮島' },
+    { n: '高松',   x: 69,  y: 166, m: 'うどん' },
+    { n: '博多',   x: 39,  y: 172, m: 'とんこつラーメン' },
+    { n: '熊本',   x: 37,  y: 187, m: '熊本城' },
+    { n: '鹿児島', x: 40,  y: 201, m: '桜島とさつまいも' },
+    { n: '那覇',   x: 21,  y: 239, m: '青い海（終点！）' }
+  ];
+  var PER_STATION = 10;          // 何両で1駅すすむか
+
+  // ざっくりした日本地図。太い線を本州にみたてて描いている
+  function mapSVG(cur) {
+    var route = STATIONS.map(function (s) { return s.x + ',' + s.y; }).join(' ');
+    var doneN = Math.min(STATIONS.length, cur + 1);
+    var done = STATIONS.slice(0, doneN).map(function (s) { return s.x + ',' + s.y; }).join(' ');
+    var dots = STATIONS.map(function (s, i) {
+      if (i === cur) {
+        return '<circle class="ping" cx="' + s.x + '" cy="' + s.y + '" r="5" fill="#ffc63d" opacity=".55"/>' +
+               '<circle cx="' + s.x + '" cy="' + s.y + '" r="4.6" fill="#ffc63d" stroke="#fff" stroke-width="1.6"/>';
+      }
+      return '<circle cx="' + s.x + '" cy="' + s.y + '" r="2.6" fill="' +
+             (i < cur ? '#ffd977' : '#7b88b8') + '"/>';
+    }).join('');
+    var label = STATIONS[cur] ? '<text x="' + (STATIONS[cur].x + (STATIONS[cur].x > 110 ? -9 : 9)) + '" y="' +
+      (STATIONS[cur].y + 4) + '" fill="#fff" font-size="12" font-weight="700" text-anchor="' +
+      (STATIONS[cur].x > 110 ? 'end' : 'start') + '">' + STATIONS[cur].n + '</text>' : '';
+    return '<svg viewBox="0 0 200 262" width="196" height="257" aria-hidden="true">' +
+      '<rect x="0" y="0" width="200" height="262" rx="12" fill="#16204a"/>' +
+      '<g fill="#4a6a58" stroke="#6f9a82" stroke-width="2" stroke-linejoin="round">' +
+        '<path d="M138,58 L146,30 L168,18 L184,34 L174,53 L156,62 Z"/>' +          // 北海道
+        '<path d="M44,164 L54,177 L47,197 L35,208 L27,190 L31,170 Z"/>' +          // 九州
+      '</g>' +
+      '<polyline points="133,68 122,96 112,126 100,138 86,143 72,148 58,154" ' +
+        'fill="none" stroke="#4a6a58" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<polyline points="133,68 122,96 112,126 100,138 86,143 72,148 58,154" ' +
+        'fill="none" stroke="#6f9a82" stroke-width="17" stroke-linecap="round" stroke-linejoin="round" ' +
+        'opacity=".35"/>' +                                                        // 本州
+      '<ellipse cx="70" cy="167" rx="13" ry="6.5" fill="#4a6a58" stroke="#6f9a82" stroke-width="2"/>' + // 四国
+      '<ellipse cx="21" cy="239" rx="8" ry="3.5" fill="#4a6a58" stroke="#6f9a82" stroke-width="2"/>' +  // 沖縄
+      '<polyline points="' + route + '" fill="none" stroke="#7b88b8" stroke-width="1.6" ' +
+        'stroke-dasharray="3 4" opacity=".8"/>' +
+      '<polyline points="' + done + '" fill="none" stroke="#ffc63d" stroke-width="2.6" ' +
+        'stroke-linecap="round" stroke-linejoin="round"/>' +
+      dots + label +
+    '</svg>';
   }
 
   /* ---------------- 機関車のえ ---------------- */
@@ -102,7 +161,7 @@
   var S = {
     lv: 'normal', cfg: LEVELS.normal, speed: 0, score: 0, combo: 0, best: 0,
     miss: 0, need: '', chain: [], used: {}, onScreen: {},
-    coal: 0, cars: [], lanes: [], running: false, raf: 0, lastT: 0, tie: 0, noConn: 0
+    coal: 0, station: 0, cars: [], lanes: [], running: false, raf: 0, lastT: 0, tie: 0, noConn: 0
   };
 
   /* ---------------- ホーム ---------------- */
@@ -133,6 +192,7 @@
     S.lv = lv; S.cfg = LEVELS[lv];
     S.speed = S.cfg.speed; S.score = 0; S.combo = 0; S.miss = S.cfg.miss;
     S.coal = S.cfg.coal;                 // 石炭は満タンから
+    S.station = 0;                       // 出発は札幌の手前から
     S.chain = []; S.used = {}; S.onScreen = {}; S.cars = []; S.tie = 0; S.noConn = 0;
     show('game');                 // 先に出す＝線路の幅・高さが測れる
     buildLanes();
@@ -180,6 +240,7 @@
     }
     $('lastWord').textContent = 'さいごは「' + S.chain[S.chain.length - 1] + '」';
     paintCoal();
+    paintRoute();
     var cb = $('comboBox');
     if (S.combo >= 3) {
       cb.style.visibility = 'visible';
@@ -187,6 +248,16 @@
     } else cb.style.visibility = 'hidden';
   }
   function mult() { return Math.min(3, 1 + Math.floor(S.combo / 3) * 0.5); }
+
+  // つぎの駅までの案内
+  function paintRoute() {
+    var st = STATIONS[S.station % STATIONS.length];
+    var rest = PER_STATION - ((S.chain.length - 1) % PER_STATION);
+    var lap = Math.floor(S.station / STATIONS.length);
+    $('route').innerHTML = '🚉 つぎの駅 <b>' + st.n + '</b>' +
+      (lap ? '（' + (lap + 1) + '周目）' : '') +
+      ' ／ あと <span class="rest">' + rest + '</span> 両';
+  }
 
   // 石炭ゲージ
   function paintCoal() {
@@ -394,10 +465,34 @@
     setTimeout(function () { kill(car); }, 340);
 
     addTrainCar(w, false);
-    if ((S.chain.length - 1) % 5 === 0) S.speed *= S.cfg.accel;
+    var cars = S.chain.length - 1;
+    if (cars % 5 === 0) S.speed *= S.cfg.accel;
     paintHud();
     remark();
     if (countConn() === 0) forceConnectable();
+    if (cars % PER_STATION === 0) arrive();      // 10両ごとに駅
+  }
+
+  // 駅にとうちゃく：石炭満タン＋ボーナス、地図で現在地を見せる
+  function arrive() {
+    S.running = false;
+    cancelAnimationFrame(S.raf);
+    var idx = S.station % STATIONS.length;
+    var lap = Math.floor(S.station / STATIONS.length);
+    var st = STATIONS[idx];
+    var bonus = 100 * (S.station + 1);
+    S.score += bonus;
+    S.coal = S.cfg.coal;
+    S.station++;
+    paintHud();
+    $('stLap').classList.toggle('hidden', lap < 1);
+    $('stLap').textContent = '日本一周 ' + (lap + 1) + '周目！';
+    $('stTitle').textContent = st.n + '駅に とうちゃく！';
+    $('stMap').innerHTML = mapSVG(idx);
+    $('stInfo').innerHTML = '名物は <b>' + st.m + '</b><br>' +
+      '石炭を満タンに補給／ボーナス <b>' + bonus + '点</b>' +
+      (idx === STATIONS.length - 1 ? '<br><b>日本縦断 たっせい！</b>' : '');
+    $('ovStation').classList.add('on');
   }
 
   function missHit(car, why) {
@@ -448,7 +543,8 @@
       : (cars >= 10 ? '大編成で 終着！' : '終着駅');
     $('overReason').textContent = reason;
     $('overScore').textContent = S.score;
-    $('overSub').textContent = cars + '両つなぎました' +
+    var reached = S.station > 0 ? STATIONS[(S.station - 1) % STATIONS.length].n + '駅まで到達' : '最初の駅の手前で力つき';
+    $('overSub').textContent = cars + '両つなぎました ／ ' + reached +
       (rec && !isNew ? '（ベスト ' + rec.cars + '両・' + rec.score + '点）' : '');
     $('overChain').innerHTML = S.chain.map(function (w) { return '<span>' + w + '</span>'; }).join('');
     $('ovOver').classList.add('on');
@@ -459,6 +555,7 @@
     cancelAnimationFrame(S.raf);
     $('ovOver').classList.remove('on');
     $('ovPause').classList.remove('on');
+    $('ovStation').classList.remove('on');
     buildHome();
     show('home');
   }
@@ -470,6 +567,12 @@
     S.running = false;
     cancelAnimationFrame(S.raf);
     $('ovPause').classList.add('on');
+  };
+  $('stGo').onclick = function () {
+    $('ovStation').classList.remove('on');
+    if (S.done) return;
+    S.running = true; S.lastT = 0;
+    S.raf = requestAnimationFrame(frame);
   };
   $('pzResume').onclick = function () {
     $('ovPause').classList.remove('on');
