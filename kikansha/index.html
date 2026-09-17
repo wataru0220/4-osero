@@ -135,9 +135,16 @@
   .route .rest{color:#fff;}
 
   /* ---------- 駅とうちゃく ---------- */
+  .strow{display:flex;gap:9px;align-items:center;margin:0 0 11px;}
   .mapbox{background:rgba(0,0,0,.32);border:1px solid var(--line);border-radius:14px;
-    padding:8px 6px;margin:0 0 12px;}
-  .mapbox svg{display:block;margin:0 auto;}
+    padding:5px;flex:0 0 auto;}
+  .mapbox svg{display:block;}
+  .stright{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;}
+  .stright svg{display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4));}
+  .stname{font-size:12.5px;font-weight:900;color:#ffd977;background:rgba(0,0,0,.28);
+    border-radius:999px;padding:3px 10px;white-space:nowrap;}
+  .stitem{display:inline-flex;align-items:center;gap:6px;}
+  .stitem svg{vertical-align:middle;}
   .mapbox .ping{transform-origin:center;transform-box:fill-box;animation:ping 1.5s ease-out infinite;}
   @keyframes ping{0%{transform:scale(.6);opacity:.9;}100%{transform:scale(3);opacity:0;}}
   .stinfo{font-size:13px;color:#cdd4f5;line-height:1.8;margin:0 0 13px;}
@@ -293,7 +300,13 @@
 <div class="ov" id="ovStation"><div class="modal">
   <div class="newrec hidden" id="stLap">日本一周 2周目！</div>
   <h2 id="stTitle">とうちゃく！</h2>
-  <div class="mapbox" id="stMap"></div>
+  <div class="strow">
+    <div class="mapbox" id="stMap"></div>
+    <div class="stright">
+      <div id="stChara"></div>
+      <div class="stname" id="stName"></div>
+    </div>
+  </div>
   <p class="stinfo" id="stInfo"></p>
   <div class="btns"><button class="btn" id="stGo">発車！ <em>GO</em></button></div>
 </div></div>
@@ -327,6 +340,7 @@
 </div></div>
 
 <script src="words.js"></script>
+<script src="art.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

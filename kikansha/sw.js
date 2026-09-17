@@ -1,9 +1,9 @@
 // ===== しりとり機関車 Service Worker =====
-// SW_VERSION: 2026-09-16a
+// SW_VERSION: 2026-09-17a
 // ホーム画面に追加でき、オフラインでも遊べるようにする。
 // 方針：ネット優先（常に最新を取得）＋失敗時はキャッシュへ退避。
 const CACHE = 'kikansha-v1';
-const SHELL = ['./', './index.html', './app.js', './words.js',
+const SHELL = ['./', './index.html', './app.js', './words.js', './art.js',
                './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {

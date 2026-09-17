@@ -64,61 +64,60 @@
   }
 
   /* ---------------- 日本地図と駅 ---------------- */
-  // 10両つなぐごとに1駅すすむ。x,y は下の日本地図（viewBox 0 0 200 262）の座標
+  // 10両ごとに1駅すすむ。x,y は art.js の日本地図（viewBox 0 0 200 256）の座標
+  // item＝名物の絵, ch＝キャラの体型, col＝キャラの色, cn＝キャラの名前
   var STATIONS = [
-    { n: '札幌',   x: 156, y: 30,  m: 'ラーメンとカニ' },
-    { n: '函館',   x: 140, y: 56,  m: '夜景とイカ' },
-    { n: '青森',   x: 131, y: 73,  m: 'ねぶたとリンゴ' },
-    { n: '仙台',   x: 122, y: 101, m: '牛タンと七夕' },
-    { n: '東京',   x: 112, y: 128, m: 'スカイツリー' },
-    { n: '静岡',   x: 103, y: 137, m: '富士山とお茶' },
-    { n: '名古屋', x: 92,  y: 141, m: 'しゃちほこと手羽先' },
-    { n: '京都',   x: 81,  y: 144, m: '金閣寺と八ツ橋' },
-    { n: '大阪',   x: 77,  y: 149, m: 'たこ焼きと通天閣' },
-    { n: '岡山',   x: 66,  y: 152, m: 'きびだんご' },
-    { n: '広島',   x: 54,  y: 157, m: 'お好み焼きと宮島' },
-    { n: '高松',   x: 69,  y: 166, m: 'うどん' },
-    { n: '博多',   x: 39,  y: 172, m: 'とんこつラーメン' },
-    { n: '熊本',   x: 37,  y: 187, m: '熊本城' },
-    { n: '鹿児島', x: 40,  y: 201, m: '桜島とさつまいも' },
-    { n: '那覇',   x: 21,  y: 239, m: '青い海（終点！）' }
+    { n: '札幌',   x: 148.0, y: 34.6,  m: 'みそラーメン',     item: 'ramen',      ch: 'bear',  col: '#cfe4ff', cn: 'ゆきまる' },
+    { n: '函館',   x: 141.7, y: 51.1,  m: 'イカと夜景',       item: 'ika',        ch: 'cat',   col: '#a8dcff', cn: 'いかにゃん' },
+    { n: '青森',   x: 141.3, y: 65.8,  m: 'りんご',           item: 'apple',      ch: 'round', col: '#ffb9b9', cn: 'りんごろう' },
+    { n: '仙台',   x: 142.5, y: 98.3,  m: '牛タン',           item: 'ushi',       ch: 'bear',  col: '#f5e7cd', cn: 'もーすけ' },
+    { n: '東京',   x: 131.2, y: 131.1, m: 'スカイツリー',     item: 'tower',      ch: 'bird',  col: '#d2daff', cn: 'とうきち' },
+    { n: '静岡',   x: 116.9, y: 140.0, m: '富士山とお茶',     item: 'fuji',       ch: 'round', col: '#bfe6ff', cn: 'ふじのすけ' },
+    { n: '名古屋', x: 101.8, y: 137.4, m: '金のしゃちほこ',   item: 'shachi',     ch: 'bird',  col: '#ffe08a', cn: 'しゃちお' },
+    { n: '京都',   x: 90.1,  y: 139.6, m: '五重塔と八ツ橋',   item: 'tera',       ch: 'cat',   col: '#f7c8de', cn: 'みやこ' },
+    { n: '大阪',   x: 87.3,  y: 143.6, m: 'たこ焼き',         item: 'tako',       ch: 'round', col: '#ffcf8a', cn: 'たこやん' },
+    { n: '岡山',   x: 71.1,  y: 144.0, m: '桃ときびだんご',   item: 'momo',       ch: 'round', col: '#ffc0d6', cn: 'ももた' },
+    { n: '広島',   x: 56.1,  y: 147.4, m: 'もみじまんじゅう', item: 'momiji',     ch: 'bear',  col: '#ffb894', cn: 'もみじん' },
+    { n: '高松',   x: 72.8,  y: 150.3, m: 'さぬきうどん',     item: 'udon',       ch: 'cat',   col: '#fff0c4', cn: 'うどんこ' },
+    { n: '博多',   x: 32.7,  y: 159.2, m: '明太子',           item: 'mentai',     ch: 'round', col: '#ffd2da', cn: 'めんたい' },
+    { n: '熊本',   x: 35.9,  y: 169.2, m: '熊本城',           item: 'shiro',      ch: 'bear',  col: '#cbbaa8', cn: 'しろまる' },
+    { n: '鹿児島', x: 34.4,  y: 184.5, m: '桜島とさつまいも', item: 'sakurajima', ch: 'bear',  col: '#e8a88a', cn: 'さくらじん' },
+    { n: '那覇',   x: 11.1,  y: 248.7, m: '青い海とハイビスカス', item: 'hibiscus', ch: 'bird', col: '#a8e6d0', cn: 'はいびー' }
   ];
   var PER_STATION = 10;          // 何両で1駅すすむか
 
-  // ざっくりした日本地図。太い線を本州にみたてて描いている
-  function mapSVG(cur) {
+  // 日本地図。海岸線は art.js（緯度経度から起こしたもの）
+  function mapSVG(cur, w) {
+    var J = SL_ART.JAPAN;
+    var land = '<g fill="#4e7a62" stroke="#8fc0a4" stroke-width="1.1" stroke-linejoin="round">' +
+      '<path d="' + J.hokkaido + '"/><path d="' + J.honshu + '"/><path d="' + J.shikoku + '"/>' +
+      '<path d="' + J.kyushu + '"/><path d="' + J.sado + '"/><path d="' + J.awaji + '"/>' +
+      '<g transform="translate(7,-6)"><path d="' + J.okinawa + '"/></g></g>';
     var route = STATIONS.map(function (s) { return s.x + ',' + s.y; }).join(' ');
-    var doneN = Math.min(STATIONS.length, cur + 1);
-    var done = STATIONS.slice(0, doneN).map(function (s) { return s.x + ',' + s.y; }).join(' ');
+    var done = STATIONS.slice(0, Math.min(STATIONS.length, cur + 1))
+      .map(function (s) { return s.x + ',' + s.y; }).join(' ');
     var dots = STATIONS.map(function (s, i) {
       if (i === cur) {
         return '<circle class="ping" cx="' + s.x + '" cy="' + s.y + '" r="5" fill="#ffc63d" opacity=".55"/>' +
-               '<circle cx="' + s.x + '" cy="' + s.y + '" r="4.6" fill="#ffc63d" stroke="#fff" stroke-width="1.6"/>';
+               '<circle cx="' + s.x + '" cy="' + s.y + '" r="4.8" fill="#ffc63d" stroke="#fff" stroke-width="1.8"/>';
       }
-      return '<circle cx="' + s.x + '" cy="' + s.y + '" r="2.6" fill="' +
-             (i < cur ? '#ffd977' : '#7b88b8') + '"/>';
+      return '<circle cx="' + s.x + '" cy="' + s.y + '" r="2.8" fill="' +
+             (i < cur ? '#ffd977' : '#8794c0') + '"/>';
     }).join('');
-    var label = STATIONS[cur] ? '<text x="' + (STATIONS[cur].x + (STATIONS[cur].x > 110 ? -9 : 9)) + '" y="' +
-      (STATIONS[cur].y + 4) + '" fill="#fff" font-size="12" font-weight="700" text-anchor="' +
-      (STATIONS[cur].x > 110 ? 'end' : 'start') + '">' + STATIONS[cur].n + '</text>' : '';
-    return '<svg viewBox="0 0 200 262" width="196" height="257" aria-hidden="true">' +
-      '<rect x="0" y="0" width="200" height="262" rx="12" fill="#16204a"/>' +
-      '<g fill="#4a6a58" stroke="#6f9a82" stroke-width="2" stroke-linejoin="round">' +
-        '<path d="M138,58 L146,30 L168,18 L184,34 L174,53 L156,62 Z"/>' +          // 北海道
-        '<path d="M44,164 L54,177 L47,197 L35,208 L27,190 L31,170 Z"/>' +          // 九州
-      '</g>' +
-      '<polyline points="133,68 122,96 112,126 100,138 86,143 72,148 58,154" ' +
-        'fill="none" stroke="#4a6a58" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>' +
-      '<polyline points="133,68 122,96 112,126 100,138 86,143 72,148 58,154" ' +
-        'fill="none" stroke="#6f9a82" stroke-width="17" stroke-linecap="round" stroke-linejoin="round" ' +
-        'opacity=".35"/>' +                                                        // 本州
-      '<ellipse cx="70" cy="167" rx="13" ry="6.5" fill="#4a6a58" stroke="#6f9a82" stroke-width="2"/>' + // 四国
-      '<ellipse cx="21" cy="239" rx="8" ry="3.5" fill="#4a6a58" stroke="#6f9a82" stroke-width="2"/>' +  // 沖縄
-      '<polyline points="' + route + '" fill="none" stroke="#7b88b8" stroke-width="1.6" ' +
-        'stroke-dasharray="3 4" opacity=".8"/>' +
+    var st = STATIONS[cur], label = '';
+    if (st) {
+      var left = st.x > 105;
+      label = '<text x="' + (st.x + (left ? -8 : 8)) + '" y="' + (st.y + 4.5) +
+        '" fill="#fff" font-size="12" font-weight="700" text-anchor="' + (left ? 'end' : 'start') +
+        '" stroke="#16204a" stroke-width="3" paint-order="stroke">' + st.n + '</text>';
+    }
+    return '<svg viewBox="0 0 200 256" width="' + w + '" height="' + Math.round(w * 256 / 200) +
+      '" aria-hidden="true">' +
+      '<rect x="0" y="0" width="200" height="256" rx="10" fill="#16204a"/>' + land +
+      '<polyline points="' + route + '" fill="none" stroke="#8794c0" stroke-width="1.5" ' +
+        'stroke-dasharray="3 4" opacity=".85"/>' +
       '<polyline points="' + done + '" fill="none" stroke="#ffc63d" stroke-width="2.6" ' +
-        'stroke-linecap="round" stroke-linejoin="round"/>' +
-      dots + label +
+        'stroke-linecap="round" stroke-linejoin="round"/>' + dots + label +
     '</svg>';
   }
 
@@ -488,8 +487,11 @@
     $('stLap').classList.toggle('hidden', lap < 1);
     $('stLap').textContent = '日本一周 ' + (lap + 1) + '周目！';
     $('stTitle').textContent = st.n + '駅に とうちゃく！';
-    $('stMap').innerHTML = mapSVG(idx);
-    $('stInfo').innerHTML = '名物は <b>' + st.m + '</b><br>' +
+    $('stMap').innerHTML = mapSVG(idx, 148);
+    $('stChara').innerHTML = SL_ART.chara(st, 92);
+    $('stName').textContent = st.cn;
+    $('stInfo').innerHTML =
+      '<span class="stitem">' + SL_ART.itemSVG(st.item, 34) + '名物は <b>' + st.m + '</b></span><br>' +
       '石炭を満タンに補給／ボーナス <b>' + bonus + '点</b>' +
       (idx === STATIONS.length - 1 ? '<br><b>日本縦断 たっせい！</b>' : '');
     $('ovStation').classList.add('on');
