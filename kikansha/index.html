@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#121a35">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="しりとり機関車">
+<meta name="description" content="線路を流れてくる文字の貨車を、しりとりでつないで長い列車をつくる新感覚の言葉あそび。「ン」をつなぐと脱線！">
+<title>しりとり機関車</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root{
+    --sky1:#2b3a6b; --sky2:#111936;
+    --rail:#8c9ab8; --tie:#4a3a2e;
+    --gold:#ffc63d; --red:#e94f5a; --ok:#43d39a;
+    --line:rgba(255,255,255,.14);
+    --lane:rgba(255,255,255,.05);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,sans-serif;
+    color:#fff;
+    background:
+      radial-gradient(900px 420px at 80% -8%,#4a3f7a 0%,rgba(74,63,122,0) 60%),
+      linear-gradient(180deg,var(--sky1) 0%,var(--sky2) 62%,#0b1026 100%);
+    background-attachment:fixed;
+    min-height:100dvh;
+    display:flex;flex-direction:column;align-items:center;
+    padding:11px;
+    padding-top:max(11px,env(safe-area-inset-top));
+    padding-bottom:max(11px,env(safe-area-inset-bottom));
+    overflow-x:hidden;
+  }
+  .app{width:100%;max-width:480px;display:flex;flex-direction:column;gap:11px;flex:1;}
+  button{font-family:inherit;cursor:pointer;border:none;color:#fff;}
+
+  /* ---------- タイトル ---------- */
+  .brand{text-align:center;padding-top:2px;}
+  .brand h1{margin:6px 0 0;font-size:clamp(27px,8vw,38px);font-weight:900;letter-spacing:1px;
+    text-shadow:0 4px 18px rgba(0,0,0,.45);}
+  .brand h1 em{font-style:normal;color:var(--gold);}
+  .brand .tag{margin-top:7px;font-size:12.5px;color:#c3ccf0;font-weight:600;line-height:1.7;}
+  .badge{display:inline-block;background:var(--gold);color:#4a3200;font-weight:900;
+    font-size:11px;padding:3px 10px;border-radius:999px;letter-spacing:1px;}
+
+  /* ---------- カード・ボタン ---------- */
+  .card{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:18px;padding:14px;}
+  .card h2{margin:0 0 3px;font-size:15px;font-weight:800;}
+  .card p.sub{margin:0 0 11px;font-size:12px;color:#bcc4e8;line-height:1.6;}
+  .btns{display:flex;flex-direction:column;gap:9px;}
+  .btn{
+    padding:13px 14px;border-radius:13px;font-size:16px;font-weight:800;
+    background:linear-gradient(180deg,#5a63d8,#4348bd);
+    box-shadow:0 5px 0 #2c2f86,0 8px 16px rgba(0,0,0,.33);
+    transition:transform .06s ease, box-shadow .06s ease;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+  }
+  .btn:active{transform:translateY(4px);box-shadow:0 1px 0 #2c2f86,0 3px 8px rgba(0,0,0,.33);}
+  .btn em{font-style:normal;font-size:11.5px;font-weight:700;opacity:.95;letter-spacing:.5px;}
+  .btn.lv1{background:linear-gradient(180deg,#4fd1a5,#2bb489);box-shadow:0 5px 0 #17765a,0 8px 16px rgba(0,0,0,.3);}
+  .btn.lv1:active{box-shadow:0 1px 0 #17765a;}
+  .btn.lv2{background:linear-gradient(180deg,#ffa63d,#f18a20);box-shadow:0 5px 0 #b56410,0 8px 16px rgba(0,0,0,.3);}
+  .btn.lv2:active{box-shadow:0 1px 0 #b56410;}
+  .btn.lv3{background:linear-gradient(180deg,#ff5a7a,#e53a5f);box-shadow:0 5px 0 #a4213c,0 8px 16px rgba(0,0,0,.3);}
+  .btn.lv3:active{box-shadow:0 1px 0 #a4213c;}
+  .btn.ghost{background:rgba(255,255,255,.1);box-shadow:none;border:1px solid rgba(255,255,255,.22);
+    font-size:14px;justify-content:center;}
+  .btn.ghost:active{transform:translateY(2px);}
+  .link{background:none;color:#bcc4e8;text-decoration:underline;font-size:12.5px;padding:8px;font-weight:700;}
+  .best{font-size:11.5px;color:#ffe9a8;font-weight:800;background:rgba(0,0,0,.25);
+    padding:2px 8px;border-radius:999px;white-space:nowrap;}
+
+  /* ---------- 機関車のえ ---------- */
+  .loco{display:block;}
+  @keyframes roll{to{transform:rotate(360deg);}}
+  .loco .spoke{transform-origin:center;animation:roll 1.1s linear infinite;}
+  .loco.slow .spoke{animation-duration:2.4s;}
+  @keyframes puff{
+    0%{transform:translate(0,0) scale(.5);opacity:.85;}
+    100%{transform:translate(-26px,-30px) scale(1.5);opacity:0;}
+  }
+  .loco .pf{animation:puff 1.7s linear infinite;}
+  .loco .pf2{animation-delay:.55s;}
+  .loco .pf3{animation-delay:1.1s;}
+
+  /* ---------- ゲーム上部 ---------- */
+  .topbar{display:flex;align-items:center;gap:7px;}
+  .iconbtn{width:40px;height:40px;flex:0 0 auto;border-radius:12px;background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.2);font-size:16px;display:grid;place-items:center;}
+  .iconbtn:active{transform:scale(.92);}
+  .stat{flex:1;display:flex;gap:5px;justify-content:center;}
+  .chip{background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:11px;
+    padding:6px 8px;font-size:11px;font-weight:800;display:flex;align-items:center;gap:4px;white-space:nowrap;}
+  .chip b{font-size:14px;font-variant-numeric:tabular-nums;}
+  .chip.miss b{letter-spacing:2px;color:var(--red);}
+
+  /* ---------- つぎの文字 ---------- */
+  .next{background:linear-gradient(180deg,rgba(255,198,61,.2),rgba(255,198,61,.07));
+    border:1px solid rgba(255,198,61,.38);border-radius:16px;padding:9px 12px;
+    display:flex;align-items:center;gap:11px;}
+  .next .lead{font-size:11.5px;color:#ffe3a3;font-weight:800;line-height:1.5;}
+  .next .lead b{display:block;font-size:12px;color:#fff;opacity:.85;font-weight:700;}
+  .next .kana{width:52px;height:52px;flex:0 0 auto;border-radius:14px;background:var(--gold);
+    color:#4a3200;font-size:30px;font-weight:900;display:grid;place-items:center;
+    box-shadow:0 4px 0 #b8860b, 0 0 22px rgba(255,198,61,.5);}
+  .next .combo{margin-left:auto;text-align:right;font-size:11px;font-weight:800;color:#ffd977;line-height:1.4;}
+  .next .combo b{display:block;font-size:17px;color:#fff;}
+  @keyframes kanapop{0%{transform:scale(.55) rotate(-12deg);}70%{transform:scale(1.15);}100%{transform:scale(1);}}
+  .next .kana.pop{animation:kanapop .3s ease;}
+
+  /* ---------- 線路レーン ---------- */
+  .yard{background:rgba(0,0,0,.26);border:1px solid var(--line);border-radius:16px;padding:7px;
+    display:flex;flex-direction:column;gap:6px;overflow:hidden;flex:1;}
+  .lane{position:relative;flex:1;min-height:58px;
+    border-radius:10px;background:var(--lane);overflow:hidden;}
+  .lane .ties{position:absolute;left:0;right:0;bottom:7px;height:7px;
+    background-image:repeating-linear-gradient(90deg,var(--tie) 0 9px,transparent 9px 22px);
+    opacity:.75;}
+  .lane .rail{position:absolute;left:0;right:0;height:2px;background:var(--rail);opacity:.85;}
+  .lane .rail.r1{bottom:12px;} .lane .rail.r2{bottom:5px;}
+
+  .car{position:absolute;bottom:11px;height:clamp(40px,calc(100% - 30px),56px);display:flex;align-items:center;justify-content:center;
+    padding:0 9px;border-radius:9px 9px 5px 5px;font-weight:900;color:#2a2018;
+    box-shadow:0 3px 0 rgba(0,0,0,.35);white-space:nowrap;will-change:transform;
+    border:2px solid rgba(0,0,0,.18);left:0;
+    transform:translate(var(--x,0px),var(--y,0px));}
+  .car::before,.car::after{content:"";position:absolute;bottom:-7px;width:11px;height:11px;
+    border-radius:50%;background:#2a3252;border:2px solid #98a4c4;}
+  .car::before{left:7px;} .car::after{right:7px;}
+  .car .w{font-size:16px;letter-spacing:.5px;}
+  .car.long .w{font-size:13.5px;}
+  .car.hint{box-shadow:0 3px 0 rgba(0,0,0,.35),0 0 0 3px var(--gold),0 0 16px rgba(255,198,61,.7);}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+  .car.ng{background:#ff8a99!important;border-color:#c8323f;}
+  .car.ng .w{animation:shake .26s ease 2;display:block;}
+  .car.taken{transition:transform .34s cubic-bezier(.4,1.2,.5,1), opacity .34s ease;opacity:0;}
+
+  /* ---------- じぶんの列車 ---------- */
+  .train{background:rgba(0,0,0,.26);border:1px solid var(--line);border-radius:16px;padding:8px;
+    display:flex;align-items:flex-end;gap:6px;overflow:hidden;}
+  .train .head{flex:0 0 auto;width:74px;}
+  .train .cars{flex:1;display:flex;align-items:flex-end;gap:5px;overflow-x:auto;overflow-y:hidden;
+    scrollbar-width:none;padding-bottom:2px;}
+  .train .cars::-webkit-scrollbar{display:none;}
+  .tcar{flex:0 0 auto;position:relative;height:34px;display:flex;align-items:center;padding:0 8px;
+    border-radius:7px 7px 4px 4px;font-size:12.5px;font-weight:900;color:#2a2018;white-space:nowrap;
+    box-shadow:0 2px 0 rgba(0,0,0,.35);margin-bottom:5px;}
+  .tcar::before,.tcar::after{content:"";position:absolute;bottom:-5px;width:8px;height:8px;
+    border-radius:50%;background:#2a3252;border:2px solid #98a4c4;}
+  .tcar::before{left:5px;} .tcar::after{right:5px;}
+  @keyframes couple{0%{transform:translateX(26px) scale(1.25);}100%{transform:translateX(0) scale(1);}}
+  .tcar.new{animation:couple .3s cubic-bezier(.3,1.6,.5,1);}
+  .train .empty{font-size:12px;color:#9aa3cd;font-weight:700;padding:0 4px 12px;}
+
+  /* ---------- 得点の演出 ---------- */
+  .fx{position:fixed;pointer-events:none;font-weight:900;font-size:19px;color:var(--gold);
+    text-shadow:0 2px 8px rgba(0,0,0,.6);z-index:50;}
+  @keyframes fxup{0%{transform:translate(-50%,0) scale(.8);opacity:0;}
+    25%{opacity:1;transform:translate(-50%,-14px) scale(1.1);}
+    100%{transform:translate(-50%,-56px) scale(1);opacity:0;}}
+  .fx{animation:fxup .95s ease-out forwards;}
+
+  /* ---------- オーバーレイ ---------- */
+  .ov{position:fixed;inset:0;background:rgba(6,9,22,.8);display:none;place-items:center;padding:18px;z-index:60;}
+  .ov.on{display:grid;}
+  .modal{width:100%;max-width:370px;background:linear-gradient(180deg,#2d3a6e,#1a2148);
+    border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:20px;text-align:center;
+    box-shadow:0 20px 50px rgba(0,0,0,.5);max-height:88dvh;overflow:auto;}
+  .modal h2{margin:0 0 6px;font-size:22px;font-weight:900;}
+  .modal p{margin:0 0 13px;font-size:13.5px;color:#cdd4f5;line-height:1.7;}
+  .modal .big{font-size:38px;font-weight:900;color:var(--gold);margin:4px 0 0;font-variant-numeric:tabular-nums;}
+  .modal .sm{font-size:12px;color:#aeb6e0;margin-bottom:12px;}
+  .modal ul{text-align:left;font-size:13px;color:#d6dbf7;line-height:1.85;margin:0 0 14px;padding-left:20px;}
+  .chain{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin:0 0 14px;max-height:120px;overflow:auto;}
+  .chain span{background:rgba(255,255,255,.12);border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:800;}
+  .newrec{display:inline-block;background:var(--gold);color:#4a3200;font-weight:900;font-size:11px;
+    padding:3px 10px;border-radius:999px;margin-bottom:8px;}
+  .foot{text-align:center;font-size:11px;color:#8f96c0;padding:4px 0 2px;}
+  .hidden{display:none!important;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== ホーム ===== -->
+  <section id="home">
+    <div class="brand">
+      <span class="badge">流れてくる貨車を連結せよ</span>
+      <div id="homeLoco" style="display:flex;justify-content:center;margin-top:6px"></div>
+      <h1>しりとり<em>機関車</em></h1>
+      <p class="tag">線路を流れる貨車から、しりとりでつながる<br>ことばをタップして連結。何両つなげる？</p>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <h2>むずかしさをえらぶ</h2>
+      <p class="sub">つなぐほど列車は長く、スピードはどんどん速くなります。</p>
+      <div class="btns" id="levelBtns"></div>
+    </div>
+
+    <div style="display:flex;justify-content:center;gap:4px;margin-top:4px">
+      <button class="link" id="btnHelp">遊びかた</button>
+      <button class="link" id="btnReset">記録をけす</button>
+    </div>
+    <p class="foot" id="wordCount"></p>
+  </section>
+
+  <!-- ===== ゲーム ===== -->
+  <section id="game" class="hidden" style="flex-direction:column;gap:10px;flex:1">
+    <div class="topbar">
+      <button class="iconbtn" id="btnBack" aria-label="やめる">&lsaquo;</button>
+      <div class="stat">
+        <span class="chip">🏆<b id="score">0</b></span>
+        <span class="chip">🚃<b id="cars">0</b>両</span>
+        <span class="chip miss">✕<b id="miss">○○○</b></span>
+      </div>
+      <button class="iconbtn" id="btnPause" aria-label="ひとやすみ">❚❚</button>
+    </div>
+
+    <div class="next">
+      <div class="kana" id="needKana">ラ</div>
+      <div class="lead">つぎは この字で はじまることば
+        <b id="lastWord">さいごは「サクラ」</b>
+      </div>
+      <div class="combo" id="comboBox" style="visibility:hidden">コンボ<b id="comboNum">×2</b></div>
+    </div>
+
+    <div class="yard" id="yard"></div>
+
+    <div class="train">
+      <div class="head" id="trainHead"></div>
+      <div class="cars" id="trainCars"><span class="empty">ここに貨車がつながっていくよ</span></div>
+    </div>
+  </section>
+</div>
+
+<!-- ===== オーバーレイ ===== -->
+<div class="ov" id="ovOver"><div class="modal">
+  <div id="recBadge" class="newrec hidden">ベスト更新！</div>
+  <h2 id="overTitle">終着駅</h2>
+  <p class="sm" id="overReason"></p>
+  <div class="big" id="overScore">0</div>
+  <p class="sm" id="overSub"></p>
+  <div class="chain" id="overChain"></div>
+  <div class="btns">
+    <button class="btn" id="overAgain">もう一度 はしる <em>RETRY</em></button>
+    <button class="btn ghost" id="overHome">メニューにもどる</button>
+  </div>
+</div></div>
+
+<div class="ov" id="ovPause"><div class="modal">
+  <h2>ひとやすみ</h2>
+  <p>線路は止まっています。</p>
+  <div class="btns">
+    <button class="btn" id="pzResume">つづける</button>
+    <button class="btn ghost" id="pzHelp">遊びかた</button>
+    <button class="btn ghost" id="pzQuit">やめてメニューへ</button>
+  </div>
+</div></div>
+
+<div class="ov" id="ovHelp"><div class="modal">
+  <h2>遊びかた</h2>
+  <ul>
+    <li>線路を流れてくる貨車のうち、<b>いま光っている字ではじまる ことば</b>をタップすると連結できます。</li>
+    <li>連結できたら、こんどは<b>その ことばの最後の字</b>が次のお題になります。</li>
+    <li><b>「ン」で終わることばをつなぐと脱線！</b>（のんびりは1ミスですみます）</li>
+    <li>ちがう貨車をタップするとミス。ミスが尽きると終着駅です。</li>
+    <li>つづけて成功すると<b>コンボ</b>がついて得点アップ。長いことばほど高得点。</li>
+    <li>濁点・半濁点はおおめに見ます（「カ」に「ガ」をつないでもOK）。小さい字と「ー」は前の字であつかいます。</li>
+  </ul>
+  <div class="btns"><button class="btn" id="helpClose">とじる</button></div>
+</div></div>
+
+<script src="words.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

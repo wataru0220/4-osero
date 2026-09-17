@@ -1,0 +1,16 @@
+{
+  "name": "しりとり機関車",
+  "short_name": "しりとり機関車",
+  "description": "線路を流れてくる貨車を、しりとりでつないで長い列車をつくる新感覚の言葉あそび。「ン」をつなぐと脱線！",
+  "lang": "ja",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111936",
+  "theme_color": "#121a35",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
