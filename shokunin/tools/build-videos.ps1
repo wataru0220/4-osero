@@ -362,8 +362,8 @@ public static class BgmMaker {
 # 不自然に聞こえるとの指摘を受け、標準に近い自然な抑揚に調整（pauseLengthScaleで間の取り方を少し余裕を持たせる）。
 function New-Voice { param([string]$Text,[string]$Path)
   $q=Invoke-RestMethod -Method Post -Uri ($VVU+'/audio_query?speaker='+$SPK+'&text='+[uri]::EscapeDataString($Text)) -TimeoutSec 60
-  $q.speedScale=1.0; $q.pitchScale=0.0; $q.intonationScale=1.05; $q.postPhonemeLength=0.25
-  if($q.PSObject.Properties.Name -contains 'pauseLengthScale'){ $q.pauseLengthScale=1.15 }
+  $q.speedScale=1.12; $q.pitchScale=0.0; $q.intonationScale=1.05; $q.postPhonemeLength=0.2
+  if($q.PSObject.Properties.Name -contains 'pauseLengthScale'){ $q.pauseLengthScale=1.05 }
   $json=($q|ConvertTo-Json -Depth 12 -Compress)
   Invoke-WebRequest -Method Post -Uri ($VVU+'/synthesis?speaker='+$SPK) -Body ([Text.Encoding]::UTF8.GetBytes($json)) -ContentType 'application/json' -OutFile $Path -TimeoutSec 300 | Out-Null
 }
