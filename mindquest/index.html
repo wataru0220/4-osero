@@ -284,6 +284,25 @@ kbd{font-family:var(--en);font-size:10.5px;border:1px solid var(--line2);border-
 .sage-btn{align-self:flex-start;border:1.5px solid #DCD0FF;background:#F7F3FF;color:#5B3FC4;border-radius:999px;padding:6px 14px 6px 8px;font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
 .sage-btn svg{width:22px;height:26px}
 .qhint{margin:-6px 0 0;font-size:12.5px;color:var(--ink2);background:#FFF8E6;border:1px solid #F6E2AE;border-radius:10px;padding:7px 11px}
+.qhint.kind{background:#F1F8FF;border-color:#CFE3FB}
+.qhint.kind b{color:#1F6FC0;margin-right:4px}
+.coach{display:grid;gap:6px;justify-items:start;padding:10px 12px;border-radius:14px;background:#FFF4EC;border:1.5px solid #FFC9A8;animation:slide .25s ease-out}
+.coach b{font-size:12px;color:#C8362F;font-weight:800}
+.coach span{font-size:13.5px;color:var(--ink);line-height:1.6}
+.mq{border-radius:16px;padding:14px 16px;background:#F3FBF7;border:1px solid #CDEBDD;display:grid;gap:8px}
+.mq-head{display:flex;justify-content:space-between;align-items:baseline}
+.mq-head b{font-size:13px;font-weight:800;color:#0E7A57}
+.mq-head span{font-family:var(--en);font-size:24px;font-weight:700;color:#0E7A57;font-variant-numeric:tabular-nums}
+.mq-bar{display:block;height:8px;border-radius:4px;background:#DDEFE6;overflow:hidden}
+.mq-bar em{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#15A37C,#7ED3A8)}
+.mq p{margin:0;font-size:12.5px;color:var(--muted);font-weight:700}
+.mq p.mq-note{font-weight:500}
+.mq ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.mq li button,.mq li>span{width:100%;display:grid;gap:1px;text-align:left;border:1.5px solid #CDEBDD;background:#fff;border-radius:12px;padding:7px 11px;font:inherit;color:var(--ink)}
+.mq li button{cursor:pointer}
+.mq li button:hover{border-color:#15A37C}
+.mq li b{font-size:13px;font-weight:800;overflow-wrap:anywhere}
+.mq li small{font-size:11.5px;color:var(--muted)}
 .rpg.mon{background:#2A1F3D}
 .hpbar{display:flex;align-items:center;gap:8px;margin-top:10px;font-family:var(--en);font-size:11px;font-weight:700}
 .hpbar .hpt{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.15);overflow:hidden}
@@ -1083,7 +1102,63 @@ const BANKS = {
   idea: ['集まれる場をつくる','オンラインで手軽にする','専門家とつなぐ','料金を安くする','送り迎えや出張をする','体験イベントを開く','助け合いの仕組みをつくる','わかりやすい説明を作る']
 };
 const BANK_NAMES = [['expert','専門知識'],['why','理由'],['ally','味方'],['str','強み'],['stop','やめること'],['rise','立ち直り'],['future','未来'],['need','必要なもの'],['act','やること'],['what','具体的な行動'],['pace','ペース'],['start','いつから'],['when','いつ・期限'],['wall','壁・障害'],['over','乗り越え方'],['vision','志・貢献'],['first','最初の一歩'],['who','誰のため'],['trouble','困りごと'],['idea','アイデア']];
-const ALL_BANK = new Set(Object.values(BANKS).flat());
+/* ---------- theme kinds: tune hints, examples and choices to what the dream is about ---------- */
+const KINDS = [
+  {k: 'exam', n: '資格・試験', re: /(資格|試験|検定|合格|受験|免許|士に|英検|漢検|TOEIC|宅建|国家)/i, b: {
+    need: ['試験範囲の知識', '過去問を解く力', '毎日の勉強時間', '合格ラインの把握', '苦手科目の克服', '受験の申し込み'],
+    expert: ['出題傾向の分析', '頻出分野の暗記', '合格基準と配点', '法改正など最新情報', '本番の時間配分', '暗記と理解の使い分け'],
+    act: ['過去問を1日1問解く', '公式テキストを1周する', '月1回模試を受ける', '苦手ノートを作る', 'スキマ時間に暗記', '勉強会に参加する'],
+    wall: ['勉強時間が取れない', '苦手科目が伸びない', '本番で緊張する', '途中でやる気が切れる'],
+    first: ['試験日を調べる', '公式テキストを買う', '過去問を1問解く', '勉強の予定表を作る']}},
+  {k: 'lang', n: '語学', re: /(英語|英会話|語学|中国語|韓国語|フランス語|スペイン語|ドイツ語|外国語|留学|話せる|ペラペラ)/, b: {
+    need: ['単語力', '聞き取る力', '話す練習の場', '毎日の学習時間', '文法の基礎', '話し相手'],
+    expert: ['発音のしくみ', 'よく使う表現', 'シャドーイング', '多読・多聴', '単語の覚え方', '会話の型'],
+    act: ['毎日単語を10個覚える', 'オンライン英会話を受ける', '海外ドラマを字幕で見る', '教科書を音読する', '外国語で日記を書く', '語学アプリを続ける'],
+    wall: ['話す相手がいない', '単語をすぐ忘れる', '聞き取れない', 'はずかしくて話せない'],
+    first: ['単語アプリを入れる', '5分だけ音読する', '目標スコアを決める', '英会話の体験を予約']}},
+  {k: 'sport', n: 'スポーツ・体づくり', re: /(マラソン|完走|大会|試合|優勝|レギュラー|部活|野球|サッカー|バスケ|テニス|水泳|陸上|筋トレ|ダイエット|やせ|痩せ|体重|ゴルフ|柔道|剣道|空手|ダンス|体力|健康|走)/, b: {
+    need: ['基礎体力', '正しいフォーム', '練習時間', 'けがを防ぐ知識', '練習仲間・コーチ', '食事と睡眠'],
+    expert: ['フォームの基本', '練習メニューの組み方', 'ストレッチとケア', '栄養のとり方', '記録の測り方', '休養の取り方'],
+    act: ['毎朝20分走る', '週3回の筋トレ', 'フォームを動画で確認', '練習日誌をつける', 'クラブに入る', '大会にエントリーする'],
+    wall: ['けがをする', '記録が伸びない', '練習が続かない', '天気や時間に左右される'],
+    first: ['シューズを用意する', '10分だけ体を動かす', '大会の日程を調べる', '練習記録をつけ始める']}},
+  {k: 'shop', n: 'お店・起業', re: /(店|開業|起業|独立|カフェ|会社をつく|会社を作|経営|商売|キッチンカー|ネットショップ|フリーランス)/, b: {
+    need: ['開業資金', 'お客様のニーズ', '看板になる商品', 'お店の場所', '集客の方法', '経営の知識'],
+    expert: ['事業計画書', '資金繰り', '原価と利益の計算', '必要な許可・届出', 'SNSでの集客', '接客のしかた'],
+    act: ['事業計画書を書く', '同じ業種の店で働く', '試作品を作る', '小さく出店して試す', '開業資金を積み立てる', '商工会に相談する'],
+    wall: ['資金が足りない', 'お客様が来ない', '値段が決められない', 'ひとりで手が回らない'],
+    first: ['お店のコンセプトを1行で書く', '必要な許可を調べる', '商工会の相談日を調べる', '試作品を1つ作る']}},
+  {k: 'create', n: '創作・表現', re: /(絵|イラスト|漫画|マンガ|小説|作家|音楽|歌|バンド|作曲|ピアノ|ギター|写真|動画|YouTube|ユーチューバー|デザイン|映画|俳優|声優|アート|作品)/i, b: {
+    need: ['基礎の技術', '作品を作る時間', '見てくれる人', '道具・機材', 'お手本になる作品', '発表する場所'],
+    expert: ['基本練習（デッサン等）', '構成の組み立て', '道具の使いこなし', '著作権のルール', '作品の見せ方', '作り続ける習慣'],
+    act: ['毎日1作品つくる', '好きな作品を模写する', '作品をSNSに出す', 'コンテストに応募する', '講座に通う', '感想をもらう'],
+    wall: ['なかなか上達しない', '人と比べて落ちこむ', '時間が足りない', '反応がなくて続かない'],
+    first: ['10分だけ作ってみる', '道具をそろえる', 'お手本を3つ選ぶ', '発表の場を作る']}},
+  {k: 'money', n: 'お金・売上', re: /(貯金|貯め|お金|年収|収入|売上|売り上げ|利益|投資|節約|万円|億)/, b: {
+    need: ['毎月の収支の把握', '目標金額と期限', '収入を増やす方法', 'ムダな出費の見直し', 'お金の知識', '数字の記録'],
+    expert: ['収支表の作り方', '先取り貯金', '固定費の見直し', '利益の計算', '税金の基礎', 'リスクの分け方'],
+    act: ['家計簿をつける', '先取りで積み立てる', '固定費を見直す', '単価を上げる提案をする', '新しいお客様を探す', '毎月数字をふり返る'],
+    wall: ['つい使ってしまう', '急な出費', '収入が増えない', '数字を見るのが面倒'],
+    first: ['今月の収支を書き出す', '目標金額を決める', '自動積立を設定する', 'サブスクを1つ見直す']}},
+  {k: 'people', n: '人・チーム・地域', re: /(育てる|育成|新人|部下|チーム|人間関係|友達|友だち|子育て|リーダー|地域|町おこし|まちづくり|イベント|集まる|頼られる)/, b: {
+    need: ['信頼関係', '話を聞く時間', '共通の目標', '役割分担', 'ほめて伝える力', '集まる場所'],
+    expert: ['傾聴のしかた', '目標の立て方と共有', 'ほめ方・注意のしかた', '仕事の任せ方', 'ふり返りの場づくり', 'チームのルールづくり'],
+    act: ['週1回の面談をする', '目標を一緒に決める', 'できたことを毎日伝える', '手順書を一緒に作る', '小さな役割を任せる', 'みんなで集まる会を開く'],
+    wall: ['思いが伝わらない', '時間が取れない', '意見がぶつかる', '人が集まらない'],
+    first: ['話を聞く時間を予約する', 'ほめることを3つ書く', '集まる日を決める', '声をかける人リストを作る']}},
+  {k: 'job', n: '仕事・職業', re: /(になりたい|医者|医師|看護|先生|教師|保育|建築|大工|職人|エンジニア|プログラマ|研究者|科学者|パイロット|警察|消防|弁護士|獣医|薬剤師|介護|美容師|料理人|シェフ|公務員)/, b: {
+    need: ['必要な資格', '専門の学校・学部', '現場の経験', '基礎学力', '体力・健康', 'その道の先輩'],
+    expert: ['その仕事の1日の流れ', '資格と取り方', '現場で使う道具・技術', '業界のしくみ', '安全とルール', '向いている人の特徴'],
+    act: ['職場見学に行く', 'その仕事の人に話を聞く', '関係する本を読む', '必要な資格を調べる', 'オープンキャンパスに行く', '関係するアルバイトをする'],
+    wall: ['学費や費用がかかる', '勉強についていけない', '向いているか不安', 'なるまで時間がかかる'],
+    first: ['その仕事の本を1冊借りる', 'なり方を調べる', 'その仕事の人に質問を送る', '見学できる場所を探す']}}
+];
+const themeKind = x => x && x.theme ? KINDS.find(k => k.re.test(x.theme)) || null : null;
+/* which kind list fits each question (stage `o`, or a plan field's bank key) */
+const KIND_KEY = {need: 'need', act: 'act', expert: 'expert', learn: 'expert', wall: 'wall', what: 'act', what2: 'act', d100: 'act', first: 'first'};
+const kindBank = (x, key) => { const K = themeKind(x), m = KIND_KEY[key]; return K && m ? K.b[m] || [] : []; };
+const withKind = (x, key, base) => [...new Set([...kindBank(x, key), ...base])].slice(0, 14);
+const ALL_BANK = new Set([...Object.values(BANKS).flat(), ...KINDS.flatMap(k => Object.values(k.b).flat())]);
 const EVENTS = [
   {id:'idea', s:'ひらめき', t:'ひらめきの星', d:'いいアイデアが浮かんだ！', pts:20, tone:'good', ic:'star'},
   {id:'mentor', s:'近道', t:'近道を発見', d:'地元の人が近道を教えてくれた。', move:2, tone:'good', ic:'up'},
@@ -1192,7 +1267,7 @@ function progress(x){
   return Math.round(P.filter(p => answersFor(x, p).length >= x.stages[p.s].min).length / (P.length + extra) * 100);
 }
 const hashOf = x => JSON.stringify([x.theme, x.ans.map(a => [a.id, a.t, a.s, a.par])]);
-const bankFor = (x, p) => BANKS[x.stages[p.s].o] || (x.stages[p.s].p >= 0 ? BANKS.act : BANKS.need);
+const bankFor = (x, p) => { const st = x.stages[p.s], o = BANKS[st.o] ? st.o : st.p >= 0 ? 'act' : 'need'; return withKind(x, KIND_KEY[st.o] ? st.o : o, BANKS[o]); };
 const isPlan = st => st && st.type === 'plan';
 
 /* ---------- sound ---------- */
@@ -2671,14 +2746,20 @@ function answerPower(p){
   if (n < st.min) return 0;
   return Math.min(hasMember('wizard') ? 4 : 3, 1 + Math.min(2, n - st.min) + (S.timed && s.left >= st.sec * .5 ? 1 : 0) + (hasMember('wizard') ? 1 : 0));
 }
+/* answers concrete enough to act on (numbers, dates or a verb, and no coach nudge) earn a few extra points */
+function specN(p){
+  const st = S.stages[p.s];
+  return Math.min(3, answersFor(S, p).filter(a => !coachOf(S, st, a.t, a.f) && (SPEC_RE.test(a.t) || ACT_RE.test(a.t))).length);
+}
 async function clearGate(){
   saveFields();
   const p = current(), st = S.stages[p.s], n = answersFor(S, p).length, bonus = answerPower(p);
-  const garo = st.monster && hasMember('beast') ? 10 : 0;
-  const pts = (n >= st.min ? 10 + Math.min(3, n - st.min) * 5 + (st.monster === 'boss' ? 20 : st.monster ? 5 : 0) : n ? 5 : 0) + garo;
+  const garo = st.monster && hasMember('beast') ? 10 : 0, spec = n >= st.min ? specN(p) * 3 : 0;
+  const pts = (n >= st.min ? 10 + Math.min(3, n - st.min) * 5 + (st.monster === 'boss' ? 20 : st.monster ? 5 : 0) : n ? 5 : 0) + garo + spec;
+  S.coach = null;
   const lv0 = heroLevel();
   S.quest.done[p.key] = true; S.quest.pts += pts; S.quest.qs = bonus ? 'moving' : 'roll';
-  qlog(st.monster ? `${st.npc}をたおした！ +${pts}pt${garo ? '（ガロの力 +10）' : ''}` : `関所「${st.l}」を通過 +${pts}pt`);
+  qlog((st.monster ? `${st.npc}をたおした！ +${pts}pt${garo ? '（ガロの力 +10）' : ''}` : `関所「${st.l}」を通過 +${pts}pt`) + (spec ? `（具体的な答え +${spec}）` : ''));
   if (n < st.min) toast('条件に届かないまま進みました'); else { sfx.clear(); if (st.monster) toast(`${st.npc}をたおした！`); }
   const i = $('#ans'); if (i) i.value = '';
   const Q = S.quest, beats = [], lv1 = heroLevel();
@@ -2763,7 +2844,8 @@ function playHTML(){
     : `<h2 class="question" style="--c:${col}">${qText}</h2>${sub ? `<p class="hint" style="margin:-6px 0 0">${sub}</p>` : ''}`;
   S.seen = S.seen || {}; S.seen[p.s] = 1;
   const hintText = (S.tq && S.tq[p.s] && S.tq[p.s].hint) || st.hint;
-  const hint = (hintText ? `<p class="qhint">ヒント：${esc(hintText)}</p>` : '') + sageBtn(st.o === 'expert' ? '専門家の賢者に質問してから答える' : '迷ったら賢者に質問');
+  const K = themeKind(S), kex = S.level === 'beginner' ? [] : kindBank(S, st.o).slice(0, 3);
+  const hint = (hintText ? `<p class="qhint">ヒント：${esc(hintText)}</p>` : '') + (kex.length ? `<p class="qhint kind"><b>${esc(K.n)}なら、たとえば</b>${kex.map(t => `「${esc(t)}」`).join('')}</p>` : '') + sageBtn(st.o === 'expert' ? '専門家の賢者に質問してから答える' : '迷ったら賢者に質問');
   let entry = '';
   if (locked) entry = `<p class="timeup">時間切れです。この問いの答えは確定しました。${quest ? '関所を通って先へ進みましょう。' : '次の問いへ進みましょう。'}</p>`;
   else if (plan){
@@ -2771,7 +2853,7 @@ function playHTML(){
     entry = `<div class="pform" style="--c:${col}">${flds.map(([k, lbl, , ph, bk], fi) => `
       <div class="pf${vals[k] ? ' done' : ''}">
         <label for="pf-${k}"><i>${fi + 1}</i>${esc(lbl)}${vals[k] ? '<span>決定</span>' : ''}</label>
-        ${S.level === 'beginner' ? `<div class="choices" style="--c:${col}">${(BANKS[bk || k] || []).map(o => `<button type="button" class="choice${vals[k] && vals[k].t === o ? ' on' : ''}" data-field="${k}" data-choice="${esc(o)}">${esc(o)}</button>`).join('')}</div>` : ''}
+        ${S.level === 'beginner' ? `<div class="choices" style="--c:${col}">${withKind(S, bk || k, BANKS[bk || k] || []).map(o => `<button type="button" class="choice${vals[k] && vals[k].t === o ? ' on' : ''}" data-field="${k}" data-choice="${esc(o)}">${esc(o)}</button>`).join('')}</div>` : ''}
         <div class="entry"><input id="pf-${k}" data-field="${k}" value="${vals[k] ? esc(vals[k].t) : ''}" maxlength="24" placeholder="${S.level === 'beginner' ? 'ほかにあれば入力' : esc(ph || '')}" autocomplete="off" enterkeyhint="next" aria-label="${esc(lbl)}"><button class="btn primary" type="button" data-act="setf">決定</button></div>
       </div>`).join('')}</div>
     <p class="hint">入力して <kbd>Enter</kbd> で次の項目へ。${flds.length}つそろったら${quest ? '関所を通過' : '次の問いへ'}。</p>`;
@@ -2785,7 +2867,7 @@ function playHTML(){
       ${sampleAvail ? `<button class="btn sm" type="button" data-act="ai-opts" id="btnAiOpts" style="align-self:flex-start">${ai.length ? 'AIにほかの選択肢も出してもらう' : 'テーマに合った選択肢をAIに出してもらう'}</button>` : ''}
       <details class="own"${own.length ? ' open' : ''}><summary>選択肢にない答えを自分で書く</summary><div class="entry"><input id="ans" maxlength="24" placeholder="答えを入力" aria-label="答え" autocomplete="off" enterkeyhint="enter"><button class="btn primary" type="button" data-act="add">追加</button></div></details>`;
   } else {
-    entry = `<div class="entry"><input id="ans" maxlength="24" placeholder="${st.monster ? '答えて攻撃！' : '答えを入力'}" aria-label="答え" autocomplete="off" enterkeyhint="enter"><button class="btn primary" type="button" data-act="add">${st.monster ? '攻撃' : '追加'}</button></div>
+    entry = `<div class="entry"><input id="ans" maxlength="24" placeholder="${st.monster ? '答えて攻撃！' : kex[0] ? `例：${esc(kex[0])}` : '答えを入力'}" aria-label="答え" autocomplete="off" enterkeyhint="enter"><button class="btn primary" type="button" data-act="add">${st.monster ? '攻撃' : '追加'}</button></div>
     <p class="hint">答えるたびに枝が伸びます。空欄のまま <kbd>Enter</kbd> で${quest ? '関所を通過' : '次の問いへ'}。</p>`;
   }
   const nextLbl = quest ? '答えを決めて進む →' : last ? '採点する →' : '次の問いへ →';
@@ -2799,9 +2881,10 @@ function playHTML(){
     ${qBlock}
     ${hint}
     ${entry}
+    ${S.coach && S.coach.key === p.key && !locked ? `<div class="coach" role="note"><b>深掘りのひとこと</b><span>${esc(S.coach.msg)}</span>${S.coach.id != null && byId(S, S.coach.id) ? `<button class="btn sm" type="button" data-act="coach-fix">この答えを書き直す</button>` : ''}</div>` : ''}
     ${!plan && list.length ? `<ul class="answers">${list.map(a => { const k = S.ans.filter(c => c.par === a.id).length; return `<li style="--c:${col}"><span>${esc(a.t)}</span>${k ? `<em>+${k}</em>` : ''}${locked ? '' : `<button type="button" data-del="${a.id}" aria-label="「${esc(a.t)}」を消す">×</button>`}</li>`; }).join('')}</ul>`
       : (plan || (S.level === 'beginner' && !locked) ? '' : `<p class="empty">まだ答えがありません。短い言葉でどんどん書きましょう。</p>`)}
-    ${quest ? `<p class="power">答えのパワー：<b>${answerPower(p) ? `+${answerPower(p)}マス` : '条件クリアで +1マス'}</b><span>条件より多く答える・時間を半分以上残すと、関所のあとで先へ進めます</span></p>` : ''}
+    ${quest ? `<p class="power">答えのパワー：<b>${answerPower(p) ? `+${answerPower(p)}マス` : '条件クリアで +1マス'}</b>${specN(p) ? `<b>具体的な答え +${specN(p) * 3}pt</b>` : ''}<span>条件より多く答える・時間を半分以上残すと先へ進める。数字や「〜する」が入った具体的な答えは1つ +3pt</span></p>` : ''}
     <div class="p-foot">
       ${quest ? '' : `<button class="btn" type="button" data-act="prev" ${i === 0 ? 'disabled' : ''}>← 前へ</button>`}
       <span class="grow"></span>
@@ -2872,6 +2955,7 @@ function doneHTML(){
     <p class="kicker">${S.mode === 'quest' ? 'QUEST CLEAR' : 'MAP COMPLETE'}${(S.chapter || 1) > 1 ? ` ・ CHAPTER ${S.chapter}` : ''}</p>
     <h2 class="question">「${esc(S.theme)}」の${(S.chapter || 1) > 1 ? `${CHAPTERS[S.chapter].n}を` : ''}${S.mode === 'quest' ? 'クリアしました。' : (S.chapter || 1) > 1 ? '終えました。マップが広がりました。' : 'マップができました。'}</h2>
     ${r ? `<div class="sum"><span class="n">${r.feas}</span><b>実現可能性 ${r.rank.g}ランク</b><span>${esc(r.rank.l)}・${r.source === 'ai' ? 'AI採点' : '自動採点'}${S.mode === 'quest' ? `・夢ポイント ${S.quest.pts}${S.quest.place ? `・レース${S.quest.place}着` : ''}` : ''}</span></div>` : ''}
+    ${qualityHTML(S)}
     ${firsts.length ? `<div class="first"><h3>最初の一歩</h3><ul>${firsts.map(a => `<li>${esc(a.t)}</li>`).join('')}</ul></div>` : ''}
     ${r ? (() => { const E = expertOf(S); return E.advice.length ? `<div class="advice expert"><h3>${S.mode === 'quest' ? '王さまと専門家からのアドバイス' : '専門家からのアドバイス'}${E.field ? `（${esc(E.field)}）` : ''}</h3><ol>${E.advice.map(a => `<li>${esc(a)}</li>`).join('')}</ol></div>` : ''; })() : ''}
     <div class="btn-col">
@@ -2939,6 +3023,8 @@ function addAnswer(){
   const t = inp.value.trim().slice(0, 24);
   if (!t){ next(); return; }
   if (!addText(t)){ inp.select(); return; }
+  const p = current(), msg = coachOf(S, S.stages[p.s], t);
+  S.coach = msg ? {key: p.key, msg, id: S.seq - 1} : null;
   inp.value = ''; refresh();
 }
 function setField(p, f, t){
@@ -2951,7 +3037,9 @@ function saveFields(){
   if (!canAnswer()) return false;
   const p = current(); if (!isPlan(S.stages[p.s])) return false;
   const before = answersFor(S, p).length; let changed = false;
-  panel.querySelectorAll('input[data-field]').forEach(inp => { const v = inp.value.trim().slice(0, 24); if (v && setField(p, inp.dataset.field, v)) changed = true; });
+  let msg = null;
+  panel.querySelectorAll('input[data-field]').forEach(inp => { const v = inp.value.trim().slice(0, 24); if (v && setField(p, inp.dataset.field, v)){ changed = true; msg = msg || coachOf(S, S.stages[p.s], v, inp.dataset.field); } });
+  if (changed) S.coach = msg ? {key: p.key, msg} : null;
   if (changed){ const n = answersFor(S, p).length, m = S.stages[p.s].min; if (n >= m && before < m){ sfx.clear(); toast('そろいました！ 条件クリア'); } else sfx.add(n); }
   return changed;
 }
@@ -2981,7 +3069,7 @@ function toggleChoice(t, field){
   if (hit){ removeAnswer(hit.id); toast(`「${t}」を外しました`); return; }
   if (addText(t)) refresh();
 }
-function go(i){ const P = prompts(S); i = Math.max(0, Math.min(P.length - 1, i)); S.cur = P[i].key; const inp = $('#ans'); if (inp) inp.value = ''; refresh(); }
+function go(i){ const P = prompts(S); i = Math.max(0, Math.min(P.length - 1, i)); S.cur = P[i].key; S.coach = null; const inp = $('#ans'); if (inp) inp.value = ''; refresh(); }
 function next(){
   if (S && S.mode === 'map' && S.phase === 'play'){ const c = current(); if (c && c.fork){ if (!(S.routes || {})[c.fork]){ toast('どちらの道に進むか選びましょう'); return; } const {i} = curIndex(S); sfx.next(); go(i + 1); return; } }
   if (!canAnswer()) return;
@@ -3039,6 +3127,10 @@ async function tailorQuestions(){
 - ヒントはテーマに合った具体例を1つ入れて40文字以内。
 - 「必殺技」は何を・どのペースで・いつからの3つを答える問いのままにする。
 - 「専門知識」「専門スキル」の問いは、その分野の専門家が聞くような、踏みこんだ具体的な問いにする（その分野の専門用語・技術名・資格名を例に出してよい）。
+- 答えが「勉強する」「頑張る」「お金」のような一般論で終わらないよう、名前・数字・場面・期限を引き出す聞き方にする（例：「何が必要？」→「◯◯の試験で、いちばん点を落としやすい分野は？」）。
+- 1つの問いで聞くことは1つにしぼる（項目を決める問いは除く）。はい／いいえで答えられる問いにしない。
+- 前の問いの答え（{a}）を受ける問いは、その答えをさらに深く・具体的にする聞き方にする。
+テーマの分野：${(themeKind(x) || {}).n || '（テーマから判断）'}
 問いの一覧：${JSON.stringify(list)}
 JSON配列だけで答えてください：[{"i":0,"q":"…","hint":"…"}]`, {modelTier: 'default'});
     if (!Array.isArray(arr) || S !== x) return;
@@ -3106,7 +3198,7 @@ async function aiOptions(){
   try {
     const arr = await sample.json(`テーマ「${S.theme}」について、次の問いに対する答えの選択肢を8個作ってください。
 問い：${plainQ(S, st, par, p)}
-初心者が選びやすい、具体的で前向きな答えにしてください。各12文字以内。次の答えとは重ならないようにしてください：${have.join('、') || 'なし'}
+初心者が選びやすい、具体的で前向きな答えにしてください。「勉強する」「頑張る」のような一般論ではなく、このテーマの分野ならではの言葉（技術名・資格名・場所・数字・期限など）を入れてください。行動を聞く問いなら「〜する」の形にしてください。各12文字以内。次の答えとは重ならないようにしてください：${have.join('、') || 'なし'}
 JSONの文字列配列だけで答えてください。例：["毎朝15分練習する","図書館で本を借りる"]`, {modelTier: 'quick', cache: false});
     if (!Array.isArray(arr)) throw {code: 'invalid_json'};
     const clean = arr.map(x => String(x).trim().slice(0, 16)).filter(x => x && !have.includes(x)).slice(0, 8);
@@ -3128,6 +3220,54 @@ const GENERIC = new Set(['頑張る','がんばる','頑張ります','努力','
 const OTHERS_RE = /(人|みんな|皆|家族|親|母|父|子ども|子供|こども|社会|地域|世界|お客|顧客|仲間|友|誰か|未来|役に立|笑顔|喜|救|支え|貢献|恩返し|日本|患者|生徒|町|街)/g;
 const BAD_RE = /(盗|だま|騙|ずる|カンニング|不正|嘘をつ|うそをつ|脅|横取り|パクる|奪|殴|賄賂|悪口|いじめ|違法|ごまか|誤魔化|裏口|サボる)/g;
 const GOOD_RE = /(感謝|協力|誠実|相談|約束|守る|助け|教え|学ぶ|ありがとう|謝|ルール|健康|安全|正直|丁寧|応援)/g;
+/* ---------- answer coach: a gentle nudge when an answer is too vague to act on ---------- */
+const ACT_O = new Set(['act', 'first', 'over', 'd100', 'keep', 'cheap', 'learn', 'check']);
+const NUM_F = {pace: '毎朝15分', start: '今週の土曜から', when: '来年の春', goal: '80点をこえる', money: '月5000円', time: '週5時間', score: '3点'};
+const COACH_ASK = {need: 'どんな知識・技術・資格？ 名前で言えると強い。', expert: '専門用語や技術・資格の名前にすると強い。', wall: 'どんな場面で起きそう？', why: 'きっかけになった出来事は？', vision: 'だれが、どんなふうに喜ぶ？', future: 'どんな場面が見える？', ally: 'だれ？ 名前か立場で。', who: 'どんな人？ 年代や暮らし方で。', trouble: 'どんな場面で困っている？', stop: 'いつ、どんなふうに出るクセ？', str: 'どんな場面で発揮される？', idea: 'ひとことで言うと、何をする企画？'};
+function coachOf(x, st, t, f){
+  t = String(t || '').trim(); if (!t || !st) return null;
+  const len = [...t].length;
+  if (f){
+    if (NUM_F[f] && !SPEC_RE.test(t)) return `数字や日付を入れると、ぐっと現実になります（例：${NUM_F[f]}）`;
+    if (f === 'what' && (GENERIC.has(t) || len <= 2)) return `「${t}」だけでは動けません。何を・どこで？（例：${kindBank(x, 'what')[0] || '過去問を1日1問解く'}）`;
+    return null;
+  }
+  if (GENERIC.has(t) || len <= 2){ const ex = kindBank(x, st.o)[0]; return `「${t}」をもう一歩くわしく。${COACH_ASK[st.o] || '何を・どこで・どれくらい？'}${ex ? `（例：${ex}）` : ''}`; }
+  if (ACT_O.has(st.o) && !ACT_RE.test(t) && kindOf(t) === 'noun') return `「${t}」で何をする？ 動きがわかる言葉にすると、すぐ実行できます（例：${kindBank(x, 'act')[0] || '毎日10分練習する'}）`;
+  if (st.o === 'first' && !SPEC_RE.test(t)) return 'いつやる？「今夜」「明日の朝」のように時間を入れると、ぐっと動けます。';
+  return null;
+}
+/* ---------- map completeness: how full and how concrete each branch of the map is ---------- */
+function mapQuality(x){
+  if (!x) return null;
+  const P = prompts(x).map((p, i) => ({p, i})).filter(v => !v.p.fork); if (!P.length) return null;
+  const rows = P.map(({p, i}) => {
+    const st = x.stages[p.s], list = answersFor(x, p), min = Math.max(1, st.min || 1), n = list.length;
+    const vague = list.filter(a => coachOf(x, st, a.t, a.f)).length;
+    const concrete = n ? list.filter(a => SPEC_RE.test(a.t) || ACT_RE.test(a.t) || [...a.t].length >= 7).length / n : 0;
+    const score = Math.max(0, Math.min(1, .6 * Math.min(1, n / min) + .4 * concrete - .12 * vague));
+    const par = p.par != null ? byId(x, p.par) : null;
+    const why = !n ? 'まだ答えがありません' : n < min ? `あと${min - n}${isPlan(st) ? '項目' : '個'}で条件クリア` : vague ? 'あいまいな答えがあります。具体的にすると枝が太くなる' : '数字や「〜する」を入れると、もっと具体的に';
+    return {i, key: p.key, score, label: `${CIRC[p.s] || ''}${st.l}${par ? `（${par.t}）` : ''}`, why};
+  });
+  /* stopped before a crossroads: the questions beyond it still count, as empty branches (jumping goes to the crossroads) */
+  const all = prompts(x), last = all[all.length - 1];
+  if (last && last.fork && !(x.routes || {})[last.fork]){
+    const i0 = x.stages.findIndex(st => forkOf(st) === last.fork);
+    x.stages.slice(i0).forEach((st, k) => {
+      if (st.p >= 0 || (st.route && st.route[0] === 'B') || (st.ch || 1) !== (x.chapter || 1)) return;
+      const fk = st.route ? (x.forks || {})[forkOf(st)] : null;
+      rows.push({i: all.length - 1, key: 'rest:' + (i0 + k), score: 0, label: fk ? `分かれ道の先（${Object.values(fk.opts).map(o => o.n).join('／')}）` : `${CIRC[i0 + k] || ''}${st.l}`, why: 'まだ答えがありません（分かれ道から先へ進もう）'});
+    });
+  }
+  const pct = Math.round(rows.reduce((t, r) => t + r.score, 0) / rows.length * 100);
+  return {pct, weak: rows.filter(r => r.score < .8).sort((a, b) => a.score - b.score).slice(0, 3)};
+}
+function qualityHTML(x){
+  const Q = mapQuality(x); if (!Q) return '';
+  const jump = x.mode === 'map';
+  return `<div class="mq"><div class="mq-head"><b>マインドマップ完成度</b><span>${Q.pct}%</span></div><i class="mq-bar"><em style="width:${Q.pct}%"></em></i>${Q.weak.length ? `<p>あと一歩の枝${jump ? '（押すとその問いに戻れます）' : ''}</p><ul>${Q.weak.map(r => `<li>${jump ? `<button type="button" data-fix="${r.i}">` : '<span>'}<b>${esc(r.label)}</b><small>${esc(r.why)}</small>${jump ? '</button>' : '</span>'}</li>`).join('')}</ul>${jump || !CHAPTERS[(x.chapter || 1) + 1] ? '' : '<p class="mq-note">次の章で、ここからさらに深掘りできます。</p>'}` : '<p>どの枝も、具体的な答えでしっかり育っています！</p>'}</div>`;
+}
 const AXES = [{k: 'volume', n: '回答数'}, {k: 'reality', n: 'リアリティ'}, {k: 'originality', n: 'オリジナリティ'}, {k: 'aspiration', n: '志'}, {k: 'morality', n: 'モラル'}];
 const WEIGHTS = {reality: .35, volume: .2, originality: .15, aspiration: .15, morality: .15};
 const WSUM = Object.entries(WEIGHTS).map(([k, w]) => `${AXES.find(a => a.k === k).n}${Math.round(w * 100)}%`).join('・');
@@ -3183,14 +3323,17 @@ function timelineHTML(x){
 }
 function expertOf(x){
   const r = x.result; if (r && r.expert && r.expert.advice && r.expert.advice.length) return r.expert;
-  const ei = x.stages.findIndex(s => s.o === 'expert'), items = ei >= 0 ? x.ans.filter(a => a.s === ei).map(a => a.t).slice(0, 2) : [];
+  const ei = x.stages.findIndex(s => s.o === 'expert'), K = themeKind(x);
+  const items = ei >= 0 ? x.ans.filter(a => a.s === ei).map(a => a.t).slice(0, 2) : [];
   const move = refAns(x, 'what');
   const adv = [];
   if (items[0]) adv.push(`「${items[0]}」を学べる本・講座・資格を1つ選び、今週中に申し込もう。`);
   if (items[1]) adv.push(`「${items[1]}」は現場で使って身につく。実際に使う場所や人を探そう。`);
+  /* no expert answers yet: suggest the basics of the theme's field instead */
+  if (!items.length && K){ adv.push(`${K.n}では「${K.b.expert[0]}」が土台になる。本や講座を1つ選んで、今週中に始めよう。`); adv.push(`「${K.b.expert[1]}」は、くわしい人に教わるのが近道。先生・先輩・講座を1つ探そう。`); }
   adv.push(move ? `必殺技「${move}」の記録をつけて、1か月ごとに専門家や先輩に見てもらおう。` : 'その分野で活躍している人に会って、最初の1年に何をしたかを聞いてみよう。');
   if (adv.length < 3) adv.push('その分野の専門用語を10個調べて、自分の言葉で説明できるようにしよう。');
-  return {field: '', advice: adv.slice(0, 3)};
+  return {field: K ? K.n : '', advice: adv.slice(0, 3)};
 }
 function heuristic(x){
   const st = statsOf(x), T = x.ans.map(a => a.t), N = Math.max(1, T.length), has = x.ans.length > 0;
@@ -3362,6 +3505,7 @@ function renderResult(){
         <p class="formula">実現可能性スコア ＝ ${WSUM} の重みで合計</p>
       </div>
       <div style="display:grid;gap:16px">
+        ${qualityHTML(S)}
         <ul class="axes">${AXES.map(a => `<li><span class="nm">${a.n}</span><span class="track"><i style="width:${r.scores[a.k]}%"></i></span><span class="v">${r.scores[a.k]}</span><span class="cm">${esc(r.comments[a.k] || '')}</span></li>`).join('')}</ul>
         <div class="stats4">
           <div><span>条件クリア</span><b>${st.met}/${st.P}</b></div>
@@ -3664,6 +3808,7 @@ function exportText(x){
   if (x.phase === 'done' && x.result){
     const r = x.result;
     L.push('', `## 採点結果（${r.source === 'ai' ? 'AI採点' : '自動採点'}）`, `実現可能性：${r.feas}点（${r.rank.g}ランク・${r.rank.l}）`);
+    { const Q = mapQuality(x); if (Q){ L.push(`マインドマップ完成度：${Q.pct}%`); Q.weak.forEach(w => L.push(`- あと一歩の枝：${w.label}（${w.why}）`)); } }
     AXES.forEach(a => L.push(`- ${a.n}：${r.scores[a.k]}点　${r.comments[a.k] || ''}`));
     if (x.mode === 'quest') L.push(`- 夢ポイント：${x.quest.pts}`);
     if (x.mode === 'quest' && x.quest.place) L.push(`- ライバルとのレース：${x.quest.place}着`);
@@ -3706,19 +3851,27 @@ function onAct(a){
   else if (a === 'sage') openSage();
   else if (a === 'story-ok') storyOk();
   else if (a === 'next-ch') nextChapter();
+  else if (a === 'coach-fix'){
+    const c = S.coach, ans = c && c.id != null ? byId(S, c.id) : null; if (!ans || !canAnswer()) return;
+    const t = ans.t; S.coach = null; removeAnswer(ans.id);
+    const inp = $('#ans'); if (inp){ const own = inp.closest('details'); if (own) own.open = true; inp.value = t; inp.focus(); }
+  }
 }
 panel.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.act === 'menu') return openHome();
   if (!S) return;
   if (b.dataset.go != null) return go(+b.dataset.go);
+  if (b.dataset.fix != null) return fixBranch(+b.dataset.fix);
   if (b.dataset.del != null) return removeAnswer(+b.dataset.del);
   if (b.dataset.choice != null) return toggleChoice(b.dataset.choice, b.dataset.field);
   if (b.dataset.act === 'setf'){ if (saveFields()) refresh(); return; }
   if (b.dataset.route){ chooseRoute(b.dataset.fork, b.dataset.route); return; }
   if (b.dataset.act) onAct(b.dataset.act);
 });
-$('#resultSheet').addEventListener('click', e => { const b = e.target.closest('button[data-act]'); if (b) onAct(b.dataset.act); });
+$('#resultSheet').addEventListener('click', e => { const f = e.target.closest('button[data-fix]'); if (f) return fixBranch(+f.dataset.fix); const b = e.target.closest('button[data-act]'); if (b) onAct(b.dataset.act); });
+/* map mode: jump from the completeness list back to a thin branch to add to it */
+function fixBranch(i){ if (!S || S.mode !== 'map') return; $('#ovResult').hidden = true; S.phase = 'play'; go(i); }
 panel.addEventListener('keydown', e => {
   if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
   if (e.target.id === 'ans'){ e.preventDefault(); addAnswer(); return; }
