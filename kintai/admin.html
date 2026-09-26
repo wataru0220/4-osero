@@ -220,6 +220,21 @@
     </div>
 
     <div class="card">
+      <h2>📝 記録の修正・追加 <span class="muted" id="recCountSum"></span></h2>
+      <div class="note" style="margin:0 0 10px">この絞り込み範囲の記録です。各行の「修正」から<b>現場名・作業日・勤務状況（区分/時間など）</b>を直せます。「削除」で消去、下の「➕代理で報告を追加」で新規に追加できます（タブを移動せずここで修正できます）。</div>
+      <div style="margin-bottom:12px"><button class="act" id="addProxyBtnSum">➕ 代理で報告を追加（全職員）</button></div>
+      <div class="scroll">
+        <table id="tblRecordsSum">
+          <thead><tr>
+            <th>作業日</th><th>現場</th><th>氏名</th><th>作業内容</th>
+            <th class="num">区分</th><th>時間</th><th class="num">実働h</th><th>備考</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>⬇️ Excel出力</h2>
       <p class="muted">現在の絞り込み範囲を1つのExcelファイル（勤怠記録／集計サマリ／現場別集計／現場×氏名）に出力します。金額は含みません。</p>
       <button class="act green" id="exportBtn">📊 Excelファイルをダウンロード</button>
@@ -836,24 +851,33 @@
     t.querySelector('tbody').innerHTML=(body? (body+foot) : '<tr><td class="muted">該当データなし</td></tr>');
   }
 
-  function renderRecords(recs){
-    $('recCount').textContent='（'+recs.length+'件）';
-    const tb=$('tblRecords').querySelector('tbody');
-    if(!recs.length){ tb.innerHTML='<tr><td colspan="9" class="muted">該当データなし</td></tr>'; return; }
-    tb.innerHTML = recs.slice().reverse().map(r=>{
-      const time=(r.start&&r.end)?(r.start+'〜'+r.end):'';
-      const unit=unitLabel(r.dayUnit);
-      return '<tr>'+
-        '<td>'+esc(r.date)+'</td><td>'+esc(r.siteName)+'</td><td>'+esc(r.workerName)+'</td>'+
-        '<td>'+esc(r.work)+'</td><td class="num">'+unit+'</td><td>'+esc(time)+'</td>'+
-        '<td class="num">'+(r.hours!=null&&r.hours!==''?round1(r.hours):'')+'</td><td>'+esc(r.note||'')+'</td>'+
-        '<td style="white-space:nowrap"><button class="sm" data-edit="'+r._key+'">修正</button> '+
-            '<button class="sm del" data-del="'+r._key+'">削除</button></td></tr>';
-    }).join('');
+  function recordRowHtml(r){
+    const time=(r.start&&r.end)?(r.start+'〜'+r.end):'';
+    const unit=unitLabel(r.dayUnit);
+    return '<tr>'+
+      '<td>'+esc(r.date)+'</td><td>'+esc(r.siteName)+'</td><td>'+esc(r.workerName)+'</td>'+
+      '<td>'+esc(r.work)+'</td><td class="num">'+unit+'</td><td>'+esc(time)+'</td>'+
+      '<td class="num">'+(r.hours!=null&&r.hours!==''?round1(r.hours):'')+'</td><td>'+esc(r.note||'')+'</td>'+
+      '<td style="white-space:nowrap"><button class="sm" data-edit="'+r._key+'">修正</button> '+
+          '<button class="sm del" data-del="'+r._key+'">削除</button></td></tr>';
+  }
+  function bindRecordButtons(tb){
     tb.querySelectorAll('[data-edit]').forEach(b=> b.onclick=()=> openEditModal(b.dataset.edit));
     tb.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>{
       if(confirm('この記録を削除しますか？')) ref('records/'+b.dataset.del).remove().then(()=>toast('削除しました','ok'));
     });
+  }
+  function renderRecordsInto(recs, tblId, countId){
+    if(countId && $(countId)) $(countId).textContent='（'+recs.length+'件）';
+    const t=$(tblId); if(!t) return;
+    const tb=t.querySelector('tbody');
+    if(!recs.length){ tb.innerHTML='<tr><td colspan="9" class="muted">該当データなし</td></tr>'; return; }
+    tb.innerHTML = recs.slice().reverse().map(recordRowHtml).join('');
+    bindRecordButtons(tb);
+  }
+  function renderRecords(recs){
+    renderRecordsInto(recs, 'tblRecords', 'recCount');
+    renderRecordsInto(recs, 'tblRecordsSum', 'recCountSum');
   }
 
   // ---------- 記録の編集モーダル（管理者は全記録を修正可能） ----------
@@ -914,6 +938,7 @@
     $('eCancel').onclick=closeEditModal;
     $('eSave').onclick=saveEditModal;
     $('addProxyBtn').onclick=openNewRecordModal;
+    if($('addProxyBtnSum')) $('addProxyBtnSum').onclick=openNewRecordModal;
     ['eStart','eEnd','eBreak'].forEach(id=> $(id).addEventListener('input', updateECalc));
     $('editModal').addEventListener('click', e=>{ if(e.target===$('editModal')) closeEditModal(); });
   }
