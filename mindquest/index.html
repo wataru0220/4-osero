@@ -303,6 +303,42 @@ kbd{font-family:var(--en);font-size:10.5px;border:1px solid var(--line2);border-
 .mq li button:hover{border-color:#15A37C}
 .mq li b{font-size:13px;font-weight:800;overflow-wrap:anywhere}
 .mq li small{font-size:11.5px;color:var(--muted)}
+/* SWOT / time-matrix: the small reference grid above a form, and the result boards */
+.mini{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
+.mini .c{display:grid;gap:2px;align-content:start;padding:7px 10px;border-radius:12px;font-size:12.5px;line-height:1.45;overflow-wrap:anywhere;border:1px solid}
+.mini .c b{font-size:11px;font-weight:800}
+.mini .c i{font-style:normal;color:var(--dim)}
+.mini .c em{font-style:normal;font-weight:700;color:var(--ink)}
+.mini.swot .c{background:#FFF3F1;border-color:#FFD3CD}
+.mini.swot .c b{color:#C8362F}
+.mini.tm .c{background:#F5F1FF;border-color:#DED2FF;color:var(--ink2)}
+.mini.tm .c b{color:#6A4BD1}
+.mini.tm .q2{background:#E9E0FF;border-color:#B9A6FF}
+.r-boards{display:grid;gap:10px;border-top:1.5px dashed var(--line2);padding-top:18px}
+.r-boards h3{margin:-6px 0 0;font-size:18px;font-weight:800}
+.boards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px;align-items:start}
+.bd{border-radius:16px;padding:14px 16px;border:1px solid var(--line);background:#fff;display:grid;gap:8px}
+.bd h3{margin:0;font-size:13px;font-weight:800}
+.bd dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13.5px}
+.bd dt{font-weight:800;color:var(--muted);font-size:12px}
+.bd dd{margin:0;font-weight:700;overflow-wrap:anywhere}
+.bd ul{margin:0;padding-left:1.2em;display:grid;gap:4px;font-size:13.5px}
+.bd li span{color:var(--ink2);margin-left:6px}
+.mx{display:grid;grid-template-columns:minmax(4.6em,24%) minmax(0,1fr) minmax(0,1fr);gap:4px;font-size:12.5px}
+.mx .corner{display:grid;place-items:center;font-family:var(--en);font-weight:700;font-size:11px;color:var(--muted)}
+.mx .hx,.mx .hy{display:grid;gap:1px;align-content:center;padding:6px 8px;border-radius:10px;color:#fff;font-weight:800;font-size:12px;text-align:center}
+.mx .hx small,.mx .hy small{font-weight:500;font-size:11px;overflow-wrap:anywhere}
+.mx .cell{display:grid;gap:2px;align-content:start;padding:8px 10px;border-radius:10px;min-height:3.8em;overflow-wrap:anywhere;line-height:1.45}
+.mx .cell em{font-style:normal;font-weight:800;font-size:11px}
+.mx i{font-style:normal;color:var(--dim)}
+.mx .hx i,.mx .hy i{color:rgba(255,255,255,.75)}
+.mx.sw .hx,.mx.sw .hy{background:#D9443C}
+.mx.sw .cell{background:#FFEDEB}
+.mx.sw .cell em{color:#C8362F}
+.mx.tmx .hx,.mx.tmx .hy{background:#7657E0}
+.mx.tmx .cell{background:#F1ECFF}
+.mx.tmx .cell em{color:#6A4BD1}
+.mx.tmx .cell.key{background:#E2D8FF;box-shadow:inset 0 0 0 2px #8C6CF2}
 .rpg.mon{background:#2A1F3D}
 .hpbar{display:flex;align-items:center;gap:8px;margin-top:10px;font-family:var(--en);font-size:11px;font-weight:700}
 .hpbar .hpt{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.15);overflow:hidden}
@@ -439,9 +475,9 @@ details.own[open] summary{margin-bottom:8px}
 .tl h3{margin:0 0 8px;font-size:15px;color:#1F6DB5}
 .tl-note{margin:-4px 0 8px;font-size:12px;color:var(--muted)}
 .tl ol{list-style:none;margin:0;padding:0;display:grid;gap:0;position:relative}
-.tl ol::before{content:'';position:absolute;left:47px;top:6px;bottom:6px;width:3px;border-radius:2px;background:#CFE3F7}
-.tl li{display:grid;grid-template-columns:40px 1fr;gap:18px;align-items:start;padding:6px 0;position:relative}
-.tl li::before{content:'';position:absolute;left:43px;top:12px;width:11px;height:11px;border-radius:50%;background:#2E8FE0;box-shadow:0 0 0 3px #fff}
+.tl ol::before{content:'';position:absolute;left:63px;top:6px;bottom:6px;width:3px;border-radius:2px;background:#CFE3F7}
+.tl li{display:grid;grid-template-columns:56px 1fr;gap:18px;align-items:start;padding:6px 0;position:relative}
+.tl li::before{content:'';position:absolute;left:59px;top:12px;width:11px;height:11px;border-radius:50%;background:#2E8FE0;box-shadow:0 0 0 3px #fff}
 .tl li b{font-family:var(--en);font-size:14px;color:#1F6DB5;text-align:right;white-space:nowrap}
 .tl li div{display:grid;gap:1px;padding-left:4px}
 .tl li strong{font-size:13.5px}
@@ -651,10 +687,11 @@ details.own[open] summary{margin-bottom:8px}
 .ex-note{margin:0;font-size:11.5px;color:var(--muted)}
 .advice ol{margin:0;padding-left:1.3em;display:grid;gap:4px;font-size:13.5px}
 .r-actions{display:flex;flex-wrap:wrap;gap:8px}
+.r-actions .btn,.btn-col .btn{white-space:normal}
 .copybox textarea{width:100%;min-height:280px;box-sizing:border-box;background:var(--field);border:1.5px solid var(--line2);border-radius:14px;padding:12px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:var(--ink)}
 
 /* print preview */
-#ovPrint{flex-direction:column;align-items:center;gap:16px}
+#ovPrint{flex-direction:column;align-items:center;justify-content:flex-start;gap:16px}
 .pbar{position:sticky;top:0;z-index:2;width:100%;max-width:840px;box-sizing:border-box;background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:14px 16px;display:grid;gap:10px}
 .pbar-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .pbar h2{margin:0;font-size:17px;font-weight:800;margin-right:auto}
@@ -977,18 +1014,23 @@ const PRESETS = {
       f2: {t: '洞窟をぬけると、また分かれ道！', opts: {A2: {n: '星の道', d: '誰かを笑顔にする「志」を考える'}, B2: {n: '未来の道', d: '10年後の自分と話してみる'}}}
     },
     st: [
-      {l:'理由', type:'plan', fields:[['why','どうしてかなえたい？','理由','例：人の役に立ちたいから'],['score','いまの実現度は10点満点で何点？','実現度','例：3点']], q:'旅に出る前に聞かせておくれ。どうして「{t}」をかなえたいのかな？', p:-1, min:2, sec:90, v:1, o:'why', npc:'旅立ちの長老', seg:'town', hint:'理由がはっきりすると、くじけそうなときの支えになります。点数は直感でOK。'},
+      {l:'理由と誓い', type:'plan', fields:[['why','どうしてかなえたい？','理由','例：人の役に立ちたいから','why'],['for','誰のためにかなえる？','誰のため','例：支えてくれた家族のため','vowfor'],['years','何年でかなえる？','何年で','例：5年','years'],['core','絶対に譲れないものは？','譲れない','例：人に誠実であること','core'],['score','いまの実現度は10点満点で何点？','実現度','例：3点','score']], q:'旅に出る前に、誓いを立てておくれ。どうして「{t}」をかなえたい？ 誰のために、何年でかなえる？ 絶対に譲れないものは？', vq:['旅に出る前に、誓いを立てておくれ。どうして「{t}」をかなえたい？ 誰のために、何年でかなえる？ 絶対に譲れないものは？','長老が誓いの書を広げた。「{t}」をかなえたい理由、誰のためか、何年でかなえるか、そして絶対に譲れないものを書きこもう。','長老が杖をつく。「{t}」は何のため、誰のため？ 何年でかなえて、何だけは譲らない？','旅立ちの誓いじゃ。「{t}」をかなえたい理由と、喜んでほしい人、かなえるまでの年数、そして守りぬくものを聞かせておくれ。'], p:-1, min:5, sec:150, v:1, o:'why', npc:'旅立ちの長老', seg:'town', hint:'理由と「誰のため」が、くじけそうなときの支えになります。年数は「5年」のように数字で。点数は直感でOK。'},
       {l:'必要なもの', q:'道具屋の主人が聞く。「{t}」をかなえるのに、絶対に欠かせないもの（これがないと始まらないもの）は何だい？', p:-1, min:2, sec:120, o:'need', npc:'道具屋の主人', seg:'town', hint:'知識・技術・資格・お金・人…。いちばん大事なものから書こう。'},
       {l:'やること', q:'「{a}」を手に入れるために、具体的に何をする？', alt:['「{a}」を身につける、いちばんの近道は？','「{a}」をそろえるために、まず何から動く？'], p:1, min:1, sec:70, o:'act', npc:'修行の師匠', seg:'town', hint:'「〇〇に申し込む」「△△を練習する」のように、動きがわかる言葉で。'},
       {l:'専門知識', q:'専門家の賢者が聞く。「{t}」の世界で、プロなら必ず身につけている知識や技術は何だと思う？', p:-1, min:2, sec:90, o:'expert', npc:'専門家の賢者', seg:'town', hint:'専門用語や資格の名前で書けると強い。わからなければ「〇〇を調べる」でもOK。'},
       {l:'仲間', type:'plan', route:'A1', fields:[['who','誰を仲間にする？','仲間','例：陸上部の先輩','ally'],['ask','その人に何をお願いする？','お願い','例：週1回いっしょに練習してもらう','ask']], q:'森の奥は、ひとりでは進めない。「{t}」の旅に、誰を仲間にする？', p:-1, min:2, sec:90, o:'ally', npc:'森の案内人', seg:'A1', hint:'身近な人でも、あこがれの人でもOK。お願いは具体的に。'},
       {l:'強み', type:'plan', route:'B1', fields:[['str','あなたの得意なことは？','得意','例：コツコツ続けられる','str'],['use','それをどう生かす？','生かし方','例：毎日の練習を記録する','use']], q:'丘の上から、自分を見つめてみよう。「{t}」に役立つ、あなたの強みは？', p:-1, min:2, sec:90, o:'str', npc:'丘の羊飼い', seg:'B1', hint:'人からほめられたことを思い出してみよう。'},
+      {l:'SWOT分析', type:'plan', fields:[['s','強み：自分の得意なことや、持っているものは？','強み','例：コツコツ続けられる','str'],['w','弱み：苦手なことや、足りないものは？','弱み','例：人前で話すのが苦手','swotw'],['o','機会：追い風になる、まわりのチャンスは？','機会','例：オンライン講座が増えた','swoto'],['t','脅威：向かい風になる、まわりの心配ごとは？','脅威','例：ライバルが多い','swott']], q:'川のほとりで、軍師が地図を広げた。「{t}」の作戦会議だ。あなたの強み・弱みと、まわりの機会・脅威は？', vq:['川のほとりで、軍師が地図を広げた。「{t}」の作戦会議だ。あなたの強み・弱みと、まわりの機会・脅威は？','軍師が4つの旗を立てた。「{t}」について、強み・弱み（自分のこと）と、機会・脅威（まわりのこと）を書きだそう。','軍師が言う。「敵を知り己を知れば、百戦あやうからず」。「{t}」のSWOT（強み・弱み・機会・脅威）は？','川の流れを読むように、まわりの流れも読もう。「{t}」の追い風（機会）と向かい風（脅威）、そして自分の強み・弱みは？'], p:-1, min:4, sec:150, o:'swot', npc:'川の軍師', seg:'river', hint:'強み・弱みは「自分の中」のこと、機会・脅威は「まわりの環境」のこと。'},
+      {l:'クロスSWOT', type:'plan', show:'swot', fields:[['so','強み×機会：強みを生かして、チャンスをどうつかむ？','強み×機会','例：コツコツ力で無料講座をやりきる','cso'],['wo','弱み×機会：チャンスを使って、弱みをどう補う？','弱み×機会','例：オンライン講座で苦手を練習する','cwo'],['st','強み×脅威：強みを生かして、向かい風をどうかわす？','強み×脅威','例：続ける力でライバルに差をつける','cst'],['wt','弱み×脅威：最悪の事態を、どうさける？','弱み×脅威','例：無理な計画を立てず早めに相談する','cwt']], q:'軍師が4つの作戦を並べた。あなたのSWOTをかけ合わせて、「{t}」の作戦を立てよう！', vq:['軍師が4つの作戦を並べた。あなたのSWOTをかけ合わせて、「{t}」の作戦を立てよう！','軍師が地図に線を引く。「強み×機会」で攻め、「弱み×脅威」で守る。「{t}」の4つの作戦は？','軍師が言う。「2つをかけ合わせると、作戦が生まれる」。SWOTの答えを組み合わせて、「{t}」の作戦を立てよう。'], p:-1, min:4, sec:180, o:'cross', npc:'川の軍師', seg:'river', hint:'下のSWOTの答えを見ながら、2つをかけ合わせて考えよう。攻める作戦と守る作戦の両方が大事。'},
       {l:'壁', q:'モンスター「ふあん」が耳もとでささやく…「どうせ無理だよ」。「{t}」をあきらめたくなるとしたら、それはどんな時？', alt:['モンスター「ふあん」が道をふさいだ！ 「{t}」で、いちばん怖いこと・心配なことは何？','モンスター「ふあん」が笑う…「失敗するに決まってる」。失敗するとしたら、原因は何？'], p:-1, min:1, sec:70, o:'wall', npc:'モンスター「ふあん」', monster:'normal', mk:'ghost', mcol:'#7C4DDB', seg:'cave', hint:'弱音をはき出してOK。不安は正体がわかると小さくなる。'},
-      {l:'作戦', q:'「{a}」が本当に起きてしまった！ そのとき、どう切りぬける？', alt:['最悪の日：「{a}」で心が折れそう。誰に助けを求めて、どう動く？','「{a}」が起きる前に、今から打てる手は？'], p:6, min:1, sec:70, o:'over', npc:'洞窟の賢者', seg:'cave', hint:'「もし〇〇になったら、△△する」と決めておくと強い。'},
+      {l:'作戦', q:'「{a}」が本当に起きてしまった！ そのとき、どう切りぬける？', alt:['最悪の日：「{a}」で心が折れそう。誰に助けを求めて、どう動く？','「{a}」が起きる前に、今から打てる手は？'], p:8, min:1, sec:70, o:'over', npc:'洞窟の賢者', seg:'cave', hint:'「もし〇〇になったら、△△する」と決めておくと強い。'},
       {l:'やめること', q:'モンスター「いいわけ」が「明日からでいいよ」とささやく…。夢のじゃまをしている悪い習慣や、つい言ってしまう言い訳は？', p:-1, min:1, sec:60, o:'stop', npc:'モンスター「いいわけ」', monster:'normal', mk:'imp', mcol:'#C8362F', seg:'cave', hint:'正直に書くほど強くなれる。書いたものが「やめること」になります。'},
       {l:'必殺技', type:'plan', fields:[['what','必殺技：何をする？','何を','例：過去問を1日1問解く','what'],['pace','どのペースで？','ペース','例：毎日30分','pace'],['start','いつから？','いつから','例：今週の土曜から','start']], q:'ボスドラゴン「あきらめ」がほえる！「どうせ続かない。すぐやめるさ」──必殺技でたおせ！ 「{t}」のために、何を・どのペースで・いつからやる？', p:-1, min:3, sec:120, o:'what', npc:'ボス「あきらめ」', monster:'boss', mk:'dragon', mcol:'#C8362F', seg:'cave', hint:'3つそろうと必殺技が完成！ 数字や日付が入るほど威力が上がる。'},
+      {l:'時間管理', type:'plan', show:'tm', fields:[['q1','第1領域（重要・緊急）：今すぐやることは？','第1領域','例：来週しめきりの申し込み','tm1'],['q2','第2領域（重要・緊急でない）：夢や目標のために時間を作ってやることは？','第2領域','例：毎朝30分の基礎練習','tm2'],['q3','第3領域（重要でない・緊急）：減らす・人に任せることは？','第3領域','例：急ぎでない連絡への即返信','tm3'],['q4','第4領域（重要でない・緊急でない）：やめることは？','第4領域','例：寝る前のスマホ','tm4']], q:'山の道で、時の番人が4つの砂時計を並べた。「{t}」のための時間を、4つの箱に分けよう。', vq:['山の道で、時の番人が4つの砂時計を並べた。「{t}」のための時間を、4つの箱に分けよう。','時の番人が言う。「時間は、重要かどうか・急ぎかどうかで4つに分けられる」。「{t}」のために、それぞれ何が入る？','時の番人が問う。夢は「重要だけど急ぎでない」箱で育つ。「{t}」のために、4つの箱に入れるものは？'], p:-1, min:4, sec:150, o:'tm', npc:'時の番人', seg:'post', hint:'夢や目標をかなえる行動は、たいてい第2領域。第3・第4領域を減らして、第2領域の時間を作ろう。'},
       {l:'志', route:'A2', q:'星の道へようこそ。「{@why}」という想いがかなったら、誰がどんなふうに喜ぶ？', qf:'星の道へようこそ。「{t}」がかなったら、誰がどんなふうに喜ぶ？', p:-1, min:1, sec:70, v:1, o:'vision', npc:'星の子ども', seg:'A2', hint:'喜ぶ人の顔を、具体的に思い浮かべてみよう。'},
       {l:'未来の自分', route:'B2', q:'未来の道で、10年後の自分に会った！ 夢をかなえたあなたは、今のあなたに何と言う？', p:-1, min:1, sec:70, v:1, o:'future', npc:'10年後のあなた', seg:'B2', hint:'未来の自分になりきって、ひとこと。'},
+      {l:'恩人', q:'城の大臣が問う。「{t}」の旅をここまで来られたのは、誰のおかげかな？ これまでお世話になった人は？', vq:['城の大臣が問う。「{t}」の旅をここまで来られたのは、誰のおかげかな？ これまでお世話になった人は？','城の広間に、旅の思い出が飾られている。あなたを支えてくれた人、これまでお世話になった人はだれ？','大臣が言う。「夢は、ひとりではかなわぬもの」。「{t}」の道で、これまでお世話になった人は？'], p:-1, min:1, sec:70, o:'thanks', npc:'城の大臣', seg:'castle', hint:'家族・先生・先輩・友だち・お客様。顔を思い浮かべて、名前や関係で書こう。'},
+      {l:'恩返し', q:'「{a}」に、どんな形で感謝や恩返しをする？', vq:['「{a}」に、どんな形で感謝や恩返しをする？','「{a}」に「ありがとう」を伝えるなら、いつ・どうやって？','夢がかなったら、「{a}」にどんな恩返しをしたい？','「{a}」がしてくれたことを、今度はだれにつないでいく？'], p:15, min:1, sec:60, o:'repay', npc:'城の大臣', seg:'castle', hint:'今できる感謝と、かなったあとの恩返し。両方考えてもOK。'},
       {l:'最初の一歩', q:'城の門をひらく合言葉は「最初の一歩」。必殺技「{@what}」のために、今日・明日やることは？', qf:'城の門をひらく合言葉は「最初の一歩」。今日・明日から何をする？', p:-1, min:1, sec:70, h:1, o:'first', npc:'王さま', seg:'castle', hint:'5分でできるくらい小さな一歩がベスト。'}
     ]},
   work: { name: '仕事の目標',
@@ -998,18 +1040,23 @@ const PRESETS = {
       f2: {t: '洞窟をぬけると、また分かれ道！', opts: {A2: {n: '貢献の道', d: 'お客様や仲間への良い影響を考える'}, B2: {n: '未来の道', d: '達成した日の自分を想像する'}}}
     },
     st: [
-      {l:'目的', type:'plan', fields:[['why','なぜ達成したい？','目的','例：お客様の暮らしを良くしたい','why'],['score','いまの達成度は10点満点で何点？','達成度','例：4点','score']], q:'出発前に確認だ。なぜ「{t}」を達成したいのか？', p:-1, min:2, sec:90, v:1, o:'why', npc:'社長', seg:'town', hint:'目的がはっきりすると、判断に迷わなくなります。'},
+      {l:'目的と誓い', type:'plan', fields:[['why','なぜ達成したい？','目的','例：お客様の暮らしを良くしたい','why'],['for','誰のためにやる？','誰のため','例：地域のお客様と社員','vowfor'],['years','何年で達成する？','何年で','例：3年','years'],['core','絶対に譲れないものは？','譲れない','例：品質と信頼','core'],['score','いまの達成度は10点満点で何点？','達成度','例：4点','score']], q:'出発前に確認だ。なぜ「{t}」を達成したい？ 誰のために、何年でやる？ 絶対に譲れないものは？', vq:['出発前に確認だ。なぜ「{t}」を達成したい？ 誰のために、何年でやる？ 絶対に譲れないものは？','社長が誓約書を差し出した。「{t}」の目的、誰のためか、何年で達成するか、絶対に譲れないものを書こう。','社長が腕を組む。「{t}」は何のため、誰のためにやるのか。何年で達成し、何だけは譲らない？'], p:-1, min:5, sec:150, v:1, o:'why', npc:'社長', seg:'town', hint:'目的と「誰のため」がはっきりすると、判断に迷わなくなります。年数は数字で。'},
       {l:'必要なもの', q:'総務の先輩が聞く。「{t}」の達成に、いちばん足りていないもの（人・物・お金・知識）は何だ？', p:-1, min:2, sec:120, o:'need', npc:'総務の先輩', seg:'town', hint:'「これがないと達成できない」ものから順に書こう。'},
       {l:'やること', q:'「{a}」を確保するために、具体的に何をする？', alt:['「{a}」をそろえる、いちばんの近道は？','「{a}」のために、今月まず何から動く？'], p:1, min:1, sec:70, o:'act', npc:'現場のベテラン', seg:'town', hint:'誰に・何を頼むか、何を始めるかまで書こう。'},
       {l:'専門スキル', q:'専門家の賢者が聞く。「{t}」を達成するプロなら、どんな専門知識や技術・道具を使う？', p:-1, min:2, sec:90, o:'expert', npc:'専門家の賢者', seg:'town', hint:'業界の資格・ツール・ノウハウなど、名前で書こう。'},
       {l:'協力者', type:'plan', route:'A1', fields:[['who','誰に協力してもらう？','協力者','例：営業部の先輩','ally'],['ask','何をお願いする？','お願い','例：商談に同行してもらう','ask']], q:'協力の森だ。「{t}」のために、誰の力を借りる？', p:-1, min:2, sec:90, o:'ally', npc:'取引先の担当者', seg:'A1', hint:'社内・社外の両方から探してみよう。'},
       {l:'強み', type:'plan', route:'B1', fields:[['str','あなた（会社）の強みは？','強み','例：地元での信頼','str'],['use','それをどう生かす？','生かし方','例：紹介キャンペーンを行う','use']], q:'強みの丘だ。「{t}」に生かせる強みは？', p:-1, min:2, sec:90, o:'str', npc:'丘の職人', seg:'B1', hint:'お客様によく言われる言葉がヒントになります。'},
+      {l:'SWOT分析', type:'plan', fields:[['s','強み：自分や会社の得意なこと・資源は？','強み','例：地元での信頼','str'],['w','弱み：足りないもの・苦手なことは？','弱み','例：人手が足りない','swotw'],['o','機会：追い風になる市場や社会の変化は？','機会','例：リフォームの需要が増えている','swoto'],['t','脅威：向かい風になる変化やライバルは？','脅威','例：大手の値下げ','swott']], q:'川のほとりで、参謀が地図を広げた。「{t}」の作戦会議だ。強み・弱みと、市場の機会・脅威は？', vq:['川のほとりで、参謀が地図を広げた。「{t}」の作戦会議だ。強み・弱みと、市場の機会・脅威は？','参謀が4つの旗を立てた。「{t}」について、社内の強み・弱みと、社外の機会・脅威を書きだそう。','参謀が言う。「敵を知り己を知れば、百戦あやうからず」。「{t}」のSWOT（強み・弱み・機会・脅威）は？'], p:-1, min:4, sec:150, o:'swot', npc:'川の参謀', seg:'river', hint:'強み・弱みは「自分の中」のこと、機会・脅威は「まわりの環境」のこと。'},
+      {l:'クロスSWOT', type:'plan', show:'swot', fields:[['so','強み×機会：強みを生かして、機会をどう取りにいく？','強み×機会','例：地元の信頼を生かして紹介を増やす','cso'],['wo','弱み×機会：機会を使って、弱みをどう補う？','弱み×機会','例：補助金を使って人を増やす','cwo'],['st','強み×脅威：強みを生かして、脅威をどうかわす？','強み×脅威','例：品質で値下げ競争をさける','cst'],['wt','弱み×脅威：最悪の事態を、どうさける？','弱み×脅威','例：無理な受注をしない','cwt']], q:'参謀が4つの作戦を並べた。あなたのSWOTをかけ合わせて、「{t}」の戦略を立てよう！', vq:['参謀が4つの作戦を並べた。あなたのSWOTをかけ合わせて、「{t}」の戦略を立てよう！','参謀が地図に線を引く。「強み×機会」で攻め、「弱み×脅威」で守る。「{t}」の4つの戦略は？'], p:-1, min:4, sec:180, o:'cross', npc:'川の参謀', seg:'river', hint:'下のSWOTの答えを見ながら、2つをかけ合わせて考えよう。攻める作戦と守る作戦の両方が大事。'},
       {l:'障害', q:'モンスター「ていたい」がうなる…「このままでは終わりだ」。目標が達成できないとしたら、最悪の原因は何？', alt:['モンスター「ていたい」が道をふさいだ！ いちばん起きてほしくないトラブルは？'], p:-1, min:1, sec:70, o:'wall', npc:'モンスター「ていたい」', monster:'normal', mk:'ghost', mcol:'#7C4DDB', seg:'cave', hint:'人・時間・お金・仕組み、どこで止まりそうか考えよう。'},
-      {l:'対策', q:'「{a}」が現実になった！ そのとき、誰とどう動く？', alt:['「{a}」で計画が止まった。どうやって立て直す？','「{a}」を先回りして防ぐには？'], p:6, min:1, sec:70, o:'over', npc:'相談役', seg:'cave', hint:'「もし〇〇なら、△△する」の形で決めておこう。'},
+      {l:'対策', q:'「{a}」が現実になった！ そのとき、誰とどう動く？', alt:['「{a}」で計画が止まった。どうやって立て直す？','「{a}」を先回りして防ぐには？'], p:8, min:1, sec:70, o:'over', npc:'相談役', seg:'cave', hint:'「もし〇〇なら、△△する」の形で決めておこう。'},
       {l:'やめること', q:'モンスター「いそがしい」が「今は無理」とささやく…。ムダになっている仕事や、つい先のばしにしている悪いクセは？', p:-1, min:1, sec:60, o:'stop', npc:'モンスター「いそがしい」', monster:'normal', mk:'imp', mcol:'#C8362F', seg:'cave', hint:'新しいことを始めるには、何かをやめる必要があります。'},
       {l:'必殺技', type:'plan', fields:[['what','必殺技：何をする？','何を','例：既存客に電話で提案する','what'],['pace','どのペースで？','ペース','例：週に10件','pace'],['start','いつから？','いつから','例：今週の土曜から','start']], q:'ボスドラゴン「前例がない」がほえる！「そんなやり方、うまくいくはずがない」──必殺技でたおせ！ 「{t}」のために、何を・どのペースで・いつからやる？', p:-1, min:3, sec:120, o:'what', npc:'ボス「前例がない」', monster:'boss', mk:'dragon', mcol:'#C8362F', seg:'cave', hint:'3つそろうと必殺技が完成！ 件数や期限が入るほど威力が上がる。'},
+      {l:'時間管理', type:'plan', show:'tm', fields:[['q1','第1領域（重要・緊急）：今すぐやることは？','第1領域','例：今週納期の見積もり','tm1'],['q2','第2領域（重要・緊急でない）：夢や目標のために時間を作ってやることは？','第2領域','例：新しいお客様づくり','tm2'],['q3','第3領域（重要でない・緊急）：減らす・人に任せることは？','第3領域','例：急ぎでない電話への即対応','tm3'],['q4','第4領域（重要でない・緊急でない）：やめることは？','第4領域','例：目的のない会議','tm4']], q:'山の道で、時の番人が4つの砂時計を並べた。「{t}」のために、仕事の時間を4つの箱に分けよう。', vq:['山の道で、時の番人が4つの砂時計を並べた。「{t}」のために、仕事の時間を4つの箱に分けよう。','時の番人が言う。「成果を生むのは、重要だけど急ぎでない仕事だ」。「{t}」のために、4つの箱に入れるものは？'], p:-1, min:4, sec:150, o:'tm', npc:'時の番人', seg:'post', hint:'夢や目標をかなえる行動は、たいてい第2領域。第3・第4領域を減らして、第2領域の時間を作ろう。'},
       {l:'貢献', route:'A2', q:'貢献の道だ。「{t}」を達成すると、お客様や仲間にどんな良いことがある？', p:-1, min:1, sec:70, v:1, o:'vision', npc:'お得意さま', seg:'A2', hint:'誰の、どんな困りごとが減るかを考えよう。'},
       {l:'未来', route:'B2', q:'未来の道だ。達成した日の朝礼で、あなたは何と話す？', p:-1, min:1, sec:70, v:1, o:'future', npc:'1年後のあなた', seg:'B2', hint:'感謝したい人の名前も入れてみよう。'},
+      {l:'恩人', q:'会長が問う。「{t}」をめざせるのは、誰のおかげだ？ これまでお世話になったお客様・仲間・恩人は？', vq:['会長が問う。「{t}」をめざせるのは、誰のおかげだ？ これまでお世話になったお客様・仲間・恩人は？','会長が言う。「商売は、人のご縁でできている」。これまでお世話になった人は？'], p:-1, min:1, sec:70, o:'thanks', npc:'会長', seg:'castle', hint:'家族・先生・先輩・友だち・お客様。顔を思い浮かべて、名前や関係で書こう。'},
+      {l:'恩返し', q:'「{a}」に、どんな形で感謝や恩返しをする？', vq:['「{a}」に、どんな形で感謝や恩返しをする？','「{a}」に「ありがとう」を伝えるなら、いつ・どうやって？','目標を達成したら、「{a}」にどんな恩返しをしたい？'], p:15, min:1, sec:60, o:'repay', npc:'会長', seg:'castle', hint:'今できる感謝と、かなったあとの恩返し。両方考えてもOK。'},
       {l:'最初の一歩', q:'城の門をひらく合言葉は「最初の一歩」。必殺技「{@what}」のために、今週中にやることは？', qf:'城の門をひらく合言葉は「最初の一歩」。今週中にやることは？', p:-1, min:1, sec:70, h:1, o:'first', npc:'会長', seg:'castle', hint:'今週の予定表に書ける大きさにしよう。'}
     ]},
   plan: { name: '企画を考える',
@@ -1021,16 +1068,22 @@ const PRESETS = {
     st: [
       {l:'誰のため', q:'町の人が聞く。「{t}」は、いちばん誰を喜ばせたい企画？', p:-1, min:2, sec:90, o:'who', npc:'町の人', seg:'town', hint:'年代や暮らし方まで、具体的に思い浮かべよう。'},
       {l:'困りごと', q:'「{a}」は、どんなことに困っている？', alt:['「{a}」が「あったらいいな」と思っていることは？'], p:0, min:1, sec:70, o:'trouble', npc:'聞き込み名人', seg:'town', hint:'実際に聞いた声があれば、それがいちばん。'},
+      {l:'誓い', type:'plan', fields:[['why','なぜこの企画をやる？','目的','例：地域に集まる場所がないから','why'],['years','何年かけて育てる？','何年で','例：3年','years'],['core','この企画で絶対に譲れないことは？','譲れない','例：参加者の安全','core']], q:'企画の旗を立てる前に、誓いを決めよう。なぜ「{t}」をやる？ 何年かけて育てる？ 絶対に譲れないことは？', vq:['企画の旗を立てる前に、誓いを決めよう。なぜ「{t}」をやる？ 何年かけて育てる？ 絶対に譲れないことは？','町長が問う。「{t}」の目的と、育てる年数、そして何があっても守ることは？'], p:-1, min:3, sec:120, v:1, o:'why', npc:'町長', seg:'town', hint:'「誰のため」は最初の問いで決めた人。その人のために、何年で、何を守りぬく？'},
       {l:'アイデア', q:'発明家が聞く。その困りごとを解決する、あなたならではのアイデアは？ ひとことで！', p:-1, min:1, sec:90, o:'idea', npc:'発明家', seg:'town', hint:'ひとことで言える形にしてみよう。'},
       {l:'専門知識', q:'専門家の賢者が聞く。「{@idea}」を形にするのに必要な専門知識や技術、守るべきルールは？', qf:'専門家の賢者が聞く。この企画を形にするのに必要な専門知識や技術、守るべきルールは？', p:-1, min:2, sec:90, o:'expert', npc:'専門家の賢者', seg:'town', hint:'資格・許可・法律・技術など、プロの目で考えよう。'},
       {l:'仲間', type:'plan', route:'A1', fields:[['who','誰と組む？','相棒','例：地元のカフェ','ally'],['ask','何を頼む？','お願い','例：会場を貸してもらう','ask']], q:'仲間の森だ。「{t}」を、誰と組んで進める？', p:-1, min:2, sec:90, o:'ally', npc:'森の案内人', seg:'A1', hint:'ちがう得意を持つ人と組むと強くなります。'},
       {l:'強み', type:'plan', route:'B1', fields:[['str','自分たちの強みは？','強み','例：大工の技術','str'],['use','企画にどう生かす？','生かし方','例：木工ワークショップを開く','use']], q:'強みの丘だ。この企画に生かせる、自分たちの強みは？', p:-1, min:2, sec:90, o:'str', npc:'丘の職人', seg:'B1', hint:'当たり前にやっていることが、実は強みかも。'},
+      {l:'SWOT分析', type:'plan', fields:[['s','強み：自分たちの得意なこと・使える資源は？','強み','例：大工の技術','str'],['w','弱み：足りないもの・苦手なことは？','弱み','例：宣伝が苦手','swotw'],['o','機会：追い風になる、まわりのチャンスは？','機会','例：地域のイベント補助がある','swoto'],['t','脅威：向かい風になる、まわりの心配ごとは？','脅威','例：同じ日の別イベント','swott']], q:'川のほとりで、軍師が地図を広げた。「{t}」の作戦会議だ。自分たちの強み・弱みと、まわりの機会・脅威は？', vq:['川のほとりで、軍師が地図を広げた。「{t}」の作戦会議だ。自分たちの強み・弱みと、まわりの機会・脅威は？','軍師が4つの旗を立てた。「{t}」について、強み・弱み（自分たちのこと）と、機会・脅威（まわりのこと）を書きだそう。'], p:-1, min:4, sec:150, o:'swot', npc:'川の軍師', seg:'river', hint:'強み・弱みは「自分の中」のこと、機会・脅威は「まわりの環境」のこと。'},
+      {l:'クロスSWOT', type:'plan', show:'swot', fields:[['so','強み×機会：強みを生かして、チャンスをどうつかむ？','強み×機会','例：技術を生かした体験会を補助金で開く','cso'],['wo','弱み×機会：チャンスを使って、弱みをどう補う？','弱み×機会','例：町の広報に宣伝を頼む','cwo'],['st','強み×脅威：強みを生かして、向かい風をどうかわす？','強み×脅威','例：体験型にして他と差をつける','cst'],['wt','弱み×脅威：最悪の事態を、どうさける？','弱み×脅威','例：小さく始めて雨の日の案も用意','cwt']], q:'軍師が4つの作戦を並べた。あなたのSWOTをかけ合わせて、「{t}」の作戦を立てよう！', vq:['軍師が4つの作戦を並べた。あなたのSWOTをかけ合わせて、「{t}」の作戦を立てよう！','軍師が地図に線を引く。「強み×機会」で攻め、「弱み×脅威」で守る。「{t}」の4つの作戦は？'], p:-1, min:4, sec:180, o:'cross', npc:'川の軍師', seg:'river', hint:'下のSWOTの答えを見ながら、2つをかけ合わせて考えよう。攻める作戦と守る作戦の両方が大事。'},
       {l:'リスク', q:'モンスター「しっぱい」が未来を見せる…企画は大失敗に終わった。いったい何が原因だった？', alt:['モンスター「しっぱい」が道をふさいだ！ この企画でいちばん起きてほしくないことは？'], p:-1, min:1, sec:70, o:'wall', npc:'モンスター「しっぱい」', monster:'normal', mk:'ghost', mcol:'#7C4DDB', seg:'cave', hint:'先に失敗を想像しておくと、成功しやすくなります。'},
-      {l:'対策', q:'「{a}」を防ぐには、どうする？', alt:['「{a}」が起きたら、誰とどう動く？'], p:6, min:1, sec:70, o:'over', npc:'洞窟の賢者', seg:'cave', hint:''},
+      {l:'対策', q:'「{a}」を防ぐには、どうする？', alt:['「{a}」が起きたら、誰とどう動く？'], p:9, min:1, sec:70, o:'over', npc:'洞窟の賢者', seg:'cave', hint:''},
       {l:'小さく試す', q:'モンスター「よさん不足」に財布をうばわれた！ 予算ゼロでも試すなら、どうする？', p:-1, min:1, sec:60, o:'cheap', npc:'モンスター「よさん不足」', monster:'normal', mk:'imp', mcol:'#C8362F', seg:'cave', hint:'まずは小さく、早く、試してみよう。'},
       {l:'必殺技', type:'plan', fields:[['what','必殺技：何をする？','何を','例：SNSで試作品を紹介する','what'],['pace','どのペースで？','ペース','例：週に2回','pace'],['start','いつから？','いつから','例：今週の土曜から','start']], q:'ボスドラゴン「だれも来ない」がほえる！「そんな企画、だれも見向きもしないさ」──必殺技でたおせ！ 「{@idea}」を形にするために、何を・どのペースで・いつからやる？', qf:'ボスドラゴン「だれも来ない」がほえる！「そんな企画、だれも見向きもしないさ」──必殺技でたおせ！ 何を・どのペースで・いつからやる？', p:-1, min:3, sec:120, o:'what', npc:'ボス「だれも来ない」', monster:'boss', mk:'dragon', mcol:'#C8362F', seg:'cave', hint:'3つそろうと必殺技が完成！ 回数や日付が入るほど威力が上がる。'},
+      {l:'時間管理', type:'plan', show:'tm', fields:[['q1','第1領域（重要・緊急）：今すぐやることは？','第1領域','例：会場の予約','tm1'],['q2','第2領域（重要・緊急でない）：夢や目標のために時間を作ってやることは？','第2領域','例：参加者の声を聞きに行く','tm2'],['q3','第3領域（重要でない・緊急）：減らす・人に任せることは？','第3領域','例：細かい備品の買い出し','tm3'],['q4','第4領域（重要でない・緊急でない）：やめることは？','第4領域','例：完ぺきな資料づくり','tm4']], q:'山の道で、時の番人が4つの砂時計を並べた。「{t}」の準備の時間を、4つの箱に分けよう。', vq:['山の道で、時の番人が4つの砂時計を並べた。「{t}」の準備の時間を、4つの箱に分けよう。','時の番人が言う。「企画を育てるのは、重要だけど急ぎでない準備だ」。「{t}」のために、4つの箱に入れるものは？'], p:-1, min:4, sec:150, o:'tm', npc:'時の番人', seg:'post', hint:'夢や目標をかなえる行動は、たいてい第2領域。第3・第4領域を減らして、第2領域の時間を作ろう。'},
       {l:'笑顔', route:'A2', q:'笑顔の道だ。この企画で、誰がどんな笑顔になる？', p:-1, min:1, sec:70, v:1, o:'vision', npc:'村の子ども', seg:'A2', hint:'笑顔の場面を1つ、映像のように思い浮かべよう。'},
       {l:'未来', route:'B2', q:'未来の道だ。3年後、この企画はどう育っている？', p:-1, min:1, sec:70, v:1, o:'future', npc:'3年後のあなた', seg:'B2', hint:'大きく夢を描いてOK。'},
+      {l:'恩人', q:'町の長老が問う。この企画を形にするまでに、これまでお世話になった人・力を貸してくれた人は？', vq:['町の長老が問う。この企画を形にするまでに、これまでお世話になった人・力を貸してくれた人は？','町の長老が言う。「ひとりで開ける祭りはない」。「{t}」で、これまでお世話になった人は？'], p:-1, min:1, sec:70, o:'thanks', npc:'町の長老', seg:'castle', hint:'家族・先生・先輩・友だち・お客様。顔を思い浮かべて、名前や関係で書こう。'},
+      {l:'恩返し', q:'「{a}」に、どんな形で感謝や恩返しをする？', vq:['「{a}」に、どんな形で感謝や恩返しをする？','「{a}」に「ありがとう」を伝えるなら、いつ・どうやって？','企画が成功したら、「{a}」をどんなふうに招待したり、お礼をしたりする？'], p:16, min:1, sec:60, o:'repay', npc:'町の長老', seg:'castle', hint:'今できる感謝と、かなったあとの恩返し。両方考えてもOK。'},
       {l:'最初の一歩', q:'城の門をひらく合言葉は「最初の一歩」。必殺技「{@what}」のために、まず何から始める？', qf:'城の門をひらく合言葉は「最初の一歩」。まず何から始める？', p:-1, min:1, sec:70, h:1, o:'first', npc:'王さま', seg:'castle', hint:'今週中にできることにしよう。'}
     ]}
 };
@@ -1099,9 +1152,25 @@ const BANKS = {
   first: ['今日ネットで調べる','本を1冊買う','詳しい人に話を聞く','予定表に書く','体験や見学に申し込む','家族や友達に宣言する','必要なものリストを作る','10分だけやってみる','貯金箱を用意する','目標を紙に書いて貼る'],
   who: ['子ども','お年寄り','子育て中の家族','地域の住民','働く人','学生','お客様','仲間・社員','観光客','一人暮らしの人'],
   trouble: ['時間が足りない','お金がかかる','相談する相手がいない','情報がわかりにくい','体力的に大変','行く場所が遠い','ひとりでさびしい','やり方がわからない'],
-  idea: ['集まれる場をつくる','オンラインで手軽にする','専門家とつなぐ','料金を安くする','送り迎えや出張をする','体験イベントを開く','助け合いの仕組みをつくる','わかりやすい説明を作る']
+  idea: ['集まれる場をつくる','オンラインで手軽にする','専門家とつなぐ','料金を安くする','送り迎えや出張をする','体験イベントを開く','助け合いの仕組みをつくる','わかりやすい説明を作る'],
+  vowfor: ['自分自身','家族','支えてくれた人','困っている人','未来の子どもたち','地域の人','お客様','仲間','社会','これから出会う人'],
+  years: ['半年','1年','2年','3年','5年','10年'],
+  core: ['誠実さ','家族との時間','健康','楽しむ気持ち','自分らしさ','約束を守ること','感謝の心','あきらめない心','人を大切にすること','品質'],
+  swotw: ['続けるのが苦手','時間が少ない','お金が少ない','知識が足りない','人前が苦手','経験が浅い','体力に自信がない','相談相手がいない'],
+  swoto: ['オンラインで学べる','応援してくれる人がいる','無料の講座がある','仲間が集まる場がある','需要が増えている','補助金・奨学金がある','SNSで発信できる','道具が手に入りやすい'],
+  swott: ['ライバルが多い','時間をうばう用事','お金の負担','周りの反対','流行の変化','けがや病気','情報が多すぎる','景気の変化'],
+  cso: ['得意を生かしてチャンスに挑む','強みを発信して仲間を集める','講座で強みをさらに伸ばす','強みを生かせる場に応募する'],
+  cwo: ['講座で弱みを補う','詳しい人に教わる','仲間に苦手を助けてもらう','道具で苦手をカバーする'],
+  cst: ['強みで差をつける','得意なやり方で続ける','信頼できる人と組む','強みを実績にして見せる'],
+  cwt: ['無理な計画を立てない','早めに相談する','小さく試してから広げる','やめる基準を決めておく'],
+  tm1: ['しめきりのある課題','目の前の練習','申し込みの手続き','体調を整える','大事な約束'],
+  tm2: ['必殺技を毎日続ける','基礎の勉強','体づくり','人に会って学ぶ','計画を立てる','ふり返りの時間'],
+  tm3: ['急ぎの連絡','頼まれごと','つきあいの予定','急な用事','通知のチェック'],
+  tm4: ['スマホのだらだら見','ゲームのしすぎ','夜ふかし','目的のないネット','テレビのつけっぱなし'],
+  thanks: ['家族','先生','先輩','友だち','コーチ','上司','地域の人','お客様','幼なじみ','恩師'],
+  repay: ['ありがとうを伝える','手紙を書く','結果で恩返しする','次の人を助ける','近況を報告する','一緒にお祝いする']
 };
-const BANK_NAMES = [['expert','専門知識'],['why','理由'],['ally','味方'],['str','強み'],['stop','やめること'],['rise','立ち直り'],['future','未来'],['need','必要なもの'],['act','やること'],['what','具体的な行動'],['pace','ペース'],['start','いつから'],['when','いつ・期限'],['wall','壁・障害'],['over','乗り越え方'],['vision','志・貢献'],['first','最初の一歩'],['who','誰のため'],['trouble','困りごと'],['idea','アイデア']];
+const BANK_NAMES = [['expert','専門知識'],['why','理由'],['ally','味方'],['str','強み'],['stop','やめること'],['rise','立ち直り'],['future','未来'],['need','必要なもの'],['act','やること'],['what','具体的な行動'],['pace','ペース'],['start','いつから'],['when','いつ・期限'],['wall','壁・障害'],['over','乗り越え方'],['vision','志・貢献'],['first','最初の一歩'],['who','誰のため'],['trouble','困りごと'],['idea','アイデア'],['thanks','お世話になった人'],['repay','恩返し']];
 /* ---------- theme kinds: tune hints, examples and choices to what the dream is about ---------- */
 const KINDS = [
   {k: 'exam', n: '資格・試験', re: /(資格|試験|検定|合格|受験|免許|士に|英検|漢検|TOEIC|宅建|国家)/i, b: {
@@ -1187,13 +1256,19 @@ let soundOn = store.get('mindquest-sound', true);
 function sampleSession(){
   const ans = []; let id = 1;
   const A = (t, s, par = null, f) => { const a = {id: id++, t, s, par}; if (f) a.f = f; ans.push(a); return a.id; };
-  A('人の役に立ちたい', 0, null, 'why'); A('3点', 0, null, 'score');
+  A('人の役に立ちたい', 0, null, 'why'); A('病気で困っている人', 0, null, 'for'); A('10年', 0, null, 'years'); A('実験の結果に正直', 0, null, 'core'); A('3点', 0, null, 'score');
   const n1 = A('理科の知識', 1), n2 = A('実験の経験', 1);
-  A('図鑑を1冊読む', 2, n1, 'what'); A('毎朝15分', 2, n1, 'pace'); A('今週から', 2, n1, 'start');
-  A('科学クラブに入る', 2, n2, 'what'); A('週1回', 2, n2, 'pace'); A('4月から', 2, n2, 'start');
-  A('理科の先生', 3, null, 'who'); A('実験を見てもらう', 3, null, 'ask');
-  const w = A('研究費', 5); A('奨学金を調べる', 6, w); A('夜ふかし', 7); A('先生に相談する', 8);
-  A('病気で困る人', 9); A('科学館に行く', 11);
+  A('図鑑を1冊読む', 2, n1); A('科学クラブに入る', 2, n2);
+  A('研究の進め方', 3); A('実験の安全ルール', 3);
+  A('理科の先生', 4, null, 'who'); A('実験を見てもらう', 4, null, 'ask');
+  A('コツコツ続けられる', 6, null, 's'); A('英語が苦手', 6, null, 'w'); A('オンライン講座', 6, null, 'o'); A('ライバルが多い', 6, null, 't');
+  A('無料講座を最後までやる', 7, null, 'so'); A('英語の論文を毎週1本読む', 7, null, 'wo');
+  const w = A('研究費が足りない', 8); A('奨学金を調べる', 9, w); A('夜ふかし', 10);
+  A('実験ノートを書く', 11, null, 'what'); A('毎晩15分', 11, null, 'pace'); A('今週から', 11, null, 'start');
+  A('毎晩15分の実験ノート', 12, null, 'q2'); A('寝る前のスマホ', 12, null, 'q4');
+  A('病気で困る人', 13);
+  const g = A('理科の先生', 15); A('研究の報告をする', 16, g);
+  A('科学館に行く', 17);
   return {theme: '科学者になりたい', stages: clone(PRESETS.dream.st), forks: clone(PRESETS.dream.forks), routes: {f1: 'A1', f2: 'A2'}, ans, seq: id, phase: 'done', cur: '', stat: {}, timed: true, mode: 'map', level: 'normal', sample: true};
 }
 
@@ -2880,6 +2955,7 @@ function playHTML(){
     ${chain ? `<div class="path">${chain}</div>` : ''}
     ${qBlock}
     ${hint}
+    ${st.show === 'swot' ? swotRefHTML(S) : st.show === 'tm' ? tmLegendHTML() : ''}
     ${entry}
     ${S.coach && S.coach.key === p.key && !locked ? `<div class="coach" role="note"><b>深掘りのひとこと</b><span>${esc(S.coach.msg)}</span>${S.coach.id != null && byId(S, S.coach.id) ? `<button class="btn sm" type="button" data-act="coach-fix">この答えを書き直す</button>` : ''}</div>` : ''}
     ${!plan && list.length ? `<ul class="answers">${list.map(a => { const k = S.ans.filter(c => c.par === a.id).length; return `<li style="--c:${col}"><span>${esc(a.t)}</span>${k ? `<em>+${k}</em>` : ''}${locked ? '' : `<button type="button" data-del="${a.id}" aria-label="「${esc(a.t)}」を消す">×</button>`}</li>`; }).join('')}</ul>`
@@ -3221,17 +3297,23 @@ const OTHERS_RE = /(人|みんな|皆|家族|親|母|父|子ども|子供|こど
 const BAD_RE = /(盗|だま|騙|ずる|カンニング|不正|嘘をつ|うそをつ|脅|横取り|パクる|奪|殴|賄賂|悪口|いじめ|違法|ごまか|誤魔化|裏口|サボる)/g;
 const GOOD_RE = /(感謝|協力|誠実|相談|約束|守る|助け|教え|学ぶ|ありがとう|謝|ルール|健康|安全|正直|丁寧|応援)/g;
 /* ---------- answer coach: a gentle nudge when an answer is too vague to act on ---------- */
-const ACT_O = new Set(['act', 'first', 'over', 'd100', 'keep', 'cheap', 'learn', 'check']);
-const NUM_F = {pace: '毎朝15分', start: '今週の土曜から', when: '来年の春', goal: '80点をこえる', money: '月5000円', time: '週5時間', score: '3点'};
-const COACH_ASK = {need: 'どんな知識・技術・資格？ 名前で言えると強い。', expert: '専門用語や技術・資格の名前にすると強い。', wall: 'どんな場面で起きそう？', why: 'きっかけになった出来事は？', vision: 'だれが、どんなふうに喜ぶ？', future: 'どんな場面が見える？', ally: 'だれ？ 名前か立場で。', who: 'どんな人？ 年代や暮らし方で。', trouble: 'どんな場面で困っている？', stop: 'いつ、どんなふうに出るクセ？', str: 'どんな場面で発揮される？', idea: 'ひとことで言うと、何をする企画？'};
+const ACT_O = new Set(['act', 'first', 'over', 'd100', 'keep', 'cheap', 'learn', 'check', 'repay']);
+const NUM_F = {pace: '毎朝15分', start: '今週の土曜から', when: '来年の春', goal: '80点をこえる', money: '月5000円', time: '週5時間', score: '3点', years: '5年'};
+/* plan fields that should name something concrete (SWOT, cross-SWOT, time matrix), and the ones that should be an action */
+const FIELD_ASK = {s: 'どんな場面で発揮される強み？', w: 'どんな場面で困る？', o: 'どんなチャンス？ 名前で言えると強い。', t: 'どんなことが起きたら困る？', so: '何をするか、動きの言葉で書こう。', wo: '何をするか、動きの言葉で書こう。', st: '何をするか、動きの言葉で書こう。', wt: '何をするか、動きの言葉で書こう。', q1: '具体的に何をする？', q2: '具体的に何をする？', q3: '具体的に何を減らす？', q4: '具体的に何をやめる？'};
+const ACT_F = new Set(['what', 'q2']);
+const COACH_ASK = {need: 'どんな知識・技術・資格？ 名前で言えると強い。', expert: '専門用語や技術・資格の名前にすると強い。', wall: 'どんな場面で起きそう？', why: 'きっかけになった出来事は？', vision: 'だれが、どんなふうに喜ぶ？', future: 'どんな場面が見える？', ally: 'だれ？ 名前か立場で。', who: 'どんな人？ 年代や暮らし方で。', trouble: 'どんな場面で困っている？', stop: 'いつ、どんなふうに出るクセ？', str: 'どんな場面で発揮される？', idea: 'ひとことで言うと、何をする企画？', repay: 'いつ・どうやって伝える？'};
 function coachOf(x, st, t, f){
   t = String(t || '').trim(); if (!t || !st) return null;
   const len = [...t].length;
   if (f){
-    if (NUM_F[f] && !SPEC_RE.test(t)) return `数字や日付を入れると、ぐっと現実になります（例：${NUM_F[f]}）`;
+    if (NUM_F[f]) return (f === 'years' ? /[0-9０-９一二三四五六七八九十半]|歳|生/.test(t) : SPEC_RE.test(t)) ? null : `数字や日付を入れると、ぐっと現実になります（例：${NUM_F[f]}）`;
     if (f === 'what' && (GENERIC.has(t) || len <= 2)) return `「${t}」だけでは動けません。何を・どこで？（例：${kindBank(x, 'what')[0] || '過去問を1日1問解く'}）`;
+    if (FIELD_ASK[f] && (GENERIC.has(t) || len <= 2)) return `「${t}」をもう一歩くわしく。${FIELD_ASK[f]}`;
+    if (ACT_F.has(f) && !ACT_RE.test(t) && kindOf(t) === 'noun') return `「${t}」で何をする？ 動きがわかる言葉にすると、すぐ実行できます。`;
     return null;
   }
+  if (st.o === 'thanks') return GENERIC.has(t) ? `「${t}」の中で、特にだれ？ 名前で書くと、感謝が伝えやすくなります。` : null;
   if (GENERIC.has(t) || len <= 2){ const ex = kindBank(x, st.o)[0]; return `「${t}」をもう一歩くわしく。${COACH_ASK[st.o] || '何を・どこで・どれくらい？'}${ex ? `（例：${ex}）` : ''}`; }
   if (ACT_O.has(st.o) && !ACT_RE.test(t) && kindOf(t) === 'noun') return `「${t}」で何をする？ 動きがわかる言葉にすると、すぐ実行できます（例：${kindBank(x, 'act')[0] || '毎日10分練習する'}）`;
   if (st.o === 'first' && !SPEC_RE.test(t)) return 'いつやる？「今夜」「明日の朝」のように時間を入れると、ぐっと動けます。';
@@ -3268,6 +3350,28 @@ function qualityHTML(x){
   const jump = x.mode === 'map';
   return `<div class="mq"><div class="mq-head"><b>マインドマップ完成度</b><span>${Q.pct}%</span></div><i class="mq-bar"><em style="width:${Q.pct}%"></em></i>${Q.weak.length ? `<p>あと一歩の枝${jump ? '（押すとその問いに戻れます）' : ''}</p><ul>${Q.weak.map(r => `<li>${jump ? `<button type="button" data-fix="${r.i}">` : '<span>'}<b>${esc(r.label)}</b><small>${esc(r.why)}</small>${jump ? '</button>' : '</span>'}</li>`).join('')}</ul>${jump || !CHAPTERS[(x.chapter || 1) + 1] ? '' : '<p class="mq-note">次の章で、ここからさらに深掘りできます。</p>'}` : '<p>どの枝も、具体的な答えでしっかり育っています！</p>'}</div>`;
 }
+/* ---------- frameworks: the vow, SWOT analysis and the time-management matrix, laid out as boards ---------- */
+const fieldOf = (x, o, f) => { const i = x.stages.findIndex(s => s.o === o); if (i < 0) return ''; const a = x.ans.find(v => v.s === i && v.f === f); return a ? a.t : ''; };
+const SW_Q = [['s', '強み'], ['w', '弱み'], ['o', '機会'], ['t', '脅威']];
+const TM_Q = [['q1', '第1領域', '重要・緊急', '今すぐやる'], ['q2', '第2領域', '重要・緊急でない', '時間を作ってやる'], ['q3', '第3領域', '重要でない・緊急', '減らす・任せる'], ['q4', '第4領域', '重要でない・緊急でない', 'やめる']];
+/* shown above the cross-SWOT form: the four answers to combine */
+function swotRefHTML(x){
+  return `<div class="mini swot" aria-label="あなたのSWOT">${SW_Q.map(([f, n]) => { const v = fieldOf(x, 'swot', f); return `<span class="c ${f}"><b>${n}</b>${v ? esc(v) : '<i>まだ書いていません</i>'}</span>`; }).join('')}</div>`;
+}
+/* shown above the time-matrix form: which box is which (importance on the rows, urgency on the columns) */
+const tmLegendHTML = () => `<div class="mini tm" aria-label="時間管理マトリクスの4つの領域">${TM_Q.map(([k, n, a, d]) => `<span class="c ${k}"><b>${n}</b>${a}<em>→ ${d}</em></span>`).join('')}</div>`;
+function boardHTML(x){
+  const F = (o, f) => fieldOf(x, o, f), E = t => t ? esc(t) : '<i>—</i>';
+  const vow = [['for', '誰のため'], ['years', '何年で'], ['core', '絶対に譲れないもの']].map(([f, n]) => [n, F('why', f)]).filter(v => v[1]);
+  const sw = SW_Q.map(([f]) => F('swot', f)), cr = ['so', 'wo', 'st', 'wt'].map(f => F('cross', f)), tm = TM_Q.map(([f]) => F('tm', f));
+  const ti = x.stages.findIndex(s => s.o === 'thanks'), thanks = ti >= 0 ? x.ans.filter(a => a.s === ti) : [];
+  const out = [];
+  if (vow.length) out.push(`<div class="bd vow"><h3>誓い</h3><dl>${vow.map(([n, t]) => `<dt>${n}</dt><dd>${esc(t)}</dd>`).join('')}</dl></div>`);
+  if (sw.some(Boolean) || cr.some(Boolean)) out.push(`<div class="bd"><h3>SWOT分析とクロスSWOT</h3><div class="mx sw"><span class="corner">SWOT</span><b class="hx">強み<small>${E(sw[0])}</small></b><b class="hx">弱み<small>${E(sw[1])}</small></b><b class="hy">機会<small>${E(sw[2])}</small></b><span class="cell"><em>強み×機会</em>${E(cr[0])}</span><span class="cell"><em>弱み×機会</em>${E(cr[1])}</span><b class="hy">脅威<small>${E(sw[3])}</small></b><span class="cell"><em>強み×脅威</em>${E(cr[2])}</span><span class="cell"><em>弱み×脅威</em>${E(cr[3])}</span></div></div>`);
+  if (tm.some(Boolean)) out.push(`<div class="bd"><h3>時間管理マトリクス</h3><div class="mx tmx"><span class="corner"></span><b class="hx">緊急度が高い</b><b class="hx">緊急度が低い</b><b class="hy">重要度が高い</b><span class="cell"><em>第1領域 今すぐやる</em>${E(tm[0])}</span><span class="cell key"><em>第2領域 時間を作ってやる</em>${E(tm[1])}</span><b class="hy">重要度が低い</b><span class="cell"><em>第3領域 減らす・任せる</em>${E(tm[2])}</span><span class="cell"><em>第4領域 やめる</em>${E(tm[3])}</span></div></div>`);
+  if (thanks.length) out.push(`<div class="bd"><h3>お世話になった人と恩返し</h3><ul>${thanks.map(a => { const r = x.ans.filter(c => c.par === a.id).map(c => c.t); return `<li><b>${esc(a.t)}</b>${r.length ? `<span>→ ${esc(r.join('・'))}</span>` : ''}</li>`; }).join('')}</ul></div>`);
+  return out.length ? `<div class="boards">${out.join('')}</div>` : '';
+}
 const AXES = [{k: 'volume', n: '回答数'}, {k: 'reality', n: 'リアリティ'}, {k: 'originality', n: 'オリジナリティ'}, {k: 'aspiration', n: '志'}, {k: 'morality', n: 'モラル'}];
 const WEIGHTS = {reality: .35, volume: .2, originality: .15, aspiration: .15, morality: .15};
 const WSUM = Object.entries(WEIGHTS).map(([k, w]) => `${AXES.find(a => a.k === k).n}${Math.round(w * 100)}%`).join('・');
@@ -3291,9 +3395,11 @@ function statsOf(x){
 /* ---------- life timeline (age-based schedule) ---------- */
 function parseAge(v){ const n = parseInt(String(v || '').replace(/[０-９]/g, d => String.fromCharCode(d.charCodeAt(0) - 65248)), 10); return Number.isFinite(n) && n >= 3 && n <= 110 ? n : null; }
 function guessYears(t){
-  t = String(t || ''); const m = t.match(/(\d+)\s*年後/); if (m) return +m[1];
+  t = String(t || '').replace(/[０-９]/g, d => String.fromCharCode(d.charCodeAt(0) - 65248)); const m = t.match(/(\d+)\s*年後/); if (m) return +m[1];
   const mm = t.match(/(\d+)\s*(か月|ヶ月|カ月)/); if (mm) return Math.round(+mm[1] / 12 * 10) / 10;
   const y = t.match(/(20\d\d)/); if (y) return Math.max(0, +y[1] - new Date().getFullYear());
+  const n = t.match(/(\d+(?:\.\d+)?)\s*年(?!生)/); if (n) return +n[1];
+  if (/半年/.test(t)) return .5;
   if (/再来年/.test(t)) return 2; if (/来年/.test(t)) return 1; if (/今年|今月|今週|明日|今日/.test(t)) return 0;
   if (/高校/.test(t)) return 3; if (/大学/.test(t)) return 4; if (/社会人|就職/.test(t)) return 6;
   return null;
@@ -3311,8 +3417,9 @@ function timelineOf(x){
   const ex = A('expert'); if (ex.length) add(2, '専門の力を身につける', ex.slice(0, 2).join('・'));
   const w2 = F('what2', 'what'); if (w2) add(2, '奥義に進化', `${w2}${F('what2', 'goal') ? `（${F('what2', 'goal')}）` : ''}`);
   const d100 = A('d100')[0]; if (d100) add(.3, '100日続けたら', d100);
-  const fin = F('final', 'what'), fy = guessYears(F('final', 'when'));
-  add(fy != null ? Math.max(1, fy) : 5, '夢がかなう', fin ? `究極奥義「${fin}」${F('final', 'proof') ? `→ しるし：${F('final', 'proof')}` : ''}` : `「${x.theme}」をかなえる`);
+  const q2 = F('tm', 'q2'); if (q2) add(.05, '大事な時間をつくる', `第2領域：${q2}`);
+  const fin = F('final', 'what'), vy = F('why', 'years'), fy = guessYears(F('final', 'when')) ?? guessYears(vy);
+  add(fy != null ? Math.max(.5, fy) : 5, '夢がかなう', fin ? `究極奥義「${fin}」${F('final', 'proof') ? `→ しるし：${F('final', 'proof')}` : ''}` : `「${x.theme}」をかなえる${vy ? `（誓い：${vy}で）` : ''}`);
   const fut = A('future')[0] || A('vision')[0] || A('letter')[0]; if (fut) add(10, '未来の自分', fut);
   it.sort((a, b) => a.dy - b.dy);
   return it.map(v => ({age: age != null ? Math.floor(age + v.dy) : null, when: v.dy === 0 ? 'いま' : v.dy < 1 ? `${Math.max(1, Math.round(v.dy * 12))}か月後` : `${Math.round(v.dy)}年後`, title: v.title, detail: v.detail}));
@@ -3413,6 +3520,7 @@ ${outlineFor(x).slice(0, 6000)}
 
 あわせて、このマップ全体の実現可能性についての総評（feasibility：2文以内）と、実現に近づくための具体的なアドバイスを3つ（advice）書いてください。
 さらに、テーマの専門分野（例：研究職、建築、語学、営業など）を1つ特定し、その分野の専門家の立場から、回答をふまえた具体的なアドバイスを3つ（expert.advice）書いてください。資格・勉強法・経験の積み方・よくある落とし穴など、その分野ならではの内容にしてください。
+回答に誓い（誰のため・何年で・絶対に譲れないもの）、SWOT分析とクロスSWOT、時間管理マトリクス、お世話になった人がある場合は、その答えを具体的に引用してアドバイスに生かしてください。特に「何年で」の期限に間に合う計画になっているか、時間管理マトリクスの第2領域（重要だが緊急でないこと）の時間を確保できているかにふれてください。
 ${x.age ? `回答者はいま${x.age}歳です。回答の行動・期限と、その分野で現実に必要な年数（学校・資格・経験など）をふまえて、いまから夢がかなうまで、そしてその少し先までの「人生のタイムスケジュール」を5〜8項目（timeline）作ってください。各項目は年齢（age：整数）、見出し（title：12字以内）、内容（detail：40字以内）。年齢の若い順に。
 ` : ''}commentは各45字以内、adviceとexpert.adviceは各60字以内、expert.fieldは12字以内。すべて日本語で、回答者に語りかける口調で。
 
@@ -3527,7 +3635,8 @@ function renderResult(){
           <button class="btn" type="button" data-act="retry">もう一度挑戦</button>
         </div>
       </div>
-    </div>`;
+    </div>
+    ${(() => { const b = boardHTML(S); return b ? `<div class="r-boards"><p class="kicker">DREAM STRATEGY BOARD</p><h3>夢の作戦ボード</h3>${b}</div>` : ''; })()}`;
 }
 function openResult(){ renderResult(); $('#ovResult').hidden = false; $('#ovResult').scrollTop = 0; }
 $('#ovResult').addEventListener('mousemove', e => {
@@ -3595,7 +3704,7 @@ const PRINT_CSS = `
 .psheet .radar .ringlbl{font-size:10px;fill:#9CA2B9}.psheet .radar .area{fill:rgba(242,85,78,.16);stroke:#F2554E;stroke-width:2;stroke-linejoin:round}
 .psheet .radar .pt{fill:#F2554E;stroke:#fff;stroke-width:2}.psheet .radar .ax-name{font-size:17px;font-weight:800;fill:#1B2140}.psheet .radar .ax-val{font-size:15px;font-weight:700;fill:#646B8A}
 .psheet .radar .poly{animation:none}
-.wmap{border:1px solid #E6E9F1;border-radius:4mm;min-height:150mm;display:flex;align-items:center;justify-content:center}
+.wmap{border:1px solid #E6E9F1;border-radius:4mm;min-height:140mm;display:flex;align-items:center;justify-content:center}
 .wmap svg{width:100%;height:auto}
 .wname{display:flex;gap:8mm;font-size:9.5pt}
 .wname span{flex:1;border-bottom:1px solid #1B2140;padding-bottom:1mm}
@@ -3612,6 +3721,28 @@ const PRINT_CSS = `
 .wq .ln.plan em{position:absolute;left:0;top:-1mm;font-style:normal;font-size:6.5pt;color:#9CA2B9}
 .wcols{columns:2;column-gap:5mm}
 .wcols .wq{margin-bottom:4mm}
+.psheet .boards{display:grid;grid-template-columns:1fr;gap:5mm}
+.psheet .bd{border:1px solid #E6E9F1;border-radius:3mm;padding:3.5mm 4mm;display:grid;gap:2.5mm;break-inside:avoid;background:#fff}
+.psheet .bd h3{margin:0;font-size:12pt}
+.psheet .bd dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:1.5mm 5mm;font-size:10.5pt}
+.psheet .bd dt{font-weight:800;color:#646B8A}
+.psheet .bd dd{margin:0;font-weight:700}
+.psheet .bd ul{margin:0;padding-left:5mm;display:grid;gap:1mm;font-size:10.5pt}
+.psheet .bd li span{color:#3A4060;margin-left:2mm}
+.psheet .mx{display:grid;grid-template-columns:24mm 1fr 1fr;gap:1.5mm;font-size:10pt}
+.psheet .mx .corner{display:grid;place-items:center;font-weight:800;font-size:9pt;color:#646B8A}
+.psheet .mx .hx,.psheet .mx .hy{display:grid;gap:.5mm;align-content:center;padding:2mm 2.5mm;border-radius:2mm;color:#fff;font-weight:800;text-align:center}
+.psheet .mx .hx small,.psheet .mx .hy small{font-weight:500;font-size:8.5pt}
+.psheet .mx .cell{display:grid;gap:1mm;align-content:start;padding:2.5mm 3mm;border-radius:2mm;min-height:15mm;line-height:1.45}
+.psheet .mx .cell em{font-style:normal;font-weight:800;font-size:8.5pt}
+.psheet .mx i{font-style:normal;color:#9CA2B9}
+.psheet .mx.sw .hx,.psheet .mx.sw .hy{background:#D9443C}
+.psheet .mx.sw .cell{background:#FFEDEB}
+.psheet .mx.sw .cell em{color:#C8362F}
+.psheet .mx.tmx .hx,.psheet .mx.tmx .hy{background:#7657E0}
+.psheet .mx.tmx .cell{background:#F1ECFF}
+.psheet .mx.tmx .cell em{color:#6A4BD1}
+.psheet .mx.tmx .cell.key{background:#E2D8FF}
 `;
 $('#printCss').textContent = PRINT_CSS;
 let printKind = 'result';
@@ -3736,36 +3867,45 @@ function resultPages(x){
     h += `<p class="pnote">まだ採点していません。最後の問いまで進むと、実現可能性スコアと5角形グラフが印刷されます。</p>`;
   }
   h += `${M.closeups.length ? '' : `<p class="psec">問いの一覧</p><div class="plegend">${legend}</div>`}${foot()}</section>`;
+  const board = boardHTML(x);
+  if (board) h += `<section class="ppage">${pageHead('夢の作戦ボード', esc(x.theme))}${board}${foot()}</section>`;
   return h;
 }
 function sheetPages(stages, theme){
   const roots = stages.map((s, i) => [s, i]).filter(([s]) => s.p < 0);
-  const n = roots.length, R = 230;
-  let map = `<svg xmlns="${NS}" viewBox="-420 -330 840 660" font-family="${FONT}">`;
+  /* up to 12 branches: each gets three answer boxes; more than that: branch labels only, on a wider ring, so nothing overlaps */
+  const n = roots.length, many = n > 12, R = many ? 370 : 230, RY = many ? 265 : R * .8;
+  let map = `<svg xmlns="${NS}" viewBox="${many ? '-500 -345 1000 690' : '-420 -330 840 660'}" font-family="${FONT}">`;
   roots.forEach(([s, i], k) => {
-    const a = -Math.PI / 2 + k * Math.PI * 2 / n, x = Math.cos(a) * R, y = Math.sin(a) * R * .8, col = PAL[i % PAL.length];
+    const a = -Math.PI / 2 + k * Math.PI * 2 / n, x = Math.cos(a) * R, y = Math.sin(a) * RY, col = PAL[i % PAL.length];
     map += `<path d="M0 0 Q${(x * .5 - y * .15).toFixed(0)} ${(y * .5 + x * .15).toFixed(0)} ${x.toFixed(0)} ${y.toFixed(0)}" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round" opacity=".7"/>`;
     const dx = Math.cos(a), dy = Math.sin(a), px = -dy, py = dx, gap = 118 * Math.abs(px) + 44 * Math.abs(py);
-    for (let j = -1; j <= 1; j++){ const x2 = x + dx * (72 + 100 * Math.abs(dx)) + px * j * gap, y2 = y + dy * 70 + py * j * gap; map += `<path d="M${x.toFixed(0)} ${y.toFixed(0)} L${x2.toFixed(0)} ${y2.toFixed(0)}" stroke="${col}" stroke-width="1.6" opacity=".5"/><rect x="${(x2 - 52).toFixed(0)}" y="${(y2 - 17).toFixed(0)}" width="104" height="34" rx="9" fill="#fff" stroke="${col}" stroke-dasharray="4 3"/>`; }
+    if (!many) for (let j = -1; j <= 1; j++){ const x2 = x + dx * (72 + 100 * Math.abs(dx)) + px * j * gap, y2 = y + dy * 70 + py * j * gap; map += `<path d="M${x.toFixed(0)} ${y.toFixed(0)} L${x2.toFixed(0)} ${y2.toFixed(0)}" stroke="${col}" stroke-width="1.6" opacity=".5"/><rect x="${(x2 - 52).toFixed(0)}" y="${(y2 - 17).toFixed(0)}" width="104" height="34" rx="9" fill="#fff" stroke="${col}" stroke-dasharray="4 3"/>`; }
     map += `<rect x="${(x - 62).toFixed(0)}" y="${(y - 18).toFixed(0)}" width="124" height="36" rx="18" fill="#fff" stroke="${col}" stroke-width="2.5"/><text x="${x.toFixed(0)}" y="${(y + 5).toFixed(0)}" text-anchor="middle" font-size="15" font-weight="800" fill="#1B2140"><tspan fill="${col}">${CIRC[i] || ''}</tspan> ${esc(s.l)}</text>`;
   });
   map += `<rect x="-95" y="-38" width="190" height="76" rx="22" fill="#FFF1EC" stroke="#F2554E" stroke-width="3"/><text x="0" y="-10" text-anchor="middle" font-size="12" fill="#C8362F" font-weight="700">真ん中のテーマ</text>${theme ? `<text x="0" y="16" text-anchor="middle" font-size="17" font-weight="800" fill="#1B2140">${esc([...theme].slice(0, 12).join(''))}</text>` : ''}</svg>`;
   let h = `<section class="ppage">${pageHead('記入用シート　マインドマップ', '手書きで使えるワークシート')}
     <div class="wname"><span>名前：</span><span>日付：</span></div>
-    <p class="pnote">まん中にテーマを書き、①から順番に問いに答えて、枝の先の四角に書きこみましょう。四角が足りなければ、枝を描き足してOKです。</p>
+    <p class="pnote">${many ? 'まん中にテーマを書き、①から順番に問いに答えて、それぞれの枝の先に答えを書きこみましょう。枝は自由に描き足してOKです（問いは次のページから）。' : 'まん中にテーマを書き、①から順番に問いに答えて、枝の先の四角に書きこみましょう。四角が足りなければ、枝を描き足してOKです。'}</p>
     <div class="wmap">${map}</div>
     <div class="plegend">${stages.map((st, i) => `<div style="--c:${PAL[rootIdx(stages, i) % PAL.length]}"><b>${CIRC[i] || i + 1} ${esc(st.l)}</b>　${st.min}個以上${st.p >= 0 ? `（${CIRC[st.p]}の答えごと）` : ''}</div>`).join('')}</div>
     <div class="pfoot"><span>${APP}</span><span>1</span></div></section>`;
-  h += `<section class="ppage">${pageHead('記入用シート　問いに答えよう', theme ? `テーマ：${esc(theme)}` : 'テーマ：　　　　　　　　')}
-    <div class="wcols">${stages.map((st, i) => {
-      const col = PAL[rootIdx(stages, i) % PAL.length], q = esc(qFor(st, theme, st.p >= 0 ? `${CIRC[st.p]}の答え` : 'それ'));
+  /* question pages: pack the answer blocks into A4 pages (two columns each) by a rough height estimate in mm */
+  const blocks = stages.map((st, i) => {
+      const col = PAL[rootIdx(stages, i) % PAL.length], qt = qFor(st, theme, st.p >= 0 ? `${CIRC[st.p]}の答え` : 'それ'), q = esc(qt);
       const rows = st.p >= 0 ? Math.max(3, stages[st.p].min) : Math.max(2, st.min + 1);
       const fl = fieldsOf(st), cols = (st.p >= 0 ? '1.1fr ' : '') + fl.map(() => '1fr').join(' ');
-      const lines = Array.from({length: isPlan(st) && st.p < 0 ? 2 : rows}, () => isPlan(st) ? `<div class="ln plan" style="grid-template-columns:${cols}">${st.p >= 0 ? '<span></span>' : ''}${fl.map(f => `<span><em>${esc(f[2])}</em></span>`).join('')}</div>` : st.p >= 0 ? `<div class="ln arrow"><span></span>→<span></span></div>` : `<div class="ln"></div>`).join('');
+      const nLines = isPlan(st) && st.p < 0 ? 2 : rows, lines = Array.from({length: nLines}, () => isPlan(st) ? `<div class="ln plan" style="grid-template-columns:${cols}">${st.p >= 0 ? '<span></span>' : ''}${fl.map(f => `<span><em>${esc(f[2])}</em></span>`).join('')}</div>` : st.p >= 0 ? `<div class="ln arrow"><span></span>→<span></span></div>` : `<div class="ln"></div>`).join('');
       const rf = forkOf(st), ro = rf && (S || {}).forks && S.forks[rf] ? S.forks[rf].opts[st.route] : (rf && PRESETS[presetKey].forks && PRESETS[presetKey].forks[rf] ? PRESETS[presetKey].forks[rf].opts[st.route] : null);
-      return `<div class="wq" style="--c:${col}"><div class="wt"><i>${i + 1}</i>${esc(st.l)}${ro ? `<span style="font-size:8pt;color:#646B8A;font-weight:600">（${esc(ro.n)}ルート）</span>` : ''}<small>${isPlan(st) ? fieldsOf(st).length + 'つとも' : st.min + '個以上'}・${fmtLimit(st.sec)}</small></div><p>${q}</p>${st.p >= 0 ? `<p style="font-size:8pt;color:#9CA2B9">左に${CIRC[st.p]}の答え、右にこの問いの答えを書く</p>` : ''}${lines}</div>`;
-    }).join('')}</div>
-    <div class="pfoot"><span>${APP}</span><span>2</span></div></section>`;
+      return {h: 22 + Math.ceil([...qt].length / 26) * 5.2 + (st.p >= 0 ? 5 : 0) + nLines * 7.5, html: `<div class="wq" style="--c:${col}"><div class="wt"><i>${i + 1}</i>${esc(st.l)}${ro ? `<span style="font-size:8pt;color:#646B8A;font-weight:600">（${esc(ro.n)}ルート）</span>` : ''}<small>${isPlan(st) ? fieldsOf(st).length + 'つとも' : st.min + '個以上'}・${fmtLimit(st.sec)}</small></div><p>${q}</p>${st.p >= 0 ? `<p style="font-size:8pt;color:#9CA2B9">左に${CIRC[st.p]}の答え、右にこの問いの答えを書く</p>` : ''}${lines}</div>`};
+  });
+  const total = blocks.reduce((t, b) => t + b.h, 0), cap = Math.min(450, total / Math.ceil(total / 450) + 30);
+  const qpages = []; let cur = [], used = 0;
+  blocks.forEach(b => { if (cur.length && used + b.h > cap){ qpages.push(cur); cur = []; used = 0; } cur.push(b.html); used += b.h; });
+  if (cur.length) qpages.push(cur);
+  qpages.forEach((list, j) => { h += `<section class="ppage">${pageHead(`記入用シート　問いに答えよう${qpages.length > 1 ? `（${j + 1}/${qpages.length}）` : ''}`, theme ? `テーマ：${esc(theme)}` : 'テーマ：　　　　　　　　')}
+    <div class="wcols">${list.join('')}</div>
+    <div class="pfoot"><span>${APP}</span><span>${j + 2}</span></div></section>`; });
   return h;
 }
 function printBody(){
@@ -4003,7 +4143,7 @@ function newSession(theme, stages, timed, mode, level, keep){
   stageView = 'board';
   save();
 }
-function draftStages(){ return draft.map((q, i) => ({vk: q.vk ? 1 : 0, type: q.type || '', alt: q.alt ? [...q.alt] : undefined, npc: q.npc || '', fields: q.fields ? clone(q.fields) : undefined, route: q.route || '', seg: q.seg || (i ? (draft[i - 1].seg || 'town') : 'town'), monster: q.monster || '', mk: q.mk || '', mcol: q.mcol || '', hint: q.hint || '', qf: q.qf || '', l: (q.l || '').trim() || '問' + (i + 1), q: (q.q || '').trim(), qn: q.qn || '', qv: q.qv || '', qs: q.qs || '', p: q.p >= 0 && q.p < i ? q.p : -1, min: q.min, sec: q.sec, v: q.v || 0, h: q.h || 0, o: q.o || ''})); }
+function draftStages(){ return draft.map((q, i) => ({vk: q.vk ? 1 : 0, type: q.type || '', alt: q.alt ? [...q.alt] : undefined, vq: q.vq ? [...q.vq] : undefined, show: q.show || '',npc: q.npc || '', fields: q.fields ? clone(q.fields) : undefined, route: q.route || '', seg: q.seg || (i ? (draft[i - 1].seg || 'town') : 'town'), monster: q.monster || '', mk: q.mk || '', mcol: q.mcol || '', hint: q.hint || '', qf: q.qf || '', l: (q.l || '').trim() || '問' + (i + 1), q: (q.q || '').trim(), qn: q.qn || '', qv: q.qv || '', qs: q.qs || '', p: q.p >= 0 && q.p < i ? q.p : -1, min: q.min, sec: q.sec, v: q.v || 0, h: q.h || 0, o: q.o || ''})); }
 function openHome(){
   $('#ovHome').hidden = false; $('#ovHome').scrollTop = 0; bgmStop(); weatherUpdate();
   $('#btnResume').hidden = !S; $('#resumeNote').hidden = !S;
