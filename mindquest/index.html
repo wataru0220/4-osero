@@ -690,6 +690,7 @@ details.own[open] summary{margin-bottom:8px}
 .switch input:checked{background:var(--accent)}
 .switch input:checked::after{transform:translateX(16px)}
 .qlist{list-style:none;margin:0;padding:0}
+#qBox:not(.editing) #qList{display:none}
 .qlist li{display:grid;grid-template-columns:30px 1fr;gap:4px 12px;padding:12px 16px;border-top:1px solid var(--line);align-items:start}
 .qlist li.chain{padding-left:34px}
 .qlist .n{display:grid;place-items:center;width:26px;height:26px;border-radius:9px;background:var(--c);color:#fff;font-family:var(--en);font-weight:700;font-size:13px}
@@ -891,8 +892,6 @@ details.own[open] summary{margin-bottom:8px}
   .hpage{font-family:var(--en);font-size:12.5px;font-weight:600;color:var(--muted);flex:1;text-align:center}
   #ovHome .sheet:not([data-step="1"]) #btnResume,#ovHome .sheet[data-last] #hNext,#ovHome .sheet:not([data-last]) #btnBegin{display:none}
   #btnResume{flex:1 1 100%;order:-1}
-  .qtoggle{display:inline-block}
-  #qBox:not(.open) #qList{display:none}
   /* result: three tabs instead of one long page; the action buttons stay at the bottom */
   .rtabs{display:flex;order:-1;position:sticky;top:-10px;z-index:6;gap:4px;padding:4px;margin-top:-8px;background:var(--soft);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 20px -16px rgba(27,33,64,.5)}
   .result .close{top:12px;right:14px}
@@ -1095,7 +1094,6 @@ details.own[open] summary{margin-bottom:8px}
           <label class="switch" id="timedSw"><input type="checkbox" id="chkTimed" checked> 制限時間あり（クエスト）</label>
           <small class="untimed" id="untimedNote" hidden>マインドマップは時間制限なし。じっくり考えよう</small>
           <button class="btn sm" type="button" id="btnEditQs">問いと条件を編集</button>
-          <button class="btn sm qtoggle" type="button" id="btnQToggle" aria-expanded="false" aria-controls="qList">問いを見る</button>
         </div>
       </div>
       <ol class="qlist" id="qList"></ol>
@@ -5084,7 +5082,6 @@ function setHomeStep(n){
 const homeGo = d => { const L = homeSteps(); setHomeStep(L[Math.max(0, Math.min(L.length - 1, L.indexOf(homeStep) + d))]); $('#ovHome').scrollTop = 0; };
 $('#hPrev').onclick = () => homeGo(-1);
 $('#hNext').onclick = () => homeGo(1);
-$('#btnQToggle').onclick = () => { const o = $('#qBox').classList.toggle('open'); $('#btnQToggle').setAttribute('aria-expanded', String(o)); $('#btnQToggle').textContent = o ? '問いを閉じる' : '問いを見る'; };
 function renderMaker(){
   const a = homeAvatar, opt = (key, list, cur, sw) => list.map(([v, label]) => `<button type="button" role="radio" class="${sw ? 'sw' : ''}" data-mk="${key}" data-v="${v}" aria-checked="${String(v) === String(cur)}" ${sw ? `style="background:${label}" aria-label="${key}${v}"` : ''}>${sw ? '' : label}</button>`).join('');
   $('#worldCtl').innerHTML = WORLD_KEYS.map(w => `<button type="button" role="radio" data-world="${w}" aria-checked="${w === homeWorld}">${worldCard(w)}${WORLDS[w].short}<small>${WORLDS[w].hero}</small></button>`).join('');
@@ -5148,7 +5145,7 @@ function renderQList(){
   const secs = draft.reduce((t, q, i) => t + (q.route && q.route[0] === 'B' ? 0 : (q.sec || 90) * mult(i)), 0) + (homeMode === 'quest' ? 90 : 30);
   $('#qCount').textContent = homeMode === 'quest' ? `${draft.length} QUESTIONS ・ 目安 約${Math.round(secs / 60)}分` : `${draft.length} QUESTIONS ・ 時間制限なし`;
   $('#btnEditQs').textContent = editing ? '編集を終える' : '問いと条件を編集';
-  $('#qFoot').hidden = !editing;
+  $('#qFoot').hidden = !editing; $('#qBox').classList.toggle('editing', editing);
   const timed = $('#chkTimed').checked && homeMode === 'quest';
   $('#timedSw').hidden = homeMode !== 'quest'; $('#untimedNote').hidden = homeMode === 'quest';
   ol.innerHTML = draft.map((q, i) => {
@@ -5185,7 +5182,7 @@ $('#qList').addEventListener('click', e => {
   draft.forEach(q => { if (q.p === r) q.p = -1; else if (q.p > r) q.p -= 1; });
   renderQList();
 });
-$('#btnEditQs').onclick = () => { editing = !editing; renderQList(); if (editing && !$('#qBox').classList.contains('open')) $('#btnQToggle').click(); };
+$('#btnEditQs').onclick = () => { editing = !editing; renderQList(); };
 $('#chkTimed').onchange = renderQList;
 $('#btnAddQ').onclick = () => {
   if (draft.length >= 10){ toast('問いは10個までです'); return; }
