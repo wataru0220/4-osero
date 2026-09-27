@@ -15,7 +15,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;500;700;800&family=Outfit:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;500;700;800&family=Outfit:wght@400;500;600;700&family=DotGothic16&display=swap">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}</style>
 <style data-mq>
 :root{
@@ -122,13 +122,30 @@ button{cursor:pointer}
 @keyframes swing{from{transform:rotate(-26deg)}to{transform:rotate(26deg)}}
 @keyframes bob{to{transform:translateY(-2.5px)}}
 .hero .veh{display:none}
-.hero.ride-bike .veh-bike,.hero.ride-car .veh-car,.hero.ride-boat .veh-boat,.hero.ride-balloon .veh-balloon{display:inline}
-.hero.ride-bike .person{transform:translate(-1px,-13px)}
-.hero.ride-bike .leg-l{animation:swing .2s linear infinite alternate}
-.hero.ride-bike .leg-r{animation:swing .2s linear infinite alternate-reverse}
-.hero.ride-car .person,.hero.ride-boat .person,.hero.ride-balloon .person{transform:translateY(-9px)}
-.hero.ride-car .leg,.hero.ride-boat .leg,.hero.ride-balloon .leg{display:none}
-.hero.ride-car .veh-car,.hero.ride-boat .veh-boat,.hero.ride-cart .veh-cart{animation:bob .18s ease-in-out infinite alternate}
+.hero.ride-horse .veh-horse,.hero.ride-coach .veh-coach,.hero.ride-gissha .veh-gissha,.hero.ride-wagon .veh-wagon,.hero.ride-elephant .veh-elephant,.hero.ride-camel .veh-camel,.hero.ride-sail .veh-sail,.hero.ride-junk .veh-junk,.hero.ride-ferry .veh-ferry,.hero.ride-cart .veh-cart,.hero.ride-board .veh-board,.hero.ride-aircar .veh-aircar,.hero.ride-hover .veh-hover,.hero.ride-pod .veh-pod,.hero.ride-jet .veh-jet{display:inline}
+.hero.riding:not(.ride-board):not(.ride-jet) .leg{display:none}
+.hero.ride-coach .person,.hero.ride-gissha .person,.hero.ride-pod .person{display:none}
+.hero.ride-horse .person{transform:translate(-2px,-12px)}
+.hero.ride-wagon .person{transform:translate(9px,-10px)}
+.hero.ride-elephant .person{transform:translate(-2px,-26px)}
+.hero.ride-camel .person{transform:translate(-3px,-24px)}
+.hero.ride-sail .person,.hero.ride-junk .person,.hero.ride-ferry .person{transform:translateY(-9px)}
+.hero.ride-cart .person{transform:translateY(-10px)}
+.hero.ride-aircar .person,.hero.ride-hover .person{transform:translateY(-11px)}
+.hero.ride-board .person{transform:translateY(-6px)}
+.hl,.wh,.jf{transform-box:fill-box}
+.hl,.jf{transform-origin:50% 0}
+.wh{transform-origin:center}
+@keyframes gallop{from{transform:rotate(-22deg)}to{transform:rotate(22deg)}}
+@keyframes wspin{to{transform:rotate(360deg)}}
+.hero.riding .hl.a{animation:gallop .2s ease-in-out infinite alternate}
+.hero.riding .hl.b{animation:gallop .2s ease-in-out infinite alternate-reverse}
+.hero.riding .wh{animation:wspin .6s linear infinite}
+.jf{animation:flick .12s ease-in-out infinite alternate}
+.hero.ride-sail .veh-sail,.hero.ride-junk .veh-junk,.hero.ride-ferry .veh-ferry,.hero.ride-cart .veh-cart,.hero.ride-hover .veh-hover,.hero.ride-aircar .veh-aircar,.hero.ride-board .veh-board,.hero.ride-pod .veh-pod{animation:bob .18s ease-in-out infinite alternate}
+/* the adventure board: pixel-art ground behind the squares and characters */
+#board.board{margin:0 auto}
+#world.pxw{background-size:100% 100%;background-repeat:no-repeat;image-rendering:crisp-edges;image-rendering:pixelated}
 .gate-next span{font-size:11.5px;color:var(--dim)}
 #boardView.cave{background:#06050C}
 #board{transition:opacity .35s}
@@ -152,9 +169,6 @@ button{cursor:pointer}
 .weather.night i{top:var(--y,10%);left:auto;right:-160px;width:130px;height:2px;border-radius:2px;background:linear-gradient(90deg,#FFF6D8,rgba(255,246,216,0));box-shadow:none;animation:wshoot 9s ease-in infinite}
 @keyframes wshoot{0%{transform:translate3d(0,0,0) rotate(-25deg);opacity:0}2%{opacity:1}11%{transform:translate3d(-560px,260px,0) rotate(-25deg);opacity:0}100%{transform:translate3d(-560px,260px,0) rotate(-25deg);opacity:0}}
 @keyframes flick{to{transform:scaleY(1.18) scaleX(.86)}}
-.hero.ride-cart .veh-cart{display:inline}
-.hero.ride-cart .person{transform:translateY(-10px)}
-.hero.ride-cart .leg{display:none}
 /* ---------- quest board ---------- */
 #boardView{overflow:auto;background:linear-gradient(180deg,#F5FBF8 0%,#FFF8F3 100%)}
 .board{position:relative;margin:66px auto 28px}
@@ -2002,7 +2016,17 @@ function makePart(ids){
   const info = polyInfo(pts);
   return partCache[key] = {pt: d => ptOn(info, d), len: info.len, off};
 }
-const VEH = {town: {id: 'bike', n: '自転車'}, A1: {id: 'car', n: '車'}, B1: {id: 'car', n: '車'}, river: {id: 'boat', n: 'ボート'}, cave: {id: 'cart', n: 'トロッコ'}, post: {id: 'balloon', n: '気球'}, A2: {id: 'bike', n: '自転車'}, B2: {id: 'bike', n: '自転車'}};
+/* rides for 3+ squares in one move: old-time ones in each world (the future world rides future machines) */
+const VEH_SET = {
+  euro:   {town: 'horse', A1: 'coach', B1: 'coach', river: 'sail', cave: 'cart', post: 'horse', A2: 'coach', B2: 'coach'},
+  wa:     {town: 'horse', A1: 'gissha', B1: 'gissha', river: 'ferry', cave: 'cart', post: 'horse', A2: 'gissha', B2: 'gissha'},
+  china:  {town: 'horse', A1: 'coach', B1: 'coach', river: 'junk', cave: 'cart', post: 'horse', A2: 'coach', B2: 'coach'},
+  india:  {town: 'elephant', A1: 'camel', B1: 'camel', river: 'ferry', cave: 'cart', post: 'elephant', A2: 'camel', B2: 'camel'},
+  usa:    {town: 'horse', A1: 'wagon', B1: 'wagon', river: 'sail', cave: 'cart', post: 'horse', A2: 'wagon', B2: 'wagon'},
+  future: {town: 'board', A1: 'aircar', B1: 'aircar', river: 'hover', cave: 'pod', post: 'jet', A2: 'aircar', B2: 'aircar'}
+};
+const VEH_N = {horse: '馬', coach: '馬車', gissha: '牛車', wagon: '幌馬車', elephant: '象', camel: 'ラクダ', sail: '帆船', junk: 'ジャンク船', ferry: '小舟', cart: 'トロッコ', board: 'ホバーボード', aircar: 'エアカー', hover: 'ホバークラフト', pod: 'リニアポッド', jet: 'ジェットパック'};
+const vehOf = seg => { const id = (VEH_SET[curWorld()] || VEH_SET.euro)[seg]; return id ? {id, n: VEH_N[id]} : null; };
 function segName(seg){
   const base = W().names;
   if (base[seg]) return base[seg];
@@ -2416,14 +2440,32 @@ const HERO_PERSON = `<g class="person">
     <g class="g-helm"><path d="M-10.5 -45 Q-10.5 -57.5 0 -57.5 Q10.5 -57.5 10.5 -45 Z" fill="#C9D1DE" stroke="#7D879B" stroke-width="1.1"/><rect x="-11" y="-47" width="22" height="3.2" rx="1.6" fill="#AEB8C8" stroke="#7D879B" stroke-width=".8"/><path d="M0 -57 Q-7 -64 -3 -70 Q2 -64 3 -58" fill="#F2554E"/></g>
     <circle cx="4" cy="-44" r="1.3" fill="#1B2140"/>
   </g>`;
-const heroVehicles = () => `<ellipse cx="0" cy="0" rx="14" ry="4" fill="#000" opacity=".18"/>
-  <g class="veh veh-bike"><circle cx="-14" cy="-9" r="9" fill="none" stroke="#1B2140" stroke-width="3"/><circle cx="14" cy="-9" r="9" fill="none" stroke="#1B2140" stroke-width="3"/><path d="M-14 -9 L-3 -22 L10 -22 L14 -9 M-3 -22 L1 -9 L-14 -9 M10 -22 L8 -30 L13 -31" stroke="#2E8FE0" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
-  <g class="veh veh-balloon"><path d="M-12 -86 L-10 -24 M12 -86 L10 -24" stroke="#8A6A4A" stroke-width="1.5"/><ellipse cx="0" cy="-104" rx="30" ry="34" fill="#F2554E"/><path d="M0 -138 Q-15 -104 0 -70 Q15 -104 0 -138" fill="#FFAE45"/></g>
-  ${heroPerson()}
-  <g class="veh veh-car"><path d="M-30 -7 V-21 Q-30 -27 -24 -27 H14 L27 -17 H31 V-7 Z" fill="#2E8FE0"/><path d="M14 -27 L25 -18 H14 Z" fill="#BFE3F7"/><circle cx="-18" cy="-6" r="6" fill="#1B2140"/><circle cx="18" cy="-6" r="6" fill="#1B2140"/><circle cx="-18" cy="-6" r="2" fill="#fff"/><circle cx="18" cy="-6" r="2" fill="#fff"/></g>
-  <g class="veh veh-boat"><path d="M4 -16 V-62 L30 -20 Z" fill="#fff" stroke="#B9A98F"/><path d="M-32 -14 H34 L24 2 H-22 Z" fill="#D98A0B"/><path d="M-38 5 Q-28 1 -18 5 T2 5 T22 5 T42 5" stroke="#fff" stroke-width="2" fill="none"/></g>
-  <g class="veh veh-cart"><path d="M-34 2 H34" stroke="#9C8A6E" stroke-width="3"/><path d="M-24 -26 H24 L20 -6 H-20 Z" fill="#7A6A58" stroke="#4A3F35" stroke-width="2"/><circle cx="-12" cy="-4" r="5" fill="#2B2B2B" stroke="#9C8A6E" stroke-width="1.5"/><circle cx="12" cy="-4" r="5" fill="#2B2B2B" stroke="#9C8A6E" stroke-width="1.5"/></g>
-  <g class="veh veh-balloon"><rect x="-12" y="-24" width="24" height="16" rx="3" fill="#8B5E3C"/><path d="M-12 -18 H12" stroke="#6B4630"/></g>`;
+/* ride art, facing right with the rider's feet at 0,0 */
+const vLegs = (xs, col, y, h, w = 3.4) => xs.map(([x, c]) => `<g class="hl ${c}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1.4" fill="${col}"/><rect x="${x - .2}" y="${y + h - 2.4}" width="${w + .4}" height="2.4" fill="#2B2B2B"/></g>`).join('');
+const vWheel = (x, y, r, col = '#3A2A20') => `<g transform="translate(${x} ${y})"><g class="wh"><circle r="${r}" fill="none" stroke="${col}" stroke-width="3"/><path d="M${-r} 0 H${r} M0 ${-r} V${r}" stroke="${col}" stroke-width="1.6"/></g></g>`;
+const vWaves = `<path d="M-38 5 Q-28 1 -18 5 T2 5 T22 5 T42 5" stroke="#fff" stroke-width="2" fill="none"/>`;
+const vHorse = (ox, k, col = '#8B5E3C', mane = '#3A2A20') => `<g transform="translate(${ox} 0) scale(${k})"><path d="M-19 -22 Q-26 -18 -24 -7" stroke="${mane}" stroke-width="3.5" fill="none" stroke-linecap="round"/>${vLegs([[-15, 'a'], [-10, 'b'], [8, 'b'], [13, 'a']], hexMix(col, '#000000', .18), -14, 14)}<ellipse cx="0" cy="-19" rx="19" ry="8.5" fill="${col}"/><path d="M10 -24 L19 -40 L27 -36 L17 -17 Z" fill="${col}"/><path d="M18 -42 Q27 -47 34 -38 L33 -33 Q27 -33 22 -34 Z" fill="${col}"/><path d="M10 -26 L18 -42 L15 -42 L7 -27 Z" fill="${mane}"/><path d="M20 -42 L21 -47 L24 -42 Z" fill="${col}"/><circle cx="26" cy="-39" r="1.1" fill="#1B2140"/></g>`;
+const VEH_ART = {
+  horse: () => `<g class="veh veh-horse">${vHorse(0, 1, curWorld() === 'wa' ? '#4A3426' : curWorld() === 'china' ? '#EDE6D8' : '#8B5E3C')}<path d="M-9 -27 Q0 -30 9 -27 V-22 H-9 Z" fill="#C8362F"/></g>`,
+  coach: () => `<g class="veh veh-coach">${vHorse(32, .8)}<path d="M8 -18 H22" stroke="#5B3A2A" stroke-width="2"/><rect x="-34" y="-50" width="44" height="36" rx="5" fill="${curWorld() === 'china' ? '#C8362F' : '#7A2E2A'}" stroke="#3A1A18" stroke-width="2"/><path d="M-38 -50 Q-12 -62 14 -50 Z" fill="${curWorld() === 'china' ? '#E0A84A' : '#3A1A18'}"/><rect x="-26" y="-43" width="14" height="13" rx="2" fill="#BFE3F7"/><rect x="-6" y="-43" width="10" height="13" rx="2" fill="#BFE3F7"/><path d="M-34 -24 H10" stroke="#FFD84D" stroke-width="2"/>${vWheel(-24, -8, 9)}${vWheel(2, -8, 9)}</g>`,
+  gissha: () => `<g class="veh veh-gissha"><g transform="translate(32 0) scale(.85)">${vLegs([[-14, 'a'], [-9, 'b'], [8, 'b'], [12, 'a']], '#1F1C22', -12, 12, 4)}<ellipse cx="0" cy="-18" rx="18" ry="9" fill="#2E2A30"/><path d="M12 -24 Q22 -27 26 -18 L24 -12 Q16 -12 12 -16 Z" fill="#2E2A30"/><path d="M20 -25 Q24 -32 28 -30 M19 -25 Q16 -32 12 -31" stroke="#F4EEDC" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="21" cy="-20" r="1" fill="#fff"/></g><path d="M6 -22 H22" stroke="#3A2A20" stroke-width="2"/><rect x="-36" y="-50" width="42" height="34" fill="#2B2233"/><rect x="-31" y="-45" width="16" height="22" fill="#D9C48C"/><path d="M-31 -41 H-15 M-31 -37 H-15 M-31 -33 H-15 M-31 -29 H-15" stroke="#B89A5A" stroke-width="1"/><path d="M-42 -50 Q-15 -64 12 -50 L8 -46 Q-15 -56 -38 -46 Z" fill="#1B1620"/>${vWheel(-14, -12, 12)}</g>`,
+  wagon: () => `<g class="veh veh-wagon">${vHorse(34, .8)}<path d="M8 -18 H24" stroke="#5B3A2A" stroke-width="2"/><rect x="-36" y="-26" width="44" height="12" fill="#8B5E3C"/><path d="M-36 -26 Q-40 -52 -24 -56 Q-8 -58 4 -52 Q8 -40 4 -26 Z" fill="#F4EEDC" stroke="#CFC4A6" stroke-width="1.5"/><path d="M-24 -56 Q-26 -40 -24 -26 M-10 -57 Q-11 -40 -10 -26" stroke="#CFC4A6" stroke-width="1.5" fill="none"/>${vWheel(-26, -8, 8)}${vWheel(0, -8, 8)}</g>`,
+  elephant: () => `<g class="veh veh-elephant">${vLegs([[-16, 'a'], [-8, 'b'], [6, 'b'], [14, 'a']], '#8A90A4', -16, 16, 6)}<path d="M-22 -26 Q-28 -22 -27 -14" stroke="#8A90A4" stroke-width="2" fill="none"/><ellipse cx="0" cy="-24" rx="23" ry="14" fill="#9AA0B4"/><circle cx="22" cy="-30" r="11" fill="#9AA0B4"/><path d="M29 -26 Q36 -18 32 -6 L28 -6 Q31 -16 25 -22 Z" fill="#9AA0B4"/><ellipse cx="15" cy="-29" rx="7" ry="10" fill="#8A90A4"/><path d="M27 -24 L33 -22" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="25" cy="-33" r="1.2" fill="#1B2140"/><rect x="-12" y="-44" width="22" height="9" rx="2" fill="#E0413A"/><path d="M-12 -40 H10" stroke="#FFD84D" stroke-width="2"/></g>`,
+  camel: () => `<g class="veh veh-camel">${vLegs([[-13, 'a'], [-8, 'b'], [8, 'b'], [13, 'a']], '#C08A50', -22, 22, 3)}<path d="M-17 -27 Q-22 -22 -20 -16" stroke="#C08A50" stroke-width="2" fill="none"/><ellipse cx="0" cy="-26" rx="17" ry="8" fill="#D9A86A"/><ellipse cx="-3" cy="-33" rx="8" ry="7" fill="#D9A86A"/><path d="M12 -28 Q18 -34 20 -46 L25 -46 Q23 -32 16 -24 Z" fill="#D9A86A"/><ellipse cx="25" cy="-47" rx="6" ry="4" fill="#D9A86A"/><circle cx="27" cy="-48" r="1" fill="#1B2140"/><path d="M-10 -38 Q-3 -44 5 -38 V-33 H-10 Z" fill="#E0413A"/></g>`,
+  sail: () => `<g class="veh veh-sail"><path d="M4 -14 V-64" stroke="#6B4630" stroke-width="2"/><path d="M6 -16 V-62 L30 -20 Z" fill="#fff" stroke="#B9A98F"/><path d="M4 -64 L14 -60 L4 -56 Z" fill="#F2554E"/><path d="M-32 -14 H34 L24 2 H-22 Z" fill="#D98A0B"/>${vWaves}</g>`,
+  junk: () => `<g class="veh veh-junk"><path d="M6 -16 V-66" stroke="#5B3A2A" stroke-width="2"/><path d="M8 -64 H30 L34 -22 H8 Z" fill="#C8362F"/><path d="M8 -54 H31 M8 -44 H32 M8 -34 H33" stroke="#7A1E18" stroke-width="1.5"/><path d="M-34 -16 H36 L28 2 H-26 Z" fill="#8A3A22"/><path d="M-36 -17 H38" stroke="#5B2414" stroke-width="3"/>${vWaves}</g>`,
+  ferry: () => `<g class="veh veh-ferry"><path d="M-22 -58 L-28 6" stroke="#6B4630" stroke-width="2"/><path d="M-30 -10 H30 Q28 0 18 2 H-18 Q-28 0 -30 -10 Z" fill="#8B5E3C"/><path d="M-30 -10 H30" stroke="#5B3A2A" stroke-width="2"/>${vWaves}</g>`,
+  cart: () => `<g class="veh veh-cart"><path d="M-34 2 H34" stroke="#9C8A6E" stroke-width="3"/><path d="M-24 -26 H24 L20 -6 H-20 Z" fill="#7A6A58" stroke="#4A3F35" stroke-width="2"/>${vWheel(-12, -4, 5, '#2B2B2B')}${vWheel(12, -4, 5, '#2B2B2B')}</g>`,
+  board: () => `<g class="veh veh-board"><ellipse cx="0" cy="3" rx="22" ry="3" fill="#39E1F0" opacity=".35"/><rect x="-18" y="-4" width="36" height="5" rx="2.5" fill="#E4EAFF" stroke="#39E1F0" stroke-width="1.5"/><circle cx="-12" cy="3" r="2" fill="#FF5FD2"/><circle cx="12" cy="3" r="2" fill="#FF5FD2"/></g>`,
+  aircar: () => `<g class="veh veh-aircar"><ellipse cx="0" cy="2" rx="28" ry="4" fill="#39E1F0" opacity=".3"/><path d="M14 -24 L24 -38 L30 -24 Z" fill="#BFF5FF" opacity=".75" stroke="#7FE7F2"/><ellipse cx="0" cy="-16" rx="32" ry="9" fill="#E4EAFF" stroke="#8FA3D8" stroke-width="2"/><path d="M-30 -14 H30" stroke="#8FA3D8"/><circle cx="-18" cy="-14" r="2" fill="#FF5FD2"/><circle cx="0" cy="-12" r="2" fill="#39E1F0"/><circle cx="18" cy="-14" r="2" fill="#FF5FD2"/></g>`,
+  hover: () => `<g class="veh veh-hover"><ellipse cx="0" cy="-3" rx="30" ry="6" fill="#1B2140"/><path d="M-26 -8 H26 L22 -18 H-22 Z" fill="#E4EAFF" stroke="#8FA3D8" stroke-width="1.5"/><circle cx="-24" cy="-26" r="8" fill="none" stroke="#8FA3D8" stroke-width="2"/><path d="M-24 -34 V-18 M-32 -26 H-16" stroke="#8FA3D8" stroke-width="1.5"/>${vWaves}</g>`,
+  pod: () => `<g class="veh veh-pod"><path d="M-36 2 H36" stroke="#39E1F0" stroke-width="3"/><rect x="-30" y="-34" width="60" height="30" rx="15" fill="#E4EAFF" stroke="#8FA3D8" stroke-width="2"/><rect x="-18" y="-28" width="36" height="10" rx="5" fill="#39E1F0" opacity=".8"/><circle cx="24" cy="-18" r="2.5" fill="#FF5FD2"/></g>`,
+  jet: () => `<g class="veh veh-jet"><rect x="-17" y="-38" width="9" height="18" rx="3" fill="#8FA3D8"/><path class="jf" d="M-16 -20 L-12.5 -8 L-9 -20 Z" fill="#FFB547"/><path class="jf" d="M-15 -20 L-12.5 -12 L-10 -20 Z" fill="#FFF3C4"/></g>`
+};
+const heroVehicles = () => {
+  const use = new Set(Object.values(VEH_SET[curWorld()] || VEH_SET.euro)), pick = ids => ids.filter(id => use.has(id)).map(id => VEH_ART[id]()).join('');
+  return `<ellipse cx="0" cy="0" rx="14" ry="4" fill="#000" opacity=".18"/>${pick(['horse', 'coach', 'gissha', 'wagon', 'elephant', 'camel', 'board', 'jet'])}${heroPerson()}${pick(['sail', 'junk', 'ferry', 'cart', 'aircar', 'hover', 'pod'])}`;
+};
 /* level, gear and party (followers) */
 const GEAR = [null, null,
   {k: 'sword', n: 'ひらめきの剣', d: '答えを切りひらく剣。Lv.2 剣士になった！'},
@@ -2597,56 +2639,263 @@ function sceneryCave(){
   back.sort((a, b) => a[0] - b[0]); front.sort((a, b) => a[0] - b[0]);
   return SCN[key] = {back: back.map(v => v[1]).join(''), front: front.map(v => v[1]).join(''), stal, torches, lava};
 }
+/* =========================================================
+   PIXEL MAP: the ground of the adventure board is pixel art. It is drawn dot by dot on a small canvas
+   (1 dot = 4 map units) and shown enlarged with sharp edges behind the squares and the characters.
+   ========================================================= */
+const PXU = 4, PXF = "'DotGothic16','M PLUS 1',sans-serif";
+const PX_BASE = {g: ['#5DB94A', '#4CA23C', '#7CCD66'], road: ['#E3C58B', '#C9A66C', '#8E6E3E'], tree: 'round', leaf: ['#2F8A3B', '#4FB35A', '#1D5F2B'], trunk: '#7A5236', pine: ['#2A7A48', '#3F9A5E', '#1C5534'],
+  rock: ['#A3A1AF', '#7A788C', '#CFCDD9', '#55536A'], hill: ['#C98F4A', '#A8733A', '#E2B06C'], water: ['#3A86E0', '#6FB1F2', '#EAF6FF'], flower: ['#F2554E', '#FFD84D', '#FFFFFF'],
+  wall: '#FFF4E0', roof: ['#E0413A', '#2E8FE0', '#8C6CF2', '#D98A0B'], door: '#8A5A3C', win: '#7EC8F2', wood: ['#C2925C', '#9C6E3E', '#6B4A2A'], stone: ['#A39C8E', '#7E776A'],
+  house: 'euro', castle: 'euro', cw: ['#E8E4DA', '#B9B2A2', '#3A3350'], cr: '#E0413A', flag: '#FFD84D'};
+const PX_WORLD = {
+  euro: {},
+  wa: {g: ['#66B455', '#509C44', '#88CA6E'], road: ['#D9CBAA', '#BCAA86', '#7E6E52'], tree: 'sakura', leaf: ['#F5A3C7', '#FFD6E6', '#D66F9C'], trunk: '#5B3A2A', hill: ['#8FB36A', '#76984F', '#A9C985'], flower: ['#F5A3C7', '#FFFFFF', '#FFD84D'],
+    wall: '#F7F1E3', roof: ['#3A4150', '#4B5363'], door: '#5B4636', win: '#E8DCC0', house: 'wa', castle: 'wa', cw: ['#F7F4EC', '#C9C2B2', '#3A3350'], cr: '#3A4150', flag: '#FFB547'},
+  china: {g: ['#76B950', '#60A244', '#94CE70'], road: ['#D4B086', '#B99468', '#7C5A3A'], tree: 'bamboo', leaf: ['#3F9E4E', '#76CC78', '#2A6E37'], wall: '#C8362F', roof: ['#2F8A5B', '#E0A84A'], door: '#6B2A1E', win: '#FFD27A',
+    house: 'china', castle: 'china', cw: ['#C8362F', '#8A231F', '#4A1510'], cr: '#E0A84A', flag: '#FFD84D'},
+  india: {g: ['#A4BF59', '#8BA64A', '#BED476'], road: ['#E0B587', '#C4966A', '#8A6242'], tree: 'palm', leaf: ['#3C9A4A', '#66C266', '#27703A'], trunk: '#8B5E3C', flower: ['#FF8C3A', '#FFD84D', '#E0529B'],
+    wall: '#FBF7EF', roof: ['#E0A84A', '#2E8FE0'], house: 'india', castle: 'india', cw: ['#FBF7EF', '#D8CBB5', '#3A3350'], cr: '#FBF7EF', flag: '#E0A84A'},
+  usa: {g: ['#E2C38C', '#CFAC74', '#EFD6A4'], road: ['#A07C54', '#88693F', '#5E4526'], tree: 'cactus', leaf: ['#4FA35E', '#77C882', '#2F7A3E'], pine: ['#4FA35E', '#77C882', '#2F7A3E'], rock: ['#D17A42', '#A8582C', '#EAA06A', '#7A3C1E'],
+    hill: ['#D9A56A', '#B9854A', '#EDC08A'], wall: '#C8362F', roof: ['#6B4630', '#8A5A3C'], door: '#F4EEDC', house: 'usa', castle: 'usa', cw: ['#9FC3E8', '#5B7FA8', '#DDEBF7'], cr: '#5B7FA8', flag: '#FFD84D', mesa: true},
+  future: {g: ['#C3CFEE', '#AEBCE3', '#DCE4F8'], road: ['#6B7FD8', '#8FA0E8', '#39E1F0'], tree: 'crystal', leaf: ['#7FE7F2', '#D2FAFF', '#39B7D0'], pine: ['#B9A6FF', '#E2D8FF', '#8C6CF2'], rock: ['#9AA8D6', '#7484BE', '#C7D0F0', '#56609A'],
+    hill: ['#B9A6FF', '#9A86E8', '#D6CAFF'], water: ['#2C6FE0', '#39E1F0', '#E4FBFF'], flower: ['#FF5FD2', '#39E1F0', '#FFFFFF'], wall: '#F4F7FF', roof: ['#FF5FD2', '#39E1F0', '#B9A6FF'], door: '#39E1F0', win: '#39E1F0',
+    house: 'future', castle: 'future', cw: ['#F4F7FF', '#8FA3D8', '#39E1F0'], cr: '#B9A6FF', flag: '#FF5FD2', grid: true}
+};
+/* the palette for the current world and chapter: snow in chapter 2, night in chapter 3 */
+function pxPal(){
+  const P = {...PX_BASE, ...(PX_WORLD[curWorld()] || {})}, B = biome();
+  if (!B) return P;
+  if (B.id === 'snow') return {...P, snow: true, mesa: false, g: ['#EDF3F9', '#D5E2EE', '#FFFFFF'], road: ['#CAD6E1', '#B0BFCD', '#7F92A4'], hill: ['#FFFFFF', '#D5E2EE', '#FFFFFF'], water: ['#BCE1F4', '#DDF2FB', '#FFFFFF'], flower: ['#9FD8F2', '#FFFFFF', '#C9B8FF']};
+  const dk = v => Array.isArray(v) ? v.map(dk) : typeof v === 'string' && v[0] === '#' ? hexMix(v, '#10163F', .55) : v;
+  return {...Object.fromEntries(Object.entries(P).map(([k, v]) => [k, dk(v)])), night: true, win: '#FFD66B', water: ['#1C2266', '#3B40A4', '#FFE27A']};
+}
+const pxR = (g, x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), w, h); };
+function pxEll(g, cx, cy, rx, ry, col){ g.fillStyle = col; cx = Math.round(cx); cy = Math.round(cy); for (let dy = -ry; dy <= ry; dy++){ const dx = Math.round(rx * Math.sqrt(Math.max(0, 1 - (dy / (ry + .5)) ** 2))); g.fillRect(cx - dx, cy + dy, dx * 2 + 1, 1); } }
+/* a dome standing on y: rows of cols[0] with an outline (and stripes when cols[2]) */
+function pxDome(g, cx, by, rx, h, cols){
+  cx = Math.round(cx); by = Math.round(by);
+  for (let i = 0; i < h; i++){ const t = (h - i) / (h + .3), dx = Math.round(rx * Math.sqrt(Math.max(0, 1 - t * t))), y = by - h + i; pxR(g, cx - dx, y, dx * 2 + 1, 1, cols[2] && i % 3 === 2 ? cols[1] : cols[0]); pxR(g, cx - dx, y, 1, 1, cols[1]); pxR(g, cx + dx, y, 1, 1, cols[1]); }
+}
+const pxTri = (g, cx, top, h, col, k = 1) => { for (let i = 0; i < h; i++){ const w = Math.round(i * k); pxR(g, cx - w, top + i, w * 2 + 1, 1, col); } };
+const pxRows = (g, cx, y, rows, col) => rows.forEach((w, i) => pxR(g, cx - Math.floor(w / 2), y + i, w, 1, col));
+const pxFlower = (g, x, y, col) => { pxR(g, x - 1, y, 3, 1, col); pxR(g, x, y - 1, 1, 3, col); pxR(g, x, y, 1, 1, '#FFE27A'); };
+const PX_TREE = {
+  round(g, x, y, P){ pxR(g, x - 1, y - 3, 2, 3, P.trunk); pxEll(g, x, y - 7, 4, 4, P.leaf[0]); pxR(g, x - 2, y - 10, 2, 1, P.leaf[1]); pxR(g, x - 3, y - 9, 1, 2, P.leaf[1]); pxR(g, x + 2, y - 5, 2, 1, P.leaf[2]); pxR(g, x + 3, y - 7, 1, 2, P.leaf[2]); if (P.snow){ pxR(g, x - 2, y - 11, 5, 1, '#FFFFFF'); pxR(g, x - 3, y - 10, 2, 1, '#FFFFFF'); } },
+  sakura(g, x, y, P){ PX_TREE.round(g, x, y, P); pxR(g, x, y - 8, 1, 1, '#FFFFFF'); pxR(g, x + 2, y - 9, 1, 1, '#FFFFFF'); pxR(g, x - 2, y - 6, 1, 1, P.leaf[2]); },
+  bamboo(g, x, y, P){ [-3, 0, 3].forEach((o, i) => { const h = 12 + (i === 1 ? 3 : 0); pxR(g, x + o, y - h, 1, h, P.leaf[0]); for (let k = 3; k < h; k += 4) pxR(g, x + o, y - k, 1, 1, P.leaf[2]); pxR(g, x + o - 1, y - h, 1, 2, P.leaf[1]); pxR(g, x + o + 1, y - h + 1, 2, 1, P.leaf[1]); if (P.snow) pxR(g, x + o, y - h - 1, 1, 1, '#FFFFFF'); }); },
+  palm(g, x, y, P){ for (let k = 0; k < 11; k++) pxR(g, x + Math.round(k / 5), y - k - 1, 1, 1, P.trunk); const tx = x + 2, ty = y - 12; [[-5, 1], [-4, -1], [4, -1], [5, 1], [-2, -3], [2, -3]].forEach(([dx, dy]) => { const n = Math.max(Math.abs(dx), Math.abs(dy)); for (let t = 1; t <= n; t++) pxR(g, tx + Math.round(dx * t / n), ty + Math.round(dy * t / n) + (t > n / 2 && dy >= 0 ? 1 : 0), 1, 1, t === n ? P.leaf[2] : P.leaf[0]); }); pxR(g, tx - 1, ty - 1, 3, 2, P.leaf[1]); },
+  cactus(g, x, y, P){ pxR(g, x - 1, y - 11, 3, 11, P.leaf[0]); pxR(g, x, y - 10, 1, 9, P.leaf[1]); pxR(g, x - 4, y - 7, 3, 2, P.leaf[0]); pxR(g, x - 4, y - 10, 2, 3, P.leaf[0]); pxR(g, x + 2, y - 8, 3, 2, P.leaf[0]); pxR(g, x + 3, y - 11, 2, 3, P.leaf[0]); pxR(g, x - 1, y - 1, 3, 1, P.leaf[2]); if (P.snow) pxR(g, x - 1, y - 12, 3, 1, '#FFFFFF'); },
+  crystal(g, x, y, P){ [1, 3, 3, 5, 5, 5, 3, 3, 1].forEach((w, i) => { pxR(g, x - (w - 1) / 2, y - 11 + i, w, 1, P.leaf[0]); pxR(g, x - (w - 1) / 2, y - 11 + i, 1, 1, P.leaf[1]); pxR(g, x + (w - 1) / 2, y - 11 + i, 1, 1, P.leaf[2]); }); pxR(g, x - 1, y - 2, 3, 2, P.trunk); }
+};
+function pxPine(g, x, y, P){
+  pxR(g, x, y - 2, 1, 2, P.trunk);
+  [[14, 0], [13, 1], [12, 1], [11, 2], [10, 1], [9, 2], [8, 3], [7, 2], [6, 3], [5, 4], [4, 3], [3, 4]].forEach(([h, w]) => { pxR(g, x - w, y - h, w * 2 + 1, 1, P.pine[0]); pxR(g, x - w, y - h, 1, 1, P.pine[1]); pxR(g, x + w, y - h, 1, 1, P.pine[2]); });
+  if (P.snow){ pxR(g, x, y - 14, 1, 1, '#FFFFFF'); pxR(g, x - 1, y - 10, 3, 1, '#FFFFFF'); pxR(g, x - 2, y - 7, 5, 1, '#FFFFFF'); pxR(g, x - 3, y - 4, 7, 1, '#FFFFFF'); }
+}
+function pxRock(g, x, y, s, P){
+  if (P.mesa){ const w = s * 2 - 2, l = x - Math.round(w / 2); pxR(g, l, y - s, w, s, P.rock[0]); pxR(g, l, y - s, w, 2, P.rock[2]); for (let k = y - s + 5; k < y - 1; k += 3) pxR(g, l, k, w, 1, P.rock[1]); pxR(g, l + w - 3, y - s + 2, 3, s - 2, P.rock[1]); pxR(g, l, y - 1, w, 1, P.rock[3]); return; }
+  for (let i = 0; i <= s; i++){ const half = Math.round(i * .9), yy = y - s + i; pxR(g, x - half, yy, half + 1, 1, P.rock[2]); pxR(g, x + 1, yy, half, 1, P.rock[1]); pxR(g, x - half, yy, 1, 1, P.rock[3]); pxR(g, x + half, yy, 1, 1, P.rock[3]); }
+  for (let k = 3; k < s; k += 3) pxR(g, x - Math.round(k * .45), y - s + k, 2, 1, P.rock[0]);
+  pxR(g, x - Math.round(s * .9), y, Math.round(s * .9) * 2 + 1, 1, P.rock[3]);
+  if (P.snow || s > 14){ const cap = P.snow ? 4 : 2; for (let i = 0; i < cap; i++){ const half = Math.round(i * .9); pxR(g, x - half, y - s + i, half * 2 + 1, 1, '#FFFFFF'); } }
+}
+const pxHill = (g, x, y, r, P) => { pxDome(g, x, y, r, Math.round(r * .9), [P.hill[0], P.hill[1], 1]); pxR(g, x - Math.round(r / 2), y - Math.round(r * .9) + 1, Math.max(2, Math.round(r / 2)), 1, P.hill[2]); };
+const PX_HOUSE = {
+  euro(g, x, y, P, roof){ pxR(g, x - 5, y - 6, 10, 6, P.wall); pxR(g, x - 5, y - 1, 10, 1, hexMix(P.wall, '#000000', .2)); pxR(g, x - 1, y - 4, 2, 4, P.door); pxR(g, x - 4, y - 5, 2, 2, P.win); pxR(g, x + 2, y - 5, 2, 2, P.win); for (let i = 0; i < 5; i++) pxR(g, x - 1 - i, y - 11 + i, 2 + i * 2, 1, roof); pxR(g, x - 6, y - 7, 12, 1, hexMix(roof, '#000000', .3)); if (P.snow) for (let i = 0; i < 3; i++) pxR(g, x - 1 - i, y - 11 + i, 2 + i * 2, 1, '#FFFFFF'); },
+  wa(g, x, y, P, roof){ pxR(g, x - 5, y - 5, 10, 5, P.wall); pxR(g, x - 5, y - 5, 1, 5, P.door); pxR(g, x + 4, y - 5, 1, 5, P.door); pxR(g, x - 5, y - 3, 10, 1, P.door); pxR(g, x - 1, y - 3, 2, 3, P.win); pxRows(g, x, y - 9, [6, 10, 12, 14], roof); pxR(g, x - 3, y - 9, 6, 1, hexMix(roof, '#FFFFFF', .2)); if (P.snow){ pxRows(g, x, y - 9, [6, 10], '#FFFFFF'); } },
+  china(g, x, y, P, roof){ pxR(g, x - 5, y - 5, 10, 5, P.wall); pxR(g, x - 1, y - 4, 2, 4, P.door); pxR(g, x - 4, y - 4, 1, 2, P.win); pxR(g, x + 3, y - 4, 1, 2, P.win); pxRows(g, x, y - 9, [6, 10, 12, 14], roof); pxR(g, x - 8, y - 7, 1, 1, roof); pxR(g, x + 7, y - 7, 1, 1, roof); pxR(g, x, y - 10, 1, 1, '#FFD84D'); if (P.snow) pxRows(g, x, y - 9, [6, 10], '#FFFFFF'); },
+  india(g, x, y, P, roof){ pxR(g, x - 5, y - 6, 10, 6, P.wall); pxR(g, x + 3, y - 6, 2, 6, hexMix(P.wall, '#000000', .15)); pxR(g, x - 1, y - 4, 2, 4, P.door); pxR(g, x - 1, y - 5, 2, 1, hexMix(P.door, '#FFFFFF', .2)); pxDome(g, x, y - 6, 3, 4, [roof, hexMix(roof, '#000000', .25)]); pxR(g, x, y - 11, 1, 1, roof); },
+  usa(g, x, y, P, roof){ pxR(g, x - 5, y - 7, 10, 7, P.wall); pxR(g, x - 2, y - 5, 4, 5, hexMix(P.wall, '#000000', .3)); for (let k = 0; k < 4; k++){ pxR(g, x - 2 + k, y - 5 + k, 1, 1, P.door); pxR(g, x + 1 - k, y - 5 + k, 1, 1, P.door); } pxRows(g, x, y - 11, [4, 8, 10, 12], roof); pxR(g, x - 1, y - 10, 2, 1, P.door); if (P.snow) pxRows(g, x, y - 11, [4, 8], '#FFFFFF'); },
+  future(g, x, y, P, roof){ pxDome(g, x, y, 6, 7, [P.wall, hexMix(P.wall, '#000000', .25)]); pxR(g, x - 5, y - 4, 10, 1, P.win); pxR(g, x - 1, y - 3, 2, 3, P.door); pxR(g, x, y - 10, 1, 3, roof); pxR(g, x - 1, y - 11, 3, 1, roof); }
+};
+/* castles, drawn standing on (x, y) with the gate at the bottom centre */
+const PX_CASTLE = {
+  euro(g, x, y, P){
+    const [W, D, K] = P.cw, lit = P.night ? P.win : K;
+    pxR(g, x - 16, y - 12, 32, 12, W); pxR(g, x + 12, y - 12, 4, 12, D); for (let k = -16; k < 16; k += 3) pxR(g, x + k, y - 14, 2, 2, W);
+    [-20, 12].forEach(tx => { pxR(g, x + tx, y - 26, 8, 26, W); pxR(g, x + tx + 6, y - 26, 2, 26, D); pxTri(g, x + tx + 4, y - 34, 8, P.cr, .6); pxR(g, x + tx + 3, y - 20, 2, 3, lit); pxR(g, x + tx + 3, y - 12, 2, 3, lit); if (P.snow) pxR(g, x + tx + 3, y - 34, 3, 2, '#FFFFFF'); });
+    pxR(g, x - 7, y - 26, 14, 14, W); pxR(g, x + 4, y - 26, 3, 14, D); pxTri(g, x, y - 35, 9, P.cr, .95); pxR(g, x - 3, y - 22, 2, 3, lit); pxR(g, x + 1, y - 22, 2, 3, lit);
+    pxR(g, x - 3, y - 7, 6, 7, K); pxR(g, x - 2, y - 8, 4, 1, K);
+    pxR(g, x, y - 42, 1, 7, K); pxR(g, x + 1, y - 42, 4, 3, P.flag); if (P.snow) pxR(g, x - 1, y - 35, 3, 2, '#FFFFFF');
+  },
+  wa(g, x, y, P){
+    const [W, D, K] = P.cw, lit = P.night ? P.win : K;
+    pxRows(g, x, y - 8, [24, 25, 26, 27, 28, 29, 30, 31], P.stone[0]); for (let r = y - 7; r < y; r += 2) pxR(g, x - 14, r, 28, 1, P.stone[1]);
+    pxR(g, x - 10, y - 14, 20, 6, W); pxR(g, x + 7, y - 14, 3, 6, D); [-7, -1, 5].forEach(dx => pxR(g, x + dx, y - 12, 2, 2, lit));
+    pxRows(g, x, y - 17, [22, 26, 28], P.cr); pxR(g, x - 14, y - 18, 1, 1, P.cr); pxR(g, x + 13, y - 18, 1, 1, P.cr);
+    pxR(g, x - 7, y - 22, 14, 5, W); pxR(g, x + 4, y - 22, 3, 5, D); pxR(g, x - 4, y - 20, 2, 2, lit); pxR(g, x + 2, y - 20, 2, 2, lit);
+    pxRows(g, x, y - 25, [16, 19, 21], P.cr); pxR(g, x - 11, y - 26, 1, 1, P.cr); pxR(g, x + 10, y - 26, 1, 1, P.cr);
+    pxR(g, x - 4, y - 29, 8, 4, W); pxR(g, x - 1, y - 28, 2, 2, lit);
+    pxRows(g, x, y - 32, [10, 13, 15], P.cr); pxR(g, x - 4, y - 34, 2, 2, P.flag); pxR(g, x + 3, y - 34, 2, 2, P.flag);
+    if (P.snow){ pxR(g, x - 11, y - 17, 22, 1, '#FFFFFF'); pxR(g, x - 8, y - 25, 16, 1, '#FFFFFF'); pxR(g, x - 5, y - 32, 10, 1, '#FFFFFF'); }
+  },
+  china(g, x, y, P){
+    const [W, D, K] = P.cw, lit = P.night ? P.win : P.flag;
+    pxR(g, x - 18, y - 3, 36, 3, P.stone[0]);
+    pxR(g, x - 13, y - 12, 26, 9, W); pxR(g, x + 10, y - 12, 3, 9, D); pxR(g, x - 2, y - 9, 4, 6, K); [-10, -6, 5, 9].forEach(dx => pxR(g, x + dx, y - 10, 1, 4, lit));
+    pxRows(g, x, y - 16, [26, 30, 32, 34], P.cr); pxR(g, x - 18, y - 17, 2, 1, P.cr); pxR(g, x + 16, y - 17, 2, 1, P.cr);
+    pxR(g, x - 8, y - 22, 16, 6, W); pxR(g, x + 6, y - 22, 2, 6, D); pxR(g, x - 1, y - 20, 2, 3, K);
+    pxRows(g, x, y - 26, [18, 22, 24], P.cr); pxR(g, x - 13, y - 27, 1, 1, P.cr); pxR(g, x + 12, y - 27, 1, 1, P.cr);
+    pxR(g, x - 4, y - 30, 8, 4, W); pxRows(g, x, y - 33, [10, 13, 15], P.cr); pxR(g, x - 1, y - 36, 2, 3, P.flag);
+    if (P.snow){ pxR(g, x - 13, y - 16, 26, 1, '#FFFFFF'); pxR(g, x - 9, y - 26, 18, 1, '#FFFFFF'); pxR(g, x - 5, y - 33, 10, 1, '#FFFFFF'); }
+  },
+  india(g, x, y, P){
+    const [W, D, K] = P.cw;
+    pxR(g, x - 15, y - 12, 30, 12, W); pxR(g, x + 12, y - 12, 3, 12, D); [-10, -2, 6].forEach(ax => { pxR(g, x + ax, y - 7, 4, 7, K); pxR(g, x + ax + 1, y - 8, 2, 1, K); });
+    pxDome(g, x, y - 12, 8, 10, [W, D]); pxR(g, x, y - 26, 1, 4, P.flag);
+    [-19, 16].forEach(mx => { pxR(g, x + mx, y - 24, 3, 24, W); pxR(g, x + mx + 2, y - 24, 1, 24, D); pxDome(g, x + mx + 1, y - 24, 2, 3, [W, D]); pxR(g, x + mx + 1, y - 29, 1, 2, P.flag); });
+    if (P.snow){ pxR(g, x - 4, y - 22, 9, 1, '#FFFFFF'); }
+  },
+  usa(g, x, y, P){
+    const [W, D, K] = P.cw, lit = P.night ? P.win : K;
+    [[-18, 10, 18], [-7, 14, 30], [8, 10, 22]].forEach(([bx, bw, bh]) => { pxR(g, x + bx, y - bh, bw, bh, W); pxR(g, x + bx + bw - 2, y - bh, 2, bh, D); for (let wy = y - bh + 2; wy < y - 3; wy += 3) for (let wx = x + bx + 2; wx < x + bx + bw - 3; wx += 3) pxR(g, wx, wy, 1, 2, lit); if (P.snow) pxR(g, x + bx, y - bh, bw, 1, '#FFFFFF'); });
+    pxR(g, x - 1, y - 37, 1, 6, P.flag); pxR(g, x - 3, y - 35, 5, 1, P.flag); pxR(g, x - 2, y - 36, 3, 3, P.flag); pxR(g, x - 2, y - 5, 4, 5, D);
+  },
+  future(g, x, y, P){
+    const [W, D, C] = P.cw;
+    for (let i = 0; i < 40; i++){ const w = Math.round(12 - i * .2); pxR(g, x - Math.floor(w / 2), y - 1 - i, w, 1, W); pxR(g, x + Math.ceil(w / 2) - 2, y - 1 - i, 2, 1, D); }
+    pxR(g, x - 9, y - 14, 18, 2, C); pxR(g, x - 7, y - 28, 14, 2, C); pxR(g, x - 1, y - 44, 3, 3, P.flag); pxR(g, x - 2, y - 43, 5, 1, P.flag); pxR(g, x - 2, y - 6, 4, 6, C);
+  }
+};
+function pxCaveMouth(g, x, y, P, lava){
+  pxDome(g, x, y, 14, 14, [P.rock[0], P.rock[3]]); pxR(g, x - 9, y - 11, 6, 1, P.rock[2]); pxR(g, x - 11, y - 8, 3, 1, P.rock[2]); pxR(g, x + 6, y - 6, 5, 1, P.rock[1]);
+  pxR(g, x - 4, y - 9, 8, 9, '#15111F'); pxR(g, x - 3, y - 10, 6, 1, '#15111F');
+  if (lava){ pxR(g, x - 3, y - 3, 6, 3, '#FF6A2A'); pxR(g, x - 2, y - 2, 4, 1, '#FFC24A'); }
+  if (P.snow){ pxR(g, x - 8, y - 14, 17, 1, '#FFFFFF'); pxR(g, x - 11, y - 12, 4, 1, '#FFFFFF'); pxR(g, x + 8, y - 12, 4, 1, '#FFFFFF'); }
+}
+function pxGround(g, w, h, P, R){
+  pxR(g, 0, 0, w, h, P.g[0]);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){ const r = R(); if (r < .06) pxR(g, x, y, 1, 1, P.g[1]); else if (r < .085) pxR(g, x, y, 1, 1, P.g[2]); }
+  if (P.grid){ for (let y = 0; y < h; y += 10) pxR(g, 0, y, w, 1, P.g[1]); for (let x = 0; x < w; x += 10) pxR(g, x, 0, 1, h, P.g[1]); return; }
+  for (let y = 4; y < h; y += 8) for (let x = (y * 3) % 8; x < w; x += 8){ if (R() < .45) continue; pxR(g, x, y, 1, 2, P.g[1]); pxR(g, x + 2, y + 1, 1, 1, P.g[1]); }
+}
+/* roads: every edge first, then every fill, so crossings stay clean. list = [[world points, [fill, pebble, edge]], ...] */
+function pxRoads(g, list, R){
+  const all = list.map(([pts, cols]) => { const sm = []; for (let i = 0; i < pts.length - 1; i++){ const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 3)); for (let k = 0; k < n; k++) sm.push([(x0 + (x1 - x0) * k / n) / PXU, (y0 + (y1 - y0) * k / n) / PXU]); } const l = pts[pts.length - 1]; sm.push([l[0] / PXU, l[1] / PXU]); return [sm, cols]; });
+  all.forEach(([sm, c]) => sm.forEach(([x, y]) => pxEll(g, x, y, 6, 6, c[2])));
+  all.forEach(([sm, c]) => sm.forEach(([x, y]) => pxEll(g, x, y, 5, 5, c[0])));
+  all.forEach(([sm, c]) => sm.forEach(([x, y], i) => { if (i % 3 === 0) pxR(g, x + R() * 8 - 4, y + R() * 8 - 4, 1, 1, c[1]); }));
+}
+function riverCrossX(){ const riv = SEG.river.pts; for (let i = 0; i < riv.length - 1; i++){ const a = riv[i], b = riv[i + 1]; if ((a[1] - 1174) * (b[1] - 1174) <= 0 && a[1] !== b[1]) return a[0] + (b[0] - a[0]) * (1174 - a[1]) / (b[1] - a[1]); } return 560; }
+function pxOver(){
+  const P = pxPal(), w = WW / PXU, h = OH / PXU, c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'), R = rng(hash(curWorld() + '|' + curCh()) + 3);
+  pxGround(g, w, h, P, R);
+  for (let y = 317; y < 430; y++) for (let x = 126; x < w; x++) if (R() < .2) pxR(g, x, y, 1, 1, P.g[2]);
+  /* the river, with foam along both banks */
+  const ry0 = Math.round(1150 / PXU), ry1 = Math.round(1198 / PXU), foam = P.night ? '#5A60C0' : P.water[2];
+  pxR(g, 0, ry0, w, ry1 - ry0, P.water[0]);
+  for (let y = ry0 + 2; y < ry1 - 1; y += 3) for (let x = (y * 5) % 9; x < w; x += 9) if (R() < .75) pxR(g, x, y, 3, 1, P.water[1]);
+  for (let x = 0; x < w; x += 4){ pxR(g, x, ry0, 3, 1, foam); pxR(g, x + 2, ry1 - 1, 3, 1, foam); }
+  if (P.night) for (let k = 0; k < 70; k++) pxR(g, R() * w, ry0 + 1 + R() * (ry1 - ry0 - 2), 1, 1, R() < .8 ? '#FFFFFF' : '#FFE27A');
+  if (P.snow) for (let k = 0; k < 16; k++){ const x = R() * w, y = ry0 + 2 + R() * (ry1 - ry0 - 4); pxR(g, x, y, 2, 1, '#9CCBE3'); pxR(g, x + 2, y + 1, 2, 1, '#9CCBE3'); }
+  /* roads; the path not taken at a fork is faded */
+  const routes = S.routes || {}, forks = S.forks || {};
+  const dim = id => (id[0] === 'A' || id[0] === 'B') && id.length === 2 && forks['f' + id[1]] && routes['f' + id[1]] && routes['f' + id[1]] !== id;
+  pxRoads(g, OVER_SEGS.filter(dim).map(id => [SEG[id].pts, P.road.map(v => hexMix(v, P.g[0], .55))]), R);
+  pxRoads(g, OVER_SEGS.filter(id => !dim(id)).map(id => [SEG[id].pts, P.road]), R);
+  /* a plank bridge where the road crosses the river */
+  const bx = Math.round(riverCrossX() / PXU) - 11;
+  pxR(g, bx, ry0 - 3, 22, ry1 - ry0 + 6, P.wood[0]); for (let yy = ry0 - 2; yy < ry1 + 3; yy += 2) pxR(g, bx + 2, yy, 18, 1, P.wood[1]); pxR(g, bx, ry0 - 4, 2, ry1 - ry0 + 8, P.wood[2]); pxR(g, bx + 20, ry0 - 4, 2, ry1 - ry0 + 8, P.wood[2]);
+  /* scenery, drawn from the back (top) to the front (bottom) */
+  const items = [], add = (x, y, f) => items.push([y, () => f(Math.round(x / PXU), Math.round(y / PXU))]);
+  const avoid = (x, y) => Math.hypot(x - 840, y - 990) < 100 || Math.hypot(x - 170, y - 870) < 90 || (Math.abs(x - 500) < 120 && y < 290) || (x > 640 && y < 180);
+  const place = (n, x0, x1, y0, y1, clear, fn) => { let k = 0, t = 0; while (k < n && t < 1200){ t++; const x = x0 + R() * (x1 - x0), y = y0 + R() * (y1 - y0); if (nearAny(OVER_SEGS, x, y, clear) || avoid(x, y)) continue; fn(x, y); k++; } };
+  const tree = PX_TREE[P.tree] || PX_TREE.round, house = PX_HOUSE[P.house] || PX_HOUSE.euro, flowerAt = (x, y) => { const col = P.flower[Math.floor(R() * 3)]; add(x, y, (px, py) => pxFlower(g, px, py, col)); };
+  for (let y = 24; y < 210; y += 30) for (let x = 12; x < 990; x += 26){ const jx = x + R() * 10 - 5, jy = y + R() * 8; if (R() < .8 && !nearAny(OVER_SEGS, jx, jy, 34) && !avoid(jx, jy)) add(jx, jy, (px, py) => tree(g, px, py, P)); }
+  place(12, 40, 960, 230, 470, 34, flowerAt);
+  place(26, 20, 980, 480, 860, 36, (x, y) => add(x, y, (px, py) => pxPine(g, px, py, P)));
+  place(7, 30, 970, 500, 850, 60, (x, y) => { const sz = 9 + Math.floor(R() * 4); add(x, y, (px, py) => pxRock(g, px, py, sz, P)); });
+  place(16, 40, 960, 880, 1125, 64, (x, y) => { const sz = 12 + Math.floor(R() * 6); add(x, y, (px, py) => pxRock(g, px, py, sz, P)); });
+  place(18, 20, 980, 870, 1135, 34, (x, y) => add(x, y, (px, py) => pxPine(g, px, py, P)));
+  for (let y = 1296; y < 1712; y += 30) for (let x = 14; x < 486; x += 26){ const jx = x + R() * 8 - 4, jy = y + R() * 6; if (R() < .9 && !nearAny(OVER_SEGS, jx, jy, 30)) add(jx, jy, (px, py) => tree(g, px, py, P)); }
+  place(8, 530, 980, 1310, 1690, 58, (x, y) => { const r = 6 + Math.floor(R() * 4); add(x, y, (px, py) => pxHill(g, px, py, r, P)); });
+  place(26, 520, 980, 1300, 1700, 26, flowerAt);
+  place(5, 520, 980, 1300, 1700, 32, (x, y) => add(x, y, (px, py) => tree(g, px, py, P)));
+  place(18, 30, 970, 1770, 2390, 52, (x, y) => { const roof = P.roof[Math.floor(R() * P.roof.length)]; add(x, y, (px, py) => house(g, px, py, P, roof)); });
+  place(14, 20, 980, 1760, 2395, 30, (x, y) => add(x, y, (px, py) => tree(g, px, py, P)));
+  place(40, 20, 980, 1750, 2395, 26, flowerAt);
+  add(500, 240, (px, py) => (PX_CASTLE[P.castle] || PX_CASTLE.euro)(g, px, py, P));
+  add(840, 1004, (px, py) => pxCaveMouth(g, px, py, P, curCh() === 3));
+  add(170, 884, (px, py) => pxCaveMouth(g, px, py, P, curCh() === 3));
+  items.sort((u, v) => u[0] - v[0]).forEach(v => v[1]());
+  return c;
+}
+function pxCave(){
+  const C = caveCol(), ch = curCh(), sc = sceneryCave(), w = WW / PXU, h = CH / PXU, c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'), R = rng(71 + ch), lite = hexMix(C.bg, '#FFFFFF', .08), dark = hexMix(C.bg, '#000000', .3);
+  pxR(g, 0, 0, w, h, C.bg);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){ const r = R(); if (r < .07) pxR(g, x, y, 1, 1, C.rk[1]); else if (r < .09) pxR(g, x, y, 1, 1, lite); }
+  const a = SEG.cave.pts[0], z = SEG.cave.pts[SEG.cave.pts.length - 1];
+  [[a, 30], [z, 32]].forEach(([q, r]) => { const cx = q[0] / PXU, cy = q[1] / PXU; for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++){ const d = Math.hypot(x, y) / r; if (d < 1 && R() < (1 - d) * .6) pxR(g, cx + x, cy + y, 1, 1, hexMix(C.bg, C.road[2], .45)); } });
+  for (let x = 0; x < w; x += ch === 2 ? 5 : 7){ const hh = ch === 2 ? 5 + Math.floor(R() * 10) : 3 + Math.floor(R() * 6), base = ch === 2 ? 2 : 3; for (let i = 0; i < hh; i++){ const ww = Math.max(0, Math.round(base * (1 - i / hh))); pxR(g, x + base - ww, i, ww * 2 + 1, 1, C.stal); } if (ch === 2) pxR(g, x + base, 1, 1, Math.max(1, hh - 3), '#FFFFFF'); }
+  const place = (n, clear, fn) => { let k = 0, t = 0; while (k < n && t < 900){ t++; const x = 20 + R() * (WW - 40), y = 70 + R() * (CH - 100); if (nearAny(['cave'], x, y, clear)) continue; fn(Math.round(x / PXU), Math.round(y / PXU)); k++; } };
+  place(30, 56, (x, y) => { const r = 4 + Math.floor(R() * 5); pxDome(g, x, y, r + 2, r + 1, [C.rk[R() < .5 ? 0 : 1], dark]); pxR(g, x - r + 1, y - r, 3, 1, C.rk2); });
+  place(16, 40, (x, y) => { const col = C.cr[R() < .5 ? 0 : 1]; for (let k = 0; k < 10; k++) pxR(g, x + R() * 12 - 6, y + R() * 8 - 8, 1, 1, hexMix(C.bg, col, .45)); [[0, 0, 7], [-3, 2, 4], [3, 2, 5]].forEach(([dx, dy, hh]) => { for (let i = 0; i < hh; i++){ const ww = i < 2 ? 0 : 1; pxR(g, x + dx - ww, y + dy - hh + i, ww * 2 + 1, 1, col); } pxR(g, x + dx, y + dy - hh + 2, 1, 2, '#FFFFFF'); }); });
+  (sc.lava || []).forEach(([lx, ly]) => { const x = lx / PXU, y = ly / PXU; pxEll(g, x, y, 12, 4, '#8A2A10'); pxEll(g, x, y, 11, 3, '#C8361A'); pxEll(g, x, y, 9, 2, '#FF6A2A'); pxR(g, x - 4, y - 1, 5, 1, '#FFC24A'); });
+  pxRoads(g, [[SEG.cave.pts, [C.road[1], C.road[2], C.road[0]]]], R);
+  return c;
+}
+/* one picture per world, chapter and chosen route; kept as a blob URL once ready */
+const PXMAPS = {};
+function pxMap(kind){
+  const raw = kind === 'cave' ? `c|${curCh()}` : `o|${curWorld()}|${curCh()}|${JSON.stringify(S.routes || {})}|${Object.keys(S.forks || {}).join(',')}`, key = String(hash(raw));
+  if (!PXMAPS[key]){
+    const c = kind === 'cave' ? pxCave() : pxOver(), M = PXMAPS[key] = {url: c.toDataURL('image/png'), bg: kind === 'cave' ? caveCol().bg : pxPal().g[0]};
+    try { c.toBlob(b => { if (!b) return; M.url = URL.createObjectURL(b); const w = $('#world'); if (w && w.dataset.px === key) w.style.backgroundImage = `url('${M.url}')`; }); } catch {}
+  }
+  return {key, ...PXMAPS[key]};
+}
+const pxWorldAttr = M => `class="pxw" data-px="${M.key}" style="background-color:${M.bg};background-image:url('${M.url}')"`;
 function padSVG(q){
-  const X = q.x.toFixed(0), Y = q.y.toFixed(0);
-  if (q.type === 'start') return `<g transform="translate(${X} ${Y})"><circle r="24" fill="#1B2140" stroke="#fff" stroke-width="3"/><text y="4" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="Outfit,sans-serif" letter-spacing="1">START</text></g>`;
-  if (q.type === 'goal') return `<g transform="translate(${X} ${Y})"><circle r="26" fill="url(#w-goal)" stroke="#fff" stroke-width="3"/><text y="4" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="Outfit,sans-serif" letter-spacing="1">GOAL</text></g>`;
-  if (q.type === 'fork') return `<g transform="translate(${X} ${Y})"><circle r="24" fill="#FFF3C4" stroke="#D98A0B" stroke-width="4"/><path d="M0 10 V-2 M0 -2 L-9 -11 M0 -2 L9 -11 M-9 -11 l0 5 M-9 -11 l5 0 M9 -11 l0 5 M9 -11 l-5 0" stroke="#8A5A0B" stroke-width="3" fill="none" stroke-linecap="round"/></g>`;
-  if (q.type === 'plain'){ const pc = caveCol().plain; return `<g transform="translate(${X} ${Y})"><circle r="11" fill="${q.part === 2 ? pc[0] : '#fff'}" stroke="${q.part === 2 ? pc[1] : '#CDB68C'}" stroke-width="3"/><circle r="3.5" fill="${q.part === 2 ? pc[1] : '#CDB68C'}"/></g>`; }
-  if (q.type === 'ev') return `<g transform="translate(${X} ${Y})"><circle r="17" fill="#fff" stroke="${q.ev.tone === 'good' ? '#15A37C' : q.ev.tone === 'bad' ? '#D93A3F' : '#2E8FE0'}" stroke-width="3"/><use href="#ic-${q.ev.ic}"/></g>`;
+  const X = Math.round(q.x / 2) * 2, Y = Math.round(q.y / 2) * 2, F = `font-family="${PXF}"`;
+  if (q.type === 'start') return `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-32" y="-17" width="64" height="34" fill="#1B2140" stroke="#FFFFFF" stroke-width="4"/><text y="7" text-anchor="middle" fill="#FFFFFF" font-size="17" ${F}>START</text></g>`;
+  if (q.type === 'goal') return `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-30" y="-17" width="60" height="34" fill="#F2554E" stroke="#FFD84D" stroke-width="4"/><text y="7" text-anchor="middle" fill="#FFFFFF" font-size="17" ${F}>GOAL</text></g>`;
+  if (q.type === 'fork') return `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-22" y="-22" width="44" height="44" fill="#FFF3C4" stroke="#D98A0B" stroke-width="4"/><path d="M-2 -2 H2 V14 H-2Z M-13 -13 H-1 V-6 H-13Z M1 -9 H13 V-2 H1Z" fill="#8A5A0B"/></g>`;
+  if (q.type === 'plain'){ const pc = caveCol().plain, cave = q.part === 2; return `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-8" y="-8" width="16" height="16" fill="${cave ? pc[0] : '#FFFFFF'}" stroke="${cave ? pc[1] : '#9C7A48'}" stroke-width="4"/></g>`; }
+  if (q.type === 'ev') return `<g transform="translate(${X} ${Y})"><rect x="-17" y="-17" width="34" height="34" fill="#FFFFFF" stroke="${q.ev.tone === 'good' ? '#15A37C' : q.ev.tone === 'bad' ? '#D93A3F' : '#2E8FE0'}" stroke-width="4" shape-rendering="crispEdges"/><use href="#ic-${q.ev.ic}"/></g>`;
   const st = S.stages[q.p.s], col = colorOf(S, q.p.s), done = qDone(q.p.key);
-  let h = `<g transform="translate(${X} ${Y})"><circle r="24" fill="${done ? rgba(col, .2) : '#fff'}" stroke="${col}" stroke-width="4"/><text y="7" text-anchor="middle" font-size="19" font-weight="800" fill="${col}" font-family="${FONT}">${CIRC[q.p.s] || ''}</text>${done ? `<circle cx="17" cy="-17" r="8" fill="#128A5E"/><path d="M13 -17 l3 3 l5 -6" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>` : ''}<text y="42" text-anchor="middle" font-size="13" font-weight="800" fill="#1B2140" stroke="#fff" stroke-width="4" paint-order="stroke" font-family="${FONT}">${esc(st.l)}</text></g>`;
+  let h = `<g transform="translate(${X} ${Y})"><g shape-rendering="crispEdges"><rect x="-26" y="-26" width="52" height="52" fill="${done ? hexMix(col, '#FFFFFF', .75) : '#FFFFFF'}" stroke="${col}" stroke-width="5"/><rect x="-20" y="-20" width="40" height="40" fill="none" stroke="${col}" stroke-opacity=".35" stroke-width="2"/></g><text y="10" text-anchor="middle" font-size="28" fill="${col}" ${F}>${q.p.s + 1}</text>${done ? `<g transform="translate(20 -20)" shape-rendering="crispEdges"><rect x="-9" y="-9" width="18" height="18" fill="#128A5E"/><path d="M-5 0 L-2 3 L5 -4" stroke="#FFFFFF" stroke-width="3" fill="none"/></g>` : ''}<text y="48" text-anchor="middle" font-size="16" fill="#1B2140" stroke="#FFFFFF" stroke-width="5" paint-order="stroke" ${F}>${esc(st.l)}</text></g>`;
   if (!done){
     if (st.monster){
       const boss = st.monster === 'boss', sc = boss ? 1.7 : 1.35;
       h += `<g transform="translate(${(q.x + (boss ? 78 : 56)).toFixed(0)} ${(q.y + 12).toFixed(0)}) scale(${sc})"><g class="mon-bob"><use href="#mon-${monKind(st)}" style="--mc:${st.mcol || '#7C4DDB'}"/></g></g>`;
-      if (q.p.s === bossStage(S) && !hasMember('princess')) h += `<g transform="translate(${(q.x - 70).toFixed(0)} ${(q.y + 14).toFixed(0)}) scale(1.3)"><circle cy="-26" r="34" fill="#FFD66B" opacity=".18"/><use href="#pm-princess"/><use href="#cage"/><text y="20" text-anchor="middle" font-size="12" font-weight="800" fill="#FFF3C4" font-family="${FONT}">たすけて！</text></g>`;
+      if (q.p.s === bossStage(S) && !hasMember('princess')) h += `<g transform="translate(${(q.x - 70).toFixed(0)} ${(q.y + 14).toFixed(0)}) scale(1.3)"><circle cy="-26" r="34" fill="#FFD66B" opacity=".18"/><use href="#pm-princess"/><use href="#cage"/><text y="20" text-anchor="middle" font-size="12" fill="#FFF3C4" ${F}>たすけて！</text></g>`;
     }
     else h += `<use href="#npc" transform="translate(${(q.x + 40).toFixed(0)} ${(q.y + 8).toFixed(0)}) scale(1.35)" style="--hat:${col}"/>`;
   }
   return h;
 }
 function overSVG(T){
-  const sc = sceneryOver(), routes = S.routes || {}, forks = S.forks || {};
-  const dimSeg = id => (id[0] === 'A' || id[0] === 'B') && id.length === 2 && forks['f' + id[1]] && routes['f' + id[1]] && routes['f' + id[1]] !== id;
-  const RC = W().road;
-  const roads = OVER_SEGS.map(id => { const d = roadD(SEG[id].pts); return `<g opacity="${dimSeg(id) ? .4 : 1}"><path d="${d}" fill="none" stroke="${RC[0]}" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${RC[1]}" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${RC[2]}" stroke-width="3" stroke-dasharray="10 12" opacity=".85"/></g>`; }).join('');
+  const routes = S.routes || {}, forks = S.forks || {}, F = `font-family="${PXF}"`;
   let ghosts = '', labels = '', signs = '';
   Object.entries(forks).forEach(([f, fk]) => {
     const ids = Object.keys(fk.opts);
     ids.forEach(r => {
       if (!SEG[r]) return;
       const mid = ptOn(SEG[r], SEG[r].len * .5), chosen = routes[f] === r, other = routes[f] && !chosen;
-      labels += `<text x="${(mid.x + (mid.x < 500 ? -18 : 18)).toFixed(0)}" y="${(mid.y + 4).toFixed(0)}" text-anchor="${mid.x < 500 ? 'end' : 'start'}" font-size="16" font-weight="800" fill="${other ? '#9CA2B9' : '#1B2140'}" stroke="#fff" stroke-width="5" paint-order="stroke" font-family="${FONT}">${esc(fk.opts[r].n)}</text>`;
+      labels += `<text x="${(mid.x + (mid.x < 500 ? -40 : 40)).toFixed(0)}" y="${(mid.y + 5).toFixed(0)}" text-anchor="${mid.x < 500 ? 'end' : 'start'}" font-size="19" fill="${other ? '#9CA2B9' : '#1B2140'}" stroke="#FFFFFF" stroke-width="5" paint-order="stroke" ${F}>${esc(fk.opts[r].n)}</text>`;
       if (chosen) return;
       const sts = S.stages.map((st, i) => [st, i]).filter(([st]) => st.route === r && (st.ch || 1) === (S.chapter || 1));
-      sts.forEach(([st, i], j) => { const q = ptOn(SEG[r], SEG[r].len * (j + 1) / (sts.length + 1)), col = colorOf(S, i); ghosts += `<g opacity="${other ? .35 : .9}"><g transform="translate(${q.x.toFixed(0)} ${q.y.toFixed(0)})"><circle r="22" fill="#fff" stroke="${col}" stroke-width="3" stroke-dasharray="5 4"/><text y="6" text-anchor="middle" font-size="17" font-weight="800" fill="${col}" font-family="${FONT}">${CIRC[i] || ''}</text><text y="40" text-anchor="middle" font-size="12" font-weight="800" fill="#1B2140" stroke="#fff" stroke-width="4" paint-order="stroke" font-family="${FONT}">${esc(st.l)}</text></g><use href="#npc" transform="translate(${(q.x + 32).toFixed(0)} ${(q.y + 6).toFixed(0)})" style="--hat:${col}"/></g>`; });
+      sts.forEach(([st, i], j) => { const q = ptOn(SEG[r], SEG[r].len * (j + 1) / (sts.length + 1)), col = colorOf(S, i); ghosts += `<g opacity="${other ? .35 : .9}"><g transform="translate(${q.x.toFixed(0)} ${q.y.toFixed(0)})"><rect x="-22" y="-22" width="44" height="44" fill="#FFFFFF" fill-opacity=".85" stroke="${col}" stroke-width="4" stroke-dasharray="6 4" shape-rendering="crispEdges"/><text y="9" text-anchor="middle" font-size="24" fill="${col}" ${F}>${i + 1}</text><text y="42" text-anchor="middle" font-size="14" fill="#1B2140" stroke="#FFFFFF" stroke-width="4" paint-order="stroke" ${F}>${esc(st.l)}</text></g><use href="#npc" transform="translate(${(q.x + 32).toFixed(0)} ${(q.y + 6).toFixed(0)})" style="--hat:${col}"/></g>`; });
     });
     const base = SEG[ids[0]].pts[0], y = base[1] - 70;
-    signs += `<g transform="translate(${base[0]} ${y})"><rect x="-3" y="-6" width="6" height="56" rx="2" fill="#8A6A4A"/><path d="M-6 -4 H-104 L-116 8 L-104 20 H-6Z" fill="#F7E9C8" stroke="#8A6A4A" stroke-width="2"/><text x="-58" y="13" text-anchor="middle" font-size="12" font-weight="800" fill="#1B2140" font-family="${FONT}">${esc(fk.opts[ids[0]].n)}</text><path d="M6 -4 H104 L116 8 L104 20 H6Z" fill="#F7E9C8" stroke="#8A6A4A" stroke-width="2"/><text x="58" y="13" text-anchor="middle" font-size="12" font-weight="800" fill="#1B2140" font-family="${FONT}">${esc(fk.opts[ids[1]].n)}</text></g>`;
+    signs += `<g transform="translate(${base[0]} ${y})" shape-rendering="crispEdges"><rect x="-3" y="-6" width="6" height="56" fill="#8A6A4A"/><path d="M-6 -4 H-104 L-116 8 L-104 20 H-6Z" fill="#F7E9C8" stroke="#6B4A2A" stroke-width="3"/><text x="-58" y="14" text-anchor="middle" font-size="14" fill="#1B2140" ${F}>${esc(fk.opts[ids[0]].n)}</text><path d="M6 -4 H104 L116 8 L104 20 H6Z" fill="#F7E9C8" stroke="#6B4A2A" stroke-width="3"/><text x="58" y="14" text-anchor="middle" font-size="14" fill="#1B2140" ${F}>${esc(fk.opts[ids[1]].n)}</text></g>`;
   });
-  const banner = `<g transform="translate(790 140)"><rect x="-120" y="-24" width="240" height="44" rx="12" fill="#fff" stroke="#F2554E" stroke-width="3"/><text y="5" text-anchor="middle" font-size="17" font-weight="800" fill="#1B2140" font-family="${FONT}">${esc([...S.theme].slice(0, 13).join(''))}</text></g>`;
+  const banner = `<g transform="translate(790 140)" shape-rendering="crispEdges"><rect x="-124" y="-27" width="248" height="50" fill="#FFFFFF" stroke="#1B2140" stroke-width="4"/><rect x="-117" y="-20" width="234" height="36" fill="none" stroke="#F2554E" stroke-width="2"/><text y="8" text-anchor="middle" font-size="20" fill="#1B2140" ${F}>${esc([...S.theme].slice(0, 12).join(''))}</text></g>`;
+  const caves = `<text x="840" y="934" text-anchor="middle" font-size="17" fill="#1B2140" stroke="#FFFFFF" stroke-width="5" paint-order="stroke" ${F}>${esc(segName('cave'))}</text><text x="170" y="816" text-anchor="middle" font-size="17" fill="#1B2140" stroke="#FFFFFF" stroke-width="5" paint-order="stroke" ${F}>出口</text>`;
   const tiles = T.sq.filter(q => q.part !== 2).map(padSVG).join('');
-  return `<svg id="world" viewBox="0 0 ${WW} ${OH}" role="img" aria-label="冒険マップ">${worldDefs()}<rect width="${WW}" height="${OH}" fill="url(#w-sky)"/>${sc.sky}<rect x="505" y="1268" width="495" height="450" fill="${W().hill}" opacity=".7"/>${sc.river}${sc.back}${roads}${sc.bridge}${sc.caves}${sc.castle}${banner}${sc.front}${signs}${labels}${ghosts}${tiles}${rivalsSVG(false)}${onlineLayer(false)}<circle id="hereRing" r="38" fill="none" stroke="#F2554E" stroke-width="3.5" class="here-ring"/>${heroSVG()}</svg>`;
+  return `<svg id="world" ${pxWorldAttr(pxMap('over'))} viewBox="0 0 ${WW} ${OH}" role="img" aria-label="冒険マップ">${worldDefs()}${caves}${banner}${signs}${labels}${ghosts}${tiles}${rivalsSVG(false)}${onlineLayer(false)}<circle id="hereRing" r="38" fill="none" stroke="#F2554E" stroke-width="3.5" class="here-ring"/>${heroSVG()}</svg>`;
 }
 function caveSVG(T){
-  const sc = sceneryCave(), C = caveCol(), d = roadD(SEG.cave.pts), a = SEG.cave.pts[0], z = SEG.cave.pts[SEG.cave.pts.length - 1];
+  const sc = sceneryCave(), C = caveCol(), a = SEG.cave.pts[0], z = SEG.cave.pts[SEG.cave.pts.length - 1];
   const tiles = T.sq.filter(q => q.part === 2).map(padSVG).join('');
   const torches = sc.torches.map(([x, y]) => `<use href="#torch" transform="translate(${x.toFixed(0)} ${y.toFixed(0)})"/>`).join('');
   const bq = T.sq.find(q => q.type === 'q' && q.part === 2 && q.p.s === bossStage(S));
   const holes = sc.torches.map(([x, y]) => `<circle cx="${x.toFixed(0)}" cy="${(y - 10).toFixed(0)}" r="80" fill="url(#lampG)"/>`).join('') + sc.lava.map(([x, y]) => `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="95" fill="url(#lampG)"/>`).join('') + (bq ? `<circle cx="${bq.x.toFixed(0)}" cy="${(bq.y - 20).toFixed(0)}" r="150" fill="url(#lampG)"/>` : '');
-  const lbl = (x, y, t) => `<text x="${Math.max(30, Math.min(WW - 30, x))}" y="${y + 50}" text-anchor="middle" font-size="13" font-weight="800" fill="#FFF3C4" font-family="${FONT}">${t}</text>`;
-  return `<svg id="world" viewBox="0 0 ${WW} ${CH}" role="img" aria-label="${segName('cave')}">${worldDefs()}<rect width="${WW}" height="${CH}" fill="${C.bg}"/>${sc.back}${sc.stal}<circle cx="${a[0]}" cy="${a[1]}" r="120" fill="url(#w-glow)"/><circle cx="${z[0]}" cy="${z[1]}" r="130" fill="url(#w-glow)"/><path d="${d}" fill="none" stroke="${C.road[0]}" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${C.road[1]}" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${C.road[2]}" stroke-width="2" stroke-dasharray="4 10" opacity=".8"/>${sc.front}${torches}${lbl(a[0], a[1], '入口')}${lbl(z[0], z[1], '出口')}${tiles}${rivalsSVG(true)}${onlineLayer(true)}<circle id="hereRing" r="38" fill="none" stroke="#FFD66B" stroke-width="3.5" class="here-ring"/>${heroSVG()}<mask id="dark" maskUnits="userSpaceOnUse" x="0" y="0" width="${WW}" height="${CH}"><rect width="${WW}" height="${CH}" fill="#fff"/><circle id="lamp" r="210" fill="url(#lampG)"/><circle cx="${a[0]}" cy="${a[1]}" r="150" fill="url(#lampG)"/><circle cx="${z[0]}" cy="${z[1]}" r="150" fill="url(#lampG)"/>${holes}</mask><rect width="${WW}" height="${CH}" fill="${C.dark}" opacity="${C.darkOp}" mask="url(#dark)" pointer-events="none"/></svg>`;
+  const lbl = (x, y, t) => `<text x="${Math.max(30, Math.min(WW - 30, x))}" y="${y + 52}" text-anchor="middle" font-size="16" fill="#FFF3C4" font-family="${PXF}">${t}</text>`;
+  return `<svg id="world" ${pxWorldAttr(pxMap('cave'))} viewBox="0 0 ${WW} ${CH}" role="img" aria-label="${segName('cave')}">${worldDefs()}${torches}${lbl(a[0], a[1], '入口')}${lbl(z[0], z[1], '出口')}${tiles}${rivalsSVG(true)}${onlineLayer(true)}<circle id="hereRing" r="38" fill="none" stroke="#FFD66B" stroke-width="3.5" class="here-ring"/>${heroSVG()}<mask id="dark" maskUnits="userSpaceOnUse" x="0" y="0" width="${WW}" height="${CH}"><rect width="${WW}" height="${CH}" fill="#fff"/><circle id="lamp" r="210" fill="url(#lampG)"/><circle cx="${a[0]}" cy="${a[1]}" r="150" fill="url(#lampG)"/><circle cx="${z[0]}" cy="${z[1]}" r="150" fill="url(#lampG)"/>${holes}</mask><rect width="${WW}" height="${CH}" fill="${C.dark}" opacity="${C.darkOp}" mask="url(#dark)" pointer-events="none"/></svg>`;
 }
 let TRK = null;
 function renderBoard(heroAt){
@@ -2685,7 +2934,7 @@ function glide(pt, d0, d1, ms, mode){
     const step = now => {
       const t = ms ? Math.min(1, (now - t0) / ms) : 1;
       const e = mode === 'walk' ? t : (t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
-      const p = pt(d0 + (d1 - d0) * e), lift = mode === 'balloon' ? -40 * Math.sin(Math.PI * t) : 0;
+      const p = pt(d0 + (d1 - d0) * e), lift = mode === 'jet' ? -40 * Math.sin(Math.PI * t) : 0;
       setHero(p.x, p.y + lift, lastX == null || Math.abs(p.x - lastX) < .3 ? null : p.x - lastX);
       lastX = p.x; follow(p.x, p.y, false);
       if (t < 1) requestAnimationFrame(step); else res();
@@ -2936,7 +3185,7 @@ async function walkForward(n, trigger, rvPlan, before){
   while (a < i && $('#hero')){
     let b = a; while (b < i && sq[b + 1].part === sq[a].part) b++;
     if (b > a){
-      const P = T.parts[sq[a].part], steps = b - a, veh = trigger && steps >= 3 ? VEH[sq[a].seg] : null;
+      const P = T.parts[sq[a].part], steps = b - a, veh = trigger && steps >= 3 ? vehOf(sq[a].seg) : null;
       if (veh){ toast(`${veh.n}に乗って進む！`); sfx.good(); await glide(P.pt, sq[a].d, sq[b].d, reduced ? 120 : 420 + steps * 260, veh.id); }
       else for (let k = a; k < b; k++){ sfx.step(); await glide(P.pt, sq[k].d, sq[k + 1].d, reduced ? 80 : 400, 'walk'); }
       a = b;
@@ -3478,7 +3727,7 @@ function rollHTML(){
   const gate = nx >= 0 ? sq[nx] : null, moving = q.qs === 'moving';
   const P = prompts(S).filter(p => !p.fork), doneN = Object.keys(q.done).filter(k => !k.startsWith('fork')).length;
   const toGoal = sq[sq.length - 1].type === 'goal' ? `${sq.length - 1 - i}マス` : '？';
-  const veh = VEH[cur.seg];
+  const veh = vehOf(cur.seg);
   const gateHTML = !gate ? `<div class="gate-next">関所はすべて通過。<b>${W().names.castle}をめざそう！</b></div>`
     : gate.type === 'fork' ? `<div class="gate-next">次は：<span class="stage-pill" style="--c:#D98A0B"><i>分</i>分かれ道</span><b>あと${nx - i}マス</b></div>`
     : `<div class="gate-next">次の関所：<span class="stage-pill" style="--c:${colorOf(S, gate.p.s)}"><i>${gate.p.s + 1}</i>${esc(S.stages[gate.p.s].l)}</span><b>あと${nx - i}マス</b></div>`;
@@ -4943,7 +5192,7 @@ const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 const ICON_SQ = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><radialGradient id="ig-bg" cx="50%" cy="42%" r="70%"><stop offset="0" stop-color="#FFD166"/><stop offset=".55" stop-color="#FF7E4D"/><stop offset="1" stop-color="#E0413A"/></radialGradient></defs><rect width="512" height="512" fill="url(#ig-bg)"/><path d="M256 256 L653.8 214.2 L653.8 297.8Z" fill="#FFF3C4" opacity=".28"/><path d="M256 256 L636.4 379.6 L602.4 456.0Z" fill="#FFF3C4" opacity=".28"/><path d="M256 256 L553.3 523.7 L491.1 579.6Z" fill="#FFF3C4" opacity=".28"/><path d="M256 256 L418.7 621.4 L339.2 647.3Z" fill="#FFF3C4" opacity=".28"/><path d="M256 256 L256.0 656.0 L172.8 647.3Z" fill="#FFF3C4" opacity=".28"/><path d="M256 256 L93.3 621.4 L20.9 579.6Z" fill="#FFF3C4" opacity=".28"/><path d="M256 256 L-41.3 523.7 L-90.4 456.0Z" fill="#FFF3C4" opacity=".28"/><path d="M256 256 L-124.4 379.6 L-141.8 297.8Z" fill="#FFF3C4" opacity=".28"/><path d="M256 256 L-141.8 214.2 L-124.4 132.4Z" fill="#FFF3C4" opacity=".28"/><path d="M256 256 L-90.4 56.0 L-41.3 -11.7Z" fill="#FFF3C4" opacity=".28"/><path d="M256 256 L20.9 -67.6 L93.3 -109.4Z" fill="#FFF3C4" opacity=".28"/><path d="M256 256 L172.8 -135.3 L256.0 -144.0Z" fill="#FFF3C4" opacity=".28"/><path d="M256 256 L339.2 -135.3 L418.7 -109.4Z" fill="#FFF3C4" opacity=".28"/><path d="M256 256 L491.1 -67.6 L553.3 -11.7Z" fill="#FFF3C4" opacity=".28"/><path d="M256 256 L602.4 56.0 L636.4 132.4Z" fill="#FFF3C4" opacity=".28"/><g transform="rotate(45 256 262)"><rect x="240" y="18" width="32" height="330" rx="6" fill="#EEF3FA" stroke="#1B2140" stroke-width="10"/><path d="M256 30 V330" stroke="#B9C3D6" stroke-width="6"/><rect x="178" y="340" width="156" height="34" rx="17" fill="#FFC23D" stroke="#1B2140" stroke-width="10"/><rect x="238" y="372" width="36" height="78" rx="10" fill="#8B5E3C" stroke="#1B2140" stroke-width="10"/><circle cx="256" cy="468" r="24" fill="#FFC23D" stroke="#1B2140" stroke-width="10"/></g><path d="M256 104 C318 128 360 132 400 128 V250 C400 348 334 404 256 436 C178 404 112 348 112 250 V128 C152 132 194 128 256 104Z" fill="#FFC23D" stroke="#1B2140" stroke-width="12" stroke-linejoin="round"/><path d="M256 132 C308 152 344 156 374 154 V250 C374 332 318 380 256 408 C194 380 138 332 138 250 V154 C168 156 204 152 256 132Z" fill="#2E8FE0"/><path d="M256 132 C308 152 344 156 374 154 V250 C374 262 373 274 370 285 C330 240 250 220 150 232 C144 200 140 178 138 154 C168 156 204 152 256 132Z" fill="#fff" opacity=".13"/><g stroke="#fff" stroke-width="11" stroke-linecap="round"><path d="M256 268 L184 206 M256 268 L330 204 M256 268 L318 340 M256 268 L190 336"/></g><circle cx="184" cy="206" r="20" fill="#fff"/><circle cx="330" cy="204" r="20" fill="#fff"/><circle cx="318" cy="340" r="20" fill="#fff"/><circle cx="190" cy="336" r="20" fill="#fff"/><circle cx="184" cy="206" r="9" fill="#15A37C"/><circle cx="330" cy="204" r="9" fill="#8C6CF2"/><circle cx="318" cy="340" r="9" fill="#E0529B"/><circle cx="190" cy="336" r="9" fill="#FF7E4D"/><polygon points="256.0,208.0 271.3,245.0 311.2,248.1 280.7,274.0 290.1,312.9 256.0,292.0 221.9,312.9 231.3,274.0 200.8,248.1 240.7,245.0" fill="#FFD84D" stroke="#1B2140" stroke-width="9" stroke-linejoin="round"/><path d="M412 52 Q418.12 79.88 446 86 Q418.12 92.12 412 120 Q405.88 92.12 378 86 Q405.88 79.88 412 52Z" fill="#fff"/><path d="M96 82 Q99.96 100.04 118 104 Q99.96 107.96 96 126 Q92.04 107.96 74 104 Q92.04 100.04 96 82Z" fill="#FFF3C4"/><path d="M438 372 Q441.6 388.4 458 392 Q441.6 395.6 438 412 Q434.4 395.6 418 392 Q434.4 388.4 438 372Z" fill="#FFF3C4"/></svg>`;
 const svgURL = t => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(t);
 function rasterIcon(svg, n){ return new Promise(res => { const im = new Image(); im.onload = () => { try { const c = document.createElement('canvas'); c.width = c.height = n; c.getContext('2d').drawImage(im, 0, 0, n, n); res(c); } catch { res(null); } }; im.onerror = () => res(null); im.src = svgURL(svg); }); }
-const FONT_LINKS = '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;500;700;800&family=Outfit:wght@400;500;600;700&display=swap">';
+const FONT_LINKS = '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;500;700;800&family=Outfit:wght@400;500;600;700&family=DotGothic16&display=swap">';
 function appHTML(){
   if (!SELF) return null;
   const C0 = '<' + '!--', C1 = '--' + '>', SO = '<' + 'script data-mq>', SC = '<' + '/script>';
