@@ -123,13 +123,14 @@ button{cursor:pointer}
 @keyframes bob{to{transform:translateY(-2.5px)}}
 .hero .veh{display:none}
 .hero.ride-horse .veh-horse,.hero.ride-coach .veh-coach,.hero.ride-gissha .veh-gissha,.hero.ride-wagon .veh-wagon,.hero.ride-elephant .veh-elephant,.hero.ride-camel .veh-camel,.hero.ride-sail .veh-sail,.hero.ride-junk .veh-junk,.hero.ride-ferry .veh-ferry,.hero.ride-cart .veh-cart,.hero.ride-board .veh-board,.hero.ride-aircar .veh-aircar,.hero.ride-hover .veh-hover,.hero.ride-pod .veh-pod,.hero.ride-jet .veh-jet{display:inline}
-.hero.riding:not(.ride-board):not(.ride-jet) .leg{display:none}
+.hero.ride-horse .leg,.hero.ride-wagon .leg,.hero.ride-elephant .leg,.hero.ride-camel .leg{display:none}
 .hero.ride-coach .person,.hero.ride-gissha .person,.hero.ride-pod .person{display:none}
 .hero.ride-horse .person{transform:translate(-2px,-12px)}
 .hero.ride-wagon .person{transform:translate(9px,-10px)}
 .hero.ride-elephant .person{transform:translate(-2px,-26px)}
 .hero.ride-camel .person{transform:translate(-3px,-24px)}
-.hero.ride-sail .person,.hero.ride-junk .person,.hero.ride-ferry .person{transform:translateY(-9px)}
+.hero.ride-sail .person,.hero.ride-junk .person{transform:translateY(-4px)}
+.hero.ride-ferry .person{transform:translateY(-2px)}
 .hero.ride-cart .person{transform:translateY(-10px)}
 .hero.ride-aircar .person,.hero.ride-hover .person{transform:translateY(-11px)}
 .hero.ride-board .person{transform:translateY(-6px)}
@@ -143,6 +144,15 @@ button{cursor:pointer}
 .hero.riding .wh{animation:wspin .6s linear infinite}
 .jf{animation:flick .12s ease-in-out infinite alternate}
 .hero.ride-sail .veh-sail,.hero.ride-junk .veh-junk,.hero.ride-ferry .veh-ferry,.hero.ride-cart .veh-cart,.hero.ride-hover .veh-hover,.hero.ride-aircar .veh-aircar,.hero.ride-board .veh-board,.hero.ride-pod .veh-pod{animation:bob .18s ease-in-out infinite alternate}
+/* pixel-art characters */
+.pxs{image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;image-rendering:pixelated}
+#heroBody .pf{display:none}
+#heroBody:not(.walking):not(.riding) .pf-stand,#heroBody.walking .pf-walk,#heroBody.ride-horse .pf-horse,#heroBody.ride-coach .pf-coach,#heroBody.ride-gissha .pf-gissha,#heroBody.ride-wagon .pf-wagon,#heroBody.ride-elephant .pf-elephant,#heroBody.ride-camel .pf-camel,#heroBody.ride-sail .pf-sail,#heroBody.ride-junk .pf-junk,#heroBody.ride-ferry .pf-ferry,#heroBody.ride-cart .pf-cart,#heroBody.ride-board .pf-board,#heroBody.ride-aircar .pf-aircar,#heroBody.ride-hover .pf-hover,#heroBody.ride-pod .pf-pod,#heroBody.ride-jet .pf-jet{display:inline}
+#heroBody .pb{opacity:0}
+#heroBody.walking .pa{animation:pxa .46s steps(1,end) infinite}#heroBody.walking .pb{animation:pxb .46s steps(1,end) infinite}
+#heroBody.riding .pa{animation:pxa .36s steps(1,end) infinite}#heroBody.riding .pb{animation:pxb .36s steps(1,end) infinite}
+@keyframes pxa{0%{opacity:1}50%{opacity:0}}
+@keyframes pxb{0%{opacity:0}50%{opacity:1}}
 /* the adventure board: pixel-art ground behind the squares and characters */
 #board.board{margin:0 auto}
 #world.pxw{background-size:100% 100%;background-repeat:no-repeat;image-rendering:crisp-edges;image-rendering:pixelated}
@@ -151,7 +161,7 @@ button{cursor:pointer}
 #board{transition:opacity .35s}
 #board.fade{opacity:0}
 .mon-bob{animation:monb .9s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 100%}
-@keyframes monb{to{transform:translateY(-4px) scaleY(1.04)}}
+@keyframes monb{to{transform:translateY(-4px)}}
 .flame{animation:flick .35s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 100%}
 .twk{animation:twk 1.8s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}
 @keyframes twk{from{opacity:.25}to{opacity:1}}
@@ -409,7 +419,7 @@ details.own[open] summary{margin-bottom:8px}
 .lv2 .g-sword,.lv3 .g-sword,.lv4 .g-sword,.lv5 .g-sword,.lv3 .g-shield,.lv4 .g-shield,.lv5 .g-shield,.lv4 .g-armor,.lv5 .g-armor,.lv5 .g-helm,.lv5 .g-cape{display:inline}
 .lv5 .hair{display:none}
 #heroBody.riding~.party{display:none}
-#heroBody.walking~.party .pm use{animation:bob .23s ease-in-out infinite alternate}
+#heroBody.walking~.party .pm>*{animation:bob .23s ease-in-out infinite alternate}
 .flit{animation:flit 1.1s ease-in-out infinite alternate}
 @keyframes flit{to{transform:translateY(-5px)}}
 .story{display:grid;justify-items:center;text-align:center;gap:8px;padding:18px 16px 16px;border-radius:18px;background:radial-gradient(120% 90% at 50% 0%,#3A2F66 0%,#1B2140 70%);color:#fff;box-shadow:inset 0 0 0 3px #1B2140,inset 0 0 0 5px #FFD66B}
@@ -1190,6 +1200,67 @@ const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${
 const fmt = s => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 const fmtLimit = s => s % 60 === 0 ? `${s / 60}分` : s > 60 ? `${Math.floor(s / 60)}分${s % 60}秒` : `${s}秒`;
 const hash = str => { let h = 5381; for (const c of str) h = (h * 33 + c.codePointAt(0)) >>> 0; return h; };
+/* ---------- pixel-art characters: each character's vector art is drawn once into a small canvas (1 dot = PXC_U units), then shown as a crisp sprite ---------- */
+const PXC_U = 2.1, PX_SS = 5, PX_BOX = [-76, -112, 152, 124], PX_LINE = [34, 28, 52];
+const PXS = new Map();
+let pxQ = Promise.resolve(), pxCss = null;
+const pxFly = inner => /#pm-(fairy|owl)"/.test(inner);
+const pxImg = (r, inner) => { const im = `<image class="pxs" href="${r.url}" x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" preserveAspectRatio="none"/>`; return pxFly(inner) ? `<g class="flit">${im}</g>` : im; };
+function pxSprite(inner, css = ''){
+  const texts = []; inner = inner.replace(/<text[\s\S]*?<\/text>/g, t => { texts.push(t); return ''; });
+  const key = 'x' + hash(inner + '|' + css).toString(36) + inner.length.toString(36), r = PXS.get(key);
+  if (r && r.url) return pxImg(r, inner) + texts.join('');
+  if (!r){ PXS.set(key, {}); pxQ = pxQ.then(() => pxMake(key, inner, css)).catch(() => PXS.set(key, {fail: 1})); }
+  return (r && r.fail ? inner : `<g data-pxk="${key}">${inner}</g>`) + texts.join('');
+}
+const pxPerson = (lv, w, av) => pxSprite(`<g class="lv${lv}">${heroPerson(w, av)}</g>`);
+async function pxMake(key, inner, css){
+  if (pxCss == null){ // only the rules that shape a character (gear by level, rides, hair), with all motion stopped
+    const st = document.querySelector('style[data-mq]'); let t = '';
+    try { for (const r of st.sheet.cssRules) if (r.selectorText && /\.(lv\d|hero|walking|riding|ride-|veh|g-|hair|leg|arm|person|hl|wh|jf)\b/.test(r.selectorText)) t += r.cssText; } catch (e){ t = st ? st.textContent : ''; }
+    pxCss = t + '*{animation:none!important;transition:none!important}';
+  }
+  const u = PXC_U, SS = PX_SS, [bx, by, bw, bh] = PX_BOX;
+  const x0 = -Math.ceil(-bx / u) * u, y0 = -Math.ceil(-by / u) * u, W = Math.ceil((bx + bw - x0) / u), H = Math.ceil((by + bh - y0) / u);
+  const defs = SPRITES.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '') + WORLD_DEFS;
+  const src = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W * SS}" height="${H * SS}" viewBox="${x0} ${y0} ${W * u} ${H * u}"><style>${pxCss}${css}</style>${defs}${inner}</svg>`;
+  const img = new Image();
+  await new Promise((ok, ng) => { img.onload = ok; img.onerror = ng; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src); });
+  const c = document.createElement('canvas'); c.width = W * SS; c.height = H * SS;
+  const g = c.getContext('2d', {willReadFrequently: true}); g.drawImage(img, 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height).data, CW = c.width, N = SS * SS;
+  const dot = new Int32Array(W * H).fill(-1), vk = new Int32Array(N), vw = new Float32Array(N), vc = new Int32Array(N); // dot: -1 empty, -2 shadow, else 0xRRGGBB
+  let i1 = W, j1 = H, i2 = -1, j2 = -1;
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++){
+    let m = 0, solid = 0, shade = 0;
+    for (let b = 0; b < SS; b++) for (let a = 0; a < SS; a++){
+      const p = ((j * SS + b) * CW + i * SS + a) * 4, al = d[p + 3];
+      if (al < 128){ if (al > 18 && d[p] + d[p + 1] + d[p + 2] < 90) shade++; continue; }
+      solid++;
+      const k = ((d[p] >> 3) << 10) | ((d[p + 1] >> 3) << 5) | (d[p + 2] >> 3), lum = (d[p] * .3 + d[p + 1] * .59 + d[p + 2] * .11) / 255, w = 1 + 1.5 * (1 - lum) * (1 - lum);
+      let f = 0; while (f < m && vk[f] !== k) f++;
+      if (f < m) vw[f] += w; else { vk[m] = k; vw[m] = w; vc[m] = (d[p] << 16) | (d[p + 1] << 8) | d[p + 2]; m++; }
+    }
+    let val = -1;
+    if (solid >= N * .4){ let f = 0; for (let t = 1; t < m; t++) if (vw[t] > vw[f]) f = t; val = vc[f]; }
+    else if (shade + solid >= N * .35) val = -2;
+    if (val === -1) continue;
+    dot[j * W + i] = val; if (i < i1) i1 = i; if (i > i2) i2 = i; if (j < j1) j1 = j; if (j > j2) j2 = j;
+  }
+  if (i2 < 0){ PXS.set(key, {fail: 1}); return; }
+  const OW = i2 - i1 + 3, OH = j2 - j1 + 3, o = document.createElement('canvas'); o.width = OW; o.height = OH;
+  const og = o.getContext('2d'), od = og.createImageData(OW, OH), at = (i, j) => i < 0 || j < 0 || i >= W || j >= H ? -1 : dot[j * W + i];
+  for (let y = 0; y < OH; y++) for (let x = 0; x < OW; x++){
+    const i = x + i1 - 1, j = y + j1 - 1, v = at(i, j), q = (y * OW + x) * 4;
+    if (v >= 0){ od.data[q] = v >> 16; od.data[q + 1] = (v >> 8) & 255; od.data[q + 2] = v & 255; od.data[q + 3] = 255; }
+    else if (at(i - 1, j) >= 0 || at(i + 1, j) >= 0 || at(i, j - 1) >= 0 || at(i, j + 1) >= 0){ od.data[q] = PX_LINE[0]; od.data[q + 1] = PX_LINE[1]; od.data[q + 2] = PX_LINE[2]; od.data[q + 3] = 255; }
+    else if (v === -2) od.data[q + 3] = 56;
+  }
+  og.putImageData(od, 0, 0);
+  const f = n => +n.toFixed(2), r = {url: o.toDataURL(), x: f(x0 + (i1 - 1) * u), y: f(y0 + (j1 - 1) * u), w: f(OW * u), h: f(OH * u)};
+  PXS.set(key, r);
+  document.querySelectorAll(`[data-pxk="${key}"]`).forEach(el => { el.insertAdjacentHTML('afterend', pxImg(r, inner)); el.remove(); });
+}
 
 /* ---------- environment ---------- */
 const inViewer = !!(window.claude && typeof window.claude.use === 'function');
@@ -2338,7 +2409,7 @@ const heroName = () => (S && S.heroName) || '';
 
 function worldCard(w){
   const X = WORLDS[w], Y = W_SYM[w];
-  return `<svg viewBox="-110 -200 220 220" aria-hidden="true"><defs><linearGradient id="wc-${w}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${X.sky[0]}"/><stop offset=".62" stop-color="${X.sky[3]}"/><stop offset=".63" stop-color="${X.sky[8]}"/><stop offset="1" stop-color="${X.sky[10]}"/></linearGradient></defs><rect x="-110" y="-200" width="220" height="220" fill="url(#wc-${w})"/><g transform="translate(0 -40) scale(.8)">${castleArt(w)}</g><g transform="translate(-78 4) scale(1.3)">${Y.tree}</g><g transform="translate(80 6) scale(1.2)">${Y.house}</g><g transform="translate(-2 16) scale(1.5)" class="lv5">${heroPerson(w, homeAvatar)}</g></svg>`;
+  return `<svg viewBox="-110 -200 220 220" aria-hidden="true"><defs><linearGradient id="wc-${w}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${X.sky[0]}"/><stop offset=".62" stop-color="${X.sky[3]}"/><stop offset=".63" stop-color="${X.sky[8]}"/><stop offset="1" stop-color="${X.sky[10]}"/></linearGradient></defs><rect x="-110" y="-200" width="220" height="220" fill="url(#wc-${w})"/><g transform="translate(0 -40) scale(.8)">${castleArt(w)}</g><g transform="translate(-78 4) scale(1.3)">${Y.tree}</g><g transform="translate(80 6) scale(1.2)">${Y.house}</g><g transform="translate(-2 16) scale(1.5)">${pxPerson(5, w, homeAvatar)}</g></svg>`;
 }
 
 /* ---------- question variants: 10+ ways to ask each question (picked per play) ---------- */
@@ -2496,12 +2567,20 @@ function partySVG(){
   let x = -28, h = '';
   PARTY_ORDER.filter(m => party.includes(m)).forEach(m => {
     const fly = m === 'fairy' || m === 'owl';
-    h += `<g class="pm" transform="translate(${fly ? -18 : x} ${fly ? -58 : 0})"><use href="#pm-${m}"/></g>`;
+    h += `<g class="pm" transform="translate(${fly ? -18 : x} ${fly ? -58 : 0})">${pxSprite(`<use href="#pm-${m}"/>`)}</g>`;
     if (!fly) x -= m === 'cat' ? 20 : m === 'beast' ? 30 : 24;
   });
   return `<g class="party">${h}</g>`;
 }
-const heroSVG = () => `<g id="hero" class="lv${heroLevel()}"><g id="heroFlip"><g transform="scale(1.45)"><g id="heroBody" class="hero">${heroVehicles()}</g>${partySVG()}</g></g>${heroName() ? `<text class="hero-name" y="-116" text-anchor="middle" font-size="15" font-weight="800" fill="#F2554E" stroke="#fff" stroke-width="4.5" paint-order="stroke" font-family="${FONT}">${esc(heroName())}</text>` : ''}</g>`;
+const PX_WALK = ['.leg-l,.arm-r{transform:rotate(-24deg)}.leg-r,.arm-l{transform:rotate(24deg)}.person{transform:translateY(-2.5px)}', '.leg-l,.arm-r{transform:rotate(24deg)}.leg-r,.arm-l{transform:rotate(-24deg)}'];
+const PX_RIDE = ['.hl.a{transform:rotate(-20deg)}.hl.b{transform:rotate(20deg)}', '.hl.a{transform:rotate(20deg)}.hl.b{transform:rotate(-20deg)}.wh{transform:rotate(45deg)}.jf{transform:scale(.86,1.2)}.veh-sail,.veh-junk,.veh-ferry,.veh-cart,.veh-hover,.veh-aircar,.veh-board,.veh-pod{transform:translateY(-2.5px)}'];
+function heroFrames(){
+  const lv = heroLevel(), V = heroVehicles(), fr = (cls, css) => pxSprite(`<g class="lv${lv}"><g class="${cls}">${V}</g></g>`, css);
+  let h = `<g class="pf pf-stand">${fr('hero', '')}</g><g class="pf pf-walk"><g class="pa">${fr('hero walking', PX_WALK[0])}</g><g class="pb">${fr('hero walking', PX_WALK[1])}</g></g>`;
+  new Set(Object.values(VEH_SET[curWorld()] || VEH_SET.euro)).forEach(m => { h += `<g class="pf pf-${m}"><g class="pa">${fr('hero riding ride-' + m, PX_RIDE[0])}</g><g class="pb">${fr('hero riding ride-' + m, PX_RIDE[1])}</g></g>`; });
+  return h;
+}
+const heroSVG = () => `<g id="hero" class="lv${heroLevel()}"><g id="heroFlip"><g transform="scale(1.45)"><g id="heroBody" class="hero">${heroFrames()}</g>${partySVG()}</g></g>${heroName() ? `<text class="hero-name" y="-116" text-anchor="middle" font-size="15" font-weight="800" fill="#F2554E" stroke="#fff" stroke-width="4.5" paint-order="stroke" font-family="${FONT}">${esc(heroName())}</text>` : ''}</g>`;
 const SPRITES = `<svg id="sprites" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true"><defs>
   <g id="mon-ghost"><ellipse cx="0" cy="3" rx="17" ry="4.5" fill="#000" opacity=".3"/><path d="M-18 -26 Q-30 -30 -31 -18 Q-26 -22 -22 -16 Z M18 -26 Q30 -30 31 -18 Q26 -22 22 -16 Z" fill="var(--mc,#7C4DDB)"/><path d="M-17 -2 Q-21 -32 -8 -42 Q0 -48 8 -42 Q21 -32 17 -2 L12 -8 L7 0 L2 -8 L-3 0 L-8 -8 L-13 0 Z" fill="var(--mc,#7C4DDB)"/><path d="M-12 -40 Q0 -46 12 -40 Q8 -44 0 -45 Q-8 -44 -12 -40Z" fill="#fff" opacity=".25"/><path d="M-12 -31 L-3 -27 L-4 -22 L-12 -25 Z" fill="#FFE45C"/><path d="M12 -31 L3 -27 L4 -22 L12 -25 Z" fill="#FFE45C"/><circle cx="-6" cy="-25.5" r="1.5" fill="#C8362F"/><circle cx="6" cy="-25.5" r="1.5" fill="#C8362F"/><path d="M-9 -16 Q0 -9 9 -16 Q0 -12 -9 -16Z" fill="#1B0F2E"/><path d="M-6 -15.5 L-4.5 -11.5 L-3 -14.5 Z M3 -14.5 L4.5 -11.5 L6 -15.5 Z" fill="#fff"/></g>
   <g id="mon-imp"><ellipse cx="0" cy="2" rx="15" ry="4" fill="#000" opacity=".3"/><path d="M-7 -24 Q-22 -42 -31 -24 Q-25 -27 -23 -20 Q-19 -26 -15 -18 Z M7 -24 Q22 -42 31 -24 Q25 -27 23 -20 Q19 -26 15 -18 Z" fill="#3A1F4F"/><path d="M8 -6 Q24 -3 21 -18" stroke="var(--mc,#C8362F)" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M18 -18 L24 -24 L23 -16 Z" fill="var(--mc,#C8362F)"/><rect x="-7" y="-8" width="4.5" height="9" rx="2" fill="#2A1530"/><rect x="2.5" y="-8" width="4.5" height="9" rx="2" fill="#2A1530"/><ellipse cx="0" cy="-13" rx="9.5" ry="9" fill="var(--mc,#C8362F)"/><circle cx="0" cy="-29" r="10.5" fill="var(--mc,#C8362F)"/><path d="M-9 -35 L-14 -48 L-3.5 -38 Z M9 -35 L14 -48 L3.5 -38 Z" fill="#FFF3C4"/><path d="M-10 -29 L-16 -33 L-11 -25 Z M10 -29 L16 -33 L11 -25 Z" fill="var(--mc,#C8362F)"/><path d="M-8 -32 L-2 -29 L-3 -26 L-8 -28 Z M8 -32 L2 -29 L3 -26 L8 -28 Z" fill="#FFE45C"/><path d="M-6 -22 Q0 -17 6 -22" stroke="#1B0F2E" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M-4 -21 L-3 -18.5 L-2 -20.5 Z M2 -20.5 L3 -18.5 L4 -21 Z" fill="#fff"/><path d="M-15 0 V-38" stroke="#6B4630" stroke-width="2.2"/><path d="M-20 -44 V-37 H-10 V-44 M-15 -46 V-37" stroke="#C9D1DE" stroke-width="2.2" fill="none"/></g>
@@ -2540,21 +2619,21 @@ function titleSVG(){
   ${cloud(470, 70, 1, 0)}${cloud(90, 250, .8, -8)}${cloud(610, 40, .7, -4)}${cloud(360, 230, .6, -12)}
   <path d="M440 300 Q560 180 700 210 Q780 225 800 250 V390 H440 Z" fill="url(#t-hill2)"/>
   <g transform="translate(704 216) scale(.95)">${CASTLE_ART}</g>
-  <g transform="translate(594 214) scale(.95)"><use href="#pm-princess"/></g>
+  <g transform="translate(594 214) scale(.95)">${pxSprite(`<use href="#pm-princess"/>`)}</g>
   <text x="590" y="156" font-size="14" font-weight="800" fill="#C8362F" stroke="#fff" stroke-width="4" paint-order="stroke" text-anchor="middle">がんばって！</text>
   <g transform="translate(768 46)"><g class="t-float"><circle r="34" fill="url(#t-glow)"/><path d="M0 -22 L6.5 -7 L22 -7 L9.5 3 L14 19 L0 9.5 L-14 19 L-9.5 3 L-22 -7 L-6.5 -7 Z" fill="#FFD84D" stroke="#FF9A3D" stroke-width="2.5" stroke-linejoin="round"/><text y="7" text-anchor="middle" font-size="13" font-weight="800" fill="#C8362F">夢</text></g></g>
   <path d="M0 330 Q200 272 420 310 Q560 334 800 300 V390 H0 Z" fill="url(#t-hill)"/>
   <path d="M-10 390 Q120 350 260 352 Q420 356 520 326 Q610 300 690 262" fill="none" stroke="#F3E2BE" stroke-width="30" stroke-linecap="round"/>
   <path d="M-10 390 Q120 350 260 352 Q420 356 520 326 Q610 300 690 262" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="10 12" opacity=".8"/>
   ${flowers}
-  <g transform="translate(540 336) scale(1.75)"><g class="t-dragon"><use href="#mon-dragon" style="--mc:#C8362F"/></g></g>
-  <g transform="translate(206 346) scale(1.75)"><use href="#pm-wizard"/></g>
+  <g transform="translate(540 336) scale(1.75)"><g class="t-dragon">${pxSprite(`<use href="#mon-dragon" style="--mc:#C8362F"/>`)}</g></g>
+  <g transform="translate(206 346) scale(1.75)">${pxSprite(`<use href="#pm-wizard"/>`)}</g>
   <path d="M232 262 Q330 120 470 232" fill="none" stroke="#FFD84D" stroke-width="3" stroke-dasharray="2 10" stroke-linecap="round" opacity=".9"/>
   <g>${star(0, 0, 10, '#FFD84D', 0).replace('<g transform="translate(0 0)">', '<g>')}<animateMotion dur="1.6s" repeatCount="indefinite" path="M232 262 Q330 120 470 232"/></g>
   <g>${star(0, 0, 7, '#B99CFF', .3).replace('<g transform="translate(0 0)">', '<g>')}<animateMotion dur="1.6s" begin=".5s" repeatCount="indefinite" path="M232 262 Q330 120 470 232"/></g>
-  <g transform="translate(268 360) scale(1.55)"><use href="#pm-beast"/></g>
-  <g transform="translate(118 364) scale(1.7)"><use href="#pm-cat"/></g>
-  <g transform="translate(372 352) scale(2.3)"><g class="t-hero"><g class="lv5">${HERO_PERSON}</g></g></g>
+  <g transform="translate(268 360) scale(1.55)">${pxSprite(`<use href="#pm-beast"/>`)}</g>
+  <g transform="translate(118 364) scale(1.7)">${pxSprite(`<use href="#pm-cat"/>`)}</g>
+  <g transform="translate(372 352) scale(2.3)"><g class="t-hero">${pxSprite(`<g class="lv5">${HERO_PERSON}</g>`)}</g></g>
   <path class="t-slash" d="M404 168 Q470 176 486 262" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round"/>
   <g transform="translate(470 222)"><g class="t-burst"><path d="M0 -40 L10 -16 L36 -26 L20 -4 L42 10 L14 12 L18 38 L0 18 L-18 38 L-14 12 L-42 10 L-20 -4 L-36 -26 L-10 -16 Z" fill="#FFD84D" stroke="#FF7E4D" stroke-width="4" stroke-linejoin="round"/><text y="7" text-anchor="middle" font-size="17" font-weight="800" fill="#C8362F">えいっ!</text></g></g>
   ${star(60, 150, 9, '#fff', 0)}${star(300, 40, 7, '#FFF3C4', .6)}${star(420, 150, 8, '#fff', 1.1)}${star(780, 300, 8, '#FFF3C4', .4)}${star(575, 105, 6, '#fff', .9)}${star(30, 300, 7, '#FFD84D', 1.4)}
@@ -2860,10 +2939,10 @@ function padSVG(q){
   if (!done){
     if (st.monster){
       const boss = st.monster === 'boss', sc = boss ? 1.7 : 1.35;
-      h += `<g transform="translate(${(q.x + (boss ? 78 : 56)).toFixed(0)} ${(q.y + 12).toFixed(0)}) scale(${sc})"><g class="mon-bob"><use href="#mon-${monKind(st)}" style="--mc:${st.mcol || '#7C4DDB'}"/></g></g>`;
-      if (q.p.s === bossStage(S) && !hasMember('princess')) h += `<g transform="translate(${(q.x - 70).toFixed(0)} ${(q.y + 14).toFixed(0)}) scale(1.3)"><circle cy="-26" r="34" fill="#FFD66B" opacity=".18"/><use href="#pm-princess"/><use href="#cage"/><text y="20" text-anchor="middle" font-size="12" fill="#FFF3C4" ${F}>たすけて！</text></g>`;
+      h += `<g transform="translate(${(q.x + (boss ? 78 : 56)).toFixed(0)} ${(q.y + 12).toFixed(0)}) scale(${sc})"><g class="mon-bob">${pxSprite(`<use href="#mon-${monKind(st)}" style="--mc:${st.mcol || '#7C4DDB'}"/>`)}</g></g>`;
+      if (q.p.s === bossStage(S) && !hasMember('princess')) h += `<g transform="translate(${(q.x - 70).toFixed(0)} ${(q.y + 14).toFixed(0)}) scale(1.3)"><circle cy="-26" r="34" fill="#FFD66B" opacity=".18"/>${pxSprite('<use href="#pm-princess"/><use href="#cage"/>')}<text y="20" text-anchor="middle" font-size="12" fill="#FFF3C4" ${F}>たすけて！</text></g>`;
     }
-    else h += `<use href="#npc" transform="translate(${(q.x + 40).toFixed(0)} ${(q.y + 8).toFixed(0)}) scale(1.35)" style="--hat:${col}"/>`;
+    else h += `<g transform="translate(${(q.x + 40).toFixed(0)} ${(q.y + 8).toFixed(0)}) scale(1.35)">${pxSprite(`<use href="#npc" style="--hat:${col}"/>`)}</g>`;
   }
   return h;
 }
@@ -2878,7 +2957,7 @@ function overSVG(T){
       labels += `<text x="${(mid.x + (mid.x < 500 ? -40 : 40)).toFixed(0)}" y="${(mid.y + 5).toFixed(0)}" text-anchor="${mid.x < 500 ? 'end' : 'start'}" font-size="19" fill="${other ? '#9CA2B9' : '#1B2140'}" stroke="#FFFFFF" stroke-width="5" paint-order="stroke" ${F}>${esc(fk.opts[r].n)}</text>`;
       if (chosen) return;
       const sts = S.stages.map((st, i) => [st, i]).filter(([st]) => st.route === r && (st.ch || 1) === (S.chapter || 1));
-      sts.forEach(([st, i], j) => { const q = ptOn(SEG[r], SEG[r].len * (j + 1) / (sts.length + 1)), col = colorOf(S, i); ghosts += `<g opacity="${other ? .35 : .9}"><g transform="translate(${q.x.toFixed(0)} ${q.y.toFixed(0)})"><rect x="-22" y="-22" width="44" height="44" fill="#FFFFFF" fill-opacity=".85" stroke="${col}" stroke-width="4" stroke-dasharray="6 4" shape-rendering="crispEdges"/><text y="9" text-anchor="middle" font-size="24" fill="${col}" ${F}>${i + 1}</text><text y="42" text-anchor="middle" font-size="14" fill="#1B2140" stroke="#FFFFFF" stroke-width="4" paint-order="stroke" ${F}>${esc(st.l)}</text></g><use href="#npc" transform="translate(${(q.x + 32).toFixed(0)} ${(q.y + 6).toFixed(0)})" style="--hat:${col}"/></g>`; });
+      sts.forEach(([st, i], j) => { const q = ptOn(SEG[r], SEG[r].len * (j + 1) / (sts.length + 1)), col = colorOf(S, i); ghosts += `<g opacity="${other ? .35 : .9}"><g transform="translate(${q.x.toFixed(0)} ${q.y.toFixed(0)})"><rect x="-22" y="-22" width="44" height="44" fill="#FFFFFF" fill-opacity=".85" stroke="${col}" stroke-width="4" stroke-dasharray="6 4" shape-rendering="crispEdges"/><text y="9" text-anchor="middle" font-size="24" fill="${col}" ${F}>${i + 1}</text><text y="42" text-anchor="middle" font-size="14" fill="#1B2140" stroke="#FFFFFF" stroke-width="4" paint-order="stroke" ${F}>${esc(st.l)}</text></g><g transform="translate(${(q.x + 32).toFixed(0)} ${(q.y + 6).toFixed(0)})">${pxSprite(`<use href="#npc" style="--hat:${col}"/>`)}</g></g>`; });
     });
     const base = SEG[ids[0]].pts[0], y = base[1] - 70;
     signs += `<g transform="translate(${base[0]} ${y})" shape-rendering="crispEdges"><rect x="-3" y="-6" width="6" height="56" fill="#8A6A4A"/><path d="M-6 -4 H-104 L-116 8 L-104 20 H-6Z" fill="#F7E9C8" stroke="#6B4A2A" stroke-width="3"/><text x="-58" y="14" text-anchor="middle" font-size="14" fill="#1B2140" ${F}>${esc(fk.opts[ids[0]].n)}</text><path d="M6 -4 H104 L116 8 L104 20 H6Z" fill="#F7E9C8" stroke="#6B4A2A" stroke-width="3"/><text x="58" y="14" text-anchor="middle" font-size="14" fill="#1B2140" ${F}>${esc(fk.opts[ids[1]].n)}</text></g>`;
@@ -2998,7 +3077,7 @@ const rvInfo = id => RIVALS.find(r => r.id === id) || RIVALS[0];
 const rvLevel = rv => levelAt(Object.keys(rv.cleared || {}).length);
 const PET_ART = {
   hawk: `<g transform="translate(-14 -78)"><g class="flit"><path d="M-2 -2 Q-14 -14 -24 -4 Q-14 -6 -6 2 Z M2 -2 Q14 -14 24 -4 Q14 -6 6 2 Z" fill="#8B5E3C"/><ellipse cx="0" cy="0" rx="6" ry="7" fill="#A9784F"/><circle cx="0" cy="-7" r="4.5" fill="#fff"/><circle cx="1.5" cy="-7.5" r="1" fill="#1B2140"/><path d="M3.5 -6 L7 -5 L3.5 -4 Z" fill="#FFB547"/></g></g>`,
-  rabbit: `<g transform="translate(-30 0)"><ellipse cx="0" cy="0" rx="8" ry="2.4" fill="#000" opacity=".14"/><ellipse cx="0" cy="-6" rx="7.5" ry="6" fill="#fff" stroke="#E7D8E2" stroke-width="1"/><circle cx="5" cy="-12" r="5" fill="#fff" stroke="#E7D8E2" stroke-width="1"/><ellipse cx="3" cy="-21" rx="1.8" ry="6" fill="#fff" stroke="#E7D8E2" stroke-width="1"/><ellipse cx="7" cy="-20.5" rx="1.8" ry="6" fill="#fff" stroke="#E7D8E2" stroke-width="1"/><ellipse cx="3" cy="-21" rx=".8" ry="4" fill="#FFB6D2"/><ellipse cx="7" cy="-20.5" rx=".8" ry="4" fill="#FFB6D2"/><circle cx="7" cy="-12.5" r="1" fill="#1B2140"/><circle cx="-7" cy="-7" r="2.5" fill="#fff" stroke="#E7D8E2"/></g>`,
+  rabbit: `<g transform="translate(-30 0) scale(1.2)"><ellipse cx="0" cy="0" rx="8" ry="2.4" fill="#000" opacity=".14"/><ellipse cx="0" cy="-6" rx="7.5" ry="6" fill="#fff" stroke="#E7D8E2" stroke-width="1"/><circle cx="5" cy="-12" r="5" fill="#fff" stroke="#E7D8E2" stroke-width="1"/><g transform="rotate(-14 2 -15)"><ellipse cx="2" cy="-21" rx="2.3" ry="6" fill="#fff" stroke="#E7D8E2" stroke-width="1"/><ellipse cx="2" cy="-21" rx="1.1" ry="4" fill="#FFB6D2"/></g><g transform="rotate(14 8 -15)"><ellipse cx="8" cy="-21" rx="2.3" ry="6" fill="#fff" stroke="#E7D8E2" stroke-width="1"/><ellipse cx="8" cy="-21" rx="1.1" ry="4" fill="#FFB6D2"/></g><circle cx="7" cy="-12.5" r="1.3" fill="#1B2140"/><circle cx="-7" cy="-7" r="2.5" fill="#fff" stroke="#E7D8E2"/></g>`,
   bear: `<g transform="translate(-34 0)"><ellipse cx="0" cy="0" rx="11" ry="3" fill="#000" opacity=".14"/><ellipse cx="-1" cy="-8" rx="10" ry="8" fill="#8B5E3C"/><rect x="-8" y="-4" width="4" height="5" rx="2" fill="#6B4630"/><rect x="3" y="-4" width="4" height="5" rx="2" fill="#6B4630"/><circle cx="7" cy="-17" r="7" fill="#8B5E3C"/><circle cx="3" cy="-23" r="2.6" fill="#8B5E3C"/><circle cx="11" cy="-23" r="2.6" fill="#8B5E3C"/><ellipse cx="10" cy="-15" rx="3.4" ry="2.6" fill="#D9B48C"/><circle cx="10.8" cy="-16" r="1" fill="#1B2140"/><circle cx="7" cy="-18.5" r="1" fill="#1B2140"/></g>`
 };
 function rivalArt(r, lv, pet, k2 = 0){
@@ -3059,7 +3138,7 @@ function rivalsSVG(cave){
     const sq = rvTrack(rv).sq, q = sq[rvIdx(rv, sq)]; if (!q || (q.part === 2) !== cave) return '';
     const [ox, oy] = RV_OFF[k % 3];
     const lv = rvLevel(rv);
-    return `<g id="rv-${rv.id}" class="rv" transform="translate(${(q.x + ox).toFixed(1)} ${(q.y + oy).toFixed(1)})"><g transform="scale(1.35)">${rivalArt(rvInfo(rv.id), lv, Object.keys(rv.cleared || {}).length >= 3, k)}</g></g>`;
+    return `<g id="rv-${rv.id}" class="rv" transform="translate(${(q.x + ox).toFixed(1)} ${(q.y + oy).toFixed(1)})"><g transform="scale(1.35)">${pxSprite(rivalArt(rvInfo(rv.id), lv, Object.keys(rv.cleared || {}).length >= 3, k))}</g></g>`;
   }).join('');
 }
 function standings(){
@@ -3105,7 +3184,7 @@ function pushPresence(){
       fin: !!S.quest.place, finAt: S.quest.finAt || 0, die: S.quest.rolls ? S.quest.last : 0, party: (S.quest.party || []).length, where: segName(q.seg), av: avCode(curAvatar()), ch: S.chapter || 1}).catch(() => {});
   } catch (e) {}
 }
-function opArt(o){ return `<g class="lv${o.lv}" style="--shirt:${o.c}" transform="scale(1.35)"><ellipse cx="0" cy="0" rx="13" ry="3.8" fill="#000" opacity=".18"/>${heroPerson(curWorld(), o.av || {skin: 1})}</g><text y="-96" text-anchor="middle" font-size="13" font-weight="800" fill="${o.c}" stroke="#fff" stroke-width="4" paint-order="stroke" font-family="${FONT}">${esc(o.nick)} Lv.${o.lv}</text>`; }
+function opArt(o){ return `<g transform="scale(1.35)">${pxSprite(`<g class="lv${o.lv}" style="--shirt:${o.c}"><ellipse cx="0" cy="0" rx="13" ry="3.8" fill="#000" opacity=".18"/>${heroPerson(curWorld(), o.av || {skin: 1})}</g>`)}</g><text y="-96" text-anchor="middle" font-size="13" font-weight="800" fill="${o.c}" stroke="#fff" stroke-width="4" paint-order="stroke" font-family="${FONT}">${esc(o.nick)} Lv.${o.lv}</text>`; }
 function onlineLayer(cave){ return `<g id="opLayer" data-cave="${cave ? 1 : 0}"></g>`; }
 function onlineChanged(){
   const layer = $('#opLayer'); if (!layer || !S || !S.online) return;
@@ -3282,15 +3361,15 @@ function storyOk(){
   Q.qs = 'moving'; refresh(); toast(`${steps}マス前進！`); sfx.good();
   setTimeout(() => walkForward(steps, false), reduced ? 0 : 350);
 }
-function heroPic(lv, extra){ return `<svg class="story-pic" viewBox="-60 -80 120 88" aria-hidden="true"><ellipse cx="0" cy="2" rx="46" ry="8" fill="#fff" opacity=".08"/><g class="lv${lv}" transform="scale(1.3)">${heroPerson()}</g>${extra || ''}</svg>`; }
-function memberPic(m){ const fly = m === 'fairy' || m === 'owl'; return `<svg class="story-pic" viewBox="-40 -64 80 70" aria-hidden="true"><ellipse cx="0" cy="2" rx="30" ry="6" fill="#fff" opacity=".08"/><g transform="translate(0 ${fly ? -14 : 0}) scale(${fly ? 2.2 : m === 'cat' ? 2.3 : m === 'beast' ? 1.8 : 1.35})"><use href="#pm-${m}"/></g></svg>`; }
+function heroPic(lv, extra){ return `<svg class="story-pic" viewBox="-60 -80 120 88" aria-hidden="true"><ellipse cx="0" cy="2" rx="46" ry="8" fill="#fff" opacity=".08"/><g transform="scale(1.3)">${pxPerson(lv)}</g>${extra || ''}</svg>`; }
+function memberPic(m){ const fly = m === 'fairy' || m === 'owl'; return `<svg class="story-pic" viewBox="-40 -64 80 70" aria-hidden="true"><ellipse cx="0" cy="2" rx="30" ry="6" fill="#fff" opacity=".08"/><g transform="translate(0 ${fly ? -14 : 0}) scale(${fly ? 2.2 : m === 'cat' ? 2.3 : m === 'beast' ? 1.8 : 1.35})">${pxSprite(`<use href="#pm-${m}"/>`)}</g></svg>`; }
 function storyHTML(){
   const Q = S.quest, b = (Q.beats || [])[0]; if (!b) return rollHTML();
   const more = (Q.beats || []).length - 1, boss = bossName(S);
   let tag = 'STORY', title = '', pic = '', text = '', sub = '';
   if (b.k === 'intro'){
     title = 'ものがたりのはじまり';
-    pic = `<svg class="story-pic" viewBox="-110 -96 220 104" aria-hidden="true"><g transform="translate(-44 0) scale(1.3)"><use href="#pm-princess"/><use href="#cage"/></g><g transform="translate(46 2) scale(1.05)"><use href="#mon-dragon" style="--mc:#C8362F"/></g></svg>`;
+    pic = `<svg class="story-pic" viewBox="-110 -96 220 104" aria-hidden="true"><g transform="translate(-44 0) scale(1.3)">${pxSprite('<use href="#pm-princess"/><use href="#cage"/>')}</g><g transform="translate(46 2) scale(1.05)">${pxSprite(`<use href="#mon-dragon" style="--mc:#C8362F"/>`)}</g></svg>`;
     text = `${W().names.castle}のお姫さまが、${boss}にさらわれてしまった！`;
     sub = `${heroName() ? `勇者${heroName()}よ、` : ''}関所で問いに答えて力をつけ、${W().names.cave}の奥にいる${boss}をたおして姫を助け出そう。答えるたびにレベルが上がり、${W().gear.map(g => g[0].replace(/「.*」/, '')).slice(0, 3).join('・')}…と装備がそろって「${W().lv[5]}」になれる。道中では家来も増えるぞ。ライバルも城をめざしている…関所でライバルと出くわしたら、ミニゲームで勝負だ！`;
   } else if (b.k === 'lv'){
@@ -3303,7 +3382,7 @@ function storyHTML(){
     pic = memberPic(b.m); text = M.meet; sub = `家来の力：${M.d}`;
   } else if (b.k === 'finish'){
     tag = 'FINISH'; title = `${b.l || '必殺技'}「${b.move}」！`;
-    pic = `<svg class="story-pic" viewBox="-130 -110 260 118" aria-hidden="true"><g transform="translate(-60 0) scale(1.35)" class="lv${heroLevel()}">${heroPerson()}</g><path d="M-44 -96 Q20 -92 34 -16" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".95"/><path d="M-44 -96 Q20 -92 34 -16" fill="none" stroke="#FFD84D" stroke-width="3" stroke-linecap="round"/><g transform="translate(62 2) scale(1.05) rotate(8)"><use href="#mon-dragon" style="--mc:#C8362F"/></g><g transform="translate(24 -48)"><path d="M0 -26 L7 -10 L24 -17 L13 -3 L28 7 L9 8 L12 25 L0 12 L-12 25 L-9 8 L-28 7 L-13 -3 L-24 -17 L-7 -10 Z" fill="#FFD84D" stroke="#FF7E4D" stroke-width="3" stroke-linejoin="round"/></g></svg>`;
+    pic = `<svg class="story-pic" viewBox="-130 -110 260 118" aria-hidden="true"><g transform="translate(-60 0) scale(1.35)">${pxPerson(heroLevel())}</g><path d="M-44 -96 Q20 -92 34 -16" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".95"/><path d="M-44 -96 Q20 -92 34 -16" fill="none" stroke="#FFD84D" stroke-width="3" stroke-linecap="round"/><g transform="translate(62 2) scale(1.05) rotate(8)">${pxSprite(`<use href="#mon-dragon" style="--mc:#C8362F"/>`)}</g><g transform="translate(24 -48)"><path d="M0 -26 L7 -10 L24 -17 L13 -3 L28 7 L9 8 L12 25 L0 12 L-12 25 L-9 8 L-28 7 L-13 -3 L-24 -17 L-7 -10 Z" fill="#FFD84D" stroke="#FF7E4D" stroke-width="3" stroke-linejoin="round"/></g></svg>`;
     text = (b.sub ? `${b.sub}──この${b.l || '必殺技'}で、${boss}をたおした！` : `${boss}をたおした！`) + (b.ch === 2 ? ' うばわれた「夢のかけら」を取り返した！' : b.ch === 3 ? ' 世界に夢の光がもどった！' : '');
     sub = b.ch === 3 ? '「最後の一手」と「かなった しるし」がそろった。あとは現実で、この究極奥義を放つだけだ。' : b.ch === 2 ? '行動・ペース・数字の目標。レベルアップした奥義は、必殺技よりもっと遠くまで届く。' : '何を・どのペースで・いつから。3つがそろった計画は、夢をかなえる本当の必殺技になる。';
   } else if (b.k === 'chapter'){
@@ -3311,12 +3390,12 @@ function storyHTML(){
     tag = `CHAPTER ${b.ch}`; title = C.n;
     const R = rng(b.ch * 7), bg = snow ? Array.from({length: 22}, () => `<circle cx="${(-108 + R() * 216).toFixed(0)}" cy="${(-98 + R() * 100).toFixed(0)}" r="${(1.2 + R() * 2).toFixed(1)}" fill="#fff" opacity=".9"/>`).join('')
       : `<circle cx="-86" cy="-78" r="13" fill="#FFF3C4"/>${Array.from({length: 18}, () => `<circle cx="${(-108 + R() * 216).toFixed(0)}" cy="${(-98 + R() * 60).toFixed(0)}" r="${(.6 + R() * 1.2).toFixed(1)}" fill="#FFF6D8"/>`).join('')}`;
-    pic = `<svg class="story-pic" viewBox="-110 -100 220 108" aria-hidden="true">${bg}<g transform="translate(-58 0) scale(1.25)" class="lv${heroLevel()}">${heroPerson()}</g><g transform="translate(40 2) scale(1.05)"><use href="#mon-dragon" style="--mc:${b.ch === 3 ? '#6B2FA0' : '#2E6FD8'}"/></g><g transform="translate(92 -70)"><path d="M0 -12 L7 0 L0 12 L-7 0Z" fill="${b.ch === 3 ? '#FFD84D' : '#7FE7F2'}" stroke="#fff" stroke-width="1.5"/></g></svg>`;
+    pic = `<svg class="story-pic" viewBox="-110 -100 220 108" aria-hidden="true">${bg}<g transform="translate(-58 0) scale(1.25)">${pxPerson(heroLevel())}</g><g transform="translate(40 2) scale(1.05)">${pxSprite(`<use href="#mon-dragon" style="--mc:${b.ch === 3 ? '#6B2FA0' : '#2E6FD8'}"/>`)}</g><g transform="translate(92 -70)"><path d="M0 -12 L7 0 L0 12 L-7 0Z" fill="${b.ch === 3 ? '#FFD84D' : '#7FE7F2'}" stroke="#fff" stroke-width="1.5"/></g></svg>`;
     text = C.story.replace('{t}', S.theme);
     sub = `${B ? `舞台は「${B.n}」。${W().names.town}から${W().names.river}をこえ、${W().names.cave}へ──道のかたちも変わったぞ。` : ''}${heroName() ? `勇者${heroName()}よ、` : ''}前の章の答えをもとに、もっと深い問いが待っている。答えはマインドマップに書き足され、どんどん広がっていくぞ。`;
   } else if (b.k === 'princess'){
     tag = 'RESCUE'; title = 'お姫さまを助け出した！';
-    pic = `<svg class="story-pic" viewBox="-80 -96 160 104" aria-hidden="true"><g transform="translate(-26 0) scale(1.25)" class="lv${heroLevel()}">${heroPerson()}</g><g transform="translate(28 0) scale(1.3)"><use href="#pm-princess"/></g><g transform="translate(2 -64)"><use href="#ic-heart" transform="scale(1.3)"/></g></svg>`;
+    pic = `<svg class="story-pic" viewBox="-80 -96 160 104" aria-hidden="true"><g transform="translate(-26 0) scale(1.25)">${pxPerson(heroLevel())}</g><g transform="translate(28 0) scale(1.3)">${pxSprite(`<use href="#pm-princess"/>`)}</g><g transform="translate(2 -64)"><use href="#ic-heart" transform="scale(1.3)"/></g></svg>`;
     text = `${boss}をたおし、とらわれていたお姫さまを助け出した！`; sub = `お姫さまも仲間になった。いっしょに${W().names.castle}へ向かおう（城に送り届けると +50pt）`;
   }
   return `
@@ -3327,7 +3406,7 @@ function storyHTML(){
 function heroCardHTML(){
   const lv = heroLevel(), party = (S.quest.party || []), next = LV_STEP[lv + 1];
   const gear = W().gear.slice(0, lv - 1).map(g => g[0].replace(/(とマント|と旗|と戦袍|とバンダナ|とジェットパック)$/, ''));
-  return `<div class="herocard"><svg viewBox="-24 -78 48 82" aria-hidden="true"><g class="lv${lv}">${heroPerson()}</g></svg><div><b>${heroName() ? esc(heroName()) + ' ' : ''}Lv.${lv} ${lvName(lv)}</b><span>${gear.length ? '装備：' + gear.join('・') : '装備：なし'}${next ? `（あと${next - clearedN(S) - (S.lvCarry || 0)}関所でレベルアップ）` : ''}</span><span>${party.length ? '家来：' + PARTY_ORDER.filter(m => party.includes(m)).map(m => MEMBERS[m].short).join('・') : '家来：まだいない'}</span></div>${party.length ? `<div class="hc-party">${PARTY_ORDER.filter(m => party.includes(m)).map(m => `<svg viewBox="-16 -${m === 'wizard' || m === 'princess' ? 52 : 30} 32 ${m === 'wizard' || m === 'princess' ? 56 : 34}" aria-label="${MEMBERS[m].n}"><use href="#pm-${m}"/></svg>`).join('')}</div>` : ''}</div>`;
+  return `<div class="herocard"><svg viewBox="-24 -78 48 82" aria-hidden="true"><g>${pxPerson(lv)}</g></svg><div><b>${heroName() ? esc(heroName()) + ' ' : ''}Lv.${lv} ${lvName(lv)}</b><span>${gear.length ? '装備：' + gear.join('・') : '装備：なし'}${next ? `（あと${next - clearedN(S) - (S.lvCarry || 0)}関所でレベルアップ）` : ''}</span><span>${party.length ? '家来：' + PARTY_ORDER.filter(m => party.includes(m)).map(m => MEMBERS[m].short).join('・') : '家来：まだいない'}</span></div>${party.length ? `<div class="hc-party">${PARTY_ORDER.filter(m => party.includes(m)).map(m => `<svg viewBox="-16 -${m === 'wizard' || m === 'princess' ? 52 : 30} 32 ${m === 'wizard' || m === 'princess' ? 56 : 34}" aria-label="${MEMBERS[m].n}">${pxSprite(`<use href="#pm-${m}"/>`)}</svg>`).join('')}</div>` : ''}</div>`;
 }
 function answerPower(p){
   const st = S.stages[p.s], n = answersFor(S, p).length, s = statOf(S, p.key);
@@ -3396,7 +3475,7 @@ function duelHTML(){
   const Q = S.quest, d = Q.duel, rv = (Q.rivals || []).find(r => r.id === d.rv), R = rvInfo(d.rv), lv = rv ? rvLevel(rv) : 1, G = DUEL_GAMES[d.game];
   const p = current(), gate = p && !p.fork ? S.stages[p.s].l : '';
   const head = `<div class="p-head"><p class="kicker">RIVAL MATCH</p><span class="p-count">${gate ? `関所「${esc(gate)}」の前` : 'ライバル勝負'}</span></div>`;
-  const vs = `<div class="duel-vs" style="--c:${R.c}"><div class="side"><svg viewBox="-26 -80 52 84" aria-hidden="true"><g class="lv${heroLevel()}">${heroPerson()}</g></svg><span>${esc(heroName() || 'あなた')}</span></div><em class="vs">VS</em><div class="side"><svg viewBox="-32 -90 64 94" aria-hidden="true">${rivalArt(R, lv, false)}</svg><span class="rn">${R.n}</span></div></div>`;
+  const vs = `<div class="duel-vs" style="--c:${R.c}"><div class="side"><svg viewBox="-26 -80 52 84" aria-hidden="true"><g>${pxPerson(heroLevel())}</g></svg><span>${esc(heroName() || 'あなた')}</span></div><em class="vs">VS</em><div class="side"><svg viewBox="-32 -90 64 94" aria-hidden="true">${pxSprite(rivalArt(R, lv, false))}</svg><span class="rn">${R.n}</span></div></div>`;
   if (d.stage === 'pick') return `${head}${vs}
     <div class="rpg"><span class="rpg-name">${R.n}</span><p>${esc(DUEL_TAUNT[R.id] || '「勝負だ！」')}</p><p class="rpg-sub">勝つと夢ポイント+20、${R.n}は1回休み。負けると${R.n}の次のサイコロが+2。すぐ終わるミニゲームで勝負しよう。</p></div>
     <p class="duel-ask">どれで勝負する？</p>
@@ -3668,7 +3747,7 @@ function playHTML(){
   const hp = st.monster ? Math.max(0, Math.round(100 - list.length / Math.max(1, st.min) * 100)) : null;
   const sub = plan ? `「${flds.map(f => f[2]).join('」「')}」を決めよう。` : '';
   const qBlock = quest
-    ? `<div class="rpg${st.monster ? ' mon' : ''}" style="--c:${col}"><span class="rpg-name">${esc(st.npc || '旅人')}</span>${st.monster ? `<svg class="mon-pic${st.monster === 'boss' ? ' boss' : ''}" viewBox="-66 -88 132 96" aria-hidden="true"><g class="mon-bob"><use href="#mon-${monKind(st)}" style="--mc:${st.mcol || '#7C4DDB'}"/></g>${p.s === bossStage(S) && !hasMember('princess') ? '<g transform="translate(-52 4) scale(.8)"><use href="#pm-princess"/><use href="#cage"/></g>' : ''}</svg>` : ''}<p>${qText}</p>${sub ? `<p class="rpg-sub">${sub}</p>` : ''}${hp != null ? `<div class="hpbar"><span>HP</span><span class="hpt"><i style="width:${hp}%"></i></span><b>${hp ? hp + '/100' : 'たおした！'}</b></div>` : ''}</div>`
+    ? `<div class="rpg${st.monster ? ' mon' : ''}" style="--c:${col}"><span class="rpg-name">${esc(st.npc || '旅人')}</span>${st.monster ? `<svg class="mon-pic${st.monster === 'boss' ? ' boss' : ''}" viewBox="-66 -88 132 96" aria-hidden="true"><g class="mon-bob">${pxSprite(`<use href="#mon-${monKind(st)}" style="--mc:${st.mcol || '#7C4DDB'}"/>`)}</g>${p.s === bossStage(S) && !hasMember('princess') ? '<g transform="translate(-52 4) scale(.8)">' + pxSprite('<use href="#pm-princess"/><use href="#cage"/>') + '</g>' : ''}</svg>` : ''}<p>${qText}</p>${sub ? `<p class="rpg-sub">${sub}</p>` : ''}${hp != null ? `<div class="hpbar"><span>HP</span><span class="hpt"><i style="width:${hp}%"></i></span><b>${hp ? hp + '/100' : 'たおした！'}</b></div>` : ''}</div>`
     : `<h2 class="question" style="--c:${col}">${qText}</h2>${sub ? `<p class="hint" style="margin:-6px 0 0">${sub}</p>` : ''}`;
   S.seen = S.seen || {}; S.seen[p.s] = 1;
   const hintText = (S.tq && S.tq[p.s] && S.tq[p.s].hint) || st.hint;
@@ -3978,7 +4057,7 @@ JSON配列だけで答えてください：[{"i":0,"q":"…","hint":"…"}]`, {m
   } catch (e) { /* keep the built-in questions */ }
 }
 /* ask the expert sage (AI) anything about the theme's field */
-const sageBtn = (label = '専門家の賢者に質問する') => sampleAvail ? `<button class="sage-btn" type="button" data-act="sage"><svg viewBox="-16 -50 32 54" aria-hidden="true"><use href="#pm-wizard"/></svg>${label}</button>` : '';
+const sageBtn = (label = '専門家の賢者に質問する') => sampleAvail ? `<button class="sage-btn" type="button" data-act="sage"><svg viewBox="-16 -50 32 54" aria-hidden="true">${pxSprite(`<use href="#pm-wizard"/>`)}</svg>${label}</button>` : '';
 let sageCtl = null;
 function openSage(){
   if (!S) return;
@@ -5020,7 +5099,7 @@ function renderMaker(){
 function renderPreview(){
   renderQuestIcon();
   const nm = ($('#heroNameInput').value || '').trim();
-  $('#heroPreview').innerHTML = `<g transform="translate(-30 4) scale(1.2)" class="lv1">${heroPerson(homeWorld, homeAvatar)}</g><g transform="translate(32 4) scale(1.2)" class="lv5">${heroPerson(homeWorld, homeAvatar)}</g><text x="-30" y="-94" text-anchor="middle" font-size="9" font-weight="800" fill="#646B8A" font-family="${FONT}">Lv.1</text><text x="32" y="-94" text-anchor="middle" font-size="9" font-weight="800" fill="#C8362F" font-family="${FONT}">Lv.5 ${esc(WORLDS[homeWorld].hero)}</text>${nm ? `<text x="0" y="-2" text-anchor="middle" font-size="10" font-weight="800" fill="#1B2140" font-family="${FONT}" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(nm)}</text>` : ''}`;
+  $('#heroPreview').innerHTML = `<g transform="translate(-30 4) scale(1.2)">${pxPerson(1, homeWorld, homeAvatar)}</g><g transform="translate(32 4) scale(1.2)">${pxPerson(5, homeWorld, homeAvatar)}</g><text x="-30" y="-94" text-anchor="middle" font-size="9" font-weight="800" fill="#646B8A" font-family="${FONT}">Lv.1</text><text x="32" y="-94" text-anchor="middle" font-size="9" font-weight="800" fill="#C8362F" font-family="${FONT}">Lv.5 ${esc(WORLDS[homeWorld].hero)}</text>${nm ? `<text x="0" y="-2" text-anchor="middle" font-size="10" font-weight="800" fill="#1B2140" font-family="${FONT}" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(nm)}</text>` : ''}`;
 }
 function saveHome(){ store.set('mindquest-hero', {world: homeWorld, avatar: homeAvatar, name: $('#heroNameInput').value || '', age: $('#ageInput').value || ''}); }
 $('#worldCtl').addEventListener('click', e => { const b = e.target.closest('[data-world]'); if (!b) return; homeWorld = b.dataset.world; saveHome(); renderMaker(); });
@@ -5037,7 +5116,7 @@ function renderVs(){
 }
 $('#cpuCtl').addEventListener('click', e => { const b = e.target.closest('[data-cpu]'); if (b){ homeCpu = +b.dataset.cpu; renderVs(); } });
 $('#chkOnline').addEventListener('change', () => { renderVs(); if ($('#chkOnline').checked){ const c = $('#raceCode'); if (!c.value) c.focus(); } });
-function renderQuestIcon(){ const el = $('#questIcon'); if (el) el.innerHTML = `<ellipse cx="0" cy="4" rx="58" ry="6" fill="#000" opacity=".06"/><g transform="translate(-24 4) scale(1.15)" class="lv5">${heroPerson(homeWorld, homeAvatar)}</g><g transform="translate(34 4) scale(.62)"><use href="#mon-dragon" style="--mc:#C8362F"/></g><path d="M-6 -60 Q18 -58 22 -26" fill="none" stroke="#FFD84D" stroke-width="4" stroke-linecap="round"/>`; }
+function renderQuestIcon(){ const el = $('#questIcon'); if (el) el.innerHTML = `<ellipse cx="0" cy="4" rx="58" ry="6" fill="#000" opacity=".06"/><g transform="translate(-24 4) scale(1.15)">${pxPerson(5, homeWorld, homeAvatar)}</g><g transform="translate(34 4) scale(.62)">${pxSprite(`<use href="#mon-dragon" style="--mc:#C8362F"/>`)}</g><path d="M-6 -60 Q18 -58 22 -26" fill="none" stroke="#FFD84D" stroke-width="4" stroke-linecap="round"/>`; }
 function renderRadios(){
   renderVs(); renderQuestIcon();
   $('#btnBegin').textContent = homeMode === 'quest' ? '冒険に出る →' : 'スタート →';
