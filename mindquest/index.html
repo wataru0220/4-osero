@@ -461,6 +461,59 @@ details.own[open] summary{margin-bottom:8px}
 .first h3{margin:0;font-size:12.5px;font-weight:800;color:#1F6FC0}
 .first ul{margin:0;padding-left:1.2em;font-size:13.5px;font-weight:700}
 
+/* rival match */
+.duel-vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;padding:8px 12px;border-radius:18px;background:linear-gradient(90deg,#FFF1EC,#fff 42%,#fff 58%,color-mix(in srgb,var(--c) 14%,#fff));border:1.5px solid var(--line)}
+.duel-vs .side{display:grid;justify-items:center;gap:2px;font-weight:800;font-size:13px;min-width:0}
+.duel-vs svg{width:66px;height:92px}
+.duel-vs .rn{color:var(--c)}
+.duel-vs .vs{font-family:var(--en);font-style:italic;font-weight:700;font-size:28px;color:var(--accent)}
+.duel-ask{margin:0;font-weight:800;font-size:15px}
+.duel-ask small{font-weight:500;font-size:12px;color:var(--muted)}
+.duel-games{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.duel-game{display:grid;justify-items:center;align-content:start;gap:4px;text-align:center;border:2px solid var(--line);background:#fff;border-radius:16px;padding:10px 6px 12px;color:var(--ink)}
+.duel-game:hover{border-color:var(--accent);box-shadow:0 0 0 4px rgba(242,85,78,.12)}
+.duel-game svg{width:50px;height:50px}
+.duel-game b{font-size:14px;font-weight:800}
+.duel-game span{font-size:11px;color:var(--muted);line-height:1.45}
+.duel-area{display:grid;gap:10px}
+.duel-score{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;font-weight:800;font-size:13px}
+.duel-score b{font-family:var(--en);font-size:22px;margin-left:5px;font-variant-numeric:tabular-nums}
+.duel-score .me b{color:var(--accent)}
+.duel-score .rv{color:var(--c)}
+.dtime{display:block;height:8px;border-radius:4px;background:#EEF0F6;overflow:hidden}
+.dtime em{display:block;height:100%;width:100%;background:var(--grad);border-radius:4px}
+.mb-turn{text-align:center;font-size:13px;color:var(--muted)}
+.mochi-field{position:relative;height:min(330px,46vh);min-height:240px;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#BFE3FF 0%,#EAF5FF 55%,#FFF3DE 100%);border:1.5px solid var(--line);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.mf-roof{position:absolute;left:0;top:0;width:100%;height:46px;pointer-events:none}
+.mf-hint{position:absolute;left:0;right:0;bottom:8px;margin:0;text-align:center;font-size:12px;font-weight:800;color:#8A5A0B;pointer-events:none}
+.mochi{position:absolute;left:0;top:0;width:50px;height:50px;margin:-25px 0 0 -25px;padding:0;border:none;background:none;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.mochi svg{width:100%;height:100%;display:block;pointer-events:none}
+.mochi.got{opacity:0;scale:1.7;transition:opacity .3s,scale .3s}
+.mochi.stolen{opacity:0;filter:drop-shadow(0 0 8px var(--c));transition:opacity .35s}
+.mb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:min(100%,300px);margin:0 auto}
+.mb-cell{aspect-ratio:1;border:2px solid var(--line2);border-radius:14px;background:#fff;font-size:44px;font-weight:800;line-height:1;display:grid;place-items:center;padding:0;color:var(--ink);transition:opacity .2s}
+.mb-cell.o{color:var(--accent)}
+.mb-cell.x{color:var(--c)}
+.mb-cell.old{opacity:.35}
+.mb-cell.win{background:#FFF3C4;border-color:#FFB547}
+.mb-cell:disabled{cursor:default}
+.mb-cell:not(:disabled):hover{border-color:var(--accent)}
+.duel-note{margin:0;font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
+.amida{width:100%;max-width:380px;display:block;margin:0 auto;font-family:var(--jp)}
+.amida .st{cursor:pointer}
+.amida .trace{fill:none;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+.duel-res{display:grid;justify-items:center;gap:4px;text-align:center;padding:18px 16px;border-radius:20px;border:2px solid}
+.duel-res small{font-size:12px;font-weight:800;color:var(--muted)}
+.duel-res b{font-size:32px;font-weight:800;line-height:1.2}
+.duel-res span{font-weight:800}
+.duel-res p{margin:0;font-size:13px;color:var(--ink2)}
+.duel-res.win{background:#FFF6D8;border-color:#FFB547}
+.duel-res.win b{color:#C8362F}
+.duel-res.lose{background:#EEF1F7;border-color:#C9CFDD}
+.duel-res.lose b{color:#3A4060}
+.duel-res.draw{background:#EEF6FF;border-color:#C7DEF7}
+.duel-res.draw b{color:#1F6FC0}
+
 /* ---------- overlays ---------- */
 .overlay{position:fixed;inset:0;z-index:30;overflow:auto;background:rgba(243,245,250,.8);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;justify-content:center;align-items:flex-start;padding:28px 16px 40px}
 .sheet{width:100%;max-width:840px;background:var(--surface);border:1px solid var(--line);border-radius:28px;box-shadow:0 30px 80px -40px rgba(27,33,64,.45);padding:32px clamp(18px,4vw,44px);display:grid;gap:16px;position:relative}
@@ -2760,11 +2813,14 @@ function rivalsPlan(){
     const walk = n => { for (let k = 0; k < n && i < sq.length - 1; k++){ i++; path.push(sq[i]); if (stopAt(sq[i])) break; } };
     const lv0 = rvLevel(rv), pet0 = Object.keys(rv.cleared).length >= 3;
     const answer = () => { const g = sq[i], b = rvBonus(); rv.cleared[g.k] = 1; say.push(`「${S.stages[g.p.s].l}」で「${rvAnswer(g.p)}」と答えた（+${b}マス）`); walk(b); };
+    /* a rival that lost a mini-game to you sits this turn out */
+    if (rv.rest){ rv.rest = 0; rv.say = '勝負に負けて1回休み'; return {id: rv.id, idx, path, roll: 0}; }
     let roll = 0;
     if (sq[i].type === 'q' && stopAt(sq[i])) answer();
     else {
-      roll = rvRoll(); walk(roll); rv.last = roll;
-      say.push(`サイコロ ${roll}`);
+      const boost = rv.boost || 0; rv.boost = 0;
+      roll = rvRoll(); walk(roll + boost); rv.last = roll;
+      say.push(`サイコロ ${roll}${boost ? `（勝負に勝った勢いで+${boost}）` : ''}`);
       if (sq[i].type === 'q' && stopAt(sq[i])) answer();
     }
     const lv1 = rvLevel(rv);
@@ -2861,6 +2917,8 @@ function land(T, i, trigger){
     const fresh = !S.stat[s.p.key], st = statOf(S, s.p.key), stg = S.stages[s.p.s];
     if (fresh && S.quest.timeMod){ st.left = Math.max(15, st.left + S.quest.timeMod); S.quest.timeMod = 0; }
     qlog(stg.monster ? `${stg.npc}があらわれた！` : `${stg.npc || '旅人'}に出会った`);
+    const rv = duelRival(s);
+    if (rv){ S.quest.duel = {rv: rv.id, stage: 'pick'}; S.quest.qs = 'duel'; S.quest.duelN = clearedN(S); qlog(`関所の前で${rvInfo(rv.id).n}とばったり！ 勝負だ`); sfx.good(); refresh(); return; }
     stg.monster ? sfx.bad() : sfx.next(); lastTick = performance.now(); refresh(); return;
   }
   if (s.type === 'ev' && trigger){
@@ -2914,7 +2972,7 @@ function storyHTML(){
     title = 'ものがたりのはじまり';
     pic = `<svg class="story-pic" viewBox="-110 -96 220 104" aria-hidden="true"><g transform="translate(-44 0) scale(1.3)"><use href="#pm-princess"/><use href="#cage"/></g><g transform="translate(46 2) scale(1.05)"><use href="#mon-dragon" style="--mc:#C8362F"/></g></svg>`;
     text = `${W().names.castle}のお姫さまが、${boss}にさらわれてしまった！`;
-    sub = `${heroName() ? `勇者${heroName()}よ、` : ''}関所で問いに答えて力をつけ、${W().names.cave}の奥にいる${boss}をたおして姫を助け出そう。答えるたびにレベルが上がり、${W().gear.map(g => g[0].replace(/「.*」/, '')).slice(0, 3).join('・')}…と装備がそろって「${W().lv[5]}」になれる。道中では家来も増えるぞ。ライバルも城をめざしている…`;
+    sub = `${heroName() ? `勇者${heroName()}よ、` : ''}関所で問いに答えて力をつけ、${W().names.cave}の奥にいる${boss}をたおして姫を助け出そう。答えるたびにレベルが上がり、${W().gear.map(g => g[0].replace(/「.*」/, '')).slice(0, 3).join('・')}…と装備がそろって「${W().lv[5]}」になれる。道中では家来も増えるぞ。ライバルも城をめざしている…関所でライバルと出くわしたら、ミニゲームで勝負だ！`;
   } else if (b.k === 'lv'){
     tag = 'LEVEL UP'; title = `${heroName() ? heroName() + 'は' : ''}Lv.${b.lv} ${lvName(b.lv)}になった！`;
     pic = heroPic(b.lv, `<g transform="translate(40 -54)"><use href="#w-spark" transform="scale(1.4)" style="--sp:#FFD66B"/></g><g transform="translate(-42 -30)"><use href="#w-spark" style="--sp:#FFD66B"/></g>`);
@@ -2990,19 +3048,214 @@ async function clearGate(){
   await walkForward(bonus, false);
 }
 
+/* ---------- rival match: meet a CPU rival at a gate and settle it with a quick mini-game ---------- */
+function duelRival(s){
+  const Q = S.quest; if (!Q.rivals || !Q.rivals.length || S.stages[s.p.s].monster) return null;
+  if (Q.duelN != null && clearedN(S) - Q.duelN < 2) return null;   /* never at two gates in a row */
+  let best = null, bd = Infinity;
+  Q.rivals.forEach(rv => {
+    if (rv.fin) return;
+    const sq = rvTrack(rv).sq, q = sq[rvIdx(rv, sq)];
+    if (!q || q.part !== s.part) return;
+    const d = Math.hypot(q.x - s.x, q.y - s.y); if (d < bd){ bd = d; best = rv; }
+  });
+  return bd <= 150 ? best : null;   /* within about two squares of the gate */
+}
+const DUEL_TAUNT = {hayato: '「関所の前で会うとはな！ 勝負だ、負けないぜ！」', misaki: '「あら、また会ったね。ちょっと勝負していかない？」', gou: '「ここを通りたければ、オレに勝ってからだ！」'};
+const MOCHI_SVG = k => `<svg viewBox="-24 -24 48 48" aria-hidden="true"><ellipse cx="0" cy="4" rx="19" ry="15" fill="${k === 2 ? '#FFD84D' : k === 1 ? '#FFC2DD' : '#fff'}" stroke="${k === 2 ? '#D98A0B' : k === 1 ? '#F08DB8' : '#DCCFBE'}" stroke-width="2"/><ellipse cx="-6" cy="-1" rx="7" ry="4" fill="#fff" opacity=".85"/>${k === 2 ? '<path d="M7 -1 l2 4 4 .5 -3 2.8 .8 4 -3.8 -2 -3.8 2 .8 -4 -3 -2.8 4 -.5Z" fill="#fff" opacity=".9"/>' : ''}</svg>`;
+const DUEL_GAMES = {
+  mochi: {n: '餅拾い', d: '降ってくる餅を10秒で多く拾ったほうが勝ち', run: runMochi,
+    icon: '<svg viewBox="0 0 60 60" aria-hidden="true"><ellipse cx="18" cy="42" rx="13" ry="10" fill="#fff" stroke="#DCCFBE" stroke-width="2"/><ellipse cx="42" cy="42" rx="13" ry="10" fill="#FFC2DD" stroke="#F08DB8" stroke-width="2"/><ellipse cx="30" cy="22" rx="13" ry="10" fill="#FFD84D" stroke="#D98A0B" stroke-width="2"/></svg>'},
+  mb: {n: '消える〇×', d: '印は3つまで。先に3つ並べたら勝ち', run: runMB,
+    icon: '<svg viewBox="0 0 60 60" aria-hidden="true"><path d="M22 6V54M38 6V54M6 22H54M6 38H54" stroke="#C9CFDD" stroke-width="3" stroke-linecap="round"/><circle cx="14" cy="14" r="5.5" fill="none" stroke="#F2554E" stroke-width="3"/><circle cx="30" cy="30" r="5.5" fill="none" stroke="#F2554E" stroke-width="3" opacity=".35"/><path d="M41 9l10 10M51 9l-10 10M41 41l10 10M51 41l-10 10" stroke="#2E8FE0" stroke-width="3" stroke-linecap="round"/></svg>'},
+  amida: {n: 'あみだくじ', d: 'スタートを選んで運だめし。いい当たりが勝ち', run: runAmida,
+    icon: '<svg viewBox="0 0 60 60" aria-hidden="true"><path d="M12 8V52M24 8V52M36 8V52M48 8V52M12 18H24M24 30H36M36 22H48M12 40H24M36 44H48" stroke="#1B2140" stroke-width="3" stroke-linecap="round"/><path d="M24 8V18H12V40H24V52" fill="none" stroke="#F2554E" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'}
+};
+let duelStop = null;
+function duelHTML(){
+  const Q = S.quest, d = Q.duel, rv = (Q.rivals || []).find(r => r.id === d.rv), R = rvInfo(d.rv), lv = rv ? rvLevel(rv) : 1, G = DUEL_GAMES[d.game];
+  const p = current(), gate = p && !p.fork ? S.stages[p.s].l : '';
+  const head = `<div class="p-head"><p class="kicker">RIVAL MATCH</p><span class="p-count">${gate ? `関所「${esc(gate)}」の前` : 'ライバル勝負'}</span></div>`;
+  const vs = `<div class="duel-vs" style="--c:${R.c}"><div class="side"><svg viewBox="-26 -80 52 84" aria-hidden="true"><g class="lv${heroLevel()}">${heroPerson()}</g></svg><span>${esc(heroName() || 'あなた')}</span></div><em class="vs">VS</em><div class="side"><svg viewBox="-32 -90 64 94" aria-hidden="true">${rivalArt(R, lv, false)}</svg><span class="rn">${R.n}</span></div></div>`;
+  if (d.stage === 'pick') return `${head}${vs}
+    <div class="rpg"><span class="rpg-name">${R.n}</span><p>${esc(DUEL_TAUNT[R.id] || '「勝負だ！」')}</p><p class="rpg-sub">勝つと夢ポイント+20、${R.n}は1回休み。負けると${R.n}の次のサイコロが+2。すぐ終わるミニゲームで勝負しよう。</p></div>
+    <p class="duel-ask">どれで勝負する？</p>
+    <div class="duel-games">${Object.entries(DUEL_GAMES).map(([k, g]) => `<button type="button" class="duel-game" data-duel="${k}">${g.icon}<b>${g.n}</b><span>${g.d}</span></button>`).join('')}</div>
+    <div class="p-foot"><button class="btn link" type="button" data-duel="skip">勝負しないで関所へ</button><span class="grow"></span><button class="btn dark" type="button" data-duel="random">おまかせで勝負</button></div>`;
+  if (d.stage === 'play') return `${head}<p class="duel-ask">${G.n}　<small>${G.d}</small></p><div class="duel-area" id="duelArea" style="--c:${R.c}"></div>`;
+  const word = {win: '勝ち！', lose: '負け…', draw: '引き分け'}[d.res] || '';
+  const reward = d.res === 'win' ? `夢ポイント +20。${R.n}は次のターン1回休み。` : d.res === 'lose' ? `${R.n}の次のサイコロが +2。次は勝とう！` : '夢ポイント +5。';
+  return `${head}${vs}<div class="duel-res ${d.res}"><small>${G.n}</small><b>${word}</b><span>${esc(d.detail || '')}</span><p>${reward}</p></div>
+    <div class="p-foot"><span class="grow"></span><button class="btn primary lg" type="button" data-duel="ok">関所へ進む →</button></div>`;
+}
+function duelPick(k){
+  const Q = S.quest, d = Q && Q.duel; if (!d || Q.qs !== 'duel') return;
+  if (k === 'skip' || k === 'ok'){
+    if (k === 'skip') qlog(`${rvInfo(d.rv).n}との勝負を見送った`);
+    Q.duel = null; Q.qs = 'answer'; lastTick = performance.now();
+    const p = current(); if (p && !p.fork && S.stages[p.s].monster) sfx.bad(); else sfx.next();
+    refresh(); return;
+  }
+  if (d.stage !== 'pick') return;
+  const keys = Object.keys(DUEL_GAMES);
+  d.game = DUEL_GAMES[k] ? k : keys[rnd(keys.length)];
+  d.stage = 'play'; sfx.next(); save(); renderPanel();
+}
+function mountDuel(){
+  const Q = S.quest, d = Q.duel, el = $('#duelArea'); if (!el || !d) return;
+  const rv = (Q.rivals || []).find(r => r.id === d.rv), R = rvInfo(d.rv), lv = rv ? rvLevel(rv) : 1;
+  let over = false;
+  duelStop = DUEL_GAMES[d.game].run(el, {R, lv, end: (res, detail) => {
+    if (over || !S || S.quest !== Q || Q.duel !== d) return; over = true; duelStop = null; duelFinish(d, res, detail);
+  }});
+}
+function duelFinish(d, res, detail){
+  const Q = S.quest, rv = (Q.rivals || []).find(r => r.id === d.rv), R = rvInfo(d.rv), G = DUEL_GAMES[d.game];
+  d.stage = 'done'; d.res = res; d.detail = detail;
+  Q.duels = Q.duels || {w: 0, l: 0, d: 0};
+  if (res === 'win'){ Q.pts += 20; Q.duels.w++; if (rv) rv.rest = 1; qlog(`${G.n}で${R.n}に勝った！ +20pt（${R.n}は1回休み）`); sfx.done(); }
+  else if (res === 'lose'){ Q.duels.l++; if (rv) rv.boost = 2; qlog(`${G.n}で${R.n}に負けた…（${R.n}の次のサイコロ+2）`); sfx.bad(); }
+  else { Q.pts += 5; Q.duels.d++; qlog(`${G.n}で${R.n}と引き分け +5pt`); sfx.clear(); }
+  save(); renderPanel();
+}
+/* mini-game 1: mochi-maki. Mochi fall from the ridge; tap them before the rival grabs them (gold = 3 points) */
+function runMochi(el, {R, lv, end}){
+  el.innerHTML = `<div class="duel-score"><span class="me">あなた<b id="dmMe">0</b></span><i class="dtime"><em id="dmBar"></em></i><span class="rv">${R.n}<b id="dmRv">0</b></span></div>
+    <div class="mochi-field" id="dmField"><svg class="mf-roof" viewBox="0 0 300 46" preserveAspectRatio="none" aria-hidden="true"><path d="M-4 46 L150 5 L304 46Z" fill="#C89B6D"/><path d="M-4 46 L150 5 L304 46" fill="none" stroke="#8B5E3C" stroke-width="4"/><path d="M70 32 H230" stroke="#F2554E" stroke-width="4"/><path d="M70 37 H230" stroke="#fff" stroke-width="4"/></svg><p class="mf-hint">降ってくる餅をタップ！ 金の餅は3点</p></div>`;
+  const f = el.querySelector('#dmField'), meEl = el.querySelector('#dmMe'), rvEl = el.querySelector('#dmRv'), bar = el.querySelector('#dmBar');
+  const DUR = 10000, grab = Math.min(.66, .42 + lv * .04), list = [];
+  let me = 0, them = 0, t0 = 0, last = 0, next = 0, raf = 0, over = false, tm = 0;
+  const take = (m, who) => {
+    if (m.gone) return; m.gone = true;
+    if (who === 'me'){ me += m.v; meEl.textContent = me; sfx.add(me); m.el.classList.add('got'); }
+    else { them += m.v; rvEl.textContent = them; m.el.classList.add('stolen'); }
+    setTimeout(() => m.el.remove(), 360);
+  };
+  const spawn = t => {
+    const k = Math.random() < .12 ? 2 : Math.random() < .5 ? 1 : 0, b = document.createElement('button');
+    b.type = 'button'; b.className = 'mochi'; b.setAttribute('aria-label', k === 2 ? '金の餅（3点）' : '餅'); b.innerHTML = MOCHI_SVG(k);
+    const m = {el: b, x: 26 + Math.random() * Math.max(10, f.clientWidth - 52), y: -26, sp: 95 + Math.random() * 60 + t / DUR * 70, v: k === 2 ? 3 : 1, th: f.clientHeight * (.32 + Math.random() * .4), gone: false, tried: false};
+    b.addEventListener('pointerdown', e => { e.preventDefault(); if (!over) take(m, 'me'); });
+    b.style.transform = `translate(${m.x.toFixed(1)}px,${m.y}px)`;
+    f.appendChild(b); list.push(m);
+  };
+  const stop = () => { over = true; cancelAnimationFrame(raf); };
+  const frame = now => {
+    if (over) return;
+    if (!t0) t0 = last = now;
+    const t = now - t0, dt = Math.min(.05, (now - last) / 1000); last = now;
+    if (t >= DUR){ stop(); bar.style.width = '0%'; tm = setTimeout(() => end(me > them ? 'win' : me < them ? 'lose' : 'draw', `あなた ${me}点 − ${R.n} ${them}点`), 700); return; }
+    if (t >= next){ spawn(t); next = t + 330 + Math.random() * 250; }
+    const H = f.clientHeight;
+    list.forEach(m => {
+      if (m.gone) return;
+      m.y += m.sp * dt;
+      if (!m.tried && m.y > m.th){ m.tried = true; if (Math.random() < grab){ take(m, 'rv'); return; } }
+      if (m.y > H + 30){ m.gone = true; m.el.remove(); return; }
+      m.el.style.transform = `translate(${m.x.toFixed(1)}px,${m.y.toFixed(1)}px)`;
+    });
+    bar.style.width = ((1 - t / DUR) * 100).toFixed(1) + '%';
+    raf = requestAnimationFrame(frame);
+  };
+  raf = requestAnimationFrame(frame);
+  return () => { stop(); clearTimeout(tm); };
+}
+/* mini-game 2: vanishing tic-tac-toe. Each side keeps three marks; the fourth wipes out that side's oldest */
+const MB_LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+const mbPlace = (s, i, w) => { const b = s.b.slice(), q = {o: s.q.o.slice(), x: s.q.x.slice()}; b[i] = w; q[w].push(i); if (q[w].length > 3) b[q[w].shift()] = null; return {b, q}; };
+const mbLine = (b, w) => MB_LINES.find(l => l.every(i => b[i] === w)) || null;
+function mbEval(b, w){ const o = w === 'o' ? 'x' : 'o'; let v = 0; MB_LINES.forEach(l => { const a = l.filter(i => b[i] === w).length, c = l.filter(i => b[i] === o).length; if (a === 2 && !c) v += 3; if (c === 2 && !a) v -= 4; }); return v; }
+function mbNega(s, w, d){
+  const o = w === 'o' ? 'x' : 'o'; let best = -Infinity;
+  for (let i = 0; i < 9; i++){ if (s.b[i]) continue; const n = mbPlace(s, i, w), v = mbLine(n.b, w) ? 100 + d : d ? -mbNega(n, o, d - 1) : mbEval(n.b, w); if (v > best) best = v; }
+  return best === -Infinity ? 0 : best;
+}
+function runMB(el, {R, lv, end}){
+  const MAX = 16, miss = Math.max(.1, .35 - lv * .05);
+  let st = {b: Array(9).fill(null), q: {o: [], x: []}}, turn = 'o', moves = 0, over = false, tm = 0;
+  el.innerHTML = `<div class="duel-score"><span class="me">あなた<b>〇</b></span><span class="mb-turn" id="mbTurn">あなたの番</span><span class="rv">${R.n}<b>×</b></span></div>
+    <div class="mb-grid">${Array.from({length: 9}, (_, i) => `<button type="button" class="mb-cell" data-i="${i}" aria-label="${i + 1}番のマス"></button>`).join('')}</div>
+    <p class="duel-note">印は3つまで。4つ目を置くと、いちばん古い印（うすい印）が消える。${MAX}手で決まらなければ引き分け</p>`;
+  const cells = [...el.querySelectorAll('.mb-cell')], turnEl = el.querySelector('#mbTurn');
+  const draw = win => cells.forEach((c, i) => {
+    const v = st.b[i], old = (st.q.o.length === 3 && st.q.o[0] === i) || (st.q.x.length === 3 && st.q.x[0] === i);
+    c.textContent = v === 'o' ? '〇' : v === 'x' ? '×' : '';
+    c.className = 'mb-cell' + (v ? ' ' + v : '') + (old && !win ? ' old' : '') + (win && win.includes(i) ? ' win' : '');
+    c.disabled = over || turn !== 'o' || !!v;
+  });
+  const cpu = () => {
+    const emp = [...Array(9).keys()].filter(i => !st.b[i]); if (Math.random() < miss) return emp[rnd(emp.length)];
+    let best = -Infinity, pick = [];
+    emp.forEach(i => { const n = mbPlace(st, i, 'x'), v = mbLine(n.b, 'x') ? 1000 : -mbNega(n, 'o', 2); if (v > best){ best = v; pick = [i]; } else if (v === best) pick.push(i); });
+    return pick[rnd(pick.length)];
+  };
+  const settled = w => {
+    moves++; const line = mbLine(st.b, w);
+    if (line){ over = true; draw(line); turnEl.textContent = w === 'o' ? 'そろった！' : `${R.n}がそろえた`; tm = setTimeout(() => end(w === 'o' ? 'win' : 'lose', w === 'o' ? `${moves}手目で3つ並べた！` : `${R.n}が${moves}手目で3つ並べた`), 900); return true; }
+    if (moves >= MAX){ over = true; draw(); turnEl.textContent = '決着つかず'; tm = setTimeout(() => end('draw', `${MAX}手で決着つかず`), 700); return true; }
+    return false;
+  };
+  el.querySelector('.mb-grid').addEventListener('click', e => {
+    const c = e.target.closest('.mb-cell'); if (!c || over || turn !== 'o' || st.b[+c.dataset.i]) return;
+    st = mbPlace(st, +c.dataset.i, 'o'); sfx.add(moves); if (settled('o')) return;
+    turn = 'x'; turnEl.textContent = `${R.n}が考え中…`; draw();
+    tm = setTimeout(() => { if (over) return; st = mbPlace(st, cpu(), 'x'); sfx.step(); if (settled('x')) return; turn = 'o'; turnEl.textContent = 'あなたの番'; draw(); }, 520);
+  });
+  draw();
+  return () => { over = true; clearTimeout(tm); };
+}
+/* mini-game 3: amidakuji. Pick a start, the rival takes another, the better prize wins */
+function runAmida(el, {R, end}){
+  const N = 4, X = k => 45 + k * 83.3, TOP = 54, BOT = 238, SL = 9, tms = [], ks = [...Array(N).keys()];
+  const rungs = []; for (let j = 0; j < SL; j++) if (Math.random() < .8) rungs.push({y: TOP + 14 + j * (BOT - TOP - 28) / (SL - 1), k: rnd(N - 1)});
+  const pz = [{t: '大当たり', v: 3, c: '#F2554E'}, {t: '当たり', v: 2, c: '#D98A0B'}, {t: '小当たり', v: 1, c: '#15A37C'}, {t: 'はずれ', v: 0, c: '#9CA2B9'}];
+  for (let i = pz.length - 1; i > 0; i--){ const j = rnd(i + 1); [pz[i], pz[j]] = [pz[j], pz[i]]; }
+  const trace = k => { let c = k; const p = [[X(c), TOP]]; rungs.forEach(r => { if (r.k === c || r.k === c - 1){ p.push([X(c), r.y]); c = r.k === c ? c + 1 : c - 1; p.push([X(c), r.y]); } }); p.push([X(c), BOT]); return {d: 'M' + p.map(q => `${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join(' L'), end: c}; };
+  el.innerHTML = `<p class="duel-note" id="amNote">上の1〜4から、スタートを1つえらんでね</p>
+    <svg class="amida" viewBox="0 0 340 290" role="group" aria-label="あみだくじ">
+      ${ks.map(k => `<path d="M${X(k)} ${TOP} V${BOT}" stroke="#1B2140" stroke-width="3"/>`).join('')}
+      ${rungs.map(r => `<path d="M${X(r.k)} ${r.y.toFixed(1)} H${X(r.k + 1)}" stroke="#1B2140" stroke-width="3"/>`).join('')}
+      <g id="amTr"></g>
+      ${ks.map(k => `<g class="st" data-k="${k}" role="button" tabindex="0" aria-label="${k + 1}番からスタート"><circle cx="${X(k)}" cy="30" r="19" fill="#fff" stroke="#1B2140" stroke-width="2.5"/><text x="${X(k)}" y="36" text-anchor="middle" font-size="17" font-weight="800" fill="#1B2140">${k + 1}</text></g>`).join('')}
+      ${ks.map(k => `<g id="amP${k}"><rect x="${X(k) - 38}" y="248" width="76" height="34" rx="10" fill="#F6F7FB" stroke="#D8DCE7" stroke-width="1.5"/><text x="${X(k)}" y="270" text-anchor="middle" font-size="14" font-weight="800" fill="#9CA2B9">？</text></g>`).join('')}
+    </svg>`;
+  let picked = false;
+  const pick = k => {
+    if (picked) return; picked = true;
+    const others = ks.filter(i => i !== k), rk = others[rnd(others.length)];
+    [[k, '#F2554E'], [rk, R.c]].forEach(([i, col]) => { const g = el.querySelector(`.st[data-k="${i}"]`); g.querySelector('circle').setAttribute('fill', col); g.querySelector('circle').setAttribute('stroke', col); g.querySelector('text').setAttribute('fill', '#fff'); });
+    el.querySelector('#amNote').innerHTML = `<b style="color:#F2554E">あなた</b>は${k + 1}番、<b style="color:${R.c}">${R.n}</b>は${rk + 1}番`;
+    const a = trace(k), b = trace(rk), tr = el.querySelector('#amTr');
+    tr.innerHTML = `<path class="trace" d="${a.d}" stroke="#F2554E"/><path class="trace" d="${b.d}" stroke="${R.c}"/>`;
+    [...tr.children].forEach(p => { const L = p.getTotalLength(); p.style.strokeDasharray = L; p.style.strokeDashoffset = L; p.getBoundingClientRect(); p.style.transition = 'stroke-dashoffset 1.8s ease-in-out'; p.style.strokeDashoffset = 0; });
+    sfx.next();
+    tms.push(setTimeout(() => {
+      pz.forEach((p, i) => { const g = el.querySelector('#amP' + i), who = i === a.end ? '#F2554E' : i === b.end ? R.c : null, rc = g.querySelector('rect'), t = g.querySelector('text'); if (who){ rc.setAttribute('fill', '#fff'); rc.setAttribute('stroke', who); rc.setAttribute('stroke-width', '3'); } t.textContent = p.t; t.setAttribute('fill', p.c); });
+      const me = pz[a.end], them = pz[b.end]; me.v > them.v ? sfx.good() : sfx.bad();
+      tms.push(setTimeout(() => end(me.v > them.v ? 'win' : 'lose', `あなた「${me.t}」 − ${R.n}「${them.t}」`), 1000));
+    }, 2000));
+  };
+  const svgEl2 = el.querySelector('svg');
+  svgEl2.addEventListener('click', e => { const g = e.target.closest('.st'); if (g) pick(+g.dataset.k); });
+  svgEl2.addEventListener('keydown', e => { const g = e.target.closest && e.target.closest('.st'); if (g && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); pick(+g.dataset.k); } });
+  return () => tms.forEach(clearTimeout);
+}
+
 /* =========================================================
    PANEL
    ========================================================= */
 const panel = $('#panel');
 function renderPanel(){
+  if (duelStop){ duelStop(); duelStop = null; }
   const keep = $('#ans') ? $('#ans').value : '';
   const qs = S && S.mode === 'quest' ? S.quest.qs : '';
-  panel.dataset.st = !S ? 'ready' : building ? 'build' : S.phase === 'done' ? 'done' : ['fork', 'event', 'story'].includes(qs) ? qs : qs && qs !== 'answer' ? 'roll' : 'play';
+  panel.dataset.st = !S ? 'ready' : building ? 'build' : S.phase === 'done' ? 'done' : ['fork', 'event', 'story', 'duel'].includes(qs) ? qs : qs && qs !== 'answer' ? 'roll' : 'play';
   if (!S){ panel.innerHTML = `<p class="kicker">READY</p><h2 class="question">テーマを決めると、ここに問いが表示されます。</h2><div class="p-foot"><button class="btn primary" type="button" data-act="menu">ホームへ</button></div>`; syncScreen(); return; }
   if (building) panel.innerHTML = `<p class="kicker">MIND MAP</p><div class="rpg"><span class="rpg-name">王さま</span><p>よくぞたどり着いた！ そなたの旅の答えから、マインドマップを組み立てておるぞ…</p></div><p class="hint">枝が1本ずつ伸びていきます。</p>`;
   else if (S.phase === 'done') panel.innerHTML = doneHTML();
   else if (S.mode === 'quest' && S.quest.qs === 'fork') panel.innerHTML = forkHTML(S.cur.replace('fork:', ''));
   else if (S.mode === 'quest' && S.quest.qs === 'event') panel.innerHTML = eventHTML();
+  else if (S.mode === 'quest' && S.quest.qs === 'duel' && S.quest.duel) panel.innerHTML = duelHTML();
   else if (S.mode === 'quest' && S.quest.qs === 'story') panel.innerHTML = storyHTML();
   else if (S.mode === 'quest' && S.quest.qs !== 'answer') panel.innerHTML = rollHTML();
   else panel.innerHTML = playHTML();
@@ -3010,6 +3263,7 @@ function renderPanel(){
   if (inp){ inp.value = keep; if (S.level !== 'beginner' && matchMedia('(pointer:fine)').matches) inp.focus({preventScroll: true}); }
   const pf = [...panel.querySelectorAll('input[data-field]')];
   if (pf.length && S.level !== 'beginner' && matchMedia('(pointer:fine)').matches){ const e = pf.find(x => !x.value) || pf[0]; e.focus({preventScroll: true}); }
+  if (S.mode === 'quest' && S.quest.qs === 'duel' && S.quest.duel && S.quest.duel.stage === 'play') mountDuel();
   updateTimerUI(); syncScreen();
 }
 /* ---------- phone: one screen at a time. The board while the dice rolls, the questions when a gate is reached ---------- */
@@ -3802,7 +4056,7 @@ function renderResult(){
           <div><span>条件クリア</span><b>${st.met}/${st.P}</b></div>
           <div><span>答えの数</span><b>${st.N}</b></div>
           <div><span>時間切れ</span><b>${st.to}</b></div>
-          ${quest ? `<div><span>夢ポイント</span><b>${S.quest.pts}</b></div><div><span>サイコロ</span><b>${S.quest.rolls}回</b></div>${S.quest.place ? `<div><span>レース</span><b>${S.quest.place}着</b></div>` : ''}<div><span>レベル</span><b>Lv.${heroLevel()}</b></div>${(S.quest.party || []).length ? `<div><span>家来</span><b>${S.quest.party.length}人</b></div>` : ''}` : `<div><span>かかった時間</span><b>${fmt(st.used)}</b></div>`}
+          ${quest ? `<div><span>夢ポイント</span><b>${S.quest.pts}</b></div><div><span>サイコロ</span><b>${S.quest.rolls}回</b></div>${S.quest.place ? `<div><span>レース</span><b>${S.quest.place}着</b></div>` : ''}<div><span>レベル</span><b>Lv.${heroLevel()}</b></div>${(S.quest.party || []).length ? `<div><span>家来</span><b>${S.quest.party.length}人</b></div>` : ''}${S.quest.duels ? `<div><span>ライバル勝負</span><b>${S.quest.duels.w}勝${S.quest.duels.l}敗</b></div>` : ''}` : `<div><span>かかった時間</span><b>${fmt(st.used)}</b></div>`}
         </div>
         ${(() => { const E = expertOf(S); return E.advice.length ? `<div class="advice expert"><h3>専門家からのアドバイス${E.field ? `（${esc(E.field)}）` : ''}</h3><ol>${E.advice.map(a => `<li>${esc(a)}</li>`).join('')}</ol>${r.source !== 'ai' ? '<p class="ex-note">AI採点のときは、専門分野に合わせたアドバイスになります。</p>' : ''}</div>` : ''; })()}
         ${r.advice && r.advice.length ? `<div class="advice"><h3>実現に近づくためのアドバイス</h3><ol>${r.advice.map(a => `<li>${esc(a)}</li>`).join('')}</ol></div>` : ''}
@@ -4216,6 +4470,7 @@ function exportText(x){
     if (x.mode === 'quest') L.push(`- 夢ポイント：${x.quest.pts}`);
     if (x.mode === 'quest' && x.quest.place) L.push(`- ライバルとのレース：${x.quest.place}着`);
     if (x.mode === 'quest') L.push(`- ${x.heroName ? `勇者${x.heroName}` : '勇者'}（${(WORLDS[x.world] || WORLDS.euro).n}）：Lv.${levelAt(clearedN(x) + (x.lvCarry || 0))} ${(WORLDS[x.world] || WORLDS.euro).lv[levelAt(clearedN(x) + (x.lvCarry || 0))]}`);
+    if (x.mode === 'quest' && x.quest.duels) L.push(`- ライバル勝負：${x.quest.duels.w}勝${x.quest.duels.l}敗${x.quest.duels.d ? x.quest.duels.d + '分' : ''}`);
     if (x.mode === 'quest' && (x.quest.party || []).length) L.push(`- 家来：${PARTY_ORDER.filter(m => x.quest.party.includes(m)).map(m => MEMBERS[m].n).join('・')}`);
     if (r.advice){ L.push('', 'アドバイス'); r.advice.forEach((a, i) => L.push(`${i + 1}. ${a}`)); }
     { const T = timelineOf(x); if (T.length){ L.push('', `人生のタイムスケジュール${x.age ? `（いま${x.age}歳）` : ''}`); T.forEach(v => L.push(`- ${v.age != null ? v.age + '歳' : v.when}：${v.title}　${v.detail}`)); } }
@@ -4271,6 +4526,7 @@ panel.addEventListener('click', e => {
   if (b.dataset.choice != null) return toggleChoice(b.dataset.choice, b.dataset.field);
   if (b.dataset.act === 'setf'){ if (saveFields()) refresh(); return; }
   if (b.dataset.route){ chooseRoute(b.dataset.fork, b.dataset.route); return; }
+  if (b.dataset.duel){ duelPick(b.dataset.duel); return; }
   if (b.dataset.act) onAct(b.dataset.act);
 });
 $('#resultSheet').addEventListener('click', e => { const t = e.target.closest('button[data-rtab]'); if (t){ resultTab = t.dataset.rtab; $('#resultSheet').dataset.rtab = resultTab; $('#resultSheet').querySelectorAll('button[data-rtab]').forEach(x => x.setAttribute('aria-selected', String(x === t))); $('#ovResult').scrollTop = 0; } });
@@ -4748,6 +5004,7 @@ function healQuest(){
   if (!Q.rivals){ Q.rivals = newRivals(S); Q.finN = 0; Q.place = 0; }
   if (!Q.party) Q.party = [];
   if (Q.qs === 'story' && !(Q.beats || []).length) Q.qs = 'roll';
+  if (Q.qs === 'duel' && !Q.duel) Q.qs = 'answer';
   const sq = track(S).sq;
   if (!sq.some(q => q.k === Q.pos)){
     let k = 0; sq.forEach((q, j) => { if (q.type === 'q' && qDone(q.p.key)) k = j; });
