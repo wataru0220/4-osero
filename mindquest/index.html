@@ -125,14 +125,15 @@ button{cursor:pointer}
 .hero.ride-horse .veh-horse,.hero.ride-coach .veh-coach,.hero.ride-gissha .veh-gissha,.hero.ride-wagon .veh-wagon,.hero.ride-elephant .veh-elephant,.hero.ride-camel .veh-camel,.hero.ride-sail .veh-sail,.hero.ride-junk .veh-junk,.hero.ride-ferry .veh-ferry,.hero.ride-cart .veh-cart,.hero.ride-board .veh-board,.hero.ride-aircar .veh-aircar,.hero.ride-hover .veh-hover,.hero.ride-pod .veh-pod,.hero.ride-jet .veh-jet{display:inline}
 .hero.ride-horse .leg,.hero.ride-wagon .leg,.hero.ride-elephant .leg,.hero.ride-camel .leg{display:none}
 .hero.ride-coach .person,.hero.ride-gissha .person,.hero.ride-pod .person{display:none}
-.hero.ride-horse .person{transform:translate(-2px,-12px)}
-.hero.ride-wagon .person{transform:translate(9px,-10px)}
-.hero.ride-elephant .person{transform:translate(-2px,-26px)}
-.hero.ride-camel .person{transform:translate(-3px,-24px)}
+.hero.ride-horse .person{transform:translate(-2px,-18px)}
+.hero.ride-wagon .person{transform:translate(9px,-16px)}
+.hero.ride-elephant .person{transform:translate(-2px,-32px)}
+.hero.ride-camel .person{transform:translate(-3px,-30px)}
 .hero.ride-sail .person,.hero.ride-junk .person{transform:translateY(-4px)}
 .hero.ride-ferry .person{transform:translateY(-2px)}
-.hero.ride-cart .person{transform:translateY(-10px)}
-.hero.ride-aircar .person,.hero.ride-hover .person{transform:translateY(-11px)}
+.hero.ride-cart .person{transform:translateY(-14px)}
+.hero.ride-aircar .person{transform:translateY(-15px)}
+.hero.ride-hover .person{transform:translateY(-11px)}
 .hero.ride-board .person{transform:translateY(-6px)}
 .hl,.wh,.jf{transform-box:fill-box}
 .hl,.jf{transform-origin:50% 0}
@@ -1199,7 +1200,7 @@ const fmt = s => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s / 60)}:
 const fmtLimit = s => s % 60 === 0 ? `${s / 60}分` : s > 60 ? `${Math.floor(s / 60)}分${s % 60}秒` : `${s}秒`;
 const hash = str => { let h = 5381; for (const c of str) h = (h * 33 + c.codePointAt(0)) >>> 0; return h; };
 /* ---------- pixel-art characters: each character's vector art is drawn once into a small canvas (1 dot = PXC_U units), then shown as a crisp sprite ---------- */
-const PXC_U = 2.1, PX_SS = 5, PX_BOX = [-76, -112, 152, 124], PX_LINE = [34, 28, 52];
+const PXC_U = 1.7, PX_SS = 5, PX_BOX = [-76, -112, 152, 124], PX_LINE = [34, 28, 52];
 const PXS = new Map();
 let pxQ = Promise.resolve(), pxCss = null;
 const pxFly = inner => /#pm-(fairy|owl)"/.test(inner);
@@ -2403,6 +2404,15 @@ heroPerson = function(w, av){
   if (av.body === 'big') h = h.replace('<circle cx="0" cy="-44" r="9"', '<circle cx="0" cy="-44" r="9.4"');
   return h;
 };
+/* two heads tall (chibi): the body is squashed, the head is enlarged and set on the shoulders, and it gets a second eye */
+const CHIBI_B = 'matrix(.85 0 0 .62 0 0)', CHIBI_H = 'matrix(1.5 0 0 1.5 0 33.5)';
+function chibify(h, eye2 = '<circle cx="-2.4" cy="-44" r="1.3" fill="#1B2140"/>'){
+  const i = h.indexOf('<circle cx="0" cy="-44" r="9'), o = h.indexOf('>') + 1, j = h.lastIndexOf('</g>');
+  if (i < 0 || j < i) return h;
+  return h.slice(0, o) + `<g transform="${CHIBI_B}">` + h.slice(o, i) + `</g><g transform="${CHIBI_H}">` + h.slice(i, j) + eye2 + '</g>' + h.slice(j);
+}
+const _heroPersonAv = heroPerson;
+heroPerson = (w, av) => chibify(_heroPersonAv(w, av));
 const heroName = () => (S && S.heroName) || '';
 
 function worldCard(w){
@@ -2478,7 +2488,7 @@ const WORLD_DEFS = `<defs>
   <g id="w-spark"><path d="M0 -8 L2 -2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2 -2 Z" fill="var(--sp,#FFD66B)"/></g>
   <g id="w-rock"><path d="M-30 0 Q-34 -22 -12 -30 Q8 -40 24 -24 Q36 -8 28 0 Z" fill="var(--rk,#37304F)"/><path d="M-12 -30 Q0 -34 10 -28" stroke="var(--rk2,#4A4266)" stroke-width="3" fill="none" stroke-linecap="round"/></g>
   <g id="w-crystal"><path d="M0 0 L-6 -10 L-2 -30 L3 -10 Z" fill="var(--cr,#6FE3F0)"/><path d="M4 0 L1 -8 L7 -22 L10 -8 Z" fill="var(--cr,#6FE3F0)" opacity=".8"/><path d="M-6 0 L-10 -6 L-12 -18 L-4 -6 Z" fill="var(--cr,#6FE3F0)" opacity=".7"/><circle cx="-1" cy="-12" r="18" fill="var(--cr,#6FE3F0)" opacity=".12"/></g>
-  <g id="npc"><ellipse cx="0" cy="0" rx="9" ry="3" fill="#000" opacity=".14"/><rect x="-5" y="-15" width="4" height="15" rx="2" fill="#2E3A59"/><rect x="1" y="-15" width="4" height="15" rx="2" fill="#2E3A59"/><rect x="-8" y="-31" width="16" height="18" rx="6" fill="var(--hat,#8C6CF2)"/><circle cx="0" cy="-38" r="7.5" fill="#F6C9A8"/><path d="M-10 -40 Q0 -56 10 -40 Z" fill="var(--hat,#8C6CF2)"/><circle cx="2.5" cy="-38" r="1.2" fill="#1B2140"/></g>
+  <g id="npc"><ellipse cx="0" cy="0" rx="9" ry="3" fill="#000" opacity=".14"/><g transform="matrix(.9 0 0 .62 0 0)"><rect x="-5" y="-15" width="4" height="15" rx="2" fill="#2E3A59"/><rect x="1" y="-15" width="4" height="15" rx="2" fill="#2E3A59"/><rect x="-8" y="-31" width="16" height="18" rx="6" fill="var(--hat,#8C6CF2)"/></g><g transform="matrix(1.5 0 0 1.5 0 28.25)"><circle cx="0" cy="-38" r="7.5" fill="#F6C9A8"/><path d="M-10 -40 Q0 -56 10 -40 Z" fill="var(--hat,#8C6CF2)"/><circle cx="2.5" cy="-38" r="1.2" fill="#1B2140"/><circle cx="-2.5" cy="-38" r="1.2" fill="#1B2140"/></g></g>
   <g id="mon"><ellipse cx="0" cy="0" rx="17" ry="4" fill="#000" opacity=".35"/><path d="M-10 -31 L-14 -42 L-4 -34Z M10 -31 L14 -42 L4 -34Z" fill="var(--mc,#8C6CF2)"/><path d="M-17 0 Q-19 -32 0 -35 Q19 -32 17 0 Q13 -5 8.5 0 Q4 -5 0 0 Q-4 -5 -8.5 0 Q-13 -5 -17 0Z" fill="var(--mc,#8C6CF2)"/><circle cx="-6" cy="-21" r="5" fill="#fff"/><circle cx="6" cy="-21" r="5" fill="#fff"/><circle cx="-5" cy="-20" r="2.3" fill="#1B2140"/><circle cx="7" cy="-20" r="2.3" fill="#1B2140"/><path d="M-7 -10 L-4 -7 L-1 -10 L2 -7 L5 -10" stroke="#fff" stroke-width="1.8" fill="none" stroke-linejoin="round"/></g>
   <g id="crown"><path d="M-11 0 L-11 -11 L-5.5 -5 L0 -13 L5.5 -5 L11 -11 L11 0Z" fill="#FFB547" stroke="#C8362F" stroke-width="1"/></g>
   <g id="torch"><rect x="-2" y="-4" width="4" height="24" rx="1" fill="#6B4630"/><circle cy="-10" r="16" fill="#FFB547" opacity=".22"/><path class="flame" d="M0 -22 Q8 -11 0 -3 Q-8 -11 0 -22Z" fill="#FFB547"/><path class="flame" d="M0 -16 Q4 -10 0 -5 Q-4 -10 0 -16Z" fill="#FFF3C4"/></g>
@@ -2578,7 +2588,7 @@ function heroFrames(){
   new Set(Object.values(VEH_SET[curWorld()] || VEH_SET.euro)).forEach(m => { h += `<g class="pf pf-${m}"><g class="pa">${fr('hero riding ride-' + m, PX_RIDE[0])}</g><g class="pb">${fr('hero riding ride-' + m, PX_RIDE[1])}</g></g>`; });
   return h;
 }
-const heroSVG = () => `<g id="hero" class="lv${heroLevel()}"><g id="heroFlip"><g transform="scale(1.45)"><g id="heroBody" class="hero">${heroFrames()}</g>${partySVG()}</g></g>${heroName() ? `<text class="hero-name" y="-116" text-anchor="middle" font-size="15" font-weight="800" fill="#F2554E" stroke="#fff" stroke-width="4.5" paint-order="stroke" font-family="${FONT}">${esc(heroName())}</text>` : ''}</g>`;
+const heroSVG = () => `<g id="hero" class="lv${heroLevel()}"><g id="heroFlip"><g transform="scale(1.25)"><g id="heroBody" class="hero">${heroFrames()}</g>${partySVG()}</g></g>${heroName() ? `<text class="hero-name" y="-100" text-anchor="middle" font-size="15" font-weight="800" fill="#F2554E" stroke="#fff" stroke-width="4.5" paint-order="stroke" font-family="${FONT}">${esc(heroName())}</text>` : ''}</g>`;
 const SPRITES = `<svg id="sprites" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true"><defs>
   <g id="mon-ghost"><ellipse cx="0" cy="3" rx="17" ry="4.5" fill="#000" opacity=".3"/><path d="M-18 -26 Q-30 -30 -31 -18 Q-26 -22 -22 -16 Z M18 -26 Q30 -30 31 -18 Q26 -22 22 -16 Z" fill="var(--mc,#7C4DDB)"/><path d="M-17 -2 Q-21 -32 -8 -42 Q0 -48 8 -42 Q21 -32 17 -2 L12 -8 L7 0 L2 -8 L-3 0 L-8 -8 L-13 0 Z" fill="var(--mc,#7C4DDB)"/><path d="M-12 -40 Q0 -46 12 -40 Q8 -44 0 -45 Q-8 -44 -12 -40Z" fill="#fff" opacity=".25"/><path d="M-12 -31 L-3 -27 L-4 -22 L-12 -25 Z" fill="#FFE45C"/><path d="M12 -31 L3 -27 L4 -22 L12 -25 Z" fill="#FFE45C"/><circle cx="-6" cy="-25.5" r="1.5" fill="#C8362F"/><circle cx="6" cy="-25.5" r="1.5" fill="#C8362F"/><path d="M-9 -16 Q0 -9 9 -16 Q0 -12 -9 -16Z" fill="#1B0F2E"/><path d="M-6 -15.5 L-4.5 -11.5 L-3 -14.5 Z M3 -14.5 L4.5 -11.5 L6 -15.5 Z" fill="#fff"/></g>
   <g id="mon-imp"><ellipse cx="0" cy="2" rx="15" ry="4" fill="#000" opacity=".3"/><path d="M-7 -24 Q-22 -42 -31 -24 Q-25 -27 -23 -20 Q-19 -26 -15 -18 Z M7 -24 Q22 -42 31 -24 Q25 -27 23 -20 Q19 -26 15 -18 Z" fill="#3A1F4F"/><path d="M8 -6 Q24 -3 21 -18" stroke="var(--mc,#C8362F)" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M18 -18 L24 -24 L23 -16 Z" fill="var(--mc,#C8362F)"/><rect x="-7" y="-8" width="4.5" height="9" rx="2" fill="#2A1530"/><rect x="2.5" y="-8" width="4.5" height="9" rx="2" fill="#2A1530"/><ellipse cx="0" cy="-13" rx="9.5" ry="9" fill="var(--mc,#C8362F)"/><circle cx="0" cy="-29" r="10.5" fill="var(--mc,#C8362F)"/><path d="M-9 -35 L-14 -48 L-3.5 -38 Z M9 -35 L14 -48 L3.5 -38 Z" fill="#FFF3C4"/><path d="M-10 -29 L-16 -33 L-11 -25 Z M10 -29 L16 -33 L11 -25 Z" fill="var(--mc,#C8362F)"/><path d="M-8 -32 L-2 -29 L-3 -26 L-8 -28 Z M8 -32 L2 -29 L3 -26 L8 -28 Z" fill="#FFE45C"/><path d="M-6 -22 Q0 -17 6 -22" stroke="#1B0F2E" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M-4 -21 L-3 -18.5 L-2 -20.5 Z M2 -20.5 L3 -18.5 L4 -21 Z" fill="#fff"/><path d="M-15 0 V-38" stroke="#6B4630" stroke-width="2.2"/><path d="M-20 -44 V-37 H-10 V-44 M-15 -46 V-37" stroke="#C9D1DE" stroke-width="2.2" fill="none"/></g>
@@ -2587,10 +2597,10 @@ const SPRITES = `<svg id="sprites" width="0" height="0" style="position:absolute
   <g id="mon-flame"><ellipse cx="0" cy="3" rx="17" ry="4.5" fill="#000" opacity=".3"/><path d="M-15 -15 Q-25 -17 -27 -27 Q-20 -23 -14 -22 Z M15 -15 Q25 -17 27 -27 Q20 -23 14 -22 Z" fill="var(--mc,#FF6A2A)"/><path d="M-16 0 Q-23 -18 -12 -31 Q-14 -41 -6 -51 Q-4 -43 0 -41 Q2 -53 10 -59 Q8 -47 14 -39 Q23 -28 16 0 Z" fill="var(--mc,#FF6A2A)"/><path d="M-10 0 Q-14 -14 -6 -24 Q-4 -18 0 -20 Q2 -30 8 -34 Q8 -24 12 -16 Q14 -6 10 0 Z" fill="#FFC24A"/><path d="M-4 0 Q-6 -8 0 -14 Q6 -8 4 0Z" fill="#FFF3C4"/><path d="M-10 -31 L-2 -28 L-3 -24 L-10 -26 Z M10 -31 L2 -28 L3 -24 L10 -26 Z" fill="#1B0F2E"/><circle cx="-5.5" cy="-27" r="1.3" fill="#FFE45C"/><circle cx="5.5" cy="-27" r="1.3" fill="#FFE45C"/><path d="M-6 -19 Q0 -13.5 6 -19 Q0 -16.5 -6 -19Z" fill="#1B0F2E"/></g>
   <g id="pm-cat"><ellipse cx="0" cy="0" rx="9" ry="2.5" fill="#000" opacity=".15"/><path d="M-8 -6 Q-17 -9 -15 -19" stroke="#F0A04B" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="-1" cy="-6" rx="8" ry="5.5" fill="#F0A04B"/><rect x="-6" y="-3" width="2.6" height="3" rx="1" fill="#F0A04B"/><rect x="2" y="-3" width="2.6" height="3" rx="1" fill="#F0A04B"/><circle cx="6" cy="-12" r="6" fill="#F0A04B"/><path d="M1.5 -15 L2 -21.5 L6 -17 Z M10.5 -15 L10 -21.5 L6 -17 Z" fill="#F0A04B"/><path d="M-4 -9 Q-1 -11 2 -9" stroke="#fff" stroke-width="1.6" fill="none"/><circle cx="4.5" cy="-12.5" r="1" fill="#1B2140"/><circle cx="8.5" cy="-12.5" r="1" fill="#1B2140"/><path d="M6.5 -10 l-1 1 h2 Z" fill="#E0529B"/></g>
   <g id="pm-beast"><ellipse cx="0" cy="0" rx="14" ry="3" fill="#000" opacity=".15"/><path d="M-12 -12 Q-24 -16 -22 -4 Q-19 -10 -13 -8 Z" fill="#8A8FA3"/><rect x="-10" y="-8" width="3.4" height="8" rx="1.5" fill="#6E7388"/><rect x="-3" y="-8" width="3.4" height="8" rx="1.5" fill="#6E7388"/><rect x="4" y="-8" width="3.4" height="8" rx="1.5" fill="#6E7388"/><ellipse cx="-2" cy="-12" rx="12" ry="7" fill="#8A8FA3"/><ellipse cx="-2" cy="-9" rx="8" ry="3.5" fill="#D8DBE5"/><circle cx="10" cy="-19" r="7" fill="#8A8FA3"/><path d="M14 -18 L21 -16 L15 -13 Z" fill="#8A8FA3"/><circle cx="20.5" cy="-16" r="1.4" fill="#1B2140"/><path d="M5 -24 L6 -32 L10 -25 Z M10 -25 L13 -32 L14 -23 Z" fill="#6E7388"/><circle cx="11.5" cy="-20" r="1.2" fill="#FFD66B"/><path d="M15 -13.5 L16 -11.5 L17 -13.5" stroke="#fff" stroke-width="1" fill="none"/></g>
-  <g id="pm-wizard"><ellipse cx="0" cy="0" rx="9" ry="3" fill="#000" opacity=".15"/><path d="M11 0 L13 -40" stroke="#8B5E3C" stroke-width="2.2" stroke-linecap="round"/><path d="M13 -46 L14.6 -42.4 L18.5 -42 L15.5 -39.6 L16.4 -35.8 L13 -37.8 L9.6 -35.8 L10.5 -39.6 L7.5 -42 L11.4 -42.4 Z" fill="#FFD66B"/><circle cx="13" cy="-41" r="7" fill="#FFD66B" opacity=".25"/><path d="M-9 0 L-6 -26 L6 -26 L9 0 Z" fill="#6B46C9"/><path d="M-6 -12 H6" stroke="#FFD66B" stroke-width="1.4"/><rect x="5" y="-24" width="4" height="10" rx="2" fill="#F6C9A8" transform="rotate(-25 7 -24)"/><circle cx="0" cy="-32" r="7" fill="#F6C9A8"/><path d="M-7 -33 Q-8 -26 -5 -22 M7 -33 Q8 -26 5 -22" stroke="#F2C77A" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M-11 -35 H11 L7 -37 L2 -54 L-5 -37 Z" fill="#8C6CF2"/><circle cx="1" cy="-45" r="1.6" fill="#FFD66B"/><circle cx="2.8" cy="-32" r="1.1" fill="#1B2140"/></g>
+  <g id="pm-wizard"><ellipse cx="0" cy="0" rx="9" ry="3" fill="#000" opacity=".15"/><path d="M11 0 L13 -40" stroke="#8B5E3C" stroke-width="2.2" stroke-linecap="round"/><path d="M13 -46 L14.6 -42.4 L18.5 -42 L15.5 -39.6 L16.4 -35.8 L13 -37.8 L9.6 -35.8 L10.5 -39.6 L7.5 -42 L11.4 -42.4 Z" fill="#FFD66B"/><circle cx="13" cy="-41" r="7" fill="#FFD66B" opacity=".25"/><g transform="matrix(.9 0 0 .62 0 0)"><path d="M-9 0 L-6 -26 L6 -26 L9 0 Z" fill="#6B46C9"/><path d="M-6 -12 H6" stroke="#FFD66B" stroke-width="1.4"/><rect x="5" y="-24" width="4" height="10" rx="2" fill="#F6C9A8" transform="rotate(-25 7 -24)"/></g><g transform="matrix(1.5 0 0 1.5 0 22.5)"><circle cx="0" cy="-32" r="7" fill="#F6C9A8"/><path d="M-7 -33 Q-8 -26 -5 -22 M7 -33 Q8 -26 5 -22" stroke="#F2C77A" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M-11 -35 H11 L7 -37 L2 -54 L-5 -37 Z" fill="#8C6CF2"/><circle cx="1" cy="-45" r="1.6" fill="#FFD66B"/><circle cx="2.8" cy="-32" r="1.1" fill="#1B2140"/><circle cx="-2.2" cy="-32" r="1.1" fill="#1B2140"/></g></g>
   <g id="pm-fairy"><g class="flit"><path d="M-2 -6 Q-14 -18 -12 -4 Q-10 0 -2 -3 Z M2 -6 Q14 -18 12 -4 Q10 0 2 -3 Z" fill="#BFE9FF" opacity=".9" stroke="#7CC7F0" stroke-width=".8"/><path d="M-3 4 L0 -6 L3 4 Z" fill="#FF8CC6"/><circle cx="0" cy="-9" r="3.6" fill="#F6C9A8"/><path d="M-3.6 -10 Q0 -15 3.6 -10" fill="#FFD66B"/><circle cx="1.5" cy="-9" r=".8" fill="#1B2140"/><path d="M4 2 l2 2 M-5 3 l-2 2" stroke="#FFD66B" stroke-width="1.2"/><use href="#w-spark" transform="translate(8 -14) scale(.5)" style="--sp:#FFD66B"/></g></g>
   <g id="pm-owl"><g class="flit"><path d="M-7 -8 Q-17 -14 -16 -4 Q-12 -7 -7 -3 Z M7 -8 Q17 -14 16 -4 Q12 -7 7 -3 Z" fill="#8B5E3C"/><ellipse cx="0" cy="-7" rx="8" ry="9" fill="#A9784F"/><ellipse cx="0" cy="-4" rx="5" ry="5" fill="#E9D3B0"/><path d="M-7 -14 L-5 -19 L-2 -15 Z M7 -14 L5 -19 L2 -15 Z" fill="#8B5E3C"/><circle cx="-3" cy="-11" r="3" fill="#fff"/><circle cx="3" cy="-11" r="3" fill="#fff"/><circle cx="-3" cy="-11" r="1.4" fill="#1B2140"/><circle cx="3" cy="-11" r="1.4" fill="#1B2140"/><path d="M-1 -8 L0 -6 L1 -8 Z" fill="#FFB547"/></g></g>
-  <g id="pm-princess"><ellipse cx="0" cy="0" rx="10" ry="3" fill="#000" opacity=".15"/><path d="M-11 0 Q-9 -14 -5 -22 H5 Q9 -14 11 0 Z" fill="#FF8CC6"/><path d="M-11 0 Q0 -4 11 0" stroke="#fff" stroke-width="1.6" fill="none"/><rect x="-5.5" y="-30" width="11" height="10" rx="4" fill="#FF8CC6"/><path d="M-3 -26 Q0 -23 3 -26" stroke="#fff" stroke-width="1.2" fill="none"/><circle cx="0" cy="-36" r="7" fill="#F6C9A8"/><path d="M-7.5 -36 Q-9 -24 -5 -20 L-4 -34 Z M7.5 -36 Q9 -24 5 -20 L4 -34 Z" fill="#FFD27A"/><path d="M-7.5 -37 Q-7 -44.5 0 -44.5 Q7 -44.5 7.5 -37 Q3 -41 0 -41 Q-3 -41 -7.5 -37Z" fill="#FFD27A"/><path d="M-5 -43 L-5 -49 L-2.5 -46 L0 -50.5 L2.5 -46 L5 -49 L5 -43 Z" fill="#FFB547" stroke="#D98A0B" stroke-width=".7"/><circle cx="2.6" cy="-36" r="1.1" fill="#1B2140"/><circle cx="4.5" cy="-33.5" r="1.3" fill="#FF8CC6" opacity=".6"/></g>
+  <g id="pm-princess"><ellipse cx="0" cy="0" rx="10" ry="3" fill="#000" opacity=".15"/><g transform="matrix(.9 0 0 .62 0 0)"><path d="M-11 0 Q-9 -14 -5 -22 H5 Q9 -14 11 0 Z" fill="#FF8CC6"/><path d="M-11 0 Q0 -4 11 0" stroke="#fff" stroke-width="1.6" fill="none"/><rect x="-5.5" y="-30" width="11" height="10" rx="4" fill="#FF8CC6"/><path d="M-3 -26 Q0 -23 3 -26" stroke="#fff" stroke-width="1.2" fill="none"/></g><g transform="matrix(1.5 0 0 1.5 0 26.5)"><circle cx="0" cy="-36" r="7" fill="#F6C9A8"/><path d="M-7.5 -36 Q-9 -24 -5 -20 L-4 -34 Z M7.5 -36 Q9 -24 5 -20 L4 -34 Z" fill="#FFD27A"/><path d="M-7.5 -37 Q-7 -44.5 0 -44.5 Q7 -44.5 7.5 -37 Q3 -41 0 -41 Q-3 -41 -7.5 -37Z" fill="#FFD27A"/><path d="M-5 -43 L-5 -49 L-2.5 -46 L0 -50.5 L2.5 -46 L5 -49 L5 -43 Z" fill="#FFB547" stroke="#D98A0B" stroke-width=".7"/><circle cx="2.6" cy="-36" r="1.1" fill="#1B2140"/><circle cx="-2.2" cy="-36" r="1.1" fill="#1B2140"/><circle cx="4.5" cy="-33.5" r="1.3" fill="#FF8CC6" opacity=".6"/></g></g>
   <g id="cage"><rect x="-17" y="-52" width="34" height="54" rx="3" fill="none" stroke="#3A3350" stroke-width="2.6"/><path d="M-17 -52 Q0 -66 17 -52" fill="none" stroke="#3A3350" stroke-width="2.6"/><path d="M-9 -58 V2 M0 -60 V2 M9 -58 V2" stroke="#3A3350" stroke-width="2"/><rect x="-19" y="0" width="38" height="4" rx="2" fill="#3A3350"/></g>
 </defs></svg>`;
 document.body.insertAdjacentHTML('beforeend', SPRITES);
@@ -2631,7 +2641,7 @@ function titleSVG(){
   <g>${star(0, 0, 7, '#B99CFF', .3).replace('<g transform="translate(0 0)">', '<g>')}<animateMotion dur="1.6s" begin=".5s" repeatCount="indefinite" path="M232 262 Q330 120 470 232"/></g>
   <g transform="translate(268 360) scale(1.55)">${pxSprite(`<use href="#pm-beast"/>`)}</g>
   <g transform="translate(118 364) scale(1.7)">${pxSprite(`<use href="#pm-cat"/>`)}</g>
-  <g transform="translate(372 352) scale(2.3)"><g class="t-hero">${pxSprite(`<g class="lv5">${HERO_PERSON}</g>`)}</g></g>
+  <g transform="translate(372 352) scale(2.3)"><g class="t-hero">${pxSprite(`<g class="lv5">${chibify(HERO_PERSON)}</g>`)}</g></g>
   <path class="t-slash" d="M404 168 Q470 176 486 262" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round"/>
   <g transform="translate(470 222)"><g class="t-burst"><path d="M0 -40 L10 -16 L36 -26 L20 -4 L42 10 L14 12 L18 38 L0 18 L-18 38 L-14 12 L-42 10 L-20 -4 L-36 -26 L-10 -16 Z" fill="#FFD84D" stroke="#FF7E4D" stroke-width="4" stroke-linejoin="round"/><text y="7" text-anchor="middle" font-size="17" font-weight="800" fill="#C8362F">えいっ!</text></g></g>
   ${star(60, 150, 9, '#fff', 0)}${star(300, 40, 7, '#FFF3C4', .6)}${star(420, 150, 8, '#fff', 1.1)}${star(780, 300, 8, '#FFF3C4', .4)}${star(575, 105, 6, '#fff', .9)}${star(30, 300, 7, '#FFD84D', 1.4)}
@@ -2717,202 +2727,542 @@ function sceneryCave(){
   return SCN[key] = {back: back.map(v => v[1]).join(''), front: front.map(v => v[1]).join(''), stal, torches, lava};
 }
 /* =========================================================
-   PIXEL MAP: the ground of the adventure board is pixel art. It is drawn dot by dot on a small canvas
-   (1 dot = 4 map units) and shown enlarged with sharp edges behind the squares and the characters.
+   PIXEL MAP: the ground of the adventure board is pixel art in the style of a top-down RPG. It is drawn dot by dot
+   (1 dot = 2 map units) on a canvas and shown enlarged with sharp edges behind the squares and the characters.
+   Raised terraces end in cliffs that the road climbs by stone stairs; the road is a sunken dirt path with no outline.
+   Trees, houses and the castle are small shaded sprites, placed from the back (top) to the front (bottom).
    ========================================================= */
-const PXU = 4, PXF = "'DotGothic16','M PLUS 1',sans-serif";
-const PX_BASE = {g: ['#5DB94A', '#4CA23C', '#7CCD66'], road: ['#E3C58B', '#C9A66C', '#8E6E3E'], tree: 'round', leaf: ['#2F8A3B', '#4FB35A', '#1D5F2B'], trunk: '#7A5236', pine: ['#2A7A48', '#3F9A5E', '#1C5534'],
-  rock: ['#A3A1AF', '#7A788C', '#CFCDD9', '#55536A'], hill: ['#C98F4A', '#A8733A', '#E2B06C'], water: ['#3A86E0', '#6FB1F2', '#EAF6FF'], flower: ['#F2554E', '#FFD84D', '#FFFFFF'],
-  wall: '#FFF4E0', roof: ['#E0413A', '#2E8FE0', '#8C6CF2', '#D98A0B'], door: '#8A5A3C', win: '#7EC8F2', wood: ['#C2925C', '#9C6E3E', '#6B4A2A'], stone: ['#A39C8E', '#7E776A'],
-  house: 'euro', castle: 'euro', cw: ['#E8E4DA', '#B9B2A2', '#3A3350'], cr: '#E0413A', flag: '#FFD84D'};
+const PXU = 2, PXF = "'DotGothic16','M PLUS 1',sans-serif";
+const PX_BASE = {g: ['#6BBE4E', '#5AA844', '#86D067', '#3F8A36'], road: ['#DCC08A', '#B89A62', '#EBD6A6', '#9A7C4C'], cliff: ['#A88D57', '#7B6437', '#C8AE72', '#54452A'],
+  step: ['#CFC8B8', '#8F8878', '#E8E3D6'], water: ['#3F89DA', '#74B6F0', '#E8F6FF', '#2D6BB4'], leaf: ['#2F7A34', '#44A04A', '#6BC266', '#B2E69A'], trunk: ['#7A5236', '#4E3320'],
+  pine: ['#1F5E36', '#2E7C47', '#4E9F62'], rock: ['#A9A6B2', '#7D7A8A', '#D4D2DC', '#56536A'], flower: ['#F2554E', '#FFD84D', '#FFFFFF', '#8C6CF2'],
+  wall: '#F1E4C8', beam: '#7A5236', roof: ['#B4532E', '#8B5A36', '#4E6EA6', '#8C3A3A'], door: '#6B4630', win: '#8FD0F2', wood: ['#BA8B56', '#8D6337', '#5F4023'],
+  stone: ['#B5AFA3', '#8D8679', '#DDD8CE'], field: ['#8E6B3E', '#6FAE3C', '#A8D65A'], tree: 'round', hl: 'pine', house: 'euro', castle: 'euro',
+  cw: ['#CFCBC3', '#A29D93', '#6E6A62', '#E8E5DF'], cr: '#C8412F', flag: '#FFD84D'};
 const PX_WORLD = {
   euro: {},
-  wa: {g: ['#66B455', '#509C44', '#88CA6E'], road: ['#D9CBAA', '#BCAA86', '#7E6E52'], tree: 'sakura', leaf: ['#F5A3C7', '#FFD6E6', '#D66F9C'], trunk: '#5B3A2A', hill: ['#8FB36A', '#76984F', '#A9C985'], flower: ['#F5A3C7', '#FFFFFF', '#FFD84D'],
-    wall: '#F7F1E3', roof: ['#3A4150', '#4B5363'], door: '#5B4636', win: '#E8DCC0', house: 'wa', castle: 'wa', cw: ['#F7F4EC', '#C9C2B2', '#3A3350'], cr: '#3A4150', flag: '#FFB547'},
-  china: {g: ['#76B950', '#60A244', '#94CE70'], road: ['#D4B086', '#B99468', '#7C5A3A'], tree: 'bamboo', leaf: ['#3F9E4E', '#76CC78', '#2A6E37'], wall: '#C8362F', roof: ['#2F8A5B', '#E0A84A'], door: '#6B2A1E', win: '#FFD27A',
-    house: 'china', castle: 'china', cw: ['#C8362F', '#8A231F', '#4A1510'], cr: '#E0A84A', flag: '#FFD84D'},
-  india: {g: ['#A4BF59', '#8BA64A', '#BED476'], road: ['#E0B587', '#C4966A', '#8A6242'], tree: 'palm', leaf: ['#3C9A4A', '#66C266', '#27703A'], trunk: '#8B5E3C', flower: ['#FF8C3A', '#FFD84D', '#E0529B'],
-    wall: '#FBF7EF', roof: ['#E0A84A', '#2E8FE0'], house: 'india', castle: 'india', cw: ['#FBF7EF', '#D8CBB5', '#3A3350'], cr: '#FBF7EF', flag: '#E0A84A'},
-  usa: {g: ['#E2C38C', '#CFAC74', '#EFD6A4'], road: ['#A07C54', '#88693F', '#5E4526'], tree: 'cactus', leaf: ['#4FA35E', '#77C882', '#2F7A3E'], pine: ['#4FA35E', '#77C882', '#2F7A3E'], rock: ['#D17A42', '#A8582C', '#EAA06A', '#7A3C1E'],
-    hill: ['#D9A56A', '#B9854A', '#EDC08A'], wall: '#C8362F', roof: ['#6B4630', '#8A5A3C'], door: '#F4EEDC', house: 'usa', castle: 'usa', cw: ['#9FC3E8', '#5B7FA8', '#DDEBF7'], cr: '#5B7FA8', flag: '#FFD84D', mesa: true},
-  future: {g: ['#C3CFEE', '#AEBCE3', '#DCE4F8'], road: ['#6B7FD8', '#8FA0E8', '#39E1F0'], tree: 'crystal', leaf: ['#7FE7F2', '#D2FAFF', '#39B7D0'], pine: ['#B9A6FF', '#E2D8FF', '#8C6CF2'], rock: ['#9AA8D6', '#7484BE', '#C7D0F0', '#56609A'],
-    hill: ['#B9A6FF', '#9A86E8', '#D6CAFF'], water: ['#2C6FE0', '#39E1F0', '#E4FBFF'], flower: ['#FF5FD2', '#39E1F0', '#FFFFFF'], wall: '#F4F7FF', roof: ['#FF5FD2', '#39E1F0', '#B9A6FF'], door: '#39E1F0', win: '#39E1F0',
-    house: 'future', castle: 'future', cw: ['#F4F7FF', '#8FA3D8', '#39E1F0'], cr: '#B9A6FF', flag: '#FF5FD2', grid: true}
+  wa: {g: ['#72B85A', '#5FA34B', '#8CCB72', '#468A3A'], road: ['#D6C8A6', '#B8A882', '#E6DCC2', '#8F8064'], cliff: ['#9A948A', '#6E685E', '#BDB7AB', '#4A453E'], tree: 'sakura',
+    leaf: ['#C25C84', '#E07FA6', '#F5A8C8', '#FFE0EC'], trunk: ['#5B3A2A', '#3A241A'], flower: ['#F5A3C7', '#FFFFFF', '#FFD84D', '#E0413A'], wall: '#F7F2E6', beam: '#4A3426',
+    roof: ['#4B5262', '#5B6272', '#3E4452'], door: '#8A6A4A', win: '#EFE6CC', stone: ['#A8A294', '#7E786C', '#CCC6B8'], house: 'wa', castle: 'wa', cw: ['#F7F4EC', '#CFC8B8', '#3A3A44', '#FFFFFF'], cr: '#3E4452', flag: '#FFB547'},
+  china: {g: ['#7CBB54', '#66A545', '#98D173', '#4C8C38'], road: ['#D6AE82', '#B88E62', '#E8C9A2', '#8E6440'], cliff: ['#B58A5A', '#86623A', '#D2A874', '#5C4228'], tree: 'bamboo',
+    leaf: ['#2F7F3F', '#45A052', '#72C878', '#B5EBA8'], wall: '#C8362F', beam: '#7A1E18', roof: ['#2F8A5B', '#D9A441'], door: '#6B2A1E', win: '#FFD27A', house: 'china', castle: 'china',
+    cw: ['#C8362F', '#9A2A24', '#5A1712', '#E0574C'], cr: '#2F8A5B', flag: '#FFD84D'},
+  india: {g: ['#A9C25C', '#90AA4A', '#C2D67A', '#728A36'], road: ['#E2B88A', '#C4966A', '#F0D0AC', '#94684A'], cliff: ['#C99A62', '#9A7040', '#E4BC86', '#6A4A2A'], tree: 'palm', hl: 'round',
+    leaf: ['#2C7A3C', '#3F9A4E', '#66C266', '#A8E08E'], trunk: ['#8B5E3C', '#5E3E26'], flower: ['#FF8C3A', '#FFD84D', '#E0529B', '#FFFFFF'], wall: '#FBF6EC', beam: '#C9A27A',
+    roof: ['#E0A84A', '#2E8FE0', '#E0529B'], door: '#8A5A3C', win: '#5BB0E0', house: 'india', castle: 'india', cw: ['#FBF7F0', '#DCD0BC', '#A89A84', '#FFFFFF'], cr: '#FBF7F0', flag: '#E0A84A'},
+  usa: {g: ['#E3C58E', '#D2B076', '#F0D8A8', '#B8925A'], sand: true, road: ['#A57F55', '#86653F', '#BE9A6E', '#5E4526'], cliff: ['#C8663A', '#9A4724', '#E08A58', '#6A2E18'], mesa: true,
+    tree: 'cactus', hl: 'cactus', leaf: ['#2F7A3E', '#4FA35E', '#77C882', '#B0E6A6'], rock: ['#D17A42', '#A8582C', '#EAA06A', '#7A3C1E'], wall: '#B98A5A', beam: '#6B4630',
+    roof: ['#6B4630', '#8A5A3C', '#A33A2E'], door: '#4A3020', win: '#E8D8A8', house: 'usa', castle: 'usa', cw: ['#9FC3E8', '#6F93BC', '#44628A', '#DDEBF7'], cr: '#5B7FA8', flag: '#FFD84D'},
+  future: {g: ['#C6D0EE', '#B0BCE2', '#DEE5F8', '#8E9AC8'], grid: true, road: ['#5F74D6', '#4A5EC0', '#39E1F0', '#2E3E96'], cliff: ['#7F8DC0', '#5A6699', '#B8C4EC', '#3C4674'], metal: true,
+    tree: 'crystal', hl: 'crystal', leaf: ['#2FA8C8', '#58D4EC', '#A6F2FF', '#FFFFFF'], rock: ['#9AA8D6', '#7484BE', '#C7D0F0', '#56609A'], water: ['#2C6FE0', '#39E1F0', '#E4FBFF', '#1D4BA8'],
+    flower: ['#FF5FD2', '#39E1F0', '#FFFFFF', '#B9A6FF'], wall: '#F4F7FF', beam: '#8FA3D8', roof: ['#FF5FD2', '#39E1F0', '#B9A6FF'], door: '#39E1F0', win: '#39E1F0',
+    step: ['#B8C4EC', '#6F7DB8', '#E4EAFF'], house: 'future', castle: 'future', cw: ['#F4F7FF', '#B8C4EC', '#6F7DB8', '#FFFFFF'], cr: '#39E1F0', flag: '#FF5FD2'}
 };
 /* the palette for the current world and chapter: snow in chapter 2, night in chapter 3 */
 function pxPal(){
   const P = {...PX_BASE, ...(PX_WORLD[curWorld()] || {})}, B = biome();
   if (!B) return P;
-  if (B.id === 'snow') return {...P, snow: true, mesa: false, g: ['#EDF3F9', '#D5E2EE', '#FFFFFF'], road: ['#CAD6E1', '#B0BFCD', '#7F92A4'], hill: ['#FFFFFF', '#D5E2EE', '#FFFFFF'], water: ['#BCE1F4', '#DDF2FB', '#FFFFFF'], flower: ['#9FD8F2', '#FFFFFF', '#C9B8FF']};
+  if (B.id === 'snow') return {...P, snow: true, mesa: false, sand: false, g: ['#EEF4FA', '#D9E5F0', '#FFFFFF', '#B5C6D8'], road: ['#CDD8E3', '#AFBDCB', '#E4ECF3', '#8FA0B2'],
+    cliff: ['#8F9DAE', '#687688', '#B7C4D2', '#4B5768'], water: ['#BFE3F5', '#E0F3FB', '#FFFFFF', '#9CC8E0'], flower: ['#9FD8F2', '#FFFFFF', '#C9B8FF', '#FFFFFF'], field: ['#C8D4E0', '#FFFFFF', '#E4ECF3']};
   const dk = v => Array.isArray(v) ? v.map(dk) : typeof v === 'string' && v[0] === '#' ? hexMix(v, '#10163F', .55) : v;
-  return {...Object.fromEntries(Object.entries(P).map(([k, v]) => [k, dk(v)])), night: true, win: '#FFD66B', water: ['#1C2266', '#3B40A4', '#FFE27A']};
+  return {...Object.fromEntries(Object.entries(P).map(([k, v]) => [k, dk(v)])), night: true, win: '#FFD66B', water: ['#1C2266', '#3B40A4', '#FFE27A', '#12174A']};
 }
-const pxR = (g, x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), w, h); };
-function pxEll(g, cx, cy, rx, ry, col){ g.fillStyle = col; cx = Math.round(cx); cy = Math.round(cy); for (let dy = -ry; dy <= ry; dy++){ const dx = Math.round(rx * Math.sqrt(Math.max(0, 1 - (dy / (ry + .5)) ** 2))); g.fillRect(cx - dx, cy + dy, dx * 2 + 1, 1); } }
-/* a dome standing on y: rows of cols[0] with an outline (and stripes when cols[2]) */
-function pxDome(g, cx, by, rx, h, cols){
-  cx = Math.round(cx); by = Math.round(by);
-  for (let i = 0; i < h; i++){ const t = (h - i) / (h + .3), dx = Math.round(rx * Math.sqrt(Math.max(0, 1 - t * t))), y = by - h + i; pxR(g, cx - dx, y, dx * 2 + 1, 1, cols[2] && i % 3 === 2 ? cols[1] : cols[0]); pxR(g, cx - dx, y, 1, 1, cols[1]); pxR(g, cx + dx, y, 1, 1, cols[1]); }
+const pxU32 = hex => { const n = parseInt(hex.slice(1, 7), 16); return (0xFF000000 | ((n & 255) << 16) | (n & 0xFF00) | (n >>> 16)) >>> 0; };
+const pxDk = (c, k) => hexMix(c, '#000000', k), pxLt = (c, k) => hexMix(c, '#FFFFFF', k);
+/* a drawing surface: dots go into a buffer, put() copies it onto the canvas */
+function pxSurf(w, h){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'), img = g.createImageData(w, h), d = new Uint32Array(img.data.buffer), cc = {};
+  const V = {c, g, w, h, d, u: hex => cc[hex] || (cc[hex] = pxU32(hex)),
+    set(x, y, hex){ x = Math.round(x); y = Math.round(y); if (x >= 0 && y >= 0 && x < w && y < h) d[y * w + x] = V.u(hex); },
+    rect(x, y, rw, rh, hex){ const v = V.u(hex); x = Math.round(x); y = Math.round(y); for (let j = Math.max(0, y); j < Math.min(h, y + rh); j++) for (let i = Math.max(0, x); i < Math.min(w, x + rw); i++) d[j * w + i] = v; },
+    put(){ g.putImageData(img, 0, 0); return c; }};
+  return V;
 }
-const pxTri = (g, cx, top, h, col, k = 1) => { for (let i = 0; i < h; i++){ const w = Math.round(i * k); pxR(g, cx - w, top + i, w * 2 + 1, 1, col); } };
-const pxRows = (g, cx, y, rows, col) => rows.forEach((w, i) => pxR(g, cx - Math.floor(w / 2), y + i, w, 1, col));
-const pxFlower = (g, x, y, col) => { pxR(g, x - 1, y, 3, 1, col); pxR(g, x, y - 1, 1, 3, col); pxR(g, x, y, 1, 1, '#FFE27A'); };
-const PX_TREE = {
-  round(g, x, y, P){ pxR(g, x - 1, y - 3, 2, 3, P.trunk); pxEll(g, x, y - 7, 4, 4, P.leaf[0]); pxR(g, x - 2, y - 10, 2, 1, P.leaf[1]); pxR(g, x - 3, y - 9, 1, 2, P.leaf[1]); pxR(g, x + 2, y - 5, 2, 1, P.leaf[2]); pxR(g, x + 3, y - 7, 1, 2, P.leaf[2]); if (P.snow){ pxR(g, x - 2, y - 11, 5, 1, '#FFFFFF'); pxR(g, x - 3, y - 10, 2, 1, '#FFFFFF'); } },
-  sakura(g, x, y, P){ PX_TREE.round(g, x, y, P); pxR(g, x, y - 8, 1, 1, '#FFFFFF'); pxR(g, x + 2, y - 9, 1, 1, '#FFFFFF'); pxR(g, x - 2, y - 6, 1, 1, P.leaf[2]); },
-  bamboo(g, x, y, P){ [-3, 0, 3].forEach((o, i) => { const h = 12 + (i === 1 ? 3 : 0); pxR(g, x + o, y - h, 1, h, P.leaf[0]); for (let k = 3; k < h; k += 4) pxR(g, x + o, y - k, 1, 1, P.leaf[2]); pxR(g, x + o - 1, y - h, 1, 2, P.leaf[1]); pxR(g, x + o + 1, y - h + 1, 2, 1, P.leaf[1]); if (P.snow) pxR(g, x + o, y - h - 1, 1, 1, '#FFFFFF'); }); },
-  palm(g, x, y, P){ for (let k = 0; k < 11; k++) pxR(g, x + Math.round(k / 5), y - k - 1, 1, 1, P.trunk); const tx = x + 2, ty = y - 12; [[-5, 1], [-4, -1], [4, -1], [5, 1], [-2, -3], [2, -3]].forEach(([dx, dy]) => { const n = Math.max(Math.abs(dx), Math.abs(dy)); for (let t = 1; t <= n; t++) pxR(g, tx + Math.round(dx * t / n), ty + Math.round(dy * t / n) + (t > n / 2 && dy >= 0 ? 1 : 0), 1, 1, t === n ? P.leaf[2] : P.leaf[0]); }); pxR(g, tx - 1, ty - 1, 3, 2, P.leaf[1]); },
-  cactus(g, x, y, P){ pxR(g, x - 1, y - 11, 3, 11, P.leaf[0]); pxR(g, x, y - 10, 1, 9, P.leaf[1]); pxR(g, x - 4, y - 7, 3, 2, P.leaf[0]); pxR(g, x - 4, y - 10, 2, 3, P.leaf[0]); pxR(g, x + 2, y - 8, 3, 2, P.leaf[0]); pxR(g, x + 3, y - 11, 2, 3, P.leaf[0]); pxR(g, x - 1, y - 1, 3, 1, P.leaf[2]); if (P.snow) pxR(g, x - 1, y - 12, 3, 1, '#FFFFFF'); },
-  crystal(g, x, y, P){ [1, 3, 3, 5, 5, 5, 3, 3, 1].forEach((w, i) => { pxR(g, x - (w - 1) / 2, y - 11 + i, w, 1, P.leaf[0]); pxR(g, x - (w - 1) / 2, y - 11 + i, 1, 1, P.leaf[1]); pxR(g, x + (w - 1) / 2, y - 11 + i, 1, 1, P.leaf[2]); }); pxR(g, x - 1, y - 2, 3, 2, P.trunk); }
-};
-function pxPine(g, x, y, P){
-  pxR(g, x, y - 2, 1, 2, P.trunk);
-  [[14, 0], [13, 1], [12, 1], [11, 2], [10, 1], [9, 2], [8, 3], [7, 2], [6, 3], [5, 4], [4, 3], [3, 4]].forEach(([h, w]) => { pxR(g, x - w, y - h, w * 2 + 1, 1, P.pine[0]); pxR(g, x - w, y - h, 1, 1, P.pine[1]); pxR(g, x + w, y - h, 1, 1, P.pine[2]); });
-  if (P.snow){ pxR(g, x, y - 14, 1, 1, '#FFFFFF'); pxR(g, x - 1, y - 10, 3, 1, '#FFFFFF'); pxR(g, x - 2, y - 7, 5, 1, '#FFFFFF'); pxR(g, x - 3, y - 4, 7, 1, '#FFFFFF'); }
+function pxNoise(R, w, h, cell){
+  const gw = Math.ceil(w / cell) + 2, gh = Math.ceil(h / cell) + 2, gr = new Float32Array(gw * gh); for (let i = 0; i < gr.length; i++) gr[i] = R();
+  return (x, y) => { const fx = x / cell, fy = y / cell, ix = fx | 0, iy = fy | 0, tx = fx - ix, ty = fy - iy, sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty), i = iy * gw + ix, a = gr[i], b = gr[i + 1], c = gr[i + gw], e = gr[i + gw + 1]; return a + (b - a) * sx + (c - a) * sy + (a - b - c + e) * sx * sy; };
 }
-function pxRock(g, x, y, s, P){
-  if (P.mesa){ const w = s * 2 - 2, l = x - Math.round(w / 2); pxR(g, l, y - s, w, s, P.rock[0]); pxR(g, l, y - s, w, 2, P.rock[2]); for (let k = y - s + 5; k < y - 1; k += 3) pxR(g, l, k, w, 1, P.rock[1]); pxR(g, l + w - 3, y - s + 2, 3, s - 2, P.rock[1]); pxR(g, l, y - 1, w, 1, P.rock[3]); return; }
-  for (let i = 0; i <= s; i++){ const half = Math.round(i * .9), yy = y - s + i; pxR(g, x - half, yy, half + 1, 1, P.rock[2]); pxR(g, x + 1, yy, half, 1, P.rock[1]); pxR(g, x - half, yy, 1, 1, P.rock[3]); pxR(g, x + half, yy, 1, 1, P.rock[3]); }
-  for (let k = 3; k < s; k += 3) pxR(g, x - Math.round(k * .45), y - s + k, 2, 1, P.rock[0]);
-  pxR(g, x - Math.round(s * .9), y, Math.round(s * .9) * 2 + 1, 1, P.rock[3]);
-  if (P.snow || s > 14){ const cap = P.snow ? 4 : 2; for (let i = 0; i < cap; i++){ const half = Math.round(i * .9); pxR(g, x - half, y - s + i, half * 2 + 1, 1, '#FFFFFF'); } }
+/* grass (or sand, or floor panels) with soft clumps and little tufts */
+function pxGrass(V, P, R){
+  const {w, h, d} = V, [c0, c1, c2, c3] = P.g.map(V.u), n1 = pxNoise(R, w, h, 16), n2 = pxNoise(R, w, h, 5);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){ const v = n1(x, y) * .65 + n2(x, y) * .35, r = R(); d[y * w + x] = v > .64 ? (r < .5 ? c1 : c0) : v < .32 ? (r < .3 ? c2 : c0) : r < .035 ? c1 : r > .988 ? c2 : c0; }
+  if (P.grid){ for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){ const gx = x % 16, gy = y % 16; if (gx === 15 || gy === 15) d[y * w + x] = c3; else if (gx === 0 || gy === 0) d[y * w + x] = c2; } return; }
+  const n = w * h / (P.sand ? 80 : 45) | 0;
+  for (let k = 0; k < n; k++){
+    const x = 1 + R() * (w - 3) | 0, y = 1 + R() * (h - 3) | 0, i = y * w + x;
+    if (P.sand){ d[i] = c1; d[i + 1] = c2; continue; }
+    const col = R() < .65 ? c1 : c3; d[i] = col; d[i + 2] = col; d[i + w + 1] = col; if (R() < .35) d[i - w + 1] = c2;
+  }
 }
-const pxHill = (g, x, y, r, P) => { pxDome(g, x, y, r, Math.round(r * .9), [P.hill[0], P.hill[1], 1]); pxR(g, x - Math.round(r / 2), y - Math.round(r * .9) + 1, Math.max(2, Math.round(r / 2)), 1, P.hill[2]); };
-const PX_HOUSE = {
-  euro(g, x, y, P, roof){ pxR(g, x - 5, y - 6, 10, 6, P.wall); pxR(g, x - 5, y - 1, 10, 1, hexMix(P.wall, '#000000', .2)); pxR(g, x - 1, y - 4, 2, 4, P.door); pxR(g, x - 4, y - 5, 2, 2, P.win); pxR(g, x + 2, y - 5, 2, 2, P.win); for (let i = 0; i < 5; i++) pxR(g, x - 1 - i, y - 11 + i, 2 + i * 2, 1, roof); pxR(g, x - 6, y - 7, 12, 1, hexMix(roof, '#000000', .3)); if (P.snow) for (let i = 0; i < 3; i++) pxR(g, x - 1 - i, y - 11 + i, 2 + i * 2, 1, '#FFFFFF'); },
-  wa(g, x, y, P, roof){ pxR(g, x - 5, y - 5, 10, 5, P.wall); pxR(g, x - 5, y - 5, 1, 5, P.door); pxR(g, x + 4, y - 5, 1, 5, P.door); pxR(g, x - 5, y - 3, 10, 1, P.door); pxR(g, x - 1, y - 3, 2, 3, P.win); pxRows(g, x, y - 9, [6, 10, 12, 14], roof); pxR(g, x - 3, y - 9, 6, 1, hexMix(roof, '#FFFFFF', .2)); if (P.snow){ pxRows(g, x, y - 9, [6, 10], '#FFFFFF'); } },
-  china(g, x, y, P, roof){ pxR(g, x - 5, y - 5, 10, 5, P.wall); pxR(g, x - 1, y - 4, 2, 4, P.door); pxR(g, x - 4, y - 4, 1, 2, P.win); pxR(g, x + 3, y - 4, 1, 2, P.win); pxRows(g, x, y - 9, [6, 10, 12, 14], roof); pxR(g, x - 8, y - 7, 1, 1, roof); pxR(g, x + 7, y - 7, 1, 1, roof); pxR(g, x, y - 10, 1, 1, '#FFD84D'); if (P.snow) pxRows(g, x, y - 9, [6, 10], '#FFFFFF'); },
-  india(g, x, y, P, roof){ pxR(g, x - 5, y - 6, 10, 6, P.wall); pxR(g, x + 3, y - 6, 2, 6, hexMix(P.wall, '#000000', .15)); pxR(g, x - 1, y - 4, 2, 4, P.door); pxR(g, x - 1, y - 5, 2, 1, hexMix(P.door, '#FFFFFF', .2)); pxDome(g, x, y - 6, 3, 4, [roof, hexMix(roof, '#000000', .25)]); pxR(g, x, y - 11, 1, 1, roof); },
-  usa(g, x, y, P, roof){ pxR(g, x - 5, y - 7, 10, 7, P.wall); pxR(g, x - 2, y - 5, 4, 5, hexMix(P.wall, '#000000', .3)); for (let k = 0; k < 4; k++){ pxR(g, x - 2 + k, y - 5 + k, 1, 1, P.door); pxR(g, x + 1 - k, y - 5 + k, 1, 1, P.door); } pxRows(g, x, y - 11, [4, 8, 10, 12], roof); pxR(g, x - 1, y - 10, 2, 1, P.door); if (P.snow) pxRows(g, x, y - 11, [4, 8], '#FFFFFF'); },
-  future(g, x, y, P, roof){ pxDome(g, x, y, 6, 7, [P.wall, hexMix(P.wall, '#000000', .25)]); pxR(g, x - 5, y - 4, 10, 1, P.win); pxR(g, x - 1, y - 3, 2, 3, P.door); pxR(g, x, y - 10, 1, 3, roof); pxR(g, x - 1, y - 11, 3, 1, roof); }
-};
-/* castles, drawn standing on (x, y) with the gate at the bottom centre */
-const PX_CASTLE = {
-  euro(g, x, y, P){
-    const [W, D, K] = P.cw, lit = P.night ? P.win : K;
-    pxR(g, x - 16, y - 12, 32, 12, W); pxR(g, x + 12, y - 12, 4, 12, D); for (let k = -16; k < 16; k += 3) pxR(g, x + k, y - 14, 2, 2, W);
-    [-20, 12].forEach(tx => { pxR(g, x + tx, y - 26, 8, 26, W); pxR(g, x + tx + 6, y - 26, 2, 26, D); pxTri(g, x + tx + 4, y - 34, 8, P.cr, .6); pxR(g, x + tx + 3, y - 20, 2, 3, lit); pxR(g, x + tx + 3, y - 12, 2, 3, lit); if (P.snow) pxR(g, x + tx + 3, y - 34, 3, 2, '#FFFFFF'); });
-    pxR(g, x - 7, y - 26, 14, 14, W); pxR(g, x + 4, y - 26, 3, 14, D); pxTri(g, x, y - 35, 9, P.cr, .95); pxR(g, x - 3, y - 22, 2, 3, lit); pxR(g, x + 1, y - 22, 2, 3, lit);
-    pxR(g, x - 3, y - 7, 6, 7, K); pxR(g, x - 2, y - 8, 4, 1, K);
-    pxR(g, x, y - 42, 1, 7, K); pxR(g, x + 1, y - 42, 4, 3, P.flag); if (P.snow) pxR(g, x - 1, y - 35, 3, 2, '#FFFFFF');
+/* where the road is: 1 = the road, 2 = the faded road of the path not taken. Edges get a few bites so they are not ruler-straight */
+function pxRoadMask(w, h, list, rad, R){
+  const M = new Uint8Array(w * h), D = {}, disk = r => { const o = []; for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r + r * .6) o.push(y * w + x, x); return o; };
+  list.forEach(([pts, kind]) => { let t = 0;
+    for (let i = 0; i < pts.length - 1; i++){ const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 3));
+      for (let k = 0; k < n; k++, t++){
+        const cx = Math.round((x0 + (x1 - x0) * k / n) / PXU), cy = Math.round((y0 + (y1 - y0) * k / n) / PXU), r = rad + Math.round(Math.sin(t * .09) * .8 + Math.sin(t * .23 + 1) * .5), o = D[r] || (D[r] = disk(r)), c = cy * w + cx;
+        for (let q = 0; q < o.length; q += 2){ const x = cx + o[q + 1], j = c + o[q]; if (x >= 0 && x < w && j >= 0 && j < w * h && M[j] !== 1) M[j] = kind; }
+      } } });
+  const E = M.slice();
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++){
+    const i = y * w + x, m = E[i], nb = E[i - 1] || E[i + 1] || E[i - w] || E[i + w];
+    if (m ? (E[i - 1] && E[i + 1] && E[i - w] && E[i + w]) : !nb) continue;
+    const r = R(); if (m && r < .14) M[i] = 0; else if (!m && r < .07) M[i] = nb;
+  }
+  return M;
+}
+/* a cliff line: the row of its top edge for every column, stepping like map tiles */
+function pxEdge(w, R, amp){ const e = new Int16Array(w); let v = 0; for (let x = 0; x < w; x += 6){ const r = R(); if (r < .3) v--; else if (r > .7) v++; v = Math.max(-amp, Math.min(amp, v)); for (let k = 0; k < 6 && x + k < w; k++) e[x + k] = v * 2; } return e; }
+/* the row between lo and hi where the road crosses the cliff over the fewest columns (so the stairs stay short) */
+function pxCliffAt(M, w, h, base, rel, lo, hi, H){
+  let best = lo, bestN = 1e9; const mid = (lo + hi) / 2;
+  for (let y0 = lo; y0 <= hi; y0 += 2){
+    let n = 0; for (let x = 0; x < w; x++){ const t = y0 + (base ? base(x) : 0) + rel[x]; for (let y = Math.max(0, t - 2); y < Math.min(h, t + H + 2); y++) if (M[y * w + x]){ n++; break; } }
+    if (n < bestN || (n === bestN && Math.abs(y0 - mid) < Math.abs(best - mid))){ bestN = n; best = y0; }
+  }
+  return best;
+}
+/* the wall of a raised terrace, below its edge: a grassy lip, rock with cracks (or layers, or metal panels), a shadow at its foot */
+function pxFace(V, P, R, top, H, F, idx){
+  const {w, h} = V, C = P.cliff, lip0 = P.snow ? '#FFFFFF' : P.metal ? C[2] : P.g[2], lip1 = P.snow ? '#F2F7FB' : P.metal ? C[2] : P.g[0], blade = P.snow ? '#CFE3F2' : P.metal ? C[1] : P.g[1];
+  const hi = pxLt(C[0], .16), mid = pxDk(C[0], .1), band = [C[2], C[0], C[0], mid, C[0], C[1]];
+  let prev = null;
+  for (let x = 0; x < w; x++){
+    const t = top[x]; if (t < 0){ prev = null; continue; }
+    const crack = !P.mesa && !P.metal && R() < .2 ? [t + 3 + (R() * 3 | 0), 3 + (R() * (H - 6) | 0)] : null, bl = R();
+    for (let r = 0; r < H + 2; r++){
+      const y = t + r; if (y < 0 || y >= h) continue;
+      let c;
+      if (r === 0) c = lip0; else if (r === 1) c = lip1;
+      else if ((r === 2 && bl < .4) || (r === 3 && bl < .12)) c = blade;
+      else if (r < H - 1){
+        if (P.mesa) c = band[((r - 2) >> 1) % 6];
+        else if (P.metal) c = x % 14 === 0 ? C[1] : x % 14 === 1 ? C[2] : (r - 2) % 7 === 6 ? C[1] : C[0];
+        else if (crack && y >= crack[0] && y < crack[0] + crack[1]) c = C[1];
+        else if (prev && y >= prev[0] && y < prev[0] + prev[1]) c = C[2];
+        else { const q = R(); c = r < 5 ? hi : q < .05 ? C[1] : q < .09 ? C[2] : r > H - 4 ? mid : C[0]; }
+      } else if (r === H - 1) c = C[3];
+      else c = r === H ? P.g[3] : (x & 1 ? P.g[3] : P.g[1]);
+      V.set(x, y, c);
+      if (r < H && F) F[y * w + x] = idx;
+    }
+    prev = crack;
+  }
+}
+/* a small raised block of land (a plateau) with its wall at the front */
+function pxMesa(V, P, R, x0, y0, mw, mh, H, F, idx){
+  const top = new Int16Array(V.w).fill(-1), cut = i => i < 4 ? [4, 2, 1, 0][i] : 0;
+  for (let x = x0; x < x0 + mw; x++){ const i = Math.min(x - x0, x0 + mw - 1 - x), ty = y0 + cut(i); top[x] = y0 + mh - cut(i); V.set(x, ty - 1, P.g[3]); V.set(x, ty, P.g[2]); }
+  for (let y = y0 + 3; y < y0 + mh - 3; y++){ V.set(x0 - 1, y, P.g[3]); V.set(x0, y, P.g[2]); V.set(x0 + mw, y, P.g[3]); V.set(x0 + mw - 1, y, P.g[1]); }
+  pxFace(V, P, R, top, H, F, idx);
+  return top;
+}
+/* the river: an earth bank on the far side, dark water under it, ripples, foam on the near bank */
+function pxRiver(V, P, R, ry0, ry1){
+  const {w} = V, W = P.water, C = P.cliff;
+  for (let x = 0; x < w; x++){
+    V.set(x, ry0 - 1, P.snow ? '#FFFFFF' : P.g[2]);
+    for (let y = ry0; y < ry1; y++){ const r = y - ry0; V.set(x, y, r < 3 ? (r === 2 ? C[3] : r === 0 ? C[2] : C[0]) : r === 3 ? W[3] : y === ry1 - 1 ? ((x >> 1) % 3 ? W[2] : W[1]) : W[0]); }
+  }
+  for (let k = 0; k < w * (ry1 - ry0) / 14; k++){ const x = R() * w | 0, y = ry0 + 5 + (R() * (ry1 - ry0 - 7) | 0), L = 2 + (R() * 5 | 0); for (let i = 0; i < L; i++) V.set(x + i, y, W[1]); }
+  for (let k = 0; k < w / 6; k++) V.set(R() * w, ry0 + 5 + R() * (ry1 - ry0 - 7), P.night ? (R() < .7 ? '#FFFFFF' : '#FFE27A') : W[2]);
+  if (P.snow) for (let k = 0; k < 30; k++){ const x = R() * w, y = ry0 + 5 + R() * (ry1 - ry0 - 8); [[0, 0], [1, 1], [2, 1], [3, 2], [4, 2]].forEach(([a, b]) => V.set(x + a, y + b, '#9CC8E0')); }
+}
+/* colour the road: packed dirt with a dark bank along its upper edge (it is sunken, so no outline is needed),
+   a light grass lip above that bank, and stone stairs wherever it runs down a cliff */
+function pxPaint(V, P, R, M, F, faces, skip){
+  const {w, h, d} = V, mk = cols => cols.map(V.u), base = P.road, dim = base.map(c => hexMix(c, P.g[0], .55));
+  const RN = mk(base), RD = mk(dim), SN = mk(P.step), SD = mk(P.step.map(c => hexMix(c, P.g[0], .55))), lip = V.u(P.metal ? P.road[2] : P.snow ? '#FFFFFF' : P.g[2]);
+  const half = [V.u(hexMix(base[1], base[0], .5)), V.u(hexMix(dim[1], dim[0], .5))], deep = [V.u(pxDk(base[1], .16)), V.u(pxDk(dim[1], .1))], edge = [V.u(pxLt(base[0], .12)), V.u(pxLt(dim[0], .06))];
+  for (let y = 2; y < h - 1; y++){
+    if (skip && skip(y)) continue;
+    for (let x = 1; x < w - 1; x++){
+      const i = y * w + x, m = M[i];
+      if (!m){ if (M[i + w] && !F[i] && !(skip && skip(y + 1))) d[i] = lip; continue; }
+      const Rc = m === 2 ? RD : RN;
+      if (F[i]){ const f = faces[F[i] - 1], rr = y - f.top[x]; if (rr >= 2){ const Sc = m === 2 ? SD : SN; d[i] = !M[i - 1] || !M[i + 1] ? Sc[1] : [Sc[2], Sc[0], Sc[1]][(rr - 2) % 3]; continue; } }
+      const k = m === 2 ? 1 : 0;
+      if (!M[i - w]) d[i] = deep[k];
+      else if (!M[i - 2 * w]) d[i] = Rc[1];
+      else if (!M[i - 3 * w]) d[i] = half[k];
+      else if (!M[i + w]) d[i] = edge[k];
+      else { const r = R(); d[i] = r < .045 ? Rc[1] : r < .085 ? Rc[2] : r < .1 ? Rc[3] : Rc[0]; }
+    }
+  }
+}
+function pxBridge(V, P, cx, ry0, ry1, hw){
+  const W = P.wood, y0 = ry0 - 4, y1 = ry1 + 3;
+  for (let y = y0; y < y1; y++){
+    for (let x = cx - hw; x <= cx + hw; x++){ const e = x - (cx - hw), f = (cx + hw) - x; V.set(x, y, e < 2 || f < 2 ? (e === 0 || f === 0 ? pxDk(W[2], .2) : W[2]) : (y - y0) % 3 === 2 ? W[1] : W[0]); }
+    if ((y - y0) % 6 === 0) [cx - hw, cx + hw - 1].forEach(x => { V.rect(x, y, 2, 2, pxLt(W[0], .25)); V.rect(x, y + 2, 2, 1, pxDk(W[2], .3)); });
+    if (y >= ry0 + 3 && y < ry1 - 1){ V.set(cx + hw + 1, y, P.water[3]); V.set(cx + hw + 2, y, P.water[3]); }
+  }
+}
+/* an arched cave opening at the foot of a cliff, with a rock frame */
+function pxMouth(V, P, cx, yb, lava){
+  const K = P.rock, rw = 13, rh = 19, top0 = yb - rh;
+  const inA = (x, y, r, top) => { const cy = top + r; return Math.abs(x - cx) <= r && y < yb && y >= top && (y >= cy || (x - cx) ** 2 + (y - cy) ** 2 <= r * r); };
+  for (let y = top0 - 4; y < yb; y++) for (let x = cx - rw - 4; x <= cx + rw + 4; x++){
+    if (inA(x, y, rw, top0)) V.set(x, y, lava && y >= yb - 3 ? (y === yb - 1 ? '#FFC24A' : '#FF6A2A') : y - top0 < rh * .35 ? '#2A2233' : '#130F1B');
+    else if (inA(x, y, rw + 3, top0 - 3)){ const edge = !inA(x - 1, y, rw + 3, top0 - 3) || !inA(x + 1, y, rw + 3, top0 - 3) || !inA(x, y - 1, rw + 3, top0 - 3); V.set(x, y, edge ? K[3] : P.snow && y < top0 ? '#FFFFFF' : x < cx - 2 && y < yb - 4 ? K[2] : x > cx + 3 ? K[1] : K[0]); }
+  }
+}
+/* the cave exit: a hole in the ground with steps going down */
+function pxHole(V, P, cx, cy){
+  const K = P.rock;
+  for (let y = cy - 9; y <= cy + 9; y++) for (let x = cx - 16; x <= cx + 16; x++){
+    const o = ((x - cx) / 15) ** 2 + ((y - cy) / 8) ** 2, i = ((x - cx) / 11) ** 2 + ((y - cy - 1) / 5.5) ** 2;
+    if (i <= 1) V.set(x, y, y < cy - 1 ? ((cy - 1 - y) % 2 ? P.step[0] : P.step[1]) : '#130F1B');
+    else if (o <= 1) V.set(x, y, o > .78 ? K[3] : P.snow && y < cy - 3 ? '#FFFFFF' : y < cy ? K[2] : K[1]);
+  }
+}
+/* ---------- sprites: shaded, with a dark rim, drawn once per map ---------- */
+function pxShadow(V, cx, cy, rx, ry, col){ for (let y = -ry; y <= ry; y++){ const dx = Math.round(rx * Math.sqrt(Math.max(0, 1 - (y / (ry + .5)) ** 2))); V.rect(cx - dx, cy + y, dx * 2 + 1, 1, col); } }
+/* a lumpy round mass (tree crown, bush, rock), lit from the top left */
+function pxBlob(V, blobs, pal, R, line, snow){
+  const inside = (x, y) => { for (const b of blobs) if ((x - b[0]) ** 2 + (y - b[1]) ** 2 <= b[2] * b[2]) return true; return false; };
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; blobs.forEach(([cx, cy, r]) => { x0 = Math.min(x0, cx - r); x1 = Math.max(x1, cx + r); y0 = Math.min(y0, cy - r); y1 = Math.max(y1, cy + r); });
+  const [mx, my, mr] = blobs[0];
+  for (let y = Math.floor(y0); y <= Math.ceil(y1); y++) for (let x = Math.floor(x0); x <= Math.ceil(x1); x++){
+    if (!inside(x, y)) continue;
+    let b = blobs[0], bd = 1e9; for (const q of blobs){ const dd = ((x - q[0]) ** 2 + (y - q[1]) ** 2) / (q[2] * q[2]); if (dd < bd){ bd = dd; b = q; } }
+    const v = (-(x - mx) * .5 - (y - my) * .85) / mr * .5 + (-(x - b[0]) * .5 - (y - b[1]) * .85) / b[2] * .5 + (R() - .5) * .22;
+    let c = v > .5 ? pal[3] : v > .1 ? pal[2] : v > -.32 ? pal[1] : pal[0];
+    if (!inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1)) c = line;
+    else if (snow && v > .3) c = R() < .85 ? '#FFFFFF' : '#DCEAF5';
+    V.set(x, y, c);
+  }
+}
+const PX_SPR = {
+  round(P, R){
+    const V = pxSurf(36, 44), cx = 18, by = 41, j = () => (R() - .5) * 2.4;
+    pxShadow(V, cx + 3, by, 12, 2, P.g[3]);
+    V.rect(cx - 2, by - 12, 5, 13, P.trunk[0]); V.rect(cx + 2, by - 12, 1, 13, P.trunk[1]); V.set(cx - 3, by, P.trunk[1]); V.set(cx + 3, by, P.trunk[1]);
+    pxBlob(V, [[cx, 17, 11], [cx - 9 + j(), 20 + j(), 7], [cx + 9 + j(), 20 + j(), 7], [cx - 5 + j(), 9, 7], [cx + 5 + j(), 9, 7], [cx + j(), 25, 8]], P.leaf, R, pxDk(P.leaf[0], .45), P.snow);
+    return {c: V.put(), ax: cx, ay: by, r: 12, top: 40};
   },
-  wa(g, x, y, P){
-    const [W, D, K] = P.cw, lit = P.night ? P.win : K;
-    pxRows(g, x, y - 8, [24, 25, 26, 27, 28, 29, 30, 31], P.stone[0]); for (let r = y - 7; r < y; r += 2) pxR(g, x - 14, r, 28, 1, P.stone[1]);
-    pxR(g, x - 10, y - 14, 20, 6, W); pxR(g, x + 7, y - 14, 3, 6, D); [-7, -1, 5].forEach(dx => pxR(g, x + dx, y - 12, 2, 2, lit));
-    pxRows(g, x, y - 17, [22, 26, 28], P.cr); pxR(g, x - 14, y - 18, 1, 1, P.cr); pxR(g, x + 13, y - 18, 1, 1, P.cr);
-    pxR(g, x - 7, y - 22, 14, 5, W); pxR(g, x + 4, y - 22, 3, 5, D); pxR(g, x - 4, y - 20, 2, 2, lit); pxR(g, x + 2, y - 20, 2, 2, lit);
-    pxRows(g, x, y - 25, [16, 19, 21], P.cr); pxR(g, x - 11, y - 26, 1, 1, P.cr); pxR(g, x + 10, y - 26, 1, 1, P.cr);
-    pxR(g, x - 4, y - 29, 8, 4, W); pxR(g, x - 1, y - 28, 2, 2, lit);
-    pxRows(g, x, y - 32, [10, 13, 15], P.cr); pxR(g, x - 4, y - 34, 2, 2, P.flag); pxR(g, x + 3, y - 34, 2, 2, P.flag);
-    if (P.snow){ pxR(g, x - 11, y - 17, 22, 1, '#FFFFFF'); pxR(g, x - 8, y - 25, 16, 1, '#FFFFFF'); pxR(g, x - 5, y - 32, 10, 1, '#FFFFFF'); }
+  sakura(P, R){
+    const s = PX_SPR.round(P, R), g = s.c.getContext('2d');
+    for (let k = 0; k < 16; k++){ g.fillStyle = R() < .6 ? '#FFFFFF' : P.leaf[3]; g.fillRect(8 + R() * 20 | 0, 6 + R() * 22 | 0, 1, 1); }
+    return s;
   },
-  china(g, x, y, P){
-    const [W, D, K] = P.cw, lit = P.night ? P.win : P.flag;
-    pxR(g, x - 18, y - 3, 36, 3, P.stone[0]);
-    pxR(g, x - 13, y - 12, 26, 9, W); pxR(g, x + 10, y - 12, 3, 9, D); pxR(g, x - 2, y - 9, 4, 6, K); [-10, -6, 5, 9].forEach(dx => pxR(g, x + dx, y - 10, 1, 4, lit));
-    pxRows(g, x, y - 16, [26, 30, 32, 34], P.cr); pxR(g, x - 18, y - 17, 2, 1, P.cr); pxR(g, x + 16, y - 17, 2, 1, P.cr);
-    pxR(g, x - 8, y - 22, 16, 6, W); pxR(g, x + 6, y - 22, 2, 6, D); pxR(g, x - 1, y - 20, 2, 3, K);
-    pxRows(g, x, y - 26, [18, 22, 24], P.cr); pxR(g, x - 13, y - 27, 1, 1, P.cr); pxR(g, x + 12, y - 27, 1, 1, P.cr);
-    pxR(g, x - 4, y - 30, 8, 4, W); pxRows(g, x, y - 33, [10, 13, 15], P.cr); pxR(g, x - 1, y - 36, 2, 3, P.flag);
-    if (P.snow){ pxR(g, x - 13, y - 16, 26, 1, '#FFFFFF'); pxR(g, x - 9, y - 26, 18, 1, '#FFFFFF'); pxR(g, x - 5, y - 33, 10, 1, '#FFFFFF'); }
+  pine(P, R){
+    const V = pxSurf(26, 46), cx = 13, by = 43, line = pxDk(P.pine[0], .45), tiers = [[2, 12, 5], [10, 13, 7], [18, 14, 9], [26, 13, 11]];
+    pxShadow(V, cx + 3, by, 9, 2, P.g[3]); V.rect(cx - 1, by - 6, 3, 7, P.trunk[1]);
+    for (let k = tiers.length - 1; k >= 0; k--){
+      const [ty, th, hw] = tiers[k];
+      for (let y = ty; y < ty + th; y++){ const rw = Math.max(1, Math.round(hw * (y - ty + 1) / th)); for (let x = cx - rw; x <= cx + rw; x++){ const xs = (x - cx) / rw; let c = y === ty + th - 1 ? P.pine[0] : xs < -.35 ? P.pine[2] : xs > .4 ? P.pine[0] : P.pine[1]; if (x === cx - rw || x === cx + rw || y === ty + th - 1 && (x === cx - rw + 1 || x === cx + rw - 1)) c = line; if (P.snow && xs < .1 && y < ty + th * .45 && R() < .8) c = '#FFFFFF'; V.set(x, y, c); } }
+    }
+    V.set(cx, 1, line);
+    return {c: V.put(), ax: cx, ay: by, r: 9, top: 42};
   },
-  india(g, x, y, P){
-    const [W, D, K] = P.cw;
-    pxR(g, x - 15, y - 12, 30, 12, W); pxR(g, x + 12, y - 12, 3, 12, D); [-10, -2, 6].forEach(ax => { pxR(g, x + ax, y - 7, 4, 7, K); pxR(g, x + ax + 1, y - 8, 2, 1, K); });
-    pxDome(g, x, y - 12, 8, 10, [W, D]); pxR(g, x, y - 26, 1, 4, P.flag);
-    [-19, 16].forEach(mx => { pxR(g, x + mx, y - 24, 3, 24, W); pxR(g, x + mx + 2, y - 24, 1, 24, D); pxDome(g, x + mx + 1, y - 24, 2, 3, [W, D]); pxR(g, x + mx + 1, y - 29, 1, 2, P.flag); });
-    if (P.snow){ pxR(g, x - 4, y - 22, 9, 1, '#FFFFFF'); }
+  bamboo(P, R){
+    const V = pxSurf(24, 46), by = 43, L = P.leaf;
+    pxShadow(V, 13, by, 10, 2, P.g[3]);
+    [3, 7, 11, 15, 19].forEach(x => { const top = 4 + (R() * 8 | 0); for (let y = top; y <= by; y++){ V.set(x, y, L[1]); V.set(x + 1, y, L[0]); if ((y - top) % 6 === 5){ V.set(x, y, pxDk(L[0], .3)); V.set(x + 1, y, pxDk(L[0], .3)); } }
+      for (let k = 0; k < 3; k++){ const y = top + 2 + k * 7 + (R() * 3 | 0), dir = R() < .5 ? -1 : 1; for (let i = 1; i <= 4; i++){ V.set(x + (dir > 0 ? 1 : 0) + dir * i, y - (i >> 1), i === 4 ? L[0] : L[2]); V.set(x + (dir > 0 ? 1 : 0) + dir * i, y - (i >> 1) + 1, L[1]); } } });
+    if (P.snow) [3, 7, 11, 15, 19].forEach(x => V.rect(x - 1, 3 + (R() * 8 | 0), 4, 1, '#FFFFFF'));
+    return {c: V.put(), ax: 12, ay: by, r: 9, top: 42};
   },
-  usa(g, x, y, P){
-    const [W, D, K] = P.cw, lit = P.night ? P.win : K;
-    [[-18, 10, 18], [-7, 14, 30], [8, 10, 22]].forEach(([bx, bw, bh]) => { pxR(g, x + bx, y - bh, bw, bh, W); pxR(g, x + bx + bw - 2, y - bh, 2, bh, D); for (let wy = y - bh + 2; wy < y - 3; wy += 3) for (let wx = x + bx + 2; wx < x + bx + bw - 3; wx += 3) pxR(g, wx, wy, 1, 2, lit); if (P.snow) pxR(g, x + bx, y - bh, bw, 1, '#FFFFFF'); });
-    pxR(g, x - 1, y - 37, 1, 6, P.flag); pxR(g, x - 3, y - 35, 5, 1, P.flag); pxR(g, x - 2, y - 36, 3, 3, P.flag); pxR(g, x - 2, y - 5, 4, 5, D);
+  palm(P, R){
+    const V = pxSurf(36, 46), by = 43, cx = 15, L = P.leaf;
+    pxShadow(V, cx + 4, by, 11, 2, P.g[3]);
+    for (let y = by; y > 12; y--){ const x = cx + Math.round(((by - y) / 30) ** 2 * 5); V.rect(x - 1, y, 3, 1, (by - y) % 3 === 0 ? P.trunk[1] : P.trunk[0]); V.set(x + 1, y, P.trunk[1]); }
+    const hx = cx + 5, hy = 12;
+    [[-13, 4], [-11, -3], [-5, -8], [5, -8], [11, -3], [13, 4], [0, 7]].forEach(([dx, dy]) => { const n = 12; for (let t = 0; t <= n; t++){ const u = t / n, x = hx + dx * u, y = hy + dy * u + 6 * u * u; V.set(x, y, t > n - 2 ? L[0] : L[1]); V.set(x, y - 1, t > n - 3 ? L[1] : L[2]); if (t % 3 === 1) V.set(x, y + 1, L[0]); } });
+    V.rect(hx - 2, hy - 1, 4, 3, L[2]); V.rect(hx - 1, hy + 2, 2, 2, P.trunk[1]); V.set(hx + 1, hy + 2, '#5E3E26');
+    if (P.snow) for (let k = 0; k < 10; k++) V.set(hx - 10 + R() * 20, hy - 6 + R() * 4, '#FFFFFF');
+    return {c: V.put(), ax: cx, ay: by, r: 11, top: 40};
   },
-  future(g, x, y, P){
-    const [W, D, C] = P.cw;
-    for (let i = 0; i < 40; i++){ const w = Math.round(12 - i * .2); pxR(g, x - Math.floor(w / 2), y - 1 - i, w, 1, W); pxR(g, x + Math.ceil(w / 2) - 2, y - 1 - i, 2, 1, D); }
-    pxR(g, x - 9, y - 14, 18, 2, C); pxR(g, x - 7, y - 28, 14, 2, C); pxR(g, x - 1, y - 44, 3, 3, P.flag); pxR(g, x - 2, y - 43, 5, 1, P.flag); pxR(g, x - 2, y - 6, 4, 6, C);
+  cactus(P, R){
+    const V = pxSurf(20, 34), by = 31, cx = 10, L = P.leaf, line = pxDk(L[0], .45);
+    pxShadow(V, cx + 2, by, 7, 1, P.g[3]);
+    const col = (x0, y0, x1, y1) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){ const t = (x - x0) / Math.max(1, x1 - x0); V.set(x, y, x === x0 || x === x1 || y === y0 && (x === x0 + 1 || x === x1 - 1) ? line : t < .34 ? L[2] : t > .7 ? L[0] : L[1]); } };
+    col(cx - 3, 3, cx + 2, by); col(cx - 8, 12, cx - 5, 20); V.rect(cx - 6, 18, 4, 3, L[1]); V.rect(cx - 6, 21, 4, 1, line); col(cx + 4, 8, cx + 7, 17); V.rect(cx + 2, 15, 3, 3, L[0]); V.rect(cx + 2, 18, 3, 1, line);
+    for (let k = 0; k < 10; k++) V.set(cx - 2 + R() * 4, 5 + R() * 24, L[3]);
+    if (P.snow){ V.rect(cx - 2, 3, 4, 2, '#FFFFFF'); V.rect(cx - 7, 12, 2, 1, '#FFFFFF'); V.rect(cx + 5, 8, 2, 1, '#FFFFFF'); }
+    return {c: V.put(), ax: cx, ay: by, r: 7, top: 30};
+  },
+  crystal(P, R){
+    const V = pxSurf(22, 36), by = 33, L = P.leaf, line = pxDk(L[0], .35);
+    pxShadow(V, 12, by, 8, 2, P.g[3]);
+    [[11, 3, 4], [5, 14, 3], [17, 12, 3]].forEach(([cx, top, hw]) => { for (let y = top; y <= by - 1; y++){ const rw = Math.min(hw, Math.round((y - top) * .8) + 1); for (let x = cx - rw; x <= cx + rw; x++){ let c = x < cx ? L[2] : x === cx ? L[3] : L[1]; if (y - top < 3) c = L[3]; if (x === cx - rw || x === cx + rw) c = line; V.set(x, y, c); } } V.rect(cx - hw, by - 1, hw * 2 + 1, 1, line); });
+    return {c: V.put(), ax: 11, ay: by, r: 8, top: 32};
+  },
+  bush(P, R){
+    const V = pxSurf(18, 14), cx = 9, by = 12;
+    pxShadow(V, cx + 1, by, 8, 1, P.g[3]);
+    pxBlob(V, [[cx, 7, 5], [cx - 4, 8, 3.5], [cx + 4, 8, 3.5]], P.leaf, R, pxDk(P.leaf[0], .45), P.snow);
+    return {c: V.put(), ax: cx, ay: by, r: 6, top: 12};
+  },
+  rock(P, R){
+    const s = 5 + (R() * 3 | 0), V = pxSurf(s * 4 + 4, s * 3 + 4), cx = s * 2 + 2, by = s * 3 + 1;
+    pxShadow(V, cx + 2, by, s * 2, 1, P.g[3]);
+    pxBlob(V, [[cx, by - s - 1, s + 1], [cx + s * .8, by - s * .7, s * .8], [cx - s * .7, by - s * .6, s * .7]], [P.rock[3], P.rock[1], P.rock[0], P.rock[2]], R, pxDk(P.rock[3], .3), P.snow);
+    return {c: V.put(), ax: cx, ay: by, r: s + 2, top: s * 2 + 4};
   }
 };
-function pxCaveMouth(g, x, y, P, lava){
-  pxDome(g, x, y, 14, 14, [P.rock[0], P.rock[3]]); pxR(g, x - 9, y - 11, 6, 1, P.rock[2]); pxR(g, x - 11, y - 8, 3, 1, P.rock[2]); pxR(g, x + 6, y - 6, 5, 1, P.rock[1]);
-  pxR(g, x - 4, y - 9, 8, 9, '#15111F'); pxR(g, x - 3, y - 10, 6, 1, '#15111F');
-  if (lava){ pxR(g, x - 3, y - 3, 6, 3, '#FF6A2A'); pxR(g, x - 2, y - 2, 4, 1, '#FFC24A'); }
-  if (P.snow){ pxR(g, x - 8, y - 14, 17, 1, '#FFFFFF'); pxR(g, x - 11, y - 12, 4, 1, '#FFFFFF'); pxR(g, x + 8, y - 12, 4, 1, '#FFFFFF'); }
+/* ---------- houses (3/4 view): a roof seen from above, the front wall under it ---------- */
+function pxRoof(V, x, y, w, h, col, style){
+  const dk = pxDk(col, .18), dk2 = pxDk(col, .36), lt = pxLt(col, .22);
+  for (let r = 0; r < h; r++) for (let i = 0; i < w; i++){
+    let c = col;
+    if (r === 0) c = lt;
+    else if (r >= h - 2) c = r === h - 1 ? dk2 : dk;
+    else if (style === 'tile') c = i % 3 === 0 ? dk : col;
+    else if (style === 'plank') c = r % 3 === 0 ? dk : col;
+    else c = (r - 1) % 3 === 2 ? dk : (i + ((((r - 1) / 3) | 0) % 2) * 2) % 4 === 0 ? pxDk(col, .09) : col;
+    if (i === 0 || i === w - 1) c = dk2;
+    V.set(x + i, y + r, c);
+  }
 }
-function pxGround(g, w, h, P, R){
-  pxR(g, 0, 0, w, h, P.g[0]);
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){ const r = R(); if (r < .06) pxR(g, x, y, 1, 1, P.g[1]); else if (r < .085) pxR(g, x, y, 1, 1, P.g[2]); }
-  if (P.grid){ for (let y = 0; y < h; y += 10) pxR(g, 0, y, w, 1, P.g[1]); for (let x = 0; x < w; x += 10) pxR(g, x, 0, 1, h, P.g[1]); return; }
-  for (let y = 4; y < h; y += 8) for (let x = (y * 3) % 8; x < w; x += 8){ if (R() < .45) continue; pxR(g, x, y, 1, 2, P.g[1]); pxR(g, x + 2, y + 1, 1, 1, P.g[1]); }
+const pxSnowTop = (V, x, y, w, R) => { for (let r = 0; r < 4; r++) for (let i = 0; i < w; i++) if (r < 2 || R() < .55) V.set(x + i, y + r, R() < .88 ? '#FFFFFF' : '#DCEAF5'); };
+const pxWin = (V, x, y, w, h, frame, glass) => { V.rect(x - 1, y - 1, w + 2, h + 2, frame); V.rect(x, y, w, h, glass); V.set(x, y, pxLt(glass, .6)); };
+const PX_HOUSE = {
+  euro(P, roof, R){
+    const V = pxSurf(60, 58), x0 = 10, W = 40, yb = 55, wh = 17, rd = 18, top = yb - wh - rd, cx = x0 + W / 2;
+    V.rect(x0 + W, yb - wh + 4, 5, wh - 3, P.g[3]); V.rect(x0 + 4, yb, W + 1, 2, P.g[3]);
+    V.rect(x0, yb - wh, W, wh, P.wall); V.rect(x0 + W - 6, yb - wh, 6, wh, pxDk(P.wall, .12));
+    [x0, x0 + W - 1, x0 + 12, x0 + W - 13].forEach(x => V.rect(x, yb - wh, 1, wh, P.beam)); V.rect(x0, yb - wh + 8, W, 1, P.beam); V.rect(x0, yb - 2, W, 2, P.stone[1]);
+    V.rect(cx - 5, yb - 13, 10, 1, P.beam); V.rect(cx - 4, yb - 12, 8, 12, P.door); V.rect(cx, yb - 12, 1, 12, pxDk(P.door, .25)); V.set(cx + 2, yb - 6, P.flag);
+    [x0 + 4, x0 + W - 11].forEach(x => { pxWin(V, x, yb - 13, 7, 6, P.beam, P.win); V.rect(x + 3, yb - 13, 1, 6, P.beam); V.rect(x, yb - 10, 7, 1, P.beam); });
+    pxRoof(V, x0 - 4, top, W + 8, rd, roof, 'shingle'); V.rect(x0, yb - wh, W, 1, pxDk(P.wall, .35));
+    V.rect(x0 + W - 12, top - 6, 6, 10, P.stone[0]); V.rect(x0 + W - 7, top - 6, 1, 10, P.stone[1]); V.rect(x0 + W - 12, top - 6, 6, 1, P.stone[2]);
+    if (P.snow) pxSnowTop(V, x0 - 4, top, W + 8, R);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  wa(P, roof, R){
+    const V = pxSurf(62, 58), x0 = 11, W = 40, yb = 55, wh = 16, rd = 18, top = yb - wh - rd, cx = x0 + W / 2;
+    V.rect(x0 + W, yb - wh + 4, 5, wh - 3, P.g[3]); V.rect(x0 + 4, yb, W + 1, 2, P.g[3]);
+    V.rect(x0, yb - wh, W, wh, P.wall); V.rect(x0, yb - 5, W, 5, P.beam); V.rect(x0 + W - 6, yb - wh, 6, wh - 5, pxDk(P.wall, .1));
+    for (let x = x0; x < x0 + W; x += 8) V.rect(x, yb - wh, 1, wh, P.beam); V.rect(x0 + W - 1, yb - wh, 1, wh, P.beam);
+    V.rect(cx - 7, yb - 13, 14, 13, P.win); for (let x = cx - 7; x <= cx + 7; x += 3) V.rect(x, yb - 13, 1, 13, P.beam); for (let y = yb - 13; y < yb; y += 3) V.rect(cx - 7, y, 14, 1, P.beam);
+    pxRoof(V, x0 - 5, top, W + 10, rd, roof, 'tile'); V.rect(x0 - 5, top, W + 10, 3, pxDk(roof, .3)); V.rect(x0 - 4, top, W + 8, 1, pxLt(roof, .25));
+    V.set(x0 - 6, yb - wh - 2, roof); V.set(x0 - 7, yb - wh - 3, roof); V.set(x0 + W + 5, yb - wh - 2, roof); V.set(x0 + W + 6, yb - wh - 3, roof); V.rect(x0, yb - wh, W, 1, pxDk(P.wall, .35));
+    if (P.snow) pxSnowTop(V, x0 - 5, top, W + 10, R);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  china(P, roof, R){
+    const V = pxSurf(64, 60), x0 = 12, W = 40, yb = 57, wh = 17, rd = 17, top = yb - wh - rd, cx = x0 + W / 2;
+    V.rect(x0 + W, yb - wh + 4, 5, wh - 3, P.g[3]); V.rect(x0 + 4, yb, W + 1, 2, P.g[3]);
+    V.rect(x0, yb - wh, W, wh, P.wall); for (let x = x0; x < x0 + W; x += 9) V.rect(x, yb - wh, 2, wh, P.beam); V.rect(x0 + W - 2, yb - wh, 2, wh, P.beam); V.rect(x0 - 2, yb - 2, W + 4, 2, P.stone[1]);
+    V.rect(cx - 5, yb - 13, 10, 13, P.door); for (let k = 0; k < 4; k++){ V.set(cx - 3, yb - 11 + k * 3, P.flag); V.set(cx + 2, yb - 11 + k * 3, P.flag); }
+    [x0 + 7, x0 + W - 7].forEach(wx => { for (let y = -4; y <= 4; y++) for (let x = -4; x <= 4; x++){ const d = x * x + y * y; if (d <= 17) V.set(wx + x, yb - 9 + y, d > 9 ? P.beam : P.win); } });
+    pxRoof(V, x0 - 5, top, W + 10, rd, roof, 'tile');
+    [[x0 - 6, -1], [x0 + W + 5, 1]].forEach(([x, s]) => { V.set(x, yb - wh - 2, roof); V.set(x + s, yb - wh - 3, roof); V.set(x + s, yb - wh - 4, roof); V.set(x + s * 2, yb - wh - 5, pxLt(roof, .2)); });
+    V.rect(x0 - 3, top - 2, 4, 3, P.flag); V.rect(x0 + W - 1, top - 2, 4, 3, P.flag); V.rect(x0, yb - wh, W, 1, pxDk(P.wall, .35));
+    if (P.snow) pxSnowTop(V, x0 - 5, top, W + 10, R);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  india(P, roof, R){
+    const V = pxSurf(60, 62), x0 = 10, W = 40, yb = 59, wh = 20, cx = x0 + W / 2;
+    V.rect(x0 + W, yb - wh + 4, 5, wh - 3, P.g[3]); V.rect(x0 + 4, yb, W + 1, 2, P.g[3]);
+    V.rect(x0, yb - wh - 8, W, 8, pxLt(P.wall, .4)); V.rect(x0, yb - wh - 8, W, 1, P.beam); V.rect(x0, yb - wh - 1, W, 1, pxDk(P.wall, .15));
+    V.rect(x0, yb - wh, W, wh, P.wall); V.rect(x0 + W - 6, yb - wh, 6, wh, pxDk(P.wall, .1)); V.rect(x0, yb - wh, W, 1, P.beam);
+    const arch = (ax, w, h, col) => { const r = w / 2; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){ if (y < r && (x - r + .5) ** 2 + (r - y) ** 2 > r * r) continue; V.set(ax + x, yb - h + y, col); } };
+    arch(cx - 4, 8, 14, P.door); arch(x0 + 4, 6, 10, P.win); arch(x0 + W - 10, 6, 10, P.win);
+    for (let y = 0; y < 12; y++){ const rw = Math.round(8 * Math.sin(Math.PI * Math.min(1, (y + 1) / 10)) ** .7); for (let x = -rw; x <= rw; x++) V.set(cx + x, yb - wh - 8 - 12 + y, x < -rw / 3 ? pxLt(roof, .25) : x > rw / 2 ? pxDk(roof, .25) : roof); }
+    V.rect(cx, yb - wh - 24, 1, 4, P.flag);
+    if (P.snow) pxSnowTop(V, x0, yb - wh - 8, W, R);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  usa(P, roof, R){
+    const V = pxSurf(60, 62), x0 = 10, W = 40, yb = 59, wh = 17, cx = x0 + W / 2;
+    V.rect(x0 + W, yb - wh + 4, 5, wh - 3, P.g[3]); V.rect(x0 + 4, yb, W + 1, 2, P.g[3]);
+    V.rect(x0 - 2, yb - wh - 7, W + 4, 7, roof); V.rect(x0 - 2, yb - wh - 7, W + 4, 1, pxLt(roof, .2));
+    const planks = (x, y, w, h) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) V.set(x + i, y + j, i % 3 === 2 ? pxDk(P.wall, .2) : P.wall); };
+    planks(x0, yb - wh, W, wh); planks(x0 + 5, yb - wh - 20, W - 10, 20); V.rect(x0 + 5, yb - wh - 21, W - 10, 1, P.beam);
+    V.rect(x0 + 9, yb - wh - 16, W - 18, 7, '#F4E8C8'); for (let x = x0 + 11; x < x0 + W - 11; x += 2) V.set(x, yb - wh - 13, P.beam);
+    V.rect(x0 - 1, yb - 12, W + 2, 2, roof); [x0, x0 + W - 1, x0 + 13, x0 + W - 14].forEach(x => V.rect(x, yb - 10, 1, 10, P.wood[2]));
+    V.rect(cx - 4, yb - 8, 4, 7, P.door); V.rect(cx + 1, yb - 8, 4, 7, P.door); pxWin(V, x0 + 4, yb - 8, 6, 4, P.beam, P.win); pxWin(V, x0 + W - 10, yb - 8, 6, 4, P.beam, P.win);
+    if (P.snow) pxSnowTop(V, x0 + 5, yb - wh - 21, W - 10, R);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  future(P, roof, R){
+    const V = pxSurf(50, 44), cx = 25, yb = 41, rx = 19, ry = 19;
+    pxShadow(V, cx + 3, yb, 20, 2, P.g[3]);
+    for (let y = yb - ry; y < yb; y++) for (let x = cx - rx; x <= cx + rx; x++){ const u = (x - cx) / rx, v = (y - yb) / ry; if (u * u + v * v > 1) continue; const l = -u * .5 - v * .8; V.set(x, y, u * u + v * v > .88 ? P.beam : l > .7 ? '#FFFFFF' : l > .3 ? P.wall : pxDk(P.wall, .12)); }
+    for (let x = cx - rx + 3; x <= cx + rx - 3; x++) if ((x - cx) % 5) V.rect(x, yb - 10, 1, 3, P.win);
+    V.rect(cx - 3, yb - 7, 7, 7, P.win); V.rect(cx - 3, yb - 7, 7, 1, pxLt(P.win, .5)); V.rect(cx, yb - ry - 6, 1, 6, P.beam); V.rect(cx - 1, yb - ry - 8, 3, 3, roof);
+    if (P.snow) for (let x = cx - 11; x <= cx + 11; x++) V.set(x, yb - ry + Math.round(((x - cx) / 12) ** 2 * 4), '#FFFFFF');
+    return {c: V.put(), ax: cx, ay: yb};
+  }
+};
+/* ---------- castles (3/4 view), standing on (x, y) with the gate at the bottom centre ---------- */
+function pxBricks(V, x, y, w, h, C, R){ for (let r = 0; r < h; r++) for (let i = 0; i < w; i++){ const row = (r / 4) | 0; let c = r % 4 === 3 || (i + (row % 2) * 3) % 6 === 0 ? C[1] : C[0]; if (c === C[0] && R() < .06) c = C[3]; V.set(x + i, y + r, c); } }
+function pxCrenel(V, x, y, w, C){ for (let i = 0; i < w; i++){ V.set(x + i, y + 2, C[3]); if (i % 6 < 3){ V.set(x + i, y, C[3]); V.set(x + i, y + 1, i % 6 === 2 ? C[1] : C[0]); } } }
+function pxTower(V, P, cx, yb, r, h, C, roof, rh, R){
+  for (let y = yb - h; y < yb; y++) for (let x = cx - r; x <= cx + r; x++){
+    const t = (x - cx) / r, row = ((yb - y) / 4) | 0; let c = t < -.45 ? C[3] : t > .5 ? C[2] : t > .15 ? C[1] : C[0];
+    if (((x + row * 3) % 6 === 0 || (yb - y) % 4 === 0) && t <= .5) c = pxDk(c, .12);
+    if (Math.abs(t) > .92) c = C[2];
+    V.set(x, y, c);
+  }
+  const lit = P.night ? P.win : '#2A2433'; V.rect(cx - 1, yb - h + 7, 2, 4, lit); if (h > 30) V.rect(cx - 1, yb - h + 20, 2, 4, lit);
+  if (!roof){ pxCrenel(V, cx - r, yb - h - 3, 2 * r + 1, C); return; }
+  for (let i = 0; i < rh; i++){ const hw = Math.round((r + 2) * (i + 1) / rh), y = yb - h - rh + i; for (let x = cx - hw; x <= cx + hw; x++){ const t = (x - cx) / Math.max(1, hw); V.set(x, y, P.snow && i < rh * .45 ? '#FFFFFF' : i === rh - 1 ? pxDk(roof, .35) : t < -.4 ? pxLt(roof, .2) : t > .45 ? pxDk(roof, .25) : i % 3 === 2 ? pxDk(roof, .1) : roof); } }
 }
-/* roads: every edge first, then every fill, so crossings stay clean. list = [[world points, [fill, pebble, edge]], ...] */
-function pxRoads(g, list, R){
-  const all = list.map(([pts, cols]) => { const sm = []; for (let i = 0; i < pts.length - 1; i++){ const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 3)); for (let k = 0; k < n; k++) sm.push([(x0 + (x1 - x0) * k / n) / PXU, (y0 + (y1 - y0) * k / n) / PXU]); } const l = pts[pts.length - 1]; sm.push([l[0] / PXU, l[1] / PXU]); return [sm, cols]; });
-  all.forEach(([sm, c]) => sm.forEach(([x, y]) => pxEll(g, x, y, 6, 6, c[2])));
-  all.forEach(([sm, c]) => sm.forEach(([x, y]) => pxEll(g, x, y, 5, 5, c[0])));
-  all.forEach(([sm, c]) => sm.forEach(([x, y], i) => { if (i % 3 === 0) pxR(g, x + R() * 8 - 4, y + R() * 8 - 4, 1, 1, c[1]); }));
+function pxGate(V, cx, yb, hw, h, C){
+  const top = yb - h, ay = top + hw;
+  for (let y = top - 2; y < yb; y++) for (let x = cx - hw - 2; x <= cx + hw + 2; x++){
+    const inO = y >= ay || (x - cx) ** 2 + (y - ay) ** 2 <= (hw + 2) ** 2, inI = x >= cx - hw && x <= cx + hw && y >= top && (y >= ay || (x - cx) ** 2 + (y - ay) ** 2 <= hw * hw);
+    if (inI) V.set(x, y, (x - cx + hw) % 3 === 0 || (y - top) % 4 === 3 ? '#4A4452' : '#17131F'); else if (inO) V.set(x, y, C[2]);
+  }
 }
+/* a curved-eave tile roof (Japanese and Chinese castles) */
+function pxEaves(V, cx, y, w, h, col, curl){ pxRoof(V, cx - (w >> 1), y, w, h, col, 'tile'); for (let k = 1; k <= curl; k++){ V.set(cx - (w >> 1) - k, y + h - 1 - k, col); V.set(cx + (w >> 1) + k - 1, y + h - 1 - k, col); } }
+const PX_CASTLE = {
+  euro(P, R){
+    const V = pxSurf(136, 124), C = P.cw, cx = 68, yb = 121;
+    V.rect(8, yb, 124, 2, P.g[3]);
+    pxBricks(V, 38, 52, 60, 44, C, R); V.rect(92, 52, 6, 44, C[1]); pxCrenel(V, 38, 49, 60, C);
+    const lit = P.night ? P.win : '#2A2433'; [46, 58, 76, 88].forEach(x => { V.rect(x, 62, 3, 5, lit); V.rect(x, 76, 3, 5, lit); });
+    pxTower(V, P, cx, 52, 9, 16, C, P.cr, 20, R); V.rect(cx, 4, 1, 13, C[2]); V.rect(cx + 1, 4, 7, 4, P.flag);
+    pxBricks(V, 16, 94, 104, 27, C, R); V.rect(112, 94, 8, 27, C[1]); pxCrenel(V, 16, 90, 104, C); pxGate(V, cx, yb, 8, 20, C);
+    pxTower(V, P, 16, yb, 11, 48, C, P.cr, 22, R); pxTower(V, P, 120, yb, 11, 48, C, P.cr, 22, R);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  wa(P, R){
+    const V = pxSurf(130, 124), C = P.cw, cx = 65, yb = 121, st = P.stone, lit = P.night ? P.win : '#2A2433';
+    V.rect(8, yb, 116, 2, P.g[3]);
+    for (let r = 0; r < 26; r++){ const hw = 56 - Math.round(r * .4), y = yb - 1 - r; for (let x = cx - hw; x <= cx + hw; x++){ const row = (r / 3) | 0; V.set(x, y, x === cx - hw ? st[2] : x === cx + hw ? st[1] : r % 3 === 2 || (x + row * 4) % 8 === 0 ? st[1] : st[0]); } }
+    V.rect(cx - 7, yb - 14, 14, 14, P.wood[1]); V.rect(cx, yb - 14, 1, 14, P.wood[2]); V.rect(cx - 8, yb - 15, 16, 1, '#2A2433');
+    const tier = (y, w, h, rw, rh) => { V.rect(cx - (w >> 1), y - h, w, h, C[0]); V.rect(cx + (w >> 1) - 5, y - h, 5, h, C[1]); for (let x = cx - (w >> 1) + 4; x < cx + (w >> 1) - 4; x += 8) V.rect(x, y - h + 3, 3, 4, lit); V.rect(cx - (w >> 1), y - 2, w, 2, C[2]); pxEaves(V, cx, y - h - rh, rw, rh, P.cr, 2); if (P.snow) pxSnowTop(V, cx - (rw >> 1), y - h - rh, rw, R); return y - h - rh; };
+    let y = tier(yb - 26, 80, 14, 94, 9); y = tier(y, 60, 12, 72, 8); y = tier(y, 40, 11, 52, 9);
+    V.rect(cx - 24, y - 3, 4, 3, P.flag); V.rect(cx + 20, y - 3, 4, 3, P.flag);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  china(P, R){
+    const V = pxSurf(136, 116), C = P.cw, cx = 68, yb = 113, st = P.stone;
+    V.rect(4, yb, 128, 2, P.g[3]);
+    V.rect(cx - 62, yb - 12, 124, 12, st[0]); V.rect(cx - 62, yb - 12, 124, 2, st[2]); for (let y = yb - 9; y < yb; y += 3) V.rect(cx - 62, y, 124, 1, st[1]);
+    for (let y = yb - 12; y < yb; y++) V.rect(cx - 10, y, 20, 1, (yb - y) % 2 ? st[2] : st[1]);
+    V.rect(cx - 44, yb - 32, 88, 20, C[0]); for (let x = cx - 44; x <= cx + 42; x += 11) V.rect(x, yb - 32, 2, 20, C[2]);
+    [-22, 0, 22].forEach(dx => { V.rect(cx + dx - 4, yb - 28, 8, 16, P.flag); for (let y = yb - 27; y < yb - 12; y += 3) V.rect(cx + dx - 4, y, 8, 1, pxDk(P.flag, .3)); });
+    pxEaves(V, cx, yb - 46, 104, 14, P.cr, 3); V.rect(cx - 52, yb - 47, 104, 1, pxDk(P.cr, .35));
+    V.rect(cx - 28, yb - 58, 56, 12, C[0]); for (let x = cx - 28; x <= cx + 26; x += 9) V.rect(x, yb - 58, 2, 12, C[2]);
+    pxEaves(V, cx, yb - 69, 72, 11, P.cr, 3); V.rect(cx - 1, yb - 75, 3, 6, P.flag); V.rect(cx - 36, yb - 71, 3, 2, P.flag); V.rect(cx + 33, yb - 71, 3, 2, P.flag);
+    if (P.snow){ pxSnowTop(V, cx - 52, yb - 46, 104, R); pxSnowTop(V, cx - 36, yb - 69, 72, R); }
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  india(P, R){
+    const V = pxSurf(136, 124), C = P.cw, cx = 68, yb = 121;
+    V.rect(4, yb, 128, 2, P.g[3]);
+    V.rect(cx - 64, yb - 8, 128, 8, C[1]); V.rect(cx - 64, yb - 8, 128, 1, C[3]);
+    [cx - 58, cx + 52].forEach(x => { V.rect(x, yb - 72, 6, 64, C[0]); V.rect(x + 4, yb - 72, 2, 64, C[1]); for (let y = yb - 64; y < yb - 8; y += 14) V.rect(x - 1, y, 8, 2, C[2]); for (let k = 0; k < 4; k++) V.rect(x + 3 - k, yb - 76 + k, k * 2, 1, C[3]); V.rect(x + 2, yb - 80, 1, 3, P.flag); });
+    V.rect(cx - 36, yb - 42, 72, 34, C[0]); V.rect(cx + 30, yb - 42, 6, 34, C[1]); V.rect(cx - 36, yb - 42, 72, 2, C[3]);
+    const arch = (ax, w, h, col, frame) => { const r = w / 2; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){ if (y < r && (x - r + .5) ** 2 + (r - y) ** 2 > r * r) continue; V.set(ax + x, yb - 8 - h + y, frame && (x === 0 || x === w - 1 || y < r && (x - r + .5) ** 2 + (r - y) ** 2 > (r - 1.3) ** 2) ? frame : col); } };
+    arch(cx - 9, 18, 26, '#2A2433', P.flag); [-30, -21, 13, 22].forEach(dx => { arch(cx + dx, 7, 11, C[2]); });
+    const dome = (dcx, base, rx, h) => { const cy = base - h * .5; for (let y = base - h; y <= base; y++) for (let x = dcx - rx; x <= dcx + rx; x++){ const u = (x - dcx) / rx, v = (y - cy) / (h * .5); const tip = y < base - h * .8 && Math.abs(x - dcx) <= (y - (base - h)) * .7; if (!(u * u + v * v <= 1 && y > base - h * .8) && !tip) continue; const l = -u * .6 - v * .6; V.set(x, y, l > .55 ? '#FFFFFF' : l > -.1 ? C[0] : C[1]); } V.rect(dcx, base - h - 5, 1, 5, P.flag); };
+    V.rect(cx - 17, yb - 46, 34, 4, C[1]); dome(cx, yb - 46, 19, 40); dome(cx - 28, yb - 42, 5, 12); dome(cx + 28, yb - 42, 5, 12);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  usa(P, R){
+    const V = pxSurf(140, 124), C = P.cw, yb = 121, lit = P.night ? P.win : C[2];
+    V.rect(2, yb, 136, 2, P.g[3]);
+    [[4, 26, 64], [30, 26, 86], [56, 32, 108], [88, 28, 80], [116, 20, 50]].forEach(([x, w, h]) => {
+      const t = yb - h; V.rect(x, t, w, h, C[0]); V.rect(x + w - 5, t, 5, h, C[1]); V.rect(x, t - 4, w, 4, C[3]); V.rect(x, t - 4, w, 1, C[1]);
+      for (let y = t + 3; y < yb - 6; y += 5) for (let wx = x + 3; wx < x + w - 6; wx += 4) V.rect(wx, y, 2, 3, P.night ? (R() < .6 ? lit : C[2]) : R() < .2 ? '#FFFFFF' : C[2]);
+      if (P.snow) V.rect(x, t - 4, w, 2, '#FFFFFF');
+    });
+    V.rect(72, 5, 1, 8, C[2]); V.set(72, 4, '#FF4D4D'); V.rect(68, yb - 10, 9, 10, C[2]); V.rect(68, yb - 11, 9, 1, P.flag);
+    return {c: V.put(), ax: 72, ay: yb};
+  },
+  future(P, R){
+    const V = pxSurf(120, 124), C = P.cw, cx = 60, yb = 121;
+    for (let y = -6; y <= 6; y++){ const hw = Math.round(52 * Math.sqrt(1 - (y / 6.5) ** 2)); V.rect(cx - hw, yb - 6 + y, hw * 2 + 1, 1, y < -3 ? C[3] : y > 3 ? C[2] : C[1]); }
+    for (let y = 18; y < yb - 6; y++){ const hw = Math.round(4 + (y - 18) / (yb - 24) * 8); for (let x = cx - hw; x <= cx + hw; x++){ const t = (x - cx) / hw; V.set(x, y, x === cx ? P.cr : t < -.4 ? C[3] : t > .45 ? C[2] : t > 0 ? C[1] : C[0]); } }
+    [[yb - 38, 26], [yb - 66, 20], [yb - 88, 14]].forEach(([y, rx]) => { for (let j = -3; j <= 3; j++){ const hw = Math.round(rx * Math.sqrt(1 - (j / 3.5) ** 2)); V.rect(cx - hw, y + j, hw * 2 + 1, 1, j < -1 ? pxLt(P.cr, .5) : j > 1 ? pxDk(P.cr, .3) : P.cr); } });
+    V.rect(cx - 1, 10, 3, 8, C[1]); V.rect(cx - 2, 6, 5, 4, P.flag); V.rect(cx - 1, 7, 3, 2, '#FFFFFF');
+    return {c: V.put(), ax: cx, ay: yb};
+  }
+};
+/* a small field with rows of crops and a fence */
+function pxField(V, P, x0, y0, fw, fh){
+  for (let y = 0; y < fh; y++) for (let x = 0; x < fw; x++) V.set(x0 + x, y0 + y, y % 3 === 0 ? P.field[0] : (x + y) % 5 === 0 ? P.field[2] : P.field[1]);
+  for (let x = -1; x <= fw; x++){ V.set(x0 + x, y0 - 1, P.wood[1]); V.set(x0 + x, y0 + fh, P.wood[1]); if (x % 4 === 0){ V.set(x0 + x, y0 - 2, P.wood[0]); V.set(x0 + x, y0 + fh - 1, P.wood[0]); } }
+  for (let y = -1; y <= fh; y++){ V.set(x0 - 1, y0 + y, P.wood[2]); V.set(x0 + fw, y0 + y, P.wood[2]); }
+}
+const pxFlower = (V, x, y, col) => { V.set(x - 1, y, col); V.set(x + 1, y, col); V.set(x, y - 1, col); V.set(x, y + 1, col); V.set(x, y, '#FFE27A'); };
 function riverCrossX(){ const riv = SEG.river.pts; for (let i = 0; i < riv.length - 1; i++){ const a = riv[i], b = riv[i + 1]; if ((a[1] - 1174) * (b[1] - 1174) <= 0 && a[1] !== b[1]) return a[0] + (b[0] - a[0]) * (1174 - a[1]) / (b[1] - a[1]); } return 560; }
 function pxOver(){
-  const P = pxPal(), w = WW / PXU, h = OH / PXU, c = document.createElement('canvas'); c.width = w; c.height = h;
-  const g = c.getContext('2d'), R = rng(hash(curWorld() + '|' + curCh()) + 3);
-  pxGround(g, w, h, P, R);
-  for (let y = 317; y < 430; y++) for (let x = 126; x < w; x++) if (R() < .2) pxR(g, x, y, 1, 1, P.g[2]);
-  /* the river, with foam along both banks */
-  const ry0 = Math.round(1150 / PXU), ry1 = Math.round(1198 / PXU), foam = P.night ? '#5A60C0' : P.water[2];
-  pxR(g, 0, ry0, w, ry1 - ry0, P.water[0]);
-  for (let y = ry0 + 2; y < ry1 - 1; y += 3) for (let x = (y * 5) % 9; x < w; x += 9) if (R() < .75) pxR(g, x, y, 3, 1, P.water[1]);
-  for (let x = 0; x < w; x += 4){ pxR(g, x, ry0, 3, 1, foam); pxR(g, x + 2, ry1 - 1, 3, 1, foam); }
-  if (P.night) for (let k = 0; k < 70; k++) pxR(g, R() * w, ry0 + 1 + R() * (ry1 - ry0 - 2), 1, 1, R() < .8 ? '#FFFFFF' : '#FFE27A');
-  if (P.snow) for (let k = 0; k < 16; k++){ const x = R() * w, y = ry0 + 2 + R() * (ry1 - ry0 - 4); pxR(g, x, y, 2, 1, '#9CCBE3'); pxR(g, x + 2, y + 1, 2, 1, '#9CCBE3'); }
-  /* roads; the path not taken at a fork is faded */
+  const P = pxPal(), w = WW / PXU, h = OH / PXU, V = pxSurf(w, h), R = rng(hash(curWorld() + '|' + curCh()) + 3);
+  pxGrass(V, P, R);
+  /* the road, and the faded road of the path not taken at a fork */
   const routes = S.routes || {}, forks = S.forks || {};
   const dim = id => (id[0] === 'A' || id[0] === 'B') && id.length === 2 && forks['f' + id[1]] && routes['f' + id[1]] && routes['f' + id[1]] !== id;
-  pxRoads(g, OVER_SEGS.filter(dim).map(id => [SEG[id].pts, P.road.map(v => hexMix(v, P.g[0], .55))]), R);
-  pxRoads(g, OVER_SEGS.filter(id => !dim(id)).map(id => [SEG[id].pts, P.road]), R);
-  /* a plank bridge where the road crosses the river */
-  const bx = Math.round(riverCrossX() / PXU) - 11;
-  pxR(g, bx, ry0 - 3, 22, ry1 - ry0 + 6, P.wood[0]); for (let yy = ry0 - 2; yy < ry1 + 3; yy += 2) pxR(g, bx + 2, yy, 18, 1, P.wood[1]); pxR(g, bx, ry0 - 4, 2, ry1 - ry0 + 8, P.wood[2]); pxR(g, bx + 20, ry0 - 4, 2, ry1 - ry0 + 8, P.wood[2]);
-  /* scenery, drawn from the back (top) to the front (bottom) */
-  const items = [], add = (x, y, f) => items.push([y, () => f(Math.round(x / PXU), Math.round(y / PXU))]);
-  const avoid = (x, y) => Math.hypot(x - 840, y - 990) < 100 || Math.hypot(x - 170, y - 870) < 90 || (Math.abs(x - 500) < 120 && y < 290) || (x > 640 && y < 180);
-  const place = (n, x0, x1, y0, y1, clear, fn) => { let k = 0, t = 0; while (k < n && t < 1200){ t++; const x = x0 + R() * (x1 - x0), y = y0 + R() * (y1 - y0); if (nearAny(OVER_SEGS, x, y, clear) || avoid(x, y)) continue; fn(x, y); k++; } };
-  const tree = PX_TREE[P.tree] || PX_TREE.round, house = PX_HOUSE[P.house] || PX_HOUSE.euro, flowerAt = (x, y) => { const col = P.flower[Math.floor(R() * 3)]; add(x, y, (px, py) => pxFlower(g, px, py, col)); };
-  for (let y = 24; y < 210; y += 30) for (let x = 12; x < 990; x += 26){ const jx = x + R() * 10 - 5, jy = y + R() * 8; if (R() < .8 && !nearAny(OVER_SEGS, jx, jy, 34) && !avoid(jx, jy)) add(jx, jy, (px, py) => tree(g, px, py, P)); }
-  place(12, 40, 960, 230, 470, 34, flowerAt);
-  place(26, 20, 980, 480, 860, 36, (x, y) => add(x, y, (px, py) => pxPine(g, px, py, P)));
-  place(7, 30, 970, 500, 850, 60, (x, y) => { const sz = 9 + Math.floor(R() * 4); add(x, y, (px, py) => pxRock(g, px, py, sz, P)); });
-  place(16, 40, 960, 880, 1125, 64, (x, y) => { const sz = 12 + Math.floor(R() * 6); add(x, y, (px, py) => pxRock(g, px, py, sz, P)); });
-  place(18, 20, 980, 870, 1135, 34, (x, y) => add(x, y, (px, py) => pxPine(g, px, py, P)));
-  for (let y = 1296; y < 1712; y += 30) for (let x = 14; x < 486; x += 26){ const jx = x + R() * 8 - 4, jy = y + R() * 6; if (R() < .9 && !nearAny(OVER_SEGS, jx, jy, 30)) add(jx, jy, (px, py) => tree(g, px, py, P)); }
-  place(8, 530, 980, 1310, 1690, 58, (x, y) => { const r = 6 + Math.floor(R() * 4); add(x, y, (px, py) => pxHill(g, px, py, r, P)); });
-  place(26, 520, 980, 1300, 1700, 26, flowerAt);
-  place(5, 520, 980, 1300, 1700, 32, (x, y) => add(x, y, (px, py) => tree(g, px, py, P)));
-  place(18, 30, 970, 1770, 2390, 52, (x, y) => { const roof = P.roof[Math.floor(R() * P.roof.length)]; add(x, y, (px, py) => house(g, px, py, P, roof)); });
-  place(14, 20, 980, 1760, 2395, 30, (x, y) => add(x, y, (px, py) => tree(g, px, py, P)));
-  place(40, 20, 980, 1750, 2395, 26, flowerAt);
-  add(500, 240, (px, py) => (PX_CASTLE[P.castle] || PX_CASTLE.euro)(g, px, py, P));
-  add(840, 1004, (px, py) => pxCaveMouth(g, px, py, P, curCh() === 3));
-  add(170, 884, (px, py) => pxCaveMouth(g, px, py, P, curCh() === 3));
+  const M = pxRoadMask(w, h, OVER_SEGS.map(id => [SEG[id].pts, dim(id) ? 2 : 1]), 10, R);
+  /* terraces: the forest ledge, the highland above the river (the cave is in its wall), the castle hill */
+  const F = new Uint8Array(w * h), faces = [], ry0 = 1150 / PXU, ry1 = 1198 / PXU;
+  const cliff = (lo, hi, H, base) => { const rel = pxEdge(w, R, 2), y0 = pxCliffAt(M, w, h, base, rel, lo, hi, H), top = new Int16Array(w); for (let x = 0; x < w; x++) top[x] = y0 + (base ? base(x) : 0) + rel[x]; faces.push({top, H}); pxFace(V, P, R, top, H, F, faces.length); return top; };
+  cliff(686, 750, 22);
+  const high = cliff(0, 0, 24, x => 446 + Math.round(x / w * 35));
+  cliff(140, 222, 22);
+  /* a few small plateaus in open ground */
+  const II = new Int32Array((w + 1) * (h + 1)), W1 = w + 1;
+  for (let y = 0; y < h; y++){ let row = 0; for (let x = 0; x < w; x++){ row += M[y * w + x] || F[y * w + x] ? 1 : 0; II[(y + 1) * W1 + x + 1] = II[y * W1 + x + 1] + row; } }
+  const hit = (x0, y0, x1, y1) => { x0 = Math.max(0, Math.min(w, x0 | 0)); x1 = Math.max(0, Math.min(w, x1 | 0)); y0 = Math.max(0, Math.min(h, y0 | 0)); y1 = Math.max(0, Math.min(h, y1 | 0)); return II[y1 * W1 + x1] - II[y0 * W1 + x1] - II[y1 * W1 + x0] + II[y0 * W1 + x0]; };
+  const mesas = [];
+  [[160, 340, 256, 336], [130, 370, 640, 810], [390, 495, 630, 830], [20, 480, 890, 1160]].forEach(([ax, bx, ay, by]) => {
+    for (let t = 0; t < 60; t++){ const mw = 54 + (R() * 34 | 0), mh = 24 + (R() * 14 | 0), x0 = ax + R() * Math.max(1, bx - ax - mw) | 0, y0 = ay + R() * Math.max(1, by - ay - mh - 20) | 0;
+      if (x0 + mw > w - 4 || y0 + mh + 20 > h || y0 < 4 || (y0 + mh + 20 > ry0 - 6 && y0 < ry1 + 6)) continue;
+      if (hit(x0 - 8, y0 - 8, x0 + mw + 8, y0 + mh + 18 + 8)) continue;
+      faces.push({top: pxMesa(V, P, R, x0, y0, mw, mh, 18, F, faces.length + 1), H: 18}); mesas.push([x0, y0, mw, mh]); break; }
+  });
+  pxRiver(V, P, R, ry0, ry1);
+  pxPaint(V, P, R, M, F, faces, y => y >= ry0 - 1 && y <= ry1);
+  pxBridge(V, P, Math.round(riverCrossX() / PXU), ry0, ry1, 13);
+  /* flowers, crop fields and the two cave openings are part of the ground */
+  for (let y = 0; y < h; y++){ let row = 0; for (let x = 0; x < w; x++){ row += M[y * w + x] || F[y * w + x] || (y >= ry0 - 2 && y <= ry1 + 1) ? 1 : 0; II[(y + 1) * W1 + x + 1] = II[y * W1 + x + 1] + row; } }
+  const avoid = (x, y) => Math.hypot(x - 840, y - 995) < 70 || Math.hypot(x - 170, y - 880) < 60 || (Math.abs(x - 500) < 150 && y < 275) || (x > 650 && y < 175);
+  const busy = [], free = (x, y, r) => busy.every(([bx, by, br]) => Math.hypot(bx - x, by - y) > (br + r) * .8);
+  const spot = (n, x0, x1, y0, y1, box, fn) => { // box = [half width, height above the base, radius]
+    let k = 0, t = 0;
+    while (k < n && t < 1600){ t++; const x = x0 + R() * (x1 - x0), y = y0 + R() * (y1 - y0), dx = Math.round(x / PXU), dy = Math.round(y / PXU), [hw, ht, r] = box;
+      if (avoid(x, y) || hit(dx - hw, dy - ht, dx + hw + 1, dy + 3) || !free(dx, dy, r)) continue;
+      busy.push([dx, dy, r]); fn(dx, dy); k++; } };
+  if (!P.grid && !P.sand){ spot(2, 60, 940, 1780, 2380, [18, 12, 18], (x, y) => pxField(V, P, x - 14, y - 10, 28, 12)); spot(1, 60, 940, 480, 860, [16, 12, 16], (x, y) => pxField(V, P, x - 12, y - 10, 24, 11)); }
+  const flowers = (n, x0, x1, y0, y1) => spot(n, x0, x1, y0, y1, [4, 3, 2], (x, y) => { for (let k = 0; k < 3; k++) pxFlower(V, x + R() * 8 - 4, y - R() * 4, P.flower[R() * P.flower.length | 0]); });
+  flowers(26, 20, 980, 280, 470); flowers(18, 520, 980, 1240, 1700); flowers(34, 20, 980, 1760, 2395); flowers(10, 20, 980, 520, 860);
+  pxMouth(V, P, 420, high[420] + 24, curCh() === 3);
+  pxHole(V, P, 85, 441);
+  V.put();
+  /* trees, rocks, houses and the castle, from the back to the front */
+  const items = [], spr = {}, sp = (k, v, make) => { const key = k + v; return spr[key] || (spr[key] = make()); };
+  const put = (s, x, y) => items.push([y, () => V.g.drawImage(s.c, Math.round(x - s.ax), Math.round(y - s.ay))]);
+  const plant = (n, kind, x0, x1, y0, y1) => spot(n, x0, x1, y0, y1, [8, 30, 11], (x, y) => put(sp(kind, R() * 3 | 0, () => PX_SPR[kind](P, R)), x, y));
+  const T = P.tree, HL = P.hl, TK = T === 'sakura' ? 'sakura' : T;
+  plant(34, TK, 10, 990, 40, 240);
+  plant(10, 'bush', 20, 980, 280, 470);
+  plant(38, HL, 10, 990, 490, 880); plant(10, 'rock', 20, 980, 490, 880);
+  plant(12, 'rock', 20, 980, 1000, 1135); plant(14, HL, 10, 990, 990, 1135);
+  plant(44, TK, 10, 490, 1230, 1720); plant(10, TK, 510, 990, 1230, 1720); plant(10, 'bush', 510, 990, 1230, 1720); plant(6, 'rock', 510, 990, 1230, 1720);
+  mesas.forEach(([x0, y0, mw, mh]) => { spot(2, (x0 + 10) * PXU, (x0 + mw - 10) * PXU, (y0 + 14) * PXU, (y0 + mh - 1) * PXU, [6, 4, 9], (x, y) => put(sp(TK, R() * 3 | 0, () => PX_SPR[TK](P, R)), x, y)); spot(2, (x0 + 6) * PXU, (x0 + mw - 6) * PXU, (y0 + 8) * PXU, (y0 + mh - 1) * PXU, [5, 3, 6], (x, y) => put(sp('bush', R() * 3 | 0, () => PX_SPR.bush(P, R)), x, y)); });
+  const house = PX_HOUSE[P.house] || PX_HOUSE.euro;
+  spot(11, 40, 960, 1800, 2390, [27, 46, 27], (x, y) => { const roof = P.roof[R() * P.roof.length | 0]; put(sp('house', roof, () => house(P, roof, R)), x, y); });
+  plant(16, TK, 10, 990, 1760, 2395); plant(10, 'bush', 10, 990, 1760, 2395);
+  const castle = (PX_CASTLE[P.castle] || PX_CASTLE.euro)(P, R); put(castle, 250, 120);
   items.sort((u, v) => u[0] - v[0]).forEach(v => v[1]());
-  return c;
+  return V.c;
 }
 function pxCave(){
-  const C = caveCol(), ch = curCh(), sc = sceneryCave(), w = WW / PXU, h = CH / PXU, c = document.createElement('canvas'); c.width = w; c.height = h;
-  const g = c.getContext('2d'), R = rng(71 + ch), lite = hexMix(C.bg, '#FFFFFF', .08), dark = hexMix(C.bg, '#000000', .3);
-  pxR(g, 0, 0, w, h, C.bg);
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){ const r = R(); if (r < .07) pxR(g, x, y, 1, 1, C.rk[1]); else if (r < .09) pxR(g, x, y, 1, 1, lite); }
-  const a = SEG.cave.pts[0], z = SEG.cave.pts[SEG.cave.pts.length - 1];
-  [[a, 30], [z, 32]].forEach(([q, r]) => { const cx = q[0] / PXU, cy = q[1] / PXU; for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++){ const d = Math.hypot(x, y) / r; if (d < 1 && R() < (1 - d) * .6) pxR(g, cx + x, cy + y, 1, 1, hexMix(C.bg, C.road[2], .45)); } });
-  for (let x = 0; x < w; x += ch === 2 ? 5 : 7){ const hh = ch === 2 ? 5 + Math.floor(R() * 10) : 3 + Math.floor(R() * 6), base = ch === 2 ? 2 : 3; for (let i = 0; i < hh; i++){ const ww = Math.max(0, Math.round(base * (1 - i / hh))); pxR(g, x + base - ww, i, ww * 2 + 1, 1, C.stal); } if (ch === 2) pxR(g, x + base, 1, 1, Math.max(1, hh - 3), '#FFFFFF'); }
-  const place = (n, clear, fn) => { let k = 0, t = 0; while (k < n && t < 900){ t++; const x = 20 + R() * (WW - 40), y = 70 + R() * (CH - 100); if (nearAny(['cave'], x, y, clear)) continue; fn(Math.round(x / PXU), Math.round(y / PXU)); k++; } };
-  place(30, 56, (x, y) => { const r = 4 + Math.floor(R() * 5); pxDome(g, x, y, r + 2, r + 1, [C.rk[R() < .5 ? 0 : 1], dark]); pxR(g, x - r + 1, y - r, 3, 1, C.rk2); });
-  place(16, 40, (x, y) => { const col = C.cr[R() < .5 ? 0 : 1]; for (let k = 0; k < 10; k++) pxR(g, x + R() * 12 - 6, y + R() * 8 - 8, 1, 1, hexMix(C.bg, col, .45)); [[0, 0, 7], [-3, 2, 4], [3, 2, 5]].forEach(([dx, dy, hh]) => { for (let i = 0; i < hh; i++){ const ww = i < 2 ? 0 : 1; pxR(g, x + dx - ww, y + dy - hh + i, ww * 2 + 1, 1, col); } pxR(g, x + dx, y + dy - hh + 2, 1, 2, '#FFFFFF'); }); });
-  (sc.lava || []).forEach(([lx, ly]) => { const x = lx / PXU, y = ly / PXU; pxEll(g, x, y, 12, 4, '#8A2A10'); pxEll(g, x, y, 11, 3, '#C8361A'); pxEll(g, x, y, 9, 2, '#FF6A2A'); pxR(g, x - 4, y - 1, 5, 1, '#FFC24A'); });
-  pxRoads(g, [[SEG.cave.pts, [C.road[1], C.road[2], C.road[0]]]], R);
-  return c;
+  const C = caveCol(), ch = curCh(), sc = sceneryCave(), w = WW / PXU, h = CH / PXU, V = pxSurf(w, h), R = rng(71 + ch), {d} = V;
+  const bg = V.u(C.bg), rk = V.u(C.rk[1]), dk = V.u(pxDk(C.bg, .3)), lite = V.u(pxLt(C.bg, .08)), n1 = pxNoise(R, w, h, 12);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){ const v = n1(x, y), r = R(); d[y * w + x] = v > .66 ? (r < .5 ? rk : bg) : v < .3 ? (r < .3 ? dk : bg) : r < .03 ? rk : r > .985 ? lite : bg; }
+  const a = SEG.cave.pts[0], z = SEG.cave.pts[SEG.cave.pts.length - 1], glow = hexMix(C.bg, C.road[2], .4);
+  [[a, 60], [z, 64]].forEach(([q, r]) => { const cx = q[0] / PXU, cy = q[1] / PXU; for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++){ const k = Math.hypot(x, y) / r; if (k < 1 && R() < (1 - k) * .55) V.set(cx + x, cy + y, glow); } });
+  for (let x = 0; x < w; x += ch === 2 ? 9 : 13){ const hh = (ch === 2 ? 10 : 6) + (R() * (ch === 2 ? 20 : 12) | 0), b = ch === 2 ? 4 : 6; for (let i = 0; i < hh; i++){ const ww = Math.max(0, Math.round(b * (1 - i / hh))); for (let k = -ww; k <= ww; k++) V.set(x + b + k, i, k < -ww / 3 ? C.rk2 : k > ww / 3 ? pxDk(C.stal, .25) : C.stal); } if (ch === 2) V.rect(x + b - 1, 1, 1, Math.max(1, hh - 5), '#FFFFFF'); }
+  (sc.lava || []).forEach(([lx, ly]) => { const x = lx / PXU, y = ly / PXU; pxShadow(V, x, y, 30, 11, hexMix(C.bg, '#FF6A2A', .25)); pxShadow(V, x, y, 24, 8, '#5A1A0C'); pxShadow(V, x, y, 22, 7, '#C8361A'); pxShadow(V, x, y, 18, 5, '#FF6A2A'); V.rect(x - 8, y - 1, 10, 1, '#FFC24A'); V.rect(x + 4, y + 2, 6, 1, '#FFC24A'); });
+  const M = pxRoadMask(w, h, [[SEG.cave.pts, 1]], 9, R), F = new Uint8Array(w * h);
+  pxPaint(V, {road: [C.road[1], pxDk(C.road[1], .28), pxLt(C.road[1], .12), C.road[2]], step: [C.road[1], C.road[0], C.road[2]], g: [C.bg, C.bg, pxLt(C.bg, .12), C.bg]}, R, M, F, []);
+  V.put();
+  const items = [], P2 = {g: [C.bg, C.bg, C.bg, pxDk(C.bg, .35)], rock: [C.rk[0], C.rk[1], C.rk2, pxDk(C.rk[1], .35)], snow: ch === 2};
+  const ok = (x, y) => !nearAny(['cave'], x, y, 64) && x > 30 && x < WW - 30 && y > 90;
+  for (let k = 0, t = 0; k < 26 && t < 900; t++){ const x = R() * WW, y = 60 + R() * (CH - 80); if (!ok(x, y)) continue; const s = PX_SPR.rock(P2, R); items.push([y, () => V.g.drawImage(s.c, Math.round(x / PXU - s.ax), Math.round(y / PXU - s.ay))]); k++; }
+  for (let k = 0, t = 0; k < 14 && t < 900; t++){ const x = R() * WW, y = 60 + R() * (CH - 80); if (!ok(x, y)) continue; const col = C.cr[R() < .5 ? 0 : 1], s = PX_SPR.crystal({g: P2.g, leaf: [pxDk(col, .35), col, pxLt(col, .35), '#FFFFFF']}, R); items.push([y, () => V.g.drawImage(s.c, Math.round(x / PXU - s.ax), Math.round(y / PXU - s.ay))]); k++; }
+  items.sort((u, v) => u[0] - v[0]).forEach(v => v[1]());
+  return V.c;
 }
 /* one picture per world, chapter and chosen route; kept as a blob URL once ready */
 const PXMAPS = {};
@@ -2940,7 +3290,7 @@ function padSVG(q){
       h += `<g transform="translate(${(q.x + (boss ? 78 : 56)).toFixed(0)} ${(q.y + 12).toFixed(0)}) scale(${sc})"><g class="mon-bob">${pxSprite(`<use href="#mon-${monKind(st)}" style="--mc:${st.mcol || '#7C4DDB'}"/>`)}</g></g>`;
       if (q.p.s === bossStage(S) && !hasMember('princess')) h += `<g transform="translate(${(q.x - 70).toFixed(0)} ${(q.y + 14).toFixed(0)}) scale(1.3)"><circle cy="-26" r="34" fill="#FFD66B" opacity=".18"/>${pxSprite('<use href="#pm-princess"/><use href="#cage"/>')}<text y="20" text-anchor="middle" font-size="12" fill="#FFF3C4" ${F}>たすけて！</text></g>`;
     }
-    else h += `<g transform="translate(${(q.x + 40).toFixed(0)} ${(q.y + 8).toFixed(0)}) scale(1.35)">${pxSprite(`<use href="#npc" style="--hat:${col}"/>`)}</g>`;
+    else h += `<g transform="translate(${(q.x + 40).toFixed(0)} ${(q.y + 8).toFixed(0)}) scale(1.2)">${pxSprite(`<use href="#npc" style="--hat:${col}"/>`)}</g>`;
   }
   return h;
 }
@@ -3106,7 +3456,7 @@ function rivalArt(r, lv, pet, k2 = 0){
     if (lv >= 4) armor = `<rect x="-10.5" y="-35.5" width="21" height="12" rx="5" fill="#AEB8C8" stroke="#7D879B" stroke-width="1"/><circle cx="-6" cy="-30" r="1.2" fill="#7D879B"/><circle cx="6" cy="-30" r="1.2" fill="#7D879B"/>`;
     if (lv >= 5) helm = `<path d="M-10.5 -44 Q-10.5 -57 0 -57 Q10.5 -57 10.5 -44 Z" fill="#AEB8C8" stroke="#7D879B" stroke-width="1"/><path d="M-9 -52 Q-17 -56 -17 -64 Q-12 -58 -7 -56 Z M9 -52 Q17 -56 17 -64 Q12 -58 7 -56 Z" fill="#FFF3C4" stroke="#C9B48E" stroke-width=".8"/>`;
   }
-  const person = `<g transform="scale(${k})">${back}<rect x="-6" y="-18" width="5" height="18" rx="2.5" fill="${pants}"/><rect x="1" y="-18" width="5" height="18" rx="2.5" fill="${pants}"/><rect x="5" y="-32" width="4.5" height="14" rx="2.2" fill="${skin}"/>${body}${armor}${weapon}<rect x="-9.5" y="-32" width="4.5" height="14" rx="2.2" fill="${skin}"/>${shield}<circle cx="0" cy="-44" r="9" fill="${skin}"/>${hair}${helm}<circle cx="4" cy="-44" r="1.3" fill="#1B2140"/></g>`;
+  const person = chibify(`<g transform="scale(${k})">${back}<rect x="-6" y="-18" width="5" height="18" rx="2.5" fill="${pants}"/><rect x="1" y="-18" width="5" height="18" rx="2.5" fill="${pants}"/><rect x="5" y="-32" width="4.5" height="14" rx="2.2" fill="${skin}"/>${body}${armor}${weapon}<rect x="-9.5" y="-32" width="4.5" height="14" rx="2.2" fill="${skin}"/>${shield}<circle cx="0" cy="-44" r="9" fill="${skin}"/>${hair}${helm}<circle cx="4" cy="-44" r="1.3" fill="#1B2140"/></g>`);
   return `<ellipse cx="0" cy="0" rx="13" ry="3.8" fill="#000" opacity=".18"/>${pet ? PET_ART[r.pet] : ''}${person}<text y="${(lv >= 5 && r.id !== 'hayato' ? -72 : -64) - (k2 === 1 ? 13 : 0)}" text-anchor="middle" font-size="11" font-weight="800" fill="${r.c}" stroke="#fff" stroke-width="3.5" paint-order="stroke" font-family="${FONT}">${r.n} Lv.${lv}</text>`;
 }
 function newRivals(x){
@@ -3136,7 +3486,7 @@ function rivalsSVG(cave){
     const sq = rvTrack(rv).sq, q = sq[rvIdx(rv, sq)]; if (!q || (q.part === 2) !== cave) return '';
     const [ox, oy] = RV_OFF[k % 3];
     const lv = rvLevel(rv);
-    return `<g id="rv-${rv.id}" class="rv" transform="translate(${(q.x + ox).toFixed(1)} ${(q.y + oy).toFixed(1)})"><g transform="scale(1.35)">${pxSprite(rivalArt(rvInfo(rv.id), lv, Object.keys(rv.cleared || {}).length >= 3, k))}</g></g>`;
+    return `<g id="rv-${rv.id}" class="rv" transform="translate(${(q.x + ox).toFixed(1)} ${(q.y + oy).toFixed(1)})"><g transform="scale(1.2)">${pxSprite(rivalArt(rvInfo(rv.id), lv, Object.keys(rv.cleared || {}).length >= 3, k))}</g></g>`;
   }).join('');
 }
 function standings(){
@@ -3182,7 +3532,7 @@ function pushPresence(){
       fin: !!S.quest.place, finAt: S.quest.finAt || 0, die: S.quest.rolls ? S.quest.last : 0, party: (S.quest.party || []).length, where: segName(q.seg), av: avCode(curAvatar()), ch: S.chapter || 1}).catch(() => {});
   } catch (e) {}
 }
-function opArt(o){ return `<g transform="scale(1.35)">${pxSprite(`<g class="lv${o.lv}" style="--shirt:${o.c}"><ellipse cx="0" cy="0" rx="13" ry="3.8" fill="#000" opacity=".18"/>${heroPerson(curWorld(), o.av || {skin: 1})}</g>`)}</g><text y="-96" text-anchor="middle" font-size="13" font-weight="800" fill="${o.c}" stroke="#fff" stroke-width="4" paint-order="stroke" font-family="${FONT}">${esc(o.nick)} Lv.${o.lv}</text>`; }
+function opArt(o){ return `<g transform="scale(1.2)">${pxSprite(`<g class="lv${o.lv}" style="--shirt:${o.c}"><ellipse cx="0" cy="0" rx="13" ry="3.8" fill="#000" opacity=".18"/>${heroPerson(curWorld(), o.av || {skin: 1})}</g>`)}</g><text y="-80" text-anchor="middle" font-size="13" font-weight="800" fill="${o.c}" stroke="#fff" stroke-width="4" paint-order="stroke" font-family="${FONT}">${esc(o.nick)} Lv.${o.lv}</text>`; }
 function onlineLayer(cave){ return `<g id="opLayer" data-cave="${cave ? 1 : 0}"></g>`; }
 function onlineChanged(){
   const layer = $('#opLayer'); if (!layer || !S || !S.online) return;
