@@ -697,6 +697,8 @@ details.own[open] summary{margin-bottom:8px}
 .pbar h2{margin:0;font-size:17px;font-weight:800;margin-right:auto}
 .pbar p{margin:0;font-size:12px;color:var(--muted)}
 .pscale{width:100%;display:flex;justify-content:center}
+.pdfsrc{position:absolute;left:-12000px;top:0;pointer-events:none}
+.pdfsrc .ppage{margin:0!important;box-shadow:none!important}
 
 @media (max-width:900px){
   body{overflow:auto}
@@ -726,12 +728,126 @@ details.own[open] summary{margin-bottom:8px}
   .install{margin-left:0;justify-items:stretch;width:100%}
   .app-card{width:100%}
 }
+/* ---------- phone: one screen at a time. The game switches between the board and the questions, so nothing needs a long scroll ---------- */
+.more,.phonebar,.rolldock,.hstep,.qtoggle,.rtabs{display:none}
+@keyframes scrIn{from{opacity:.35;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes dotPulse{50%{transform:scale(1.35)}}
+@media (max-width:620px), (max-height:520px) and (max-width:1000px){
+  html,body{height:100%}
+  body{overflow:hidden}
+  .app{height:100%;min-height:0;grid-template-rows:auto minmax(0,1fr) auto}
+  .top{position:relative;z-index:25;flex-wrap:nowrap;gap:10px;padding:8px 10px 8px 12px}
+  .logo div{display:none}
+  .appicon{width:32px;height:32px}
+  .theme-now{order:0;flex:1 1 0;min-width:0;gap:6px}
+  .theme-now small,.theme-now em{display:none}
+  .theme-now span{font-size:14.5px}
+  .meter{width:56px;gap:0}
+  .meter small{display:none}
+  .meter b{grid-column:1 / -1;font-size:13px;line-height:1;text-align:right}
+  .more{display:grid;place-items:center;flex:none;width:42px;height:42px;padding:0;border-radius:12px;border:1.5px solid var(--line2);background:var(--surface);color:var(--ink)}
+  .more svg{width:22px;height:22px}
+  .top.open .more{background:var(--ink);border-color:var(--ink);color:#fff}
+  .acts{display:none;position:absolute;right:10px;top:calc(100% - 2px);flex-direction:column;align-items:stretch;gap:6px;min-width:190px;padding:10px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 40px -18px rgba(27,33,64,.55)}
+  .top.open .acts{display:flex}
+  .acts .btn.sm{padding:12px 14px;font-size:15px;text-align:left;border-radius:12px}
+  .main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:0;padding:0 8px}
+  .stage,.panel{grid-area:1 / 1;height:auto;min-height:0}
+  .stage{border-radius:20px}
+  .panel{overflow:auto;overscroll-behavior:contain;padding:16px 16px 18px;gap:12px;border-radius:20px}
+  .app[data-screen="stage"] .panel,.app[data-screen="panel"] .stage{visibility:hidden}
+  .app[data-screen="stage"] .stage,.app[data-screen="panel"] .panel{animation:scrIn .22s ease-out}
+  .toast{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom,0px));visibility:visible;z-index:40}
+  .tabs{left:10px;top:10px}
+  .zoombar{top:10px;right:10px;bottom:auto;padding:2px}
+  .zoombar button{min-width:34px;height:34px;font-size:18px}
+  .zoombar .zpct{min-width:46px;font-size:11.5px}
+  .btimer{top:58px;right:10px;padding:6px 10px 7px 8px}
+  .btimer b{font-size:22px}
+  #board{padding-bottom:92px}
+  .rolldock{display:flex;align-items:center;gap:10px;position:absolute;left:10px;right:10px;bottom:10px;z-index:6;padding:10px 10px 10px 12px;border-radius:18px;background:rgba(255,255,255,.97);border:1px solid var(--line);box-shadow:0 14px 30px -16px rgba(27,33,64,.6)}
+  .rolldock .dice{width:54px;height:54px;flex:none;padding:0;border:none;background:none}
+  .rd-txt{flex:1;min-width:0;display:grid;line-height:1.35}
+  .rd-txt b{font-size:13.5px;font-weight:800}
+  .rd-txt small{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rolldock .btn{flex:none;padding:14px 16px;font-size:15px}
+  .phonebar{display:flex;gap:8px;padding:8px 8px 10px}
+  .phonebar button{flex:1;position:relative;display:flex;align-items:center;justify-content:center;gap:8px;height:50px;border-radius:15px;border:1.5px solid var(--line2);background:var(--surface);color:var(--muted);font-size:15px;font-weight:800}
+  .phonebar button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .phonebar svg{width:22px;height:22px;flex:none}
+  .phonebar .dot{position:absolute;top:8px;right:12px;width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--surface);animation:dotPulse 1.1s ease-in-out infinite}
+  /* questions: the question, the answer box and the button come first; hints and extras follow */
+  .panel p.hint:has(kbd){display:none}
+  .panel > .p-foot{position:sticky;bottom:-18px;z-index:3;margin-inline:-16px;padding:10px 16px 12px;background:var(--surface);border-top:1px solid var(--line)}
+  .panel[data-st="play"] > *{order:1}
+  .panel[data-st="play"] > .p-head{order:-20}
+  .panel[data-st="play"] > .qtimer{order:-19}
+  .panel[data-st="play"] > .path{order:-18}
+  .panel[data-st="play"] > .rpg,.panel[data-st="play"] > .question,.panel[data-st="play"] > .question + .hint,.panel[data-st="play"] > .mini{order:-17}
+  .panel[data-st="play"] > .pform,.panel[data-st="play"] > .entry,.panel[data-st="play"] > .pick-head,.panel[data-st="play"] > .choices,.panel[data-st="play"] > .own,.panel[data-st="play"] > #btnAiOpts,.panel[data-st="play"] > .timeup,.panel[data-st="play"] > .routes{order:-16}
+  .panel[data-st="play"] > .coach{order:-15}
+  .panel[data-st="play"] > .answers{order:-14}
+  .panel[data-st="play"] > .cond{order:-13}
+  .panel[data-st="play"] > .p-foot{order:-12}
+  .panel[data-st="roll"] > .dice-zone{display:none}
+  .qtimer{top:-16px;margin:-2px -6px 0;padding:6px 12px 8px;gap:5px;border-radius:14px}
+  .qtimer b{font-size:24px}
+  .qt-ic{width:22px;height:22px}
+  .qt-row span{font-size:12px}
+  .qt-bar{height:8px}
+  .cond-item{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;padding:6px 10px}
+  .cond-item b{font-size:15px}
+  .rpg{margin-top:4px;padding:16px 14px 14px}
+  .rpg p{font-size:17px}
+  .story .story-pic{max-height:150px}
+  /* home: one step per screen, with the buttons kept at the bottom */
+  .overlay{padding:10px 8px 20px}
+  #ovHome .sheet{padding:24px 18px;border-radius:22px}
+  #ovHome .title-art{margin:-24px -18px 0;border-radius:22px 22px 0 0}
+  #ovHome .lede,#btnSheet{display:none}
+  #ovHome .sheet[data-step="1"] > [data-hs]:not([data-hs~="1"]),
+  #ovHome .sheet[data-step="2"] > [data-hs]:not([data-hs~="2"]),
+  #ovHome .sheet[data-step="3"] > [data-hs]:not([data-hs~="3"]),
+  #ovHome .sheet[data-step="4"] > [data-hs]:not([data-hs~="4"]){display:none}
+  #ovHome .start-foot{order:1;position:sticky;bottom:-20px;z-index:5;margin:0 -18px -24px;padding:12px 18px 14px;background:var(--surface);border-top:1px solid var(--line);border-radius:0 0 22px 22px;justify-content:space-between;gap:8px}
+  #ovHome .start-foot .hstep{display:inline-block}
+  .hpage{font-family:var(--en);font-size:12.5px;font-weight:600;color:var(--muted);flex:1;text-align:center}
+  #ovHome .sheet:not([data-step="1"]) #btnResume,#ovHome .sheet[data-last] #hNext,#ovHome .sheet:not([data-last]) #btnBegin{display:none}
+  #btnResume{flex:1 1 100%;order:-1}
+  .qtoggle{display:inline-block}
+  #qBox:not(.open) #qList{display:none}
+  /* result: three tabs instead of one long page; the action buttons stay at the bottom */
+  .rtabs{display:flex;order:-1;position:sticky;top:-10px;z-index:6;gap:4px;padding:4px;margin-top:-8px;background:var(--soft);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 20px -16px rgba(27,33,64,.5)}
+  .result .close{top:12px;right:14px}
+  .result .rtabs{margin-right:46px}
+  .rtabs button{flex:1;height:40px;border:none;border-radius:10px;background:none;font-size:14px;font-weight:800;color:var(--muted)}
+  .rtabs button[aria-selected="true"]{background:var(--ink);color:#fff}
+  .result .r-grid,.result .r-grid > div{display:contents!important}
+  #resultSheet[data-rtab="score"] :is(.advice,.first,.tl,.r-boards){display:none}
+  #resultSheet[data-rtab="advice"] :is(.r-grid > div:first-child > *,.mq,.axes,.stats4,.r-boards){display:none}
+  #resultSheet[data-rtab="board"] .r-grid > div > :not(.r-actions){display:none}
+  .result .r-boards{order:8;border-top:none;padding-top:0}
+  .result .r-actions{order:9;position:sticky;bottom:-20px;z-index:6;flex-wrap:nowrap;overflow-x:auto;margin:0 -18px -24px;padding:10px 18px 14px;background:var(--surface);border-top:1px solid var(--line);border-radius:0 0 22px 22px;scrollbar-width:none}
+  .result .r-actions .btn{flex:none;white-space:nowrap}
+}
+/* phones held sideways: little height, so slimmer bars and nothing pinned over the answer box */
+@media (max-height:520px) and (max-width:1000px){
+  .top{padding:4px 10px}
+  .appicon{width:28px;height:28px}
+  .more{width:36px;height:36px}
+  .phonebar{padding:4px 8px 6px}
+  .phonebar button{height:38px;font-size:13.5px}
+  .panel > .p-foot{position:static;margin-inline:0;padding:4px 0 0;border-top:none;background:none}
+  .rolldock{padding:6px 8px}
+  .rolldock .dice{width:44px;height:44px}
+  .rolldock .btn{padding:10px 14px}
+}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 @media print{
   @page{size:A4;margin:0}
   html,body{height:auto!important;overflow:visible!important;background:#fff!important}
   body::before,body::after{display:none!important}
-  .app,.overlay:not(#ovPrint){display:none!important}
+  .app,.overlay:not(#ovPrint),.pdfsrc{display:none!important}
   #ovPrint{position:static!important;display:block!important;padding:0!important;background:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;overflow:visible!important}
   #ovPrint .pbar{display:none!important}
   .pscale{zoom:1!important;display:block!important}
@@ -779,8 +895,9 @@ details.own[open] summary{margin-bottom:8px}
     </button>
     <div class="theme-now"><small>THEME</small><span id="themeNow">—</span><em id="modeNow" hidden></em></div>
     <div class="meter" aria-label="進み具合"><small>PROGRESS</small><b id="pctVal">0%</b><div class="bar"><i id="pctBar"></i></div></div>
-    <div class="acts">
-      <button class="btn sm" type="button" id="btnPrint">印刷</button>
+    <button class="more" type="button" id="btnMore" aria-label="メニュー" aria-expanded="false" aria-controls="topActs"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+    <div class="acts" id="topActs">
+      <button class="btn sm" type="button" id="btnPrint">印刷・PDF</button>
       <button class="btn sm" type="button" id="btnCopyTop">テキスト</button>
       <button class="btn sm" type="button" id="btnSound" aria-pressed="true">音 ON</button>
       <button class="btn sm" type="button" id="btnBgm" aria-pressed="true">BGM ON</button>
@@ -812,31 +929,40 @@ details.own[open] summary{margin-bottom:8px}
         <button type="button" data-zoom="fit" class="zpct" id="zoomPct" aria-label="元の大きさに戻す">100%</button>
         <button type="button" data-zoom="in" aria-label="拡大">＋</button>
       </div>
+      <div class="rolldock" id="rollDock" hidden>
+        <button class="dice" type="button" id="dockDice" aria-label="サイコロをふる"></button>
+        <div class="rd-txt"><b id="dockMsg">サイコロをふって進もう</b><small id="dockInfo"></small></div>
+        <button class="btn primary" type="button" id="dockRoll">サイコロをふる</button>
+      </div>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </section>
     <aside class="panel card" id="panel" aria-live="polite"></aside>
   </div>
+  <nav class="phonebar" id="phoneBar" aria-label="画面の切り替え">
+    <button type="button" data-screen="stage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20Z M9 4v13.5 M15 6.5V20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span id="pbStage">ぼうけん</span><i class="dot" hidden></i></button>
+    <button type="button" data-screen="panel" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10.2 9a1.9 1.9 0 1 1 2.6 1.8c-.5.2-.8.6-.8 1.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="pbPanel">問い</span><i class="dot" hidden></i></button>
+  </nav>
 </div>
 
 <!-- Home -->
 <div class="overlay" id="ovHome" lang="ja">
   <div class="sheet">
-    <div class="title-art" id="titleArt" role="img" aria-label="勇者と仲間たちがドラゴンとたたかい、夢の城をめざすタイトル画面"></div>
+    <div class="title-art" data-hs="1" id="titleArt" role="img" aria-label="勇者と仲間たちがドラゴンとたたかい、夢の城をめざすタイトル画面"></div>
     <h1 class="sr-only">マインドクエスト</h1>
-    <p class="title-sub">問いに答えて、たたかって、夢をかなえろ！</p>
-    <div class="title-row">
+    <p class="title-sub" data-hs="1">問いに答えて、たたかって、夢をかなえろ！</p>
+    <div class="title-row" data-hs="1">
       <p class="title-tag">テーマを決めて、<b>問いに答えるたびに強くなる</b>。モンスター（不安・言いわけ・あきらめ）をたおして、夢の城をめざそう！</p>
       <div class="install" id="installBox"><button class="app-card" type="button" id="btnInstall"><span class="ac-qr" id="appMiniQR" aria-hidden="true">📱</span><span class="ac-t"><b id="installLabel">📱 アプリにする</b><small id="installNote">QRコードでスマホにも入れられます</small></span><span class="ac-go" aria-hidden="true">›</span></button></div>
     </div>
-    <p class="lede">夢や目標をテーマに書いたら、あなたが勇者になって冒険へ。関所で出会う人の問いに答えるほど強くなり、モンスターやドラゴンをたおして城をめざします。ゴールすると、冒険の答えがマインドマップにまとまり、実現可能性を採点。同じ夢で第3章まで深掘りできます。</p>
+    <p class="lede" data-hs="1">夢や目標をテーマに書いたら、あなたが勇者になって冒険へ。関所で出会う人の問いに答えるほど強くなり、モンスターやドラゴンをたおして城をめざします。ゴールすると、冒険の答えがマインドマップにまとまり、実現可能性を採点。同じ夢で第3章まで深掘りできます。</p>
 
-    <div class="step"><i>STEP 1</i>真ん中のテーマ</div>
-    <input id="themeInput" class="theme-input" maxlength="24" placeholder="例：科学者になりたい" aria-label="真ん中のテーマ" autocomplete="off">
-    <div class="examples" id="examples"></div>
-    <div class="age-row"><label for="ageInput">あなたの年齢<input id="ageInput" type="number" min="3" max="110" inputmode="numeric" placeholder="例：15">歳</label><small>入れると、最後に「何歳で何をするか」の人生のタイムスケジュールを作ります（任意）</small></div>
+    <div class="step" data-hs="1"><i>STEP 1</i>真ん中のテーマ</div>
+    <input id="themeInput" class="theme-input" data-hs="1" maxlength="24" placeholder="例：科学者になりたい" aria-label="真ん中のテーマ" autocomplete="off">
+    <div class="examples" data-hs="1" id="examples"></div>
+    <div class="age-row" data-hs="1"><label for="ageInput">あなたの年齢<input id="ageInput" type="number" min="3" max="110" inputmode="numeric" placeholder="例：15">歳</label><small>入れると、最後に「何歳で何をするか」の人生のタイムスケジュールを作ります（任意）</small></div>
 
-    <div class="step"><i>STEP 2</i>あそび方<small class="step-note">いちばん楽しいのはクエスト！</small></div>
-    <div class="modes" id="modeCtl" role="radiogroup" aria-label="あそび方">
+    <div class="step" data-hs="2"><i>STEP 2</i>あそび方<small class="step-note">いちばん楽しいのはクエスト！</small></div>
+    <div class="modes" data-hs="2" id="modeCtl" role="radiogroup" aria-label="あそび方">
       <button class="mode-card" type="button" role="radio" data-mode="quest" aria-checked="true">
         <svg id="questIcon" viewBox="-64 -86 128 94" aria-hidden="true"></svg>
         <em class="badge">おすすめ・メインモード</em><b>クエスト（冒険すごろく）</b><span>6つのワールドを自分だけの勇者で冒険。モンスターをたおして姫を救い、同じ夢で第3章まで深掘りできる</span>
@@ -846,7 +972,7 @@ details.own[open] summary{margin-bottom:8px}
         <b>マインドマップ</b><span>じっくり考えたい人向け。時間制限なしで、中心から枝を伸ばして考えを広げる</span>
       </button>
     </div>
-    <div class="vs" id="vsBox" hidden>
+    <div class="vs" data-hs="3" id="vsBox" hidden>
       <div class="vs-sec"><b>ワールドをえらぶ</b><div class="worlds" id="worldCtl" role="radiogroup" aria-label="ワールド"></div></div>
       <div class="vs-sec"><b>勇者をつくる</b>
         <div class="maker">
@@ -877,21 +1003,22 @@ details.own[open] summary{margin-bottom:8px}
       </div>
     </div>
 
-    <div class="step"><i>STEP 3</i>レベル</div>
-    <div class="seg-ctl" id="levelCtl" role="radiogroup" aria-label="レベル">
+    <div class="step" data-hs="4"><i>STEP 3</i>レベル</div>
+    <div class="seg-ctl" data-hs="4" id="levelCtl" role="radiogroup" aria-label="レベル">
       <button type="button" role="radio" data-level="normal" aria-checked="true">ふつう<small>自分の言葉で書く</small></button>
       <button type="button" role="radio" data-level="beginner" aria-checked="false">初心者<small>選択肢から選ぶ</small></button>
     </div>
 
-    <div class="step"><i>STEP 4</i>問いのコース</div>
-    <div class="seg-ctl" id="presetCtl" role="radiogroup" aria-label="問いのコース"></div>
-    <div class="qbox">
+    <div class="step" data-hs="4"><i>STEP 4</i>問いのコース</div>
+    <div class="seg-ctl" data-hs="4" id="presetCtl" role="radiogroup" aria-label="問いのコース"></div>
+    <div class="qbox" data-hs="4" id="qBox">
       <div class="qbox-head">
         <small id="qCount">7 QUESTIONS</small>
         <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
           <label class="switch" id="timedSw"><input type="checkbox" id="chkTimed" checked> 制限時間あり（クエスト）</label>
           <small class="untimed" id="untimedNote" hidden>マインドマップは時間制限なし。じっくり考えよう</small>
           <button class="btn sm" type="button" id="btnEditQs">問いと条件を編集</button>
+          <button class="btn sm qtoggle" type="button" id="btnQToggle" aria-expanded="false" aria-controls="qList">問いを見る</button>
         </div>
       </div>
       <ol class="qlist" id="qList"></ol>
@@ -904,9 +1031,12 @@ details.own[open] summary{margin-bottom:8px}
     <div class="start-foot">
       <button class="btn" type="button" id="btnSheet">記入用シートを印刷</button>
       <button class="btn" type="button" id="btnResume" hidden></button>
+      <button class="btn hstep" type="button" id="hPrev">← 戻る</button>
+      <span class="hstep hpage" id="hPage" aria-live="polite"></span>
+      <button class="btn dark hstep" type="button" id="hNext">次へ →</button>
       <button class="btn primary lg" type="button" id="btnBegin" disabled>スタート →</button>
     </div>
-    <p class="note" id="resumeNote" hidden>新しく始めると、保存中のプレイは置き換わります。</p>
+    <p class="note" data-hs="4" id="resumeNote" hidden>新しく始めると、保存中のプレイは置き換わります。</p>
   </div>
 </div>
 
@@ -924,7 +1054,8 @@ details.own[open] summary{margin-bottom:8px}
       </div>
     </div>
     <div class="pbar-row">
-      <button class="btn primary" type="button" id="btnDoPrint">印刷する</button>
+      <button class="btn primary" type="button" id="btnPdf">PDFで保存</button>
+      <button class="btn" type="button" id="btnDoPrint">印刷する</button>
       <button class="btn" type="button" id="btnPrintClose">閉じる</button>
       <p id="printNote"></p>
     </div>
@@ -995,6 +1126,8 @@ const hash = str => { let h = 5381; for (const c of str) h = (h * 33 + c.codePoi
 
 /* ---------- environment ---------- */
 const inViewer = !!(window.claude && typeof window.claude.use === 'function');
+/* phones (and short landscape screens) show one screen at a time: the board or the questions */
+const PHONE = matchMedia('(max-width:620px), (max-height:520px) and (max-width:1000px)');
 const samplePromise = inViewer ? window.claude.use('sample').catch(() => null) : Promise.resolve(null);
 const downloadsPromise = inViewer ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
 let sampleAvail = false;
@@ -2415,7 +2548,7 @@ function setHero(x, y, dirX){
 }
 function follow(x, y, instant){
   const v = $('#boardView'), w = $('#world'); if (!v || !w) return;
-  const sc = w.clientWidth / WW, top = y * sc - v.clientHeight * .55, left = x * sc - v.clientWidth / 2;
+  const sc = w.clientWidth / WW, top = y * sc - v.clientHeight * (PHONE.matches ? .42 : .55), left = x * sc - v.clientWidth / 2;
   if (instant){ v.scrollTop = top; v.scrollLeft = left; }
   else { v.scrollTop += (top - v.scrollTop) * .18; v.scrollLeft += (left - v.scrollLeft) * .18; }
 }
@@ -2452,7 +2585,7 @@ function setStageView(v){
   if (typeof updateZoomUI === 'function') updateZoomUI();
   weatherUpdate(); updateTimerUI();
 }
-$('#stageTabs').addEventListener('click', e => { const b = e.target.closest('button[data-view]'); if (!b) return; setStageView(b.dataset.view); if (b.dataset.view === 'map') renderMap(); else renderBoard(); });
+$('#stageTabs').addEventListener('click', e => { const b = e.target.closest('button[data-view]'); if (!b) return; setStageView(b.dataset.view); if (b.dataset.view === 'map') renderMap(); else renderBoard(); syncScreen(); });
 
 /* dice */
 const PIPS = {1: [[50, 50]], 2: [[30, 30], [70, 70]], 3: [[28, 28], [50, 50], [72, 72]], 4: [[30, 30], [70, 30], [30, 70], [70, 70]], 5: [[28, 28], [72, 28], [50, 50], [28, 72], [72, 72]], 6: [[30, 26], [70, 26], [30, 50], [70, 50], [30, 74], [70, 74]]};
@@ -2463,12 +2596,14 @@ async function roll(){
   if (!S || S.mode !== 'quest' || S.phase !== 'play' || S.quest.qs !== 'roll') return;
   S.quest.qs = 'moving'; S.quest.rolls++;
   if (stageView !== 'board'){ setStageView('board'); renderBoard(); }
-  renderPanel();
-  const d = $('#dice'); let v = 1;
-  if (d){ d.classList.add('rolling'); for (let k = 0; k < 9; k++){ v = 1 + Math.floor(Math.random() * 6); d.innerHTML = diceSVG(v); sfx.dice(); await sleep(70); } d.classList.remove('rolling'); }
+  renderPanel(); setScreen('stage');
+  const ds = [$('#dice'), $('#dockDice')].filter(Boolean), dm = $('#dockMsg'); let v = 1;
+  if (dm) dm.textContent = 'ころころ…';
+  if (ds.length){ ds.forEach(d => d.classList.add('rolling')); for (let k = 0; k < 9; k++){ v = 1 + Math.floor(Math.random() * 6); ds.forEach(d => { d.innerHTML = diceSVG(v); }); sfx.dice(); await sleep(70); } ds.forEach(d => d.classList.remove('rolling')); }
   v = 1 + Math.floor(Math.random() * 6);
-  S.quest.last = v; if (d) d.innerHTML = diceSVG(v);
+  S.quest.last = v; ds.forEach(d => { d.innerHTML = diceSVG(v); });
   const lbl = $('#diceMsg'); if (lbl) lbl.textContent = `${v} が出た！`;
+  if (dm) dm.textContent = `${v} が出た！ 進んでいます…`;
   await sleep(350);
   const free = S.quest.free; S.quest.free = false;
   const before = free || !S.quest.rivals ? 0 : myPlace();
@@ -2861,7 +2996,9 @@ async function clearGate(){
 const panel = $('#panel');
 function renderPanel(){
   const keep = $('#ans') ? $('#ans').value : '';
-  if (!S){ panel.innerHTML = `<p class="kicker">READY</p><h2 class="question">テーマを決めると、ここに問いが表示されます。</h2><div class="p-foot"><button class="btn primary" type="button" data-act="menu">ホームへ</button></div>`; return; }
+  const qs = S && S.mode === 'quest' ? S.quest.qs : '';
+  panel.dataset.st = !S ? 'ready' : building ? 'build' : S.phase === 'done' ? 'done' : ['fork', 'event', 'story'].includes(qs) ? qs : qs && qs !== 'answer' ? 'roll' : 'play';
+  if (!S){ panel.innerHTML = `<p class="kicker">READY</p><h2 class="question">テーマを決めると、ここに問いが表示されます。</h2><div class="p-foot"><button class="btn primary" type="button" data-act="menu">ホームへ</button></div>`; syncScreen(); return; }
   if (building) panel.innerHTML = `<p class="kicker">MIND MAP</p><div class="rpg"><span class="rpg-name">王さま</span><p>よくぞたどり着いた！ そなたの旅の答えから、マインドマップを組み立てておるぞ…</p></div><p class="hint">枝が1本ずつ伸びていきます。</p>`;
   else if (S.phase === 'done') panel.innerHTML = doneHTML();
   else if (S.mode === 'quest' && S.quest.qs === 'fork') panel.innerHTML = forkHTML(S.cur.replace('fork:', ''));
@@ -2873,8 +3010,50 @@ function renderPanel(){
   if (inp){ inp.value = keep; if (S.level !== 'beginner' && matchMedia('(pointer:fine)').matches) inp.focus({preventScroll: true}); }
   const pf = [...panel.querySelectorAll('input[data-field]')];
   if (pf.length && S.level !== 'beginner' && matchMedia('(pointer:fine)').matches){ const e = pf.find(x => !x.value) || pf[0]; e.focus({preventScroll: true}); }
-  updateTimerUI();
+  updateTimerUI(); syncScreen();
 }
+/* ---------- phone: one screen at a time. The board while the dice rolls, the questions when a gate is reached ---------- */
+let scrWant = null, scrT = 0, scrKey = '';
+function setScreen(s){
+  const app = $('.app');
+  if (!PHONE.matches){ delete app.dataset.screen; return; }
+  app.dataset.screen = s;
+  document.querySelectorAll('#phoneBar button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.screen === s)));
+  scrDots();
+}
+/* a dot on the other button when the game is waiting there */
+function scrDots(){ const cur = $('.app').dataset.screen; document.querySelectorAll('#phoneBar button').forEach(b => { b.querySelector('.dot').hidden = !(b.dataset.screen === scrWant && cur !== scrWant); }); }
+function syncScreen(){
+  const app = $('.app');
+  if (!PHONE.matches){ delete app.dataset.screen; $('#rollDock').hidden = true; return; }
+  const quest = !!S && S.mode === 'quest', dock = quest && S.phase === 'play' && !building && (S.quest.qs === 'roll' || S.quest.qs === 'moving');
+  $('#pbStage').textContent = quest ? (stageView === 'map' ? 'マップ' : 'ぼうけん') : 'マインドマップ';
+  $('#pbPanel').textContent = S && S.phase === 'done' ? 'まとめ' : dock ? 'ステータス' : '問い';
+  $('#rollDock').hidden = !dock;
+  if (dock){
+    const moving = S.quest.qs === 'moving', g = [...panel.querySelectorAll('.gate-next')].pop();
+    $('#dockRoll').disabled = $('#dockDice').disabled = moving;
+    if (!moving) $('#dockMsg').textContent = 'サイコロをふって進もう';
+    /* "next gate" line from the status panel: 次の関所「〇〇」まで あと5マス */
+    const pill = g && g.querySelector('.stage-pill'), left = g && g.querySelector('b') ? g.querySelector('b').textContent : '';
+    const name = pill ? [...pill.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() : '';
+    $('#dockInfo').textContent = !g ? '' : !pill ? g.textContent.replace(/\s+/g, ' ').trim() : name === '分かれ道' ? `分かれ道まで ${left}` : `次の関所「${name}」まで ${left}`;
+    if (!$('#dockDice').firstChild) $('#dockDice').innerHTML = diceSVG(S.quest.last || 1);
+  }
+  const key = (panel.dataset.st || '') + ':' + (S ? S.cur : '');
+  if (key !== scrKey){ scrKey = key; panel.scrollTop = 0; }
+  const w = S && (building || dock) ? 'stage' : 'panel';
+  if (w === scrWant){ if (!app.dataset.screen) setScreen(w); else scrDots(); return; }
+  const prev = scrWant; scrWant = w; clearTimeout(scrT);
+  /* arriving at a gate: let the hero land on the board for a moment before the question opens */
+  if (prev === 'stage' && w === 'panel' && quest) scrT = setTimeout(() => { if (scrWant === 'panel') setScreen('panel'); }, 700);
+  else setScreen(w);
+}
+$('#phoneBar').addEventListener('click', e => { const b = e.target.closest('button[data-screen]'); if (b) setScreen(b.dataset.screen); });
+$('#dockRoll').onclick = $('#dockDice').onclick = () => roll();
+{ const f = () => { scrWant = null; syncScreen(); if (!$('#ovHome').hidden) setHomeStep(homeStep); }; if (PHONE.addEventListener) PHONE.addEventListener('change', f); else PHONE.addListener(f); }
+$('#btnMore').onclick = () => { const o = $('.top').classList.toggle('open'); $('#btnMore').setAttribute('aria-expanded', String(o)); };
+document.addEventListener('click', e => { if ($('.top').classList.contains('open') && !e.target.closest('#btnMore')){ $('.top').classList.remove('open'); $('#btnMore').setAttribute('aria-expanded', 'false'); } });
 function condHTML(st, list, s, col){
   const met = list.length >= st.min, locked = S.timed && s.to;
   return `<div class="cond">
@@ -3040,6 +3219,7 @@ function doneHTML(){
       ${CHAPTERS[(S.chapter || 1) + 1] ? '' : `<p class="hint" style="margin:0">全3章クリア！ 夢のマインドマップが完成しました。</p>`}
       ${sageBtn('専門家の賢者にもっと質問する')}
       <button class="btn" type="button" data-act="print">印刷する</button>
+      <button class="btn" type="button" data-act="pdf">PDFで保存</button>
       ${S.mode === 'map' ? `<button class="btn" type="button" data-act="revisit">問いに戻って書き足す</button>` : ''}
       <button class="btn" type="button" data-act="copy">テキストでコピー</button>
       <button class="btn" type="button" data-act="retry">同じテーマでもう一度挑戦</button>
@@ -3597,8 +3777,11 @@ function renderResult(){
   const st = r.stats, hi = S.stages.findIndex(x => x.h);
   const firsts = hi >= 0 ? S.ans.filter(a => a.s === hi) : [];
   const quest = S.mode === 'quest';
+  const hasBoard = !!boardHTML(S); if (resultTab === 'board' && !hasBoard) resultTab = 'score';
+  $('#resultSheet').dataset.rtab = resultTab;
   $('#resultSheet').innerHTML = `
     <button class="close" type="button" data-act="close" aria-label="閉じる">×</button>
+    <div class="rtabs" role="tablist" aria-label="結果の表示">${[['score', 'スコア'], ['advice', 'アドバイス'], ['board', '作戦ボード']].filter(([k]) => k !== 'board' || hasBoard).map(([k, n]) => `<button type="button" role="tab" data-rtab="${k}" aria-selected="${k === resultTab}">${n}</button>`).join('')}</div>
     <div class="r-grid">
       <div style="display:grid;gap:14px">
         <p class="kicker">${quest ? 'QUEST RESULT' : 'RESULT'}${(S.chapter || 1) > 1 ? ` ・ CHAPTER ${S.chapter}` : ''}</p>
@@ -3629,6 +3812,7 @@ function renderResult(){
           ${nextChBtn()}
           ${sageBtn('専門家の賢者に質問する')}
           <button class="btn primary" type="button" data-act="print">印刷する</button>
+          <button class="btn" type="button" data-act="pdf">PDFで保存</button>
           <button class="btn" type="button" data-act="copy">テキストでコピー</button>
           <button class="btn" type="button" data-act="close">${quest ? '冒険マップとマインドマップを見る' : 'マップを見る'}</button>
           ${quest ? '' : `<button class="btn" type="button" data-act="revisit">書き足して再採点</button>`}
@@ -3638,7 +3822,8 @@ function renderResult(){
     </div>
     ${(() => { const b = boardHTML(S); return b ? `<div class="r-boards"><p class="kicker">DREAM STRATEGY BOARD</p><h3>夢の作戦ボード</h3>${b}</div>` : ''; })()}`;
 }
-function openResult(){ renderResult(); $('#ovResult').hidden = false; $('#ovResult').scrollTop = 0; }
+let resultTab = 'score';
+function openResult(){ resultTab = 'score'; renderResult(); $('#ovResult').hidden = false; $('#ovResult').scrollTop = 0; }
 $('#ovResult').addEventListener('mousemove', e => {
   const hit = e.target.closest && e.target.closest('.hit'), tip = $('#tip');
   if (!tip) return;
@@ -3919,17 +4104,95 @@ function openPrint(kind){
   document.querySelectorAll('#printKind button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.kind === printKind)));
   $('#psheet').innerHTML = printBody();
   $('#btnDoPrint').textContent = inViewer ? '印刷用ファイルを保存' : '印刷する';
-  $('#printNote').textContent = inViewer ? '保存したファイルをブラウザで開くと、印刷の画面が自動で開きます（A4）。' : 'A4で印刷されます。印刷先で「PDFに保存」を選ぶとPDFにもできます。';
-  $('#ovPrint').hidden = false; $('#ovPrint').scrollTop = 0; fitPrint();
+  $('#printNote').textContent = inViewer ? '「PDFで保存」でA4のPDFになります。「印刷用ファイルを保存」は、開くと印刷の画面が出ます。' : '「PDFで保存」でA4のPDFになります。紙に出すときは「印刷する」を押してください。';
+  $('#ovPrint').hidden = false; $('#ovPrint').scrollTop = 0;
+  $('#pscale').style.zoom = '1'; splitPages(); fitPrint();
 }
 function fitPrint(){ const w = $('#ovPrint').clientWidth - 32, pw = $('#psheet .ppage.land') ? 1123 : 794; $('#pscale').style.zoom = String(Math.min(1, w / pw)); }
+/* a portrait page whose content runs past A4 hands its last blocks (or the last parts of a grid/list) to a continuation page */
+function splitPages(){
+  const lim = 297 * 96 / 25.4 + 3, PARTS = '.pgrid2,.boards,.wcols,.plegend', root = $('#psheet');
+  for (let pg of [...root.querySelectorAll('.ppage:not(.land)')]){
+    for (let n = 0; n < 6 && pg.offsetHeight > lim; n++){
+      const head = pg.querySelector(':scope > .ph'), foot = pg.querySelector(':scope > .pfoot'), units = [];
+      [...pg.children].forEach(b => { if (b === head || b === foot) return; if (b.matches(PARTS) && b.children.length > 1) units.push(...b.children); else units.push(b); });
+      if (units.length < 2) break;
+      const np = document.createElement('section'); np.className = 'ppage';
+      if (head){ const h = head.cloneNode(true), t = h.querySelector('h1'); if (t && !t.textContent.endsWith('（つづき）')) t.textContent += '（つづき）'; np.appendChild(h); }
+      const nf = foot ? np.appendChild(foot.cloneNode(true)) : null;
+      pg.after(np);
+      const shells = new Map(); let first = nf;
+      while (pg.offsetHeight > lim && units.length > 1){
+        const u = units.pop(), par = u.parentElement;
+        if (par === pg){ np.insertBefore(u, first); first = u; continue; }
+        let sh = shells.get(par);
+        if (!sh){ sh = par.cloneNode(false); shells.set(par, sh); np.insertBefore(sh, first); first = sh; }
+        sh.insertBefore(u, sh.firstChild);
+        if (!par.children.length) par.remove();
+      }
+      pg = np;
+    }
+  }
+  root.querySelectorAll('.ppage').forEach((p, i) => { const s = p.querySelector('.pfoot span:last-child'); if (s) s.textContent = i + 1; });
+}
 $('#printKind').addEventListener('click', e => { const b = e.target.closest('button[data-kind]'); if (b) openPrint(b.dataset.kind); });
 $('#btnPrintClose').onclick = () => { $('#ovPrint').hidden = true; };
+const fileBase = () => (S && printKind === 'result' ? S.theme : '記入用シート').replace(/[\\/:*?"<>|]/g, '').trim() || APP;
+/* PDF: each A4 page of the preview is drawn as an image (html2canvas) and bound into one file (jsPDF).
+   Both libraries come from cdnjs, pinned and hash-checked, and load only when a PDF is asked for. */
+const LIBS = {
+  h2c: ['https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', 'sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA=='],
+  pdf: ['https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js', 'sha512-plOdviVmws4Y3JAvbnpfKb2hVxKM1lCwsi3vmElYRj+tiDLffZ4FVUj5a8vyKJ9pIgl8JCAHEJ4D1iUKBecswg==']
+};
+const libs = {};
+const loadLib = k => libs[k] || (libs[k] = new Promise((ok, ng) => {
+  const s = document.createElement('script');
+  s.src = LIBS[k][0]; s.integrity = LIBS[k][1]; s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
+  s.onload = ok; s.onerror = () => { delete libs[k]; s.remove(); ng({code: 'lib'}); };
+  document.head.appendChild(s);
+}));
+let pdfBusy = false;
+async function savePdf(){
+  if (pdfBusy || !$('#psheet .ppage')) return;
+  if (inViewer && !(await downloadsPromise)){ toast('この画面からは保存できません。アプリ版から保存してください'); return; }
+  pdfBusy = true;
+  const btn = $('#btnPdf'), label = btn.textContent, name = `${APP}_${fileBase()}.pdf`, box = document.createElement('div');
+  btn.disabled = true; btn.textContent = 'PDFを準備中…';
+  try {
+    await Promise.all([loadLib('h2c'), loadLib('pdf')]);
+    /* draw from an unscaled copy kept off screen, so the preview's zoom never reaches the file */
+    box.className = 'psheet pdfsrc'; box.setAttribute('aria-hidden', 'true'); box.innerHTML = $('#psheet').innerHTML;
+    document.body.appendChild(box);
+    try { await document.fonts.ready; } catch {}
+    const pages = [...box.querySelectorAll('.ppage')];
+    let doc = null;
+    for (let i = 0; i < pages.length; i++){
+      btn.textContent = `PDFを作成中… ${i + 1}/${pages.length}`;
+      const pg = pages[i], land = pg.classList.contains('land'), W = land ? 297 : 210, H = land ? 210 : 297, o = land ? 'landscape' : 'portrait';
+      const cv = await window.html2canvas(pg, {scale: 2, backgroundColor: '#ffffff', logging: false, windowWidth: 1280, windowHeight: 900,
+        ignoreElements: el => !!el.classList && (el.classList.contains('app') || el.classList.contains('overlay'))});
+      if (doc) doc.addPage('a4', o); else doc = new window.jspdf.jsPDF({orientation: o, unit: 'mm', format: 'a4', compress: true});
+      /* a page that still runs past A4 is shrunk to fit */
+      const k = Math.min(W / cv.width, H / cv.height), w = cv.width * k, h = cv.height * k;
+      doc.addImage(cv.toDataURL('image/jpeg', .92), 'JPEG', (W - w) / 2, 0, w, h, undefined, 'FAST');
+      cv.width = cv.height = 0;
+    }
+    btn.textContent = 'PDFを保存中…';
+    await saveFile(name, doc.output('blob'));
+    toast('PDFを保存しました');
+  } catch (e) {
+    const c = e && e.code;
+    if (c !== 'declined') toast(c === 'lib' ? 'PDFの部品を読み込めませんでした。ネットにつないで、もう一度お試しください' : c === 'extension_not_enabled' || c === 'unavailable' ? 'この画面ではPDFを保存できません' : c === 'rate_limited' ? '保存の確認が開いています。少し待ってからもう一度' : 'PDFを作れませんでした。「印刷する」をお使いください');
+  } finally {
+    box.remove(); btn.textContent = label; btn.disabled = false; pdfBusy = false;
+  }
+}
+$('#btnPdf').onclick = savePdf;
 $('#btnDoPrint').onclick = async () => {
   if (!inViewer){ window.print(); return; }
   const dl = await downloadsPromise;
   if (!dl){ toast('この画面からは保存できません。アプリ版から印刷してください'); return; }
-  const base = (S && printKind === 'result' ? S.theme : '記入用シート').replace(/[\\/:*?"<>|]/g, '');
+  const base = fileBase();
   const name = `${APP}_${base}.html`;
   const doc = `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(APP + '_' + base)}</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;500;700;800&display=swap"><style>@page{size:A4;margin:0}body{margin:0;background:#EEF0F5;padding:16px 0}@media print{body{background:#fff;padding:0}.ppage{margin:0!important;box-shadow:none!important}}${PRINT_CSS}</style></head><body><div class="psheet">${$('#psheet').innerHTML}</div><script>addEventListener('load',function(){setTimeout(function(){window.print()},800)})<\/script></body></html>`;
   try { await dl.save({filename: name, data: doc}); toast('保存しました。開くと印刷画面が出ます'); }
@@ -3978,6 +4241,7 @@ function onAct(a){
   else if (a === 'finish') finish();
   else if (a === 'copy') copyMap();
   else if (a === 'print'){ $('#ovResult').hidden = true; openPrint('result'); }
+  else if (a === 'pdf'){ $('#ovResult').hidden = true; openPrint('result'); savePdf(); }
   else if (a === 'result') openResult();
   else if (a === 'close') $('#ovResult').hidden = true;
   else if (a === 'revisit'){ $('#ovResult').hidden = true; S.phase = 'play'; S.cur = prompts(S)[0].key; refresh(); }
@@ -4009,6 +4273,7 @@ panel.addEventListener('click', e => {
   if (b.dataset.route){ chooseRoute(b.dataset.fork, b.dataset.route); return; }
   if (b.dataset.act) onAct(b.dataset.act);
 });
+$('#resultSheet').addEventListener('click', e => { const t = e.target.closest('button[data-rtab]'); if (t){ resultTab = t.dataset.rtab; $('#resultSheet').dataset.rtab = resultTab; $('#resultSheet').querySelectorAll('button[data-rtab]').forEach(x => x.setAttribute('aria-selected', String(x === t))); $('#ovResult').scrollTop = 0; } });
 $('#resultSheet').addEventListener('click', e => { const f = e.target.closest('button[data-fix]'); if (f) return fixBranch(+f.dataset.fix); const b = e.target.closest('button[data-act]'); if (b) onAct(b.dataset.act); });
 /* map mode: jump from the completeness list back to a thin branch to add to it */
 function fixBranch(i){ if (!S || S.mode !== 'map') return; $('#ovResult').hidden = true; S.phase = 'play'; go(i); }
@@ -4149,9 +4414,22 @@ function openHome(){
   $('#btnResume').hidden = !S; $('#resumeNote').hidden = !S;
   if (S){ $('#btnResume').textContent = `続きから：「${S.theme}」`; if (view !== S){ view = S; clearMap(); setStageView(stageView); renderMap(); if (S.mode === 'quest') renderBoard(); } }
   else { view = sampleSession(); clearMap(); setStageView('map'); renderMap(); }
-  renderRadios(); renderPresets(); renderExamples(); renderQList(); renderInstall();
+  renderRadios(); renderPresets(); renderExamples(); renderQList(); renderInstall(); setHomeStep(1);
   setTimeout(() => { if (matchMedia('(pointer:fine)').matches) $('#themeInput').focus({preventScroll: true}); }, 60);
 }
+/* phone: the home screen is split into steps (theme → how to play → hero → course), one screen each */
+let homeStep = 1;
+const homeSteps = () => homeMode === 'quest' ? [1, 2, 3, 4] : [1, 2, 4];
+function setHomeStep(n){
+  const L = homeSteps(); while (!L.includes(n) && n > 1) n--;
+  homeStep = n; const sh = $('#ovHome .sheet'), k = L.indexOf(n);
+  sh.dataset.step = n; sh.toggleAttribute('data-last', k === L.length - 1);
+  $('#hPrev').hidden = k === 0; $('#hPage').textContent = `${k + 1} / ${L.length}`;
+}
+const homeGo = d => { const L = homeSteps(); setHomeStep(L[Math.max(0, Math.min(L.length - 1, L.indexOf(homeStep) + d))]); $('#ovHome').scrollTop = 0; };
+$('#hPrev').onclick = () => homeGo(-1);
+$('#hNext').onclick = () => homeGo(1);
+$('#btnQToggle').onclick = () => { const o = $('#qBox').classList.toggle('open'); $('#btnQToggle').setAttribute('aria-expanded', String(o)); $('#btnQToggle').textContent = o ? '問いを閉じる' : '問いを見る'; };
 function renderMaker(){
   const a = homeAvatar, opt = (key, list, cur, sw) => list.map(([v, label]) => `<button type="button" role="radio" class="${sw ? 'sw' : ''}" data-mk="${key}" data-v="${v}" aria-checked="${String(v) === String(cur)}" ${sw ? `style="background:${label}" aria-label="${key}${v}"` : ''}>${sw ? '' : label}</button>`).join('');
   $('#worldCtl').innerHTML = WORLD_KEYS.map(w => `<button type="button" role="radio" data-world="${w}" aria-checked="${w === homeWorld}">${worldCard(w)}${WORLDS[w].short}<small>${WORLDS[w].hero}</small></button>`).join('');
@@ -4190,7 +4468,7 @@ function renderRadios(){
   document.querySelectorAll('#modeCtl [data-mode]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.mode === homeMode)));
   document.querySelectorAll('#levelCtl [data-level]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.level === homeLevel)));
 }
-$('#modeCtl').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (b){ homeMode = b.dataset.mode; store.set('mindquest-mode', homeMode); renderRadios(); renderQList(); } });
+$('#modeCtl').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (b){ homeMode = b.dataset.mode; store.set('mindquest-mode', homeMode); renderRadios(); renderQList(); setHomeStep(homeStep); } });
 $('#levelCtl').addEventListener('click', e => { const b = e.target.closest('[data-level]'); if (b){ homeLevel = b.dataset.level; renderRadios(); } });
 function renderPresets(){
   const c = $('#presetCtl'); c.innerHTML = '';
@@ -4252,7 +4530,7 @@ $('#qList').addEventListener('click', e => {
   draft.forEach(q => { if (q.p === r) q.p = -1; else if (q.p > r) q.p -= 1; });
   renderQList();
 });
-$('#btnEditQs').onclick = () => { editing = !editing; renderQList(); };
+$('#btnEditQs').onclick = () => { editing = !editing; renderQList(); if (editing && !$('#qBox').classList.contains('open')) $('#btnQToggle').click(); };
 $('#chkTimed').onchange = renderQList;
 $('#btnAddQ').onclick = () => {
   if (draft.length >= 10){ toast('問いは10個までです'); return; }
@@ -4260,7 +4538,7 @@ $('#btnAddQ').onclick = () => {
 };
 const checkBegin = () => { $('#btnBegin').disabled = !$('#themeInput').value.trim(); };
 $('#themeInput').addEventListener('input', checkBegin);
-$('#themeInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229 && !$('#btnBegin').disabled){ e.preventDefault(); begin(); } });
+$('#themeInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229 && !$('#btnBegin').disabled){ e.preventDefault(); if (PHONE.matches){ e.target.blur(); homeGo(1); } else begin(); } });
 function begin(){
   const theme = $('#themeInput').value.trim(); if (!theme) return;
   if (homeMode === 'quest' && $('#chkOnline').checked && !$('#raceCode').value.trim()){ toast('通信対戦の合言葉を入れてください'); $('#raceCode').focus(); return; }
