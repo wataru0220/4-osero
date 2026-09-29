@@ -508,13 +508,26 @@ details.own[open] summary{margin-bottom:8px}
 .dtime{display:block;height:8px;border-radius:4px;background:#EEF0F6;overflow:hidden}
 .dtime em{display:block;height:100%;width:100%;background:var(--grad);border-radius:4px}
 .mb-turn{text-align:center;font-size:13px;color:var(--muted)}
-.mochi-field{position:relative;height:min(330px,46vh);min-height:240px;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#BFE3FF 0%,#EAF5FF 55%,#FFF3DE 100%);border:1.5px solid var(--line);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.mochi-field{position:relative;height:min(330px,46vh);min-height:260px;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#BFE3FF 0%,#EAF5FF 55%,#FFF3DE 100%);border:1.5px solid var(--line);touch-action:none;user-select:none;-webkit-user-select:none;cursor:ew-resize;outline:none}
+.mochi-field:focus-visible{box-shadow:0 0 0 3px var(--accent)}
 .mf-roof{position:absolute;left:0;top:0;width:100%;height:46px;pointer-events:none}
-.mf-hint{position:absolute;left:0;right:0;bottom:8px;margin:0;text-align:center;font-size:12px;font-weight:800;color:#8A5A0B;pointer-events:none}
-.mochi{position:absolute;left:0;top:0;width:50px;height:50px;margin:-25px 0 0 -25px;padding:0;border:none;background:none;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.mf-hint{position:absolute;left:10px;right:10px;top:50px;margin:0;text-align:center;font-size:12px;font-weight:800;color:#8A5A0B;pointer-events:none;text-wrap:balance}
+.mf-ground{position:absolute;left:0;right:0;bottom:0;height:16px;background:#8FCB6A;border-top:3px solid #6FAE4E;pointer-events:none}
+.mf-who{position:absolute;left:0;bottom:12px;width:100px;height:108px;margin-left:-50px;pointer-events:none;will-change:transform;z-index:1}
+.mf-who.me{z-index:2}
+.mf-who svg{width:100%;height:100%;display:block;overflow:visible}
+.mf-who.walk svg{animation:bob .18s ease-in-out infinite alternate}
+.mf-who.catch svg{animation:mfcatch .26s ease-out}
+@keyframes mfcatch{40%{transform:translateY(3px) scaleY(.94)}}
+.mf-tag{position:absolute;left:0;right:0;top:-2px;text-align:center;font-size:10.5px;font-weight:800;color:var(--accent);white-space:nowrap}
+.mf-who.rv .mf-tag{color:var(--c)}
+.mf-pop{position:absolute;z-index:3;font-style:normal;font-family:var(--en);font-weight:800;font-size:16px;color:var(--accent);pointer-events:none;animation:mfpop .65s ease-out forwards}
+.mf-pop.rv{color:var(--c)}
+@keyframes mfpop{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-26px)}}
+.mochi{position:absolute;left:0;top:0;width:40px;height:40px;margin:-20px 0 0 -20px;pointer-events:none;z-index:3}
 .mochi svg{width:100%;height:100%;display:block;pointer-events:none}
-.mochi.got{opacity:0;scale:1.7;transition:opacity .3s,scale .3s}
-.mochi.stolen{opacity:0;filter:drop-shadow(0 0 8px var(--c));transition:opacity .35s}
+.mochi.in{opacity:0;scale:.5;transition:opacity .25s,scale .25s}
+.mochi.drop{opacity:0;transition:opacity .4s}
 .mb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:min(100%,300px);margin:0 auto}
 .mb-cell{aspect-ratio:1;border:2px solid var(--line2);border-radius:14px;background:#fff;font-size:44px;font-weight:800;line-height:1;display:grid;place-items:center;padding:0;color:var(--ink);transition:opacity .2s}
 .mb-cell.o{color:var(--accent)}
@@ -1986,7 +1999,7 @@ function animate(tvb, nodes){
 }
 /* user zoom & pan on top of the auto-fitted view box */
 const mz = {k: 1, x: 0, y: 0};
-function mapVB(){ const w = vb.w / mz.k, h = vb.h / mz.k; return {x: vb.x + vb.w / 2 + mz.x - w / 2, y: vb.y + vb.h / 2 + mz.y - h / 2, w, h}; }
+function mapVB(){ const w = Math.max(1, vb.w / mz.k), h = Math.max(1, vb.h / mz.k); return {x: vb.x + vb.w / 2 + mz.x - w / 2, y: vb.y + vb.h / 2 + mz.y - h / 2, w, h}; }
 function draw(nodes){
   const V = mapVB();
   svg.setAttribute('viewBox', `${V.x.toFixed(1)} ${V.y.toFixed(1)} ${V.w.toFixed(1)} ${V.h.toFixed(1)}`);
@@ -3811,8 +3824,8 @@ function duelRival(s){
 const DUEL_TAUNT = {hayato: '「関所の前で会うとはな！ 勝負だ、負けないぜ！」', misaki: '「あら、また会ったね。ちょっと勝負していかない？」', gou: '「ここを通りたければ、オレに勝ってからだ！」'};
 const MOCHI_SVG = k => `<svg viewBox="-24 -24 48 48" aria-hidden="true"><ellipse cx="0" cy="4" rx="19" ry="15" fill="${k === 2 ? '#FFD84D' : k === 1 ? '#FFC2DD' : '#fff'}" stroke="${k === 2 ? '#D98A0B' : k === 1 ? '#F08DB8' : '#DCCFBE'}" stroke-width="2"/><ellipse cx="-6" cy="-1" rx="7" ry="4" fill="#fff" opacity=".85"/>${k === 2 ? '<path d="M7 -1 l2 4 4 .5 -3 2.8 .8 4 -3.8 -2 -3.8 2 .8 -4 -3 -2.8 4 -.5Z" fill="#fff" opacity=".9"/>' : ''}</svg>`;
 const DUEL_GAMES = {
-  mochi: {n: '餅拾い', d: '降ってくる餅を10秒で多く拾ったほうが勝ち', run: runMochi,
-    icon: '<svg viewBox="0 0 60 60" aria-hidden="true"><ellipse cx="18" cy="42" rx="13" ry="10" fill="#fff" stroke="#DCCFBE" stroke-width="2"/><ellipse cx="42" cy="42" rx="13" ry="10" fill="#FFC2DD" stroke="#F08DB8" stroke-width="2"/><ellipse cx="30" cy="22" rx="13" ry="10" fill="#FFD84D" stroke="#D98A0B" stroke-width="2"/></svg>'},
+  mochi: {n: '餅拾い', d: '背中のかごで、降ってくる餅を10秒で多く受け止めたほうが勝ち', run: runMochi,
+    icon: '<svg viewBox="0 0 60 60" aria-hidden="true"><ellipse cx="31" cy="10" rx="9" ry="7" fill="#FFD84D" stroke="#D98A0B" stroke-width="2"/><path d="M13 27 H47 L42 55 H18 Z" fill="#C8924A" stroke="#6B4422" stroke-width="2"/><path d="M14 35 H46 M15.5 43 H44.5 M17 50 H43 M24 27 V55 M30 27 V55 M36 27 V55" stroke="#8E5E2E" stroke-width="1.5"/><ellipse cx="30" cy="27" rx="17" ry="4.5" fill="#4A2E14" stroke="#6B4422" stroke-width="2"/><ellipse cx="25" cy="24" rx="6.5" ry="4.5" fill="#fff" stroke="#DCCFBE" stroke-width="1.5"/><ellipse cx="36" cy="24.5" rx="6" ry="4" fill="#FFC2DD" stroke="#F08DB8" stroke-width="1.5"/></svg>'},
   mb: {n: '消える〇×', d: '印は3つまで。先に3つ並べたら勝ち', run: runMB,
     icon: '<svg viewBox="0 0 60 60" aria-hidden="true"><path d="M22 6V54M38 6V54M6 22H54M6 38H54" stroke="#C9CFDD" stroke-width="3" stroke-linecap="round"/><circle cx="14" cy="14" r="5.5" fill="none" stroke="#F2554E" stroke-width="3"/><circle cx="30" cy="30" r="5.5" fill="none" stroke="#F2554E" stroke-width="3" opacity=".35"/><path d="M41 9l10 10M51 9l-10 10M41 41l10 10M51 41l-10 10" stroke="#2E8FE0" stroke-width="3" stroke-linecap="round"/></svg>'},
   amida: {n: 'あみだくじ', d: 'スタートを選んで運だめし。いい当たりが勝ち', run: runAmida,
@@ -3865,46 +3878,81 @@ function duelFinish(d, res, detail){
   else { Q.pts += 5; Q.duels.d++; qlog(`${G.n}で${R.n}と引き分け +5pt`); sfx.clear(); }
   save(); renderPanel();
 }
-/* mini-game 1: mochi-maki. Mochi fall from the ridge; tap them before the rival grabs them (gold = 3 points) */
+/* mini-game 1: mochi-maki. Mochi fall from the ridge; walk left and right and catch them in the basket on your back (gold = 3 points).
+   The rival carries a basket too and goes after the same mochi */
+const KAGO = '<g><path d="M-11 -42 Q-2 -38 2 -31" stroke="#6B4422" stroke-width="2.2" fill="none"/><path d="M-30 -48 L-9 -48 L-12 -16 L-27 -16 Z" fill="#C8924A" stroke="#6B4422" stroke-width="1.4"/><path d="M-29.4 -41 H-9.6 M-28.8 -34 H-10.2 M-28.2 -27 H-10.8 M-27.6 -21 H-11.4" stroke="#8E5E2E" stroke-width="1.3"/><path d="M-24 -48 V-16 M-19.5 -48 V-16 M-15 -48 V-16" stroke="#A8743A" stroke-width="1"/><ellipse cx="-19.5" cy="-48" rx="11" ry="3" fill="#4A2E14" stroke="#6B4422" stroke-width="1.4"/></g>';
 function runMochi(el, {R, lv, end}){
+  const SC = 1.4, BK = 19.5 * SC, TOP = 48 * SC, HIT = 18, GROUND = 16;
+  const who = (cls, name, art, flip) => `<div class="mf-who ${cls}"><b class="mf-tag">${name}</b><svg viewBox="-50 -104 100 108" aria-hidden="true"><g transform="scale(${flip ? -SC : SC} ${SC})">${art}</g></svg></div>`;
   el.innerHTML = `<div class="duel-score"><span class="me">あなた<b id="dmMe">0</b></span><i class="dtime"><em id="dmBar"></em></i><span class="rv">${R.n}<b id="dmRv">0</b></span></div>
-    <div class="mochi-field" id="dmField"><svg class="mf-roof" viewBox="0 0 300 46" preserveAspectRatio="none" aria-hidden="true"><path d="M-4 46 L150 5 L304 46Z" fill="#C89B6D"/><path d="M-4 46 L150 5 L304 46" fill="none" stroke="#8B5E3C" stroke-width="4"/><path d="M70 32 H230" stroke="#F2554E" stroke-width="4"/><path d="M70 37 H230" stroke="#fff" stroke-width="4"/></svg><p class="mf-hint">降ってくる餅をタップ！ 金の餅は3点</p></div>`;
-  const f = el.querySelector('#dmField'), meEl = el.querySelector('#dmMe'), rvEl = el.querySelector('#dmRv'), bar = el.querySelector('#dmBar');
-  const DUR = 10000, grab = Math.min(.66, .42 + lv * .04), list = [];
-  let me = 0, them = 0, t0 = 0, last = 0, next = 0, raf = 0, over = false, tm = 0;
-  const take = (m, who) => {
-    if (m.gone) return; m.gone = true;
-    if (who === 'me'){ me += m.v; meEl.textContent = me; sfx.add(me); m.el.classList.add('got'); }
-    else { them += m.v; rvEl.textContent = them; m.el.classList.add('stolen'); }
-    setTimeout(() => m.el.remove(), 360);
+    <div class="mochi-field" id="dmField" tabindex="0" aria-label="餅拾い。左右に動いて、背中のかごで餅を受け止める"><svg class="mf-roof" viewBox="0 0 300 46" preserveAspectRatio="none" aria-hidden="true"><path d="M-4 46 L150 5 L304 46Z" fill="#C89B6D"/><path d="M-4 46 L150 5 L304 46" fill="none" stroke="#8B5E3C" stroke-width="4"/><path d="M70 32 H230" stroke="#F2554E" stroke-width="4"/><path d="M70 37 H230" stroke="#fff" stroke-width="4"/></svg>
+    <p class="mf-hint">指でなぞって左右に動き（←→キーでも）、背中のかごで餅をキャッチ！ 金の餅は3点</p><div class="mf-ground"></div>
+    ${who('rv', R.n, pxSprite(KAGO + rivalArt(R, lv, false).replace(/<text[\s\S]*?<\/text>/g, '')), true)}${who('me', 'あなた', pxSprite(`<g class="lv${heroLevel()}">${KAGO}${heroPerson()}</g>`), false)}</div>`;
+  const f = el.querySelector('#dmField'), meEl = el.querySelector('#dmMe'), rvEl = el.querySelector('#dmRv'), bar = el.querySelector('#dmBar'), meW = f.querySelector('.mf-who.me'), rvW = f.querySelector('.mf-who.rv');
+  const DUR = 10000, rvSp = 150 + lv * 25, list = [];
+  let me = 0, them = 0, t0 = 0, last = 0, next = 0, raf = 0, over = false, tm = 0, target = null, keyDir = 0, rvT = null, rvThink = 0;
+  let W = f.clientWidth, meX = W * .38, rvX = W * .66;
+  const line = () => f.clientHeight - GROUND - TOP;
+  const pop = (x, y, txt, cls) => { const p = document.createElement('i'); p.className = 'mf-pop ' + cls; p.textContent = txt; p.style.left = x.toFixed(0) + 'px'; p.style.top = y.toFixed(0) + 'px'; f.appendChild(p); setTimeout(() => p.remove(), 650); };
+  const catchIt = (m, whoEl, isMe) => {
+    m.gone = true; m.el.classList.add('in');
+    if (isMe){ me += m.v; meEl.textContent = me; sfx.add(me); } else { them += m.v; rvEl.textContent = them; }
+    pop(m.x, m.y - 18, '+' + m.v, isMe ? 'me' : 'rv'); whoEl.classList.remove('catch'); void whoEl.offsetWidth; whoEl.classList.add('catch');
+    setTimeout(() => m.el.remove(), 260);
   };
   const spawn = t => {
-    const k = Math.random() < .12 ? 2 : Math.random() < .5 ? 1 : 0, b = document.createElement('button');
-    b.type = 'button'; b.className = 'mochi'; b.setAttribute('aria-label', k === 2 ? '金の餅（3点）' : '餅'); b.innerHTML = MOCHI_SVG(k);
-    const m = {el: b, x: 26 + Math.random() * Math.max(10, f.clientWidth - 52), y: -26, sp: 95 + Math.random() * 60 + t / DUR * 70, v: k === 2 ? 3 : 1, th: f.clientHeight * (.32 + Math.random() * .4), gone: false, tried: false};
-    b.addEventListener('pointerdown', e => { e.preventDefault(); if (!over) take(m, 'me'); });
-    b.style.transform = `translate(${m.x.toFixed(1)}px,${m.y}px)`;
-    f.appendChild(b); list.push(m);
+    const k = Math.random() < .12 ? 2 : Math.random() < .5 ? 1 : 0, e = document.createElement('div');
+    e.className = 'mochi'; e.innerHTML = MOCHI_SVG(k);
+    const m = {el: e, x: 26 + Math.random() * Math.max(10, W - 52), y: 22, sp: 110 + Math.random() * 50 + t / DUR * 60, v: k === 2 ? 3 : 1, gone: false};
+    e.style.transform = `translate(${m.x.toFixed(1)}px,${m.y}px)`; f.appendChild(e); list.push(m);
   };
-  const stop = () => { over = true; cancelAnimationFrame(raf); };
+  const aim = e => { const r = f.getBoundingClientRect(); target = e.clientX - r.left; };
+  const down = e => { if (over) return; e.preventDefault(); f.setPointerCapture && f.setPointerCapture(e.pointerId); aim(e); };
+  const move = e => { if (!over && (e.buttons || e.pointerType === 'touch')) aim(e); };
+  const up = () => { target = null; };
+  const key = e => { if (over || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return; e.preventDefault(); keyDir = e.type === 'keyup' ? 0 : e.key === 'ArrowLeft' ? -1 : 1; if (e.type === 'keydown') target = null; };
+  f.addEventListener('pointerdown', down); f.addEventListener('pointermove', move); f.addEventListener('pointerup', up); f.addEventListener('pointercancel', up);
+  document.addEventListener('keydown', key); document.addEventListener('keyup', key);
+  const stop = () => { over = true; cancelAnimationFrame(raf); document.removeEventListener('keydown', key); document.removeEventListener('keyup', key); };
+  const place = () => { meW.style.transform = `translateX(${meX.toFixed(1)}px)`; rvW.style.transform = `translateX(${rvX.toFixed(1)}px)`; };
   const frame = now => {
     if (over) return;
     if (!t0) t0 = last = now;
-    const t = now - t0, dt = Math.min(.05, (now - last) / 1000); last = now;
-    if (t >= DUR){ stop(); bar.style.width = '0%'; tm = setTimeout(() => end(me > them ? 'win' : me < them ? 'lose' : 'draw', `あなた ${me}点 − ${R.n} ${them}点`), 700); return; }
-    if (t >= next){ spawn(t); next = t + 330 + Math.random() * 250; }
-    const H = f.clientHeight;
+    const t = now - t0, dt = Math.min(.05, (now - last) / 1000); last = now; W = f.clientWidth;
+    if (t >= DUR){ stop(); bar.style.width = '0%'; meW.classList.remove('walk'); rvW.classList.remove('walk'); tm = setTimeout(() => end(me > them ? 'win' : me < them ? 'lose' : 'draw', `あなた ${me}点 − ${R.n} ${them}点`), 700); return; }
+    if (t >= next){ spawn(t); next = t + 360 + Math.random() * 260; }
+    /* you: the basket follows your finger (or the arrow keys) */
+    const x0 = meX, x1 = rvX, sp = 480 * dt;
+    if (target != null){ const dx = target + BK - meX; meX += Math.max(-sp, Math.min(sp, dx)); }
+    else if (keyDir) meX += keyDir * 420 * dt;
+    meX = Math.max(BK + 20, Math.min(W - 20, meX));
+    /* the rival: every so often picks a mochi it can still reach and walks under it */
+    rvThink -= dt;
+    if (rvThink <= 0){
+      rvThink = .22 + Math.random() * .16; let best = null; const L = line();
+      list.forEach(m => { if (m.gone || m.y > L) return; const tt = (L - m.y) / m.sp, gap = Math.abs(m.x - (rvX - BK)) - 12; if (gap > rvSp * tt) return; const s = tt - (m.v === 3 ? .5 : 0); if (!best || s < best.s) best = {m, s}; });
+      rvT = best ? best.m.x + (Math.random() - .5) * 18 : null;
+    }
+    if (rvT != null){ const dx = rvT + BK - rvX, s2 = rvSp * dt; rvX += Math.max(-s2, Math.min(s2, dx)); }
+    rvX = Math.max(20, Math.min(W - BK - 20, rvX));
+    meW.classList.toggle('walk', Math.abs(meX - x0) > .3); rvW.classList.toggle('walk', Math.abs(rvX - x1) > .3); place();
+    /* mochi fall; when one reaches the basket rims, whoever has a basket under it catches it */
+    const L = line(), H = f.clientHeight;
     list.forEach(m => {
       if (m.gone) return;
-      m.y += m.sp * dt;
-      if (!m.tried && m.y > m.th){ m.tried = true; if (Math.random() < grab){ take(m, 'rv'); return; } }
-      if (m.y > H + 30){ m.gone = true; m.el.remove(); return; }
+      const y0 = m.y; m.y += m.sp * dt;
+      if (y0 < L && m.y >= L){
+        const dMe = Math.abs(m.x - (meX - BK)), dRv = Math.abs(m.x - (rvX + BK));
+        if (dMe <= HIT && (dRv > HIT || dMe <= dRv)){ catchIt(m, meW, true); return; }
+        if (dRv <= HIT){ catchIt(m, rvW, false); return; }
+      }
+      if (m.y > H - GROUND - 10){ m.gone = true; m.el.classList.add('drop'); setTimeout(() => m.el.remove(), 420); return; }
       m.el.style.transform = `translate(${m.x.toFixed(1)}px,${m.y.toFixed(1)}px)`;
     });
     bar.style.width = ((1 - t / DUR) * 100).toFixed(1) + '%';
     raf = requestAnimationFrame(frame);
   };
-  raf = requestAnimationFrame(frame);
+  place(); raf = requestAnimationFrame(frame);
   return () => { stop(); clearTimeout(tm); };
 }
 /* mini-game 2: vanishing tic-tac-toe. Each side keeps three marks; the fourth wipes out that side's oldest */
@@ -3918,11 +3966,11 @@ function mbNega(s, w, d){
   return best === -Infinity ? 0 : best;
 }
 function runMB(el, {R, lv, end}){
-  const MAX = 16, miss = Math.max(.1, .35 - lv * .05);
+  const miss0 = Math.max(.1, .35 - lv * .05);
   let st = {b: Array(9).fill(null), q: {o: [], x: []}}, turn = 'o', moves = 0, over = false, tm = 0;
   el.innerHTML = `<div class="duel-score"><span class="me">あなた<b>〇</b></span><span class="mb-turn" id="mbTurn">あなたの番</span><span class="rv">${R.n}<b>×</b></span></div>
     <div class="mb-grid">${Array.from({length: 9}, (_, i) => `<button type="button" class="mb-cell" data-i="${i}" aria-label="${i + 1}番のマス"></button>`).join('')}</div>
-    <p class="duel-note">印は3つまで。4つ目を置くと、いちばん古い印（うすい印）が消える。${MAX}手で決まらなければ引き分け</p>`;
+    <p class="duel-note">印は3つまで。4つ目を置くと、いちばん古い印（うすい印）が消える。どちらかが3つ並べるまで続く</p>`;
   const cells = [...el.querySelectorAll('.mb-cell')], turnEl = el.querySelector('#mbTurn');
   const draw = win => cells.forEach((c, i) => {
     const v = st.b[i], old = (st.q.o.length === 3 && st.q.o[0] === i) || (st.q.x.length === 3 && st.q.x[0] === i);
@@ -3931,7 +3979,7 @@ function runMB(el, {R, lv, end}){
     c.disabled = over || turn !== 'o' || !!v;
   });
   const cpu = () => {
-    const emp = [...Array(9).keys()].filter(i => !st.b[i]); if (Math.random() < miss) return emp[rnd(emp.length)];
+    const emp = [...Array(9).keys()].filter(i => !st.b[i]), miss = Math.min(.6, miss0 + Math.max(0, moves - 20) * .02); if (Math.random() < miss) return emp[rnd(emp.length)];
     let best = -Infinity, pick = [];
     emp.forEach(i => { const n = mbPlace(st, i, 'x'), v = mbLine(n.b, 'x') ? 1000 : -mbNega(n, 'o', 2); if (v > best){ best = v; pick = [i]; } else if (v === best) pick.push(i); });
     return pick[rnd(pick.length)];
@@ -3939,14 +3987,13 @@ function runMB(el, {R, lv, end}){
   const settled = w => {
     moves++; const line = mbLine(st.b, w);
     if (line){ over = true; draw(line); turnEl.textContent = w === 'o' ? 'そろった！' : `${R.n}がそろえた`; tm = setTimeout(() => end(w === 'o' ? 'win' : 'lose', w === 'o' ? `${moves}手目で3つ並べた！` : `${R.n}が${moves}手目で3つ並べた`), 900); return true; }
-    if (moves >= MAX){ over = true; draw(); turnEl.textContent = '決着つかず'; tm = setTimeout(() => end('draw', `${MAX}手で決着つかず`), 700); return true; }
     return false;
   };
   el.querySelector('.mb-grid').addEventListener('click', e => {
     const c = e.target.closest('.mb-cell'); if (!c || over || turn !== 'o' || st.b[+c.dataset.i]) return;
     st = mbPlace(st, +c.dataset.i, 'o'); sfx.add(moves); if (settled('o')) return;
     turn = 'x'; turnEl.textContent = `${R.n}が考え中…`; draw();
-    tm = setTimeout(() => { if (over) return; st = mbPlace(st, cpu(), 'x'); sfx.step(); if (settled('x')) return; turn = 'o'; turnEl.textContent = 'あなたの番'; draw(); }, 520);
+    tm = setTimeout(() => { if (over) return; st = mbPlace(st, cpu(), 'x'); sfx.step(); if (settled('x')) return; turn = 'o'; turnEl.textContent = `あなたの番（${moves + 1}手目）`; draw(); }, 520);
   });
   draw();
   return () => { over = true; clearTimeout(tm); };
