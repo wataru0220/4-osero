@@ -1105,7 +1105,7 @@ details.own[open] summary{margin-bottom:8px}
       <div class="qbox-head">
         <small id="qCount">7 QUESTIONS</small>
         <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
-          <label class="switch" id="timedSw"><input type="checkbox" id="chkTimed" checked> 制限時間あり（クエスト）</label>
+          <label class="switch" id="timedSw"><input type="checkbox" id="chkTimed"> 制限時間あり（クエスト）</label>
           <small class="untimed" id="untimedNote" hidden>マインドマップは時間制限なし。じっくり考えよう</small>
           <button class="btn sm" type="button" id="btnEditQs">問いと条件を編集</button>
         </div>
@@ -4106,7 +4106,7 @@ function condHTML(st, list, s, col){
   const met = list.length >= st.min, locked = S.timed && s.to;
   return `<div class="cond">
       <div class="cond-item ${met ? 'ok' : locked ? 'bad' : ''}"><small>条件</small><b>${isPlan(st) ? fieldsOf(st).length + 'つとも' : st.min + '個以上'}</b><span>${met ? '条件クリア' : `あと${st.min - list.length}${isPlan(st) ? 'つ' : '個'}`}</span></div>
-      <div class="cond-item"><small>制限時間</small><b>${S.timed ? fmtLimit(st.sec) : 'なし'}</b><span>${S.timed ? (locked ? '時間切れ' : 'この問いの持ち時間') : S.mode === 'map' ? 'じっくり考えよう' : '練習モード'}</span></div>
+      <div class="cond-item"><small>制限時間</small><b>${S.timed ? fmtLimit(st.sec) : 'なし'}</b><span>${S.timed ? (locked ? '時間切れ' : 'この問いの持ち時間') : 'じっくり考えよう'}</span></div>
     </div>`;
 }
 function forkHTML(f){
