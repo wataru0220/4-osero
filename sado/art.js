@@ -12,6 +12,9 @@ const ART = (function () {
   const at = (x, y, s, body, rot) => `<g transform="translate(${x},${y})${rot ? ` rotate(${rot})` : ''} scale(${s})">${body}</g>`;
   const flip = (body) => `<g transform="translate(100,0) scale(-1,1)">${body}</g>`;
   const SKIN = '#f6d9bf', HAIR = '#2b2622', GUEST = '#e98ca0', ARROW = '#e0603e', FUKUSA = '#6b3a7a', BLUSH = '#f4a3a8';
+  const GUEST_M = '#5f86b0', HAKAMA = '#6f6a62', FUKUSA_F = '#d0503a';
+  // 男手前／女手前（人物の髪・袴・帛紗の色が変わる）。app.js が ART.setGender で切り替える
+  let MALE = false;
   const schoolColor = (id) => (SCHOOLS[id] || SCHOOLS.ura).color;
   const n1 = (v) => v.toFixed(1);
 
@@ -163,19 +166,27 @@ const ART = (function () {
   const kimonoDots = (pts) => pts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.5" fill="#fff" opacity=".6"/>`).join('');
   function person(pose, K, opt) {
     opt = opt || {};
+    const male = !!opt.male;
     const D = '#00000022';
-    const legs = `<path d="M22,94 C20,82 28,73 40,72 L62,73 C72,74 78,84 76,94 Z" fill="${K}"/><path d="M22,94 C22,88 27,84 34,83 L70,84 C74,86 76,90 76,94 Z" fill="${D}"/>` + kimonoDots([[34, 89], [48, 90], [62, 89], [42, 80], [57, 80]]);
-    const torso = `<path d="M34,77 C32,63 36,51 44,47 L55,47 C60,52 61,64 59,77 Z" fill="${K}"/>` + kimonoDots([[45, 55], [52, 52], [39, 74], [54, 75]])
+    // 女性は着物に帯、男性は着物に袴（縦じま）。男性は短い髪で、かんざしなし
+    const legs = `<path d="M22,94 C20,82 28,73 40,72 L62,73 C72,74 78,84 76,94 Z" fill="${male ? HAKAMA : K}"/><path d="M22,94 C22,88 27,84 34,83 L70,84 C74,86 76,90 76,94 Z" fill="${D}"/>`
+      + (male ? '<path d="M32,76 L29,93 M42,73 L41,94 M52,73 L53,94 M63,75 L67,93" stroke="#00000030" stroke-width="1.3"/>' : kimonoDots([[34, 89], [48, 90], [62, 89], [42, 80], [57, 80]]));
+    const torso = `<path d="M34,77 C32,63 36,51 44,47 L55,47 C60,52 61,64 59,77 Z" fill="${K}"/>` + (male ? '' : kimonoDots([[45, 55], [52, 52], [39, 74], [54, 75]]))
       + '<path d="M55,47.5 L50,60 L52.5,61 L57,49 Z" fill="#f6f1e4"/>'
-      + `<path d="M33.6,63 L60.2,63 L60.4,70 L33.8,70 Z" fill="${opt.obi || '#f2cf5b'}"/><line x1="34" y1="66.5" x2="60" y2="66.5" stroke="#e0603e" stroke-width="1.2"/>`
-      + (opt.fukusa ? `<rect x="35" y="66" width="5" height="9" rx="1" fill="${opt.fukusa}"/>` : '');
-    const head = `<rect x="47" y="40" width="7" height="8" fill="${SKIN}"/><circle cx="39" cy="22" r="6" fill="${HAIR}"/>`
-      + `<circle cx="51" cy="32" r="12.5" fill="${SKIN}"/>`
-      + `<path d="M38.6,34 C37,20 46,17.5 52,18 C60,18.5 64,24 63.5,29 C58,26.5 52,27 47,30 L46,42 C42,41 39,38 38.6,34 Z" fill="${HAIR}"/>`
-      + '<circle cx="43" cy="18" r="2.6" fill="#e0603e"/><circle cx="43" cy="18" r="1" fill="#f6d36b"/>'
-      + `<ellipse cx="57.5" cy="32.5" rx="1.6" ry="2.2" fill="${HAIR}"/><circle cx="58" cy="31.7" r=".65" fill="#fff"/>`
-      + `<ellipse cx="57" cy="37.6" rx="2.7" ry="1.5" fill="${BLUSH}" opacity=".9"/>`
+      + (male
+        ? `<path d="M33.6,64 L60.2,64 L60.3,67.5 L33.7,67.5 Z" fill="#3a3530"/><path d="M33.7,67.5 L60.3,67.5 L59.4,77 L34.2,77 Z" fill="${HAKAMA}"/><path d="M41,68 L40.5,77 M50,68 L50,77" stroke="#00000030" stroke-width="1.2"/>`
+        : `<path d="M33.6,63 L60.2,63 L60.4,70 L33.8,70 Z" fill="${opt.obi || '#f2cf5b'}"/><line x1="34" y1="66.5" x2="60" y2="66.5" stroke="#e0603e" stroke-width="1.2"/>`)
+      + (opt.fukusa ? `<rect x="35" y="${male ? 64.5 : 66}" width="5" height="9" rx="1" fill="${opt.fukusa}"/>` : '');
+    const face = `<ellipse cx="57.5" cy="32.5" rx="1.6" ry="2.2" fill="${HAIR}"/><circle cx="58" cy="31.7" r=".65" fill="#fff"/>`
+      + `<ellipse cx="57" cy="37.6" rx="2.7" ry="1.5" fill="${BLUSH}" opacity="${male ? .55 : .9}"/>`
       + '<path d="M59,39 q1.3,1 2.3,-.2" stroke="#8a4a3a" stroke-width=".9" fill="none" stroke-linecap="round"/>';
+    const head = male
+      ? `<rect x="47" y="40" width="7" height="8" fill="${SKIN}"/><circle cx="51" cy="32" r="12.5" fill="${SKIN}"/>`
+        + `<path d="M38.8,34 C37.5,21 45,18 52,18.5 C59.5,19 63.8,23.5 63.6,28.5 C60,26 54.5,26.5 49.5,28.6 L48,37.5 C44.5,38.5 40.5,37.2 38.8,34 Z" fill="${HAIR}"/>` + face
+      : `<rect x="47" y="40" width="7" height="8" fill="${SKIN}"/><circle cx="39" cy="22" r="6" fill="${HAIR}"/>`
+        + `<circle cx="51" cy="32" r="12.5" fill="${SKIN}"/>`
+        + `<path d="M38.6,34 C37,20 46,17.5 52,18 C60,18.5 64,24 63.5,29 C58,26.5 52,27 47,30 L46,42 C42,41 39,38 38.6,34 Z" fill="${HAIR}"/>`
+        + '<circle cx="43" cy="18" r="2.6" fill="#e0603e"/><circle cx="43" cy="18" r="1" fill="#f6d36b"/>' + face;
     const sleeve = (d) => `<path d="${d}" fill="${K}"/><path d="${d}" fill="${D}"/>`;
     const hand = (x, y, rx) => `<ellipse cx="${x}" cy="${y}" rx="${rx || 3.3}" ry="2.5" fill="${SKIN}"/>`;
     const lap = sleeve('M47,49 C55,52 60,60 62,69 L55,72 C53,64 49,58 45,56 Z') + hand(61, 71.5);
@@ -189,14 +200,16 @@ const ART = (function () {
         ? legs + rotAnim('0 46 76;40 46 76;40 46 76;0 46 76;0 46 76', 4, torso + head + lap)
         : legs + rot(45, torso + head) + sleeve('M63,57 C71,62 78,76 82,88 L76,91 C72,80 66,70 60,65 Z') + hand(80, 91, 4);
       case 'hold': return legs + torso + head + moving('0 5;0 -3;0 -3;0 5', 2.8, sleeve('M46,49 C52,52 55,58 56,64 L65,57 L69,60 L58,69 C53,68 48,62 44,57 Z') + item + hand(67, 58));
+      // 胸の高さより下で、軽く持ち上げる（菓子器は高く上げない）
+      case 'holdlow': return legs + torso + head + moving('0 3;0 -1;0 -1;0 3', 2.8, sleeve('M46,49 C52,53 55,59 56,66 L62,63 L66,67 L58,72 C53,70 48,63 44,57 Z') + item + hand(64, 67));
       case 'drink': return legs + torso + head + moving('0 2;0 -1;0 2', 2.4, sleeve('M46,49 C52,52 54,58 55,62 L58,46 L63,47 L60,66 C54,66 48,61 44,57 Z') + item + hand(60.5, 45));
       case 'view': return legs + rot(18, torso + head) + moving('0 0;0 -3;0 0', 3, sleeve('M57,52 C63,56 66,64 67,72 L74,78 L72,82 L63,76 C60,68 57,62 53,58 Z') + item + hand(73, 80));
       default: return legs + torso + head + lap;
     }
   }
   const fig = (body, x, y, s) => `<g transform="translate(${x},${y}) scale(${s})">${body}</g>`;
-  const G = (pose, opt) => person(pose, GUEST, opt);
-  const H = (pose, school, opt) => person(pose, schoolColor(school), Object.assign({ fukusa: FUKUSA, obi: '#e9dcb5' }, opt));
+  const G = (pose, opt) => person(pose, MALE ? GUEST_M : GUEST, Object.assign({ male: MALE }, opt));
+  const H = (pose, school, opt) => person(pose, schoolColor(school), Object.assign({ male: MALE, fukusa: MALE ? FUKUSA : FUKUSA_F, obi: '#e9dcb5' }, opt));
   const pair = (item, o) => floor + fig(G('sit'), -6, 36, .62) + fig(flip(G('eshaku', { anim: o && o.anim })), 40, 36, .62) + item;
   const bubble = (o) => `<g>${o && o.anim ? MOVE.pulse : ''}<path d="M66,8 h26 a4,4 0 0 1 4,4 v10 a4,4 0 0 1 -4,4 h-16 l-6,6 l1,-6 h-5 a4,4 0 0 1 -4,-4 v-10 a4,4 0 0 1 4,-4 z" fill="#fffdf7" stroke="#8a7a5c"/><circle cx="72" cy="17" r="1.8" fill="#8a7a5c"/><circle cx="79" cy="17" r="1.8" fill="#8a7a5c"/><circle cx="86" cy="17" r="1.8" fill="#8a7a5c"/></g>`;
 
@@ -206,24 +219,30 @@ const ART = (function () {
   const chibiHead = `<circle cx="50" cy="15" r="7.5" fill="${HAIR}"/><circle cx="50" cy="35" r="20" fill="${SKIN}"/>`
     + `<path d="M30,38 C28,20 38,13 50,13 C62,13 72,20 70,38 C66,30 60,25.5 50,26.5 C40,25.5 34,30 30,38 Z" fill="${HAIR}"/>`
     + '<circle cx="57.5" cy="12" r="3" fill="#e0603e"/><circle cx="57.5" cy="12" r="1.2" fill="#f6d36b"/>' + chibiFace;
-  function chibi(K, obi) {
+  const chibiHeadM = `<circle cx="50" cy="35" r="20" fill="${SKIN}"/>`
+    + `<path d="M30,36 C29,19 39,12 50,12 C61,12 71,19 70,36 C67,29 61,25 50,26 C39,25 33,29 30,36 Z" fill="${HAIR}"/>` + chibiFace;
+  // 立ち姿（歩き方ステージの自分）。男性は袴
+  function chibi(K, obi, male) {
     return '<ellipse cx="50" cy="96" rx="18" ry="3" fill="#00000026"/>'
       + '<ellipse cx="43" cy="93" rx="5" ry="3" fill="#fff" stroke="#d6cfbd"/><ellipse cx="57" cy="93" rx="5" ry="3" fill="#fff" stroke="#d6cfbd"/>'
       + `<path d="M34,56 L66,56 L65,92 L35,92 Z" fill="${K}"/><path d="M50,57 L45,92" stroke="#00000022" stroke-width="1.5"/>`
+      + (male ? `<path d="M34,69 L66,69 L68,92 L32,92 Z" fill="${HAKAMA}"/><path d="M42,71 L41,92 M50,71 L50,92 M58,71 L59,92" stroke="#00000030" stroke-width="1.4"/>` : '')
       + `<rect x="21" y="56" width="14" height="27" rx="6" fill="${K}"/><rect x="65" y="56" width="14" height="27" rx="6" fill="${K}"/><rect x="21" y="56" width="14" height="27" rx="6" fill="#0000001c"/><rect x="65" y="56" width="14" height="27" rx="6" fill="#0000001c"/>`
-      + kimonoDots([[40, 80], [58, 84], [52, 88], [28, 66], [72, 70]]) + `<circle cx="28" cy="84" r="3.6" fill="${SKIN}"/><circle cx="72" cy="84" r="3.6" fill="${SKIN}"/>`
+      + (male ? '' : kimonoDots([[40, 80], [58, 84], [52, 88], [28, 66], [72, 70]])) + `<circle cx="28" cy="84" r="3.6" fill="${SKIN}"/><circle cx="72" cy="84" r="3.6" fill="${SKIN}"/>`
       + '<path d="M43,56 L50,66 L57,56" fill="none" stroke="#f6f1e4" stroke-width="3"/>'
-      + `<rect x="34" y="66" width="32" height="8" fill="${obi || '#f2cf5b'}"/><line x1="34" y1="70" x2="66" y2="70" stroke="#e0603e" stroke-width="1.4"/>`
-      + chibiHead;
+      + (male ? '<rect x="34" y="65" width="32" height="5" fill="#3a3530"/>' : `<rect x="34" y="66" width="32" height="8" fill="${obi || '#f2cf5b'}"/><line x1="34" y1="70" x2="66" y2="70" stroke="#e0603e" stroke-width="1.4"/>`)
+      + (male ? chibiHeadM : chibiHead);
   }
-  // 正面を向いて座る亭主（盤面の点前畳に）
-  function chibiSeat(K) {
+  // 正面を向いて座る人（盤面の亭主・席に着いた客）
+  function chibiSeat(K, male, fukusa) {
     return '<ellipse cx="50" cy="94" rx="27" ry="4" fill="#00000026"/>'
-      + `<path d="M22,94 Q22,62 50,57 Q78,62 78,94 Z" fill="${K}"/><path d="M22,94 Q24,80 34,78 L66,78 Q76,80 78,94 Z" fill="#0000001c"/>`
-      + kimonoDots([[34, 86], [50, 88], [66, 86]]) + '<path d="M43,57 L50,67 L57,57" fill="none" stroke="#f6f1e4" stroke-width="3"/>'
-      + `<rect x="31" y="67" width="38" height="7" fill="#e9dcb5"/><rect x="33" y="68" width="5" height="8" fill="${FUKUSA}"/>`
+      + `<path d="M22,94 Q22,62 50,57 Q78,62 78,94 Z" fill="${K}"/>`
+      + (male ? `<path d="M22,94 Q23,76 34,73 L66,73 Q77,76 78,94 Z" fill="${HAKAMA}"/><path d="M36,76 L33,93 M50,74 L50,94 M64,76 L67,93" stroke="#00000030" stroke-width="1.4"/>` : '<path d="M22,94 Q24,80 34,78 L66,78 Q76,80 78,94 Z" fill="#0000001c"/>' + kimonoDots([[34, 86], [50, 88], [66, 86]]))
+      + '<path d="M43,57 L50,67 L57,57" fill="none" stroke="#f6f1e4" stroke-width="3"/>'
+      + (male ? '<rect x="31" y="67" width="38" height="5" fill="#3a3530"/>' : '<rect x="31" y="67" width="38" height="7" fill="#e9dcb5"/>')
+      + (fukusa ? `<rect x="33" y="68" width="5" height="8" fill="${fukusa}"/>` : '')
       + `<ellipse cx="44" cy="82" rx="4" ry="2.8" fill="${SKIN}"/><ellipse cx="56" cy="82" rx="4" ry="2.8" fill="${SKIN}"/>`
-      + chibiHead;
+      + (male ? chibiHeadM : chibiHead);
   }
 
   // ---------- まっちゃん（案内役の茶碗）。expr: happy / joy / oops / sad / think ----------
@@ -251,14 +270,21 @@ const ART = (function () {
 
   // ---------- 作法の手順の絵 ----------
   const school = (o) => SCHOOLS[o.school] || SCHOOLS.ura;
+  // 自分の席の前の畳：手前に膝、まん中に畳の縁（その手前が縁内、向こうが縁外）
+  const matView = () => '<rect x="0" y="14" width="100" height="74" fill="#d6c690"/>' + [22, 30, 38, 62, 70, 78].map((y) => `<line x1="0" y1="${y}" x2="100" y2="${y}" stroke="#c8b77e" stroke-width="1"/>`).join('')
+    + '<rect x="0" y="45" width="100" height="9" fill="#2f3a2a"/>'
+    + `<path d="M14,100 Q16,86 34,84 L66,84 Q84,86 86,100 Z" fill="${MALE ? HAKAMA : GUEST}"/><path d="M50,85 L50,100" stroke="#00000022" stroke-width="1.5"/>`;
   const STEP = {
     'osakini': (o) => pair(at(48, 88, .3, kashikiP()), o),
     'bow-kashi': (o) => floor + fig(G('bow', o), -8, 9, .9) + at(83, 88, .36, kashikiP()),
-    'lift-kashi': (o) => floor + fig(G('hold', { anim: o.anim, item: at(67, 50, .36, kashikiP()) }), 2, 9, .9) + sparkle(84, 22, 4),
+    'lift-kashi': (o) => floor + fig(G('holdlow', { anim: o.anim, item: at(64, 60, .34, kashikiP()) }), 2, 9, .9),
     'kaishi': (o) => at(50, 64, 1.5, kaishiP()) + at(48, 62, 1.3, sweetP()) + an(o, 'poke', '<line x1="16" y1="30" x2="72" y2="52" stroke="#a87b44" stroke-width="2.4" stroke-linecap="round"/><line x1="18" y1="24" x2="74" y2="46" stroke="#a87b44" stroke-width="2.4" stroke-linecap="round"/>'),
     'send-kashi': (o) => an(o, 'slideR', at(36, 62, 1.15, kashikiP())) + arrowH(64, 95, 62),
     'kashikiri': (o) => at(48, 66, 1.5, kaishiP()) + at(44, 64, 1.4, sweetP()) + '<line x1="45" y1="52" x2="43" y2="76" stroke="#fffefa" stroke-width="2.2"/>' + an(o, 'poke', '<line x1="80" y1="20" x2="60" y2="58" stroke="#9aa0a6" stroke-width="3.2" stroke-linecap="round"/>'),
-    'heri': (o) => '<rect x="4" y="28" width="92" height="58" fill="#d6c690"/>' + [36, 44, 52, 60, 68, 76].map((y) => `<line x1="4" y1="${y}" x2="96" y2="${y}" stroke="#c8b77e" stroke-width="1"/>`).join('') + '<rect x="4" y="80" width="92" height="9" fill="#2f3a2a"/>' + an(o, 'drop', bowl('normal', 50, 60, .7)),
+    // 縁内（膝と畳の縁のあいだ）と縁外（縁の向こう）。下に自分の膝、まん中に畳の縁
+    'heri': (o) => matView() + an(o, 'drop', bowl('normal', 50, 70, .5)),
+    'heri-out': (o) => matView() + an(o, 'drop', bowl('normal', 62, 33, .45)),
+    'kaishi-heri': () => matView() + at(48, 70, .85, kaishiP()),
     'osakini-bowl': (o) => pair(bowl('normal', 48, 88, .26), o),
     'bow-bowl': (o) => floor + fig(G('bow', o), -8, 9, .9) + bowl('normal', 84, 87, .3),
     'lift-bowl': (o) => floor + fig(G('hold', { anim: o.anim, item: bowl('normal', 67, 51, .34) }), 2, 9, .9) + sparkle(86, 24, 4),
@@ -273,6 +299,7 @@ const ART = (function () {
     'dashi': (o) => at(50, 72, 1.25, dashiP(school(o).dashi)) + an(o, 'drop', bowl('normal', 50, 60, .6, 'koicha')),
     'bow-koicha': (o) => floor + fig(G('bow', o), -8, 9, .9) + bowl('normal', 84, 87, .3, 'koicha'),
     'turn-dashi': (o) => at(46, 54, 1.05, dashiP(school(o).dashi)) + at(46, 52, .8, an(o, 'turnCW', bowlTop('koicha', true))) + at(46, 52, 1, arcArrow(38, -45, 55)),
+    'turn-dashi-ccw': (o) => at(46, 54, 1.05, dashiP(school(o).dashi)) + at(46, 52, .8, an(o, 'turnCCW', bowlTop('koicha', true))) + at(46, 52, 1, arcArrow(38, 55, -45)),
     'drink-talk': (o) => floor + fig(G('drink', { anim: o.anim, item: `<g transform="translate(61,40) rotate(-28) scale(.32)">${bowlBody('normal', 'koicha')}</g>` }), -6, 9, .9) + bubble(o),
     'wipe-kaishi': (o) => bowl('normal', 46, 66, 1.15, 'koicha') + an(o, 'wipe', '<g transform="translate(76,42) rotate(-20)"><rect x="-9" y="-6" width="18" height="12" fill="#fffefa" stroke="#d6cfbd"/></g>') + swish('M56,34 q10,-8 24,-2'),
     'send-bowl': (o) => an(o, 'slideR', bowl('normal', 36, 62, .9, 'koicha')) + arrowH(64, 95, 62),
@@ -295,6 +322,9 @@ const ART = (function () {
     toko: () => '<rect x="56" y="8" width="40" height="84" fill="#d9ccab" stroke="#6b5a40" stroke-width="2"/><rect x="66" y="14" width="20" height="48" fill="#f7f3e8" stroke="#a89668"/><path d="M76,22 q-3,6 1,10 q4,4 -1,8 M73,48 l6,0" stroke="#2b2622" stroke-width="1.6" fill="none"/><path d="M70,90 L82,90 L80,74 L72,74 Z" fill="#6b5a40"/><circle cx="74" cy="70" r="3.5" fill="#d04a5a"/><circle cx="79" cy="72" r="3" fill="#d04a5a"/>' + floor + fig(G('bow'), -16, 9, .8) + '<rect x="40" y="89" width="12" height="3" rx="1.5" fill="#8a6c3b"/>',
     kama: () => floor + place(TOOL.furo(), 76, 58, .62) + fig(G('view'), -12, 9, .82),
     seat: () => floor + fig(G('sit'), 6, 9, .88) + sparkle(80, 26, 7) + sparkle(90, 44, 4, BLUSH) + sparkle(70, 12, 4),
+    // お詰めが入口の戸を閉める
+    door: () => '<rect x="56" y="22" width="40" height="70" fill="#d9ccab" stroke="#6b5a40" stroke-width="2"/><rect x="60" y="54" width="32" height="38" fill="#3a3530"/><rect x="66" y="54" width="26" height="38" fill="#efe9d6" stroke="#8a7448" stroke-width="1.5"/><path d="M70,58 L70,88 M86,58 L86,88" stroke="#b9ad8f"/>'
+      + arrowH(88, 72, 46) + floor + fig(G('sit'), -10, 9, .82),
   };
 
   // ---------- お菓子 ----------
@@ -413,42 +443,54 @@ const ART = (function () {
     `, '0 0 360 230');
   }
 
-  // ---------- 歩き方ステージの盤面（四畳半を上から見た図） ----------
-  // 盤のマスは 8×8。3マスごとに「畳2マス＋境目1マス」。境目のマスが畳の縁（へり）になる。
+  // ---------- 歩き方ステージの盤面（茶室を上から見た図） ----------
+  // 半畳を1区画とし、マスは「畳2マス＋境目1マス」のくり返し。境目のマスが畳の縁（へり）になる。
   const WALL = 10, TOKO = 40;
   const axis = (i) => { const u = Math.floor(i / 3), s = i % 3; return { o: u * 104 + (s === 0 ? 0 : s === 1 ? 44 : 88), w: s === 2 ? 16 : 44 }; };
   function walkCell(gx, gy) { const a = axis(gx), b = axis(gy); return { x: WALL + a.o, y: TOKO + WALL + b.o, w: a.w, h: b.w }; }
   const unitRect = (ux0, uy0, ux1, uy1) => { const a = walkCell(ux0 * 3, uy0 * 3), b = walkCell(ux1 * 3 + 1, uy1 * 3 + 1); return { x: a.x, y: a.y, w: b.x + b.w - a.x, h: b.y + b.h - a.y }; };
-  function walkBoard(stage) {
-    const W = 316, Hh = 356;
+  // room: ROOMS の1つ。o: { winter, school, color（自分の着物の色） }
+  function walkBoard(room, o) {
+    const uw = room.mats[0].length, uh = room.mats.length;
+    const iw = uw * 104 - 16, ih = uh * 104 - 16;
+    const W = iw + WALL * 2, Hh = TOKO + WALL * 2 + ih;
     const mat = (r, vertical) => `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="#dccf98"/>` + (vertical
       ? [...Array(Math.floor(r.w / 6))].map((_, i) => `<line x1="${r.x + 3 + i * 6}" y1="${r.y}" x2="${r.x + 3 + i * 6}" y2="${r.y + r.h}" stroke="#cbbd84" stroke-width="1"/>`).join('')
       : [...Array(Math.floor(r.h / 6))].map((_, i) => `<line x1="${r.x}" y1="${r.y + 3 + i * 6}" x2="${r.x + r.w}" y2="${r.y + 3 + i * 6}" stroke="#cbbd84" stroke-width="1"/>`).join(''));
     let s = `<rect width="${W}" height="${Hh}" fill="#efe6d0"/>`;
-    // 床の間（上の左側）
+    // 床の間（床前畳 A の上、2区画ぶん）
     s += `<rect x="${WALL}" y="0" width="192" height="${TOKO + WALL}" fill="#e6dbc0"/><rect x="${WALL}" y="${TOKO}" width="192" height="${WALL}" fill="#b89a6a"/><rect x="${WALL}" y="${TOKO + WALL - 3}" width="192" height="3" fill="#2b2622"/>`
       + '<rect x="62" y="4" width="26" height="34" fill="#f7f3e8" stroke="#a89668"/><rect x="59" y="2" width="32" height="4" fill="#7a5c3a"/><path d="M75,10 q-3,5 1,8 q4,3 -1,7" stroke="#2b2622" stroke-width="1.6" fill="none"/>'
-      + `<path d="M136,40 L148,40 L146,26 L138,26 Z" fill="#c9b47a"/>${stage.winter ? fl(140, 22, 6, '#d04a5a', '#f2d36b') : fl(140, 22, 6, '#5a63b8', '#e8e4f8')}`;
-    // 壁と畳
-    s += `<rect x="202" y="0" width="${W - 202}" height="${TOKO + WALL}" fill="#7a5c3a"/><rect x="0" y="0" width="${WALL}" height="${Hh}" fill="#7a5c3a"/><rect x="${W - WALL}" y="0" width="${WALL}" height="${Hh}" fill="#7a5c3a"/><rect x="0" y="${Hh - WALL}" width="${W}" height="${WALL}" fill="#7a5c3a"/>`;
-    s += `<rect x="${WALL}" y="${TOKO + WALL}" width="296" height="296" fill="#2f3a2a"/>`;
-    s += mat(unitRect(0, 0, 1, 0), false) + mat(unitRect(2, 0, 2, 1), true) + mat(unitRect(1, 2, 2, 2), false) + mat(unitRect(0, 1, 0, 2), true) + mat(unitRect(1, 1, 1, 1), false);
-    // 点前畳（亭主の畳）を少し色分け
-    const tm = unitRect(2, 0, 2, 1);
-    s += `<rect x="${tm.x}" y="${tm.y}" width="${tm.w}" height="${tm.h}" fill="#e0603e" opacity=".12"/>`;
-    // にじり口（左下）と茶道口（右上）
-    const nj = walkCell(0, 6), sd = walkCell(7, 0);
-    s += `<rect x="0" y="${nj.y + 4}" width="${WALL}" height="80" fill="#c9b47a"/><line x1="5" y1="${nj.y + 8}" x2="5" y2="${nj.y + 80}" stroke="#8a7448" stroke-width="2"/>`;
-    s += `<rect x="${W - WALL}" y="${sd.y}" width="${WALL}" height="84" fill="#efe9d6"/><line x1="${W - 5}" y1="${sd.y + 4}" x2="${W - 5}" y2="${sd.y + 80}" stroke="#b9ad8f" stroke-width="2"/>`;
-    // 炉または風炉と釜
-    if (stage.ro) { const c = walkCell(stage.ro[0], stage.ro[1]); s += `<rect x="${c.x + 3}" y="${c.y + 3}" width="${c.w - 6}" height="${c.h - 6}" fill="#2a2421" stroke="#6b4a2a" stroke-width="5"/><circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="12" fill="#3a3533"/><circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="5" fill="#6a5f58"/>`; }
-    if (stage.furo) { const c = walkCell(stage.furo[0], stage.furo[1]); s += `<circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="19" fill="#7d6a55"/><circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="12" fill="#3a3533"/><circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="5" fill="#6a5f58"/>`; }
-    // 亭主
-    const hc = walkCell(stage.host[0], stage.host[1]);
-    s += `<g transform="translate(${hc.x + hc.w / 2 - 25},${hc.y + hc.h - 50}) scale(.5)">${chibiSeat(schoolColor(stage.school))}</g>`;
-    s += '<g id="wk-goal"></g><g id="wk-fp"></g><g id="wk-me" style="transition:transform .28s"><g class="bob">' + `<g transform="translate(-24,-50) scale(.48)">${chibi(GUEST)}</g>` + '</g></g>';
+      + `<path d="M136,40 L148,40 L146,26 L138,26 Z" fill="#c9b47a"/>${o.winter ? fl(140, 22, 6, '#d04a5a', '#f2d36b') : fl(140, 22, 6, '#5a63b8', '#e8e4f8')}`;
+    // 壁
+    s += `<rect x="${WALL + 192}" y="0" width="${W - WALL - 192}" height="${TOKO + WALL}" fill="#7a5c3a"/><rect x="0" y="0" width="${WALL}" height="${Hh}" fill="#7a5c3a"/><rect x="${W - WALL}" y="0" width="${WALL}" height="${Hh}" fill="#7a5c3a"/><rect x="0" y="${Hh - WALL}" width="${W}" height="${WALL}" fill="#7a5c3a"/>`;
+    // 畳（すき間が縁の色になる）。点前畳 B は少し色分け
+    s += `<rect x="${WALL}" y="${TOKO + WALL}" width="${iw}" height="${ih}" fill="#2f3a2a"/>`;
+    [...new Set(room.mats.join(''))].forEach((L) => {
+      let x0 = 99, y0 = 99, x1 = -1, y1 = -1;
+      room.mats.forEach((row, uy) => [...row].forEach((ch, ux) => { if (ch === L) { x0 = Math.min(x0, ux); y0 = Math.min(y0, uy); x1 = Math.max(x1, ux); y1 = Math.max(y1, uy); } }));
+      const r = unitRect(x0, y0, x1, y1);
+      s += mat(r, y1 - y0 > x1 - x0);
+      if (L === 'B') s += `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="#e0603e" opacity=".12"/>`;
+    });
+    // 客の入口（左の壁）：小間はにじり口、広間は襖。茶道口は右の壁
+    const ent = unitRect(0, Math.floor(room.start[1] / 3), 0, Math.floor(room.start[1] / 3));
+    s += room.small
+      ? `<rect x="0" y="${ent.y + ent.h - 70}" width="${WALL}" height="66" fill="#c9b47a"/><line x1="5" y1="${ent.y + ent.h - 66}" x2="5" y2="${ent.y + ent.h - 8}" stroke="#8a7448" stroke-width="2"/>`
+      : `<rect x="0" y="${ent.y}" width="${WALL}" height="${ent.h}" fill="#efe9d6"/><line x1="5" y1="${ent.y + 4}" x2="5" y2="${ent.y + ent.h - 4}" stroke="#b9ad8f" stroke-width="2"/>`;
+    const sd = unitRect(uw - 1, 0, uw - 1, 0);
+    s += `<rect x="${W - WALL}" y="${sd.y}" width="${WALL}" height="${sd.h}" fill="#efe9d6"/><line x1="${W - 5}" y1="${sd.y + 4}" x2="${W - 5}" y2="${sd.y + sd.h - 4}" stroke="#b9ad8f" stroke-width="2"/>`;
+    // 炉（冬）または風炉（夏）と釜
+    if (o.winter) { const c = walkCell(room.ro[0], room.ro[1]); s += `<rect x="${c.x + 3}" y="${c.y + 3}" width="${c.w - 6}" height="${c.h - 6}" fill="#2a2421" stroke="#6b4a2a" stroke-width="5"/><circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="12" fill="#3a3533"/><circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="5" fill="#6a5f58"/>`; }
+    else { const c = walkCell(room.furo[0], room.furo[1]); s += `<circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="19" fill="#7d6a55"/><circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="12" fill="#3a3533"/><circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="5" fill="#6a5f58"/>`; }
+    // 亭主は席入りのあいだ茶道口の向こうで待つ。客が全員座ったら walkHost で入ってくる
+    s += '<g id="wk-goal"></g><g id="wk-npc"></g><g id="wk-fp"></g><g id="wk-me" style="transition:transform .28s"><g class="bob">' + `<g transform="translate(-24,-50) scale(.48)">${chibi(o.color || GUEST, null, MALE)}</g>` + '</g></g>';
     return svg(s, `0 0 ${W} ${Hh}`);
   }
+  // 席に着いているほかの客
+  // 客が全員座ったあとに入ってくる亭主（点前座に座る）
+  const walkHost = (room, sch) => { const c = walkCell(room.host[0], room.host[1]); return `<g class="npc host" transform="translate(${c.x + c.w / 2 - 25},${c.y + c.h - 50}) scale(.5)">${chibiSeat(schoolColor(sch), MALE, MALE ? FUKUSA : FUKUSA_F)}</g>`; };
+  const walkNpc = (gx, gy, color, male) => { const c = walkCell(gx, gy); return `<g class="npc" transform="translate(${c.x + c.w / 2 - 22},${c.y + c.h - 46}) scale(.44)">${chibiSeat(color, male)}</g>`; };
   // 足あと（次に進めるマス）
   function walkFoot(c) {
     const cx = c.x + c.w / 2, cy = c.y + c.h / 2;
@@ -482,7 +524,7 @@ const ART = (function () {
       case 'sim': return svg(vase + FLOWERS[MONTHS[m].hana]);
       case 'quiz': return svg(mascot('think'));
       case 'dougu': return svg(place(TOOL.natsume(), 34, 60, .62) + place(TOOL.chashaku(), 58, 66, .55) + '<circle cx="76" cy="26" r="15" fill="#fffdf7" stroke="#e0603e" stroke-width="3"/><path d="M71,22 q0,-7 6,-7 q6,0 6,6 q0,4 -6,6 l0,4 M77,37 l0,.5" stroke="#e0603e" stroke-width="3.2" fill="none" stroke-linecap="round"/>');
-      case 'walk': return svg('<rect x="6" y="56" width="88" height="40" fill="#dccf98"/><rect x="6" y="72" width="88" height="6" fill="#2f3a2a"/><ellipse cx="22" cy="88" rx="3" ry="5" fill="#8a5a2b" opacity=".55"/><ellipse cx="30" cy="85" rx="3" ry="5" fill="#8a5a2b" opacity=".55"/>' + place(chibi(GUEST), 62, 50, .6));
+      case 'walk': return svg('<rect x="6" y="56" width="88" height="40" fill="#dccf98"/><rect x="6" y="72" width="88" height="6" fill="#2f3a2a"/><ellipse cx="22" cy="88" rx="3" ry="5" fill="#8a5a2b" opacity=".55"/><ellipse cx="30" cy="85" rx="3" ry="5" fill="#8a5a2b" opacity=".55"/>' + place(chibi(MALE ? GUEST_M : GUEST, null, MALE), 62, 50, .6));
       case 'video': return svg('<rect x="8" y="18" width="84" height="60" rx="8" fill="#2b2622"/><rect x="13" y="23" width="74" height="50" rx="4" fill="#f6efe0"/>' + place(mascot('happy'), 50, 48, .42) + '<circle cx="78" cy="68" r="12" fill="#e0603e"/><path d="M74,62 L84,68 L74,74 Z" fill="#fff"/><rect x="30" y="80" width="40" height="5" rx="2" fill="#7a5c3a"/>');
       case 'app': return svg('<rect x="27" y="5" width="46" height="90" rx="9" fill="#2b2622"/><rect x="31" y="13" width="38" height="72" rx="3" fill="#f6efe0"/><circle cx="50" cy="90" r="2.4" fill="#8a7a5c"/>' + place(mascot('happy'), 50, 49, .38) + sparkle(78, 18, 5) + sparkle(20, 30, 3.5, BLUSH));
       case 'zukan': return svg(place(chasenBody(school(o).chasenKey), 34, 50, .9) + place(TOOL.chashaku(), 62, 54, .8));
@@ -504,7 +546,8 @@ const ART = (function () {
     icon: (id, sch) => (TOOL[id] ? svg(TOOL[id]({ chasen: school({ school: sch }).chasenKey })) : ''),
     step: (p, sch, anim) => (STEP[p] ? svg(STEP[p]({ school: sch, anim: !!anim })) : ''),
     viewPic: (k) => svg(VIEW_PIC[k]()),
-    opt, room, quiz, menu, life, walkBoard, walkCell, walkFoot, walkGoal,
+    opt, room, quiz, menu, life, walkBoard, walkCell, walkFoot, walkGoal, walkNpc, walkHost,
+    setGender: (g) => { MALE = g === 'm'; },
     mascot: (expr) => svg(mascot(expr)),
     chasen: (kind) => svg(chasenBody(kind)),
     foam: (kind) => svg(at(50, 50, 1.4, bowlTop(kind))),

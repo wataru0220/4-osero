@@ -5,7 +5,7 @@
   const MAX_MISS = 3;   // ミスがこの回数になったら失格
 
   // ---------- 保存 ----------
-  let save = { school: null, ruby: 'all', bgm: true, voice: true, seq: {}, sim: {}, stamp: {}, quiz: {}, dougu: {}, walk: {} };
+  let save = { school: null, gender: 'f', ruby: 'all', bgm: true, voice: true, voiceStyle: 'cute', voiceName: '', walkCfg: { room: '4.5', season: 'furo', role: 'shokyaku' }, seq: {}, sim: {}, stamp: {}, quiz: {}, dougu: {}, walk: {} };
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) save = Object.assign(save, s); } catch (_) {}
   const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (_) {} };
   const bucket = (name) => { save[name] = save[name] || {}; return (save[name][save.school] = save[name][save.school] || {}); };
@@ -16,7 +16,13 @@
   const sc = () => SCHOOLS[save.school];
   const stars = (n) => '★'.repeat(n) + '☆'.repeat(3 - n);
   const starsByMiss = (miss) => MAX_MISS - miss;   // ミス0＝★3、1＝★2、2＝★1
-  const stepText = (st) => st.t || st[save.school];
+  // 手順：流派ごとの配列にも対応。文は 流派別・男女別 のどちらでも書ける
+  const stepsOf = (q) => (Array.isArray(q.steps) ? q.steps : (q.steps[save.school] || q.steps.omote));
+  const stepText = (st) => (st.tg ? st.tg[save.gender] : (st.t || st[save.school]));
+  const sayOf = (st) => (typeof st.say === 'string' ? st.say : st.say ? (st.say[save.school] || st.say[save.gender]) : `${stepText(st)}。${st.note}`);
+  // 男女の違い（この流派に資料があるものだけ）。例「正座の膝の間：女性はこぶし一つ分あける」
+  const genderDiff = (id) => { const d = GENDER_DIFFS.find((x) => x.id === id); const v = d && (d[save.school] || d.all); return v ? { k: d.k, m: v.m, f: v.f } : null; };
+  const gtext = (id) => { const v = genderDiff(id); return v ? `${v.k}：${GENDERS[save.gender].name}は${v[save.gender]}` : ''; };
   const thisMonth = () => new Date().getMonth() + 1;
   const DISCLAIMER = '<div class="note">※ 流派の違いは「一般にそう教えられることが多い」代表的なものです。細部は教室・先生・点前の種類によって異なります。お稽古では先生の教えを優先してください。</div>';
   const RUBY_MODES = [['all', 'ぜんぶ'], ['term', '茶道のことばだけ'], ['none', 'なし']];
@@ -24,12 +30,15 @@
   const say = (expr, html) => `<div class="talk"><span class="mc">${ART.mascot(expr)}</span><div class="bub">${html}</div></div>`;
   const lives = (miss) => `<span class="lives" aria-label="のこり${MAX_MISS - miss}">${[...Array(MAX_MISS)].map((_, i) => ART.life(i < MAX_MISS - miss)).join('')}</span>`;
   const FAIL = '<div class="fail"><span>失格</span></div>';
+  // 参考にした資料（作法の出典）
+  const refs = () => `<details class="refs"><summary>参考にした資料</summary><ul>${REFERENCES.map((r) => `<li><a href="${r.u}" target="_blank" rel="noopener">${esc(r.t)}</a></li>`).join('')}</ul></details>`;
 
   // 画面を描いてからフリガナを付ける
   function render(html, el) { el = el || app; el.innerHTML = html; RUBY.apply(el); }
   function setTheme() {
     document.documentElement.style.setProperty('--school', save.school ? sc().color : '#3f5a2a');
     document.body.dataset.ruby = save.ruby || 'all';
+    ART.setGender(save.gender);
   }
   let toastTimer = null;
   function toast(expr, text) {
@@ -126,12 +135,13 @@
   // ホーム以外にいる間は履歴を1つ積んでおき、戻る操作を受け止める
   let popGuard = false;
   function syncHistory() {
+    if (popGuard) return;   // 戻る処理の途中。終わったら popstate で合わせ直す（二重に戻らないように）
     const top = history.state && history.state.sado === 'top';
     if (cur.name !== 'home' && !top) history.pushState({ sado: 'top' }, '');
     else if (cur.name === 'home' && top) { popGuard = true; history.back(); }
   }
   window.addEventListener('popstate', () => {
-    if (popGuard) { popGuard = false; return; }
+    if (popGuard) { popGuard = false; syncHistory(); return; }
     if (cur.name !== 'home') back();
   });
   function go(name, arg) {
@@ -157,7 +167,7 @@
     let menu = '';
     if (s) {
       const seqDone = Object.keys(bucket('seq')).length;
-      const walkDone = Object.keys(bucket('walk')).length;
+      const walkDone = Object.keys(bucket('walk')).filter((k) => k.includes('|')).length;
       menu = `
       <h3>あそんで覚える</h3>
       <div class="menu">
@@ -165,7 +175,7 @@
         ${item('simMonths', 'sim', '② 季節の茶席シミュレーション', `月をえらび、道具を組んで点前をする（月の印 ${stampCount()}/12）`)}
         ${item('quiz', 'quiz', '③ 知識クイズ', `10問勝負（最高 ${bucket('quiz').best || 0}/10）`)}
         ${item('dougu', 'dougu', '④ お道具の名前当て', `絵と名前を結びつける10問（最高 ${bucket('dougu').best || 0}/10）`)}
-        ${item('walkList', 'walk', '⑤ 茶室の歩き方', `畳の縁を踏まずに、床の間から席まで（${walkDone}/${WALK_STAGES.length} ステージ）`)}
+        ${item('walkList', 'walk', '⑤ 茶室の歩き方（席入り）', `正客・次客・お詰めになって、広さのちがう茶室へ（クリア ${walkDone}/${ROOMS.length * WALK_SEASONS.length * WALK_ROLES.length}）`)}
       </div>
       <p class="sub center">どのゲームも、ミスは${MAX_MISS}回で失格です。</p>
       <h3>見て学ぶ</h3>
@@ -188,12 +198,14 @@
       <div class="schools">
         ${Object.values(SCHOOLS).map((x) => `<button class="school ${s === x.id ? 'on' : ''}" style="--c:${x.color}" data-school="${x.id}"><b>${x.name}</b><span>${x.an}</span></button>`).join('')}
       </div>
+      <div class="rubyset"><span class="lbl">お点前をする人</span>${Object.entries(GENDERS).map(([k, g]) => `<button class="seg ${save.gender === k ? 'on' : ''}" data-gender="${k}">${g.name}（${k === 'm' ? '男手前' : '女手前'}）</button>`).join('')}</div>
       ${menu || '<p class="sub center">まずは学びたい流派をえらんでください。<br>あとから切り替えられます。</p>'}
       <div class="rubyset"><span class="lbl">ふりがな</span>${RUBY_MODES.map(([k, l]) => `<button class="seg ${save.ruby === k ? 'on' : ''}" data-ruby="${k}">${l}</button>`).join('')}</div>
       <div class="rubyset"><span class="lbl">BGM</span><button class="seg ${save.bgm ? 'on' : ''}" data-bgmset="on">オン</button><button class="seg ${save.bgm ? '' : 'on'}" data-bgmset="off">オフ</button></div>
       ${DISCLAIMER}`);
     app.querySelectorAll('[data-school]').forEach((b) => b.onclick = () => { save.school = b.dataset.school; persist(); go('home'); });
     app.querySelectorAll('[data-ruby]').forEach((b) => b.onclick = () => { save.ruby = b.dataset.ruby; persist(); go('home'); });
+    app.querySelectorAll('[data-gender]').forEach((b) => b.onclick = () => { save.gender = b.dataset.gender; persist(); go('home'); });
     app.querySelectorAll('[data-bgmset]').forEach((b) => b.onclick = () => setBgm(b.dataset.bgmset === 'on'));
   }
 
@@ -241,8 +253,14 @@
       </div>
       <h3>この流派のポイント</h3>
       <div class="card"><ul class="pt">${x.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul></div>
+      <h3>男性・女性のちがい（${x.name}）</h3>
+      <div class="card"><dl class="dl gdl">${GENDER_DIFFS.map((d) => genderDiff(d.id)).filter(Boolean).map((v) => `<dt>${esc(v.k)}</dt><dd><span class="${save.gender === 'm' ? 'me' : ''}">男性：${esc(v.m)}</span><br><span class="${save.gender === 'f' ? 'me' : ''}">女性：${esc(v.f)}</span></dd>`).join('')}</dl>
+        <p class="sub">いまは「${GENDERS[save.gender].name}」でお点前を学んでいます（ホームで切り替えられます）。</p></div>
+      <h3>お辞儀の真・行・草（裏千家の例）</h3>
+      <div class="card"><dl class="dl">${BOWS.map((b) => `<dt>${b.k}</dt><dd>${esc(b.d)}</dd>`).join('')}</dl></div>
       <p class="sub">三千家はいずれも、千利休の孫・千宗旦の息子たちがおこした家です。根っこは同じなので、作法の大部分は共通しています。</p>
       <button class="btn primary" data-go="seqList">お点前の順序をはじめる</button>
+      ${refs()}
       ${DISCLAIMER}`);
   }
 
@@ -251,20 +269,25 @@
     const b = bucket('seq');
     render(head('お点前の順序') + `
       ${say('happy', `ばらばらになった手順のカードを、正しい順にタップしてね。ミス${MAX_MISS}回で失格。まちがえずに並べると★3つ！`)}
-      ${SEQUENCES.map((q) => `<button class="btn seqbtn" data-go="seqPlay:${q.id}">${ART.step(q.steps[0].p, save.school)}<span><span class="t">${esc(q.title)}</span><span class="d">${q.role}の作法・${q.steps.length}手順・${'初中上'[q.level - 1]}級　<span class="stars">${b[q.id] ? stars(b[q.id]) : ''}</span></span></span></button>`).join('')}`);
+      ${SEQUENCES.map((q) => `<button class="btn seqbtn" data-go="seqPlay:${q.id}">${ART.step(stepsOf(q)[0].p, save.school)}<span><span class="t">${esc(q.title)}</span><span class="d">${q.role}の作法・${stepsOf(q).length}手順・${'初中上'[q.level - 1]}級　<span class="stars">${b[q.id] ? stars(b[q.id]) : ''}</span></span></span></button>`).join('')}`);
   }
 
   function answerList(q) {
-    return `<ol class="placed">${q.steps.map((st) => {
-      const differs = !st.t;
-      const others = differs ? Object.values(SCHOOLS).filter((x) => x.id !== save.school).map((x) => `${x.name}：${esc(st[x.id])}`).join('<br>') : '';
-      return `<li><span class="tx">${esc(stepText(st))}${differs ? '<span class="diff">流派で違う</span>' : ''}<span class="n2">${esc(st.note)}${differs ? '<br>' + others : ''}</span></span>${ART.step(st.p, save.school)}</li>`;
-    }).join('')}</ol>`;
+    const list = stepsOf(q);
+    const perSchool = !Array.isArray(q.steps);
+    return (perSchool ? `<p class="sub">この作法は、流派によって手順の順番や所作が少しずつ違います（いまは${sc().name}の手順）。${save.school === 'mushako' ? MUSHAKO_NOTE : ''}</p>` : '')
+      + `<ol class="placed">${list.map((st) => {
+        const bySchool = !st.t && !st.tg;
+        const others = bySchool ? Object.values(SCHOOLS).filter((x) => x.id !== save.school).map((x) => `${x.name}：${esc(st[x.id])}`).join('<br>') : '';
+        const otherG = st.tg ? `${GENDERS[save.gender === 'm' ? 'f' : 'm'].name}：${esc(st.tg[save.gender === 'm' ? 'f' : 'm'])}` : '';
+        const g = st.gkey ? gtext(st.gkey) : '';
+        return `<li><span class="tx">${esc(stepText(st))}${bySchool ? '<span class="diff">流派で違う</span>' : ''}${st.tg ? '<span class="diff">男女で違う</span>' : ''}<span class="n2">${esc(st.note)}${g ? '<br>' + esc(g) : ''}${bySchool ? '<br>' + others : ''}${otherG ? '<br>' + otherG : ''}</span></span>${ART.step(st.p, save.school)}</li>`;
+      }).join('')}</ol>`;
   }
 
   function seqPlay(id) {
     const q = SEQUENCES.find((x) => x.id === id);
-    const steps = q.steps.map((st, i) => ({ i, text: stepText(st), p: st.p }));
+    const steps = stepsOf(q).map((st, i) => ({ i, text: stepText(st), p: st.p }));
     let pool = shuffle(steps), next = 0, miss = 0, missHere = 0;
     const pic = (s) => ART.step(s.p, save.school);
     function draw() {
@@ -475,29 +498,43 @@
     playQuiz({ title: 'お道具の名前当て', key: 'dougu', screen: 'dougu', list, rank: (ok) => (ok === 10 ? 'お道具名人' : ok === 9 ? '目利き' : '合格') });
   }
 
-  // ---------- ⑤ 茶室の歩き方 ----------
+  // ---------- ⑤ 茶室の歩き方（席入り） ----------
+  const walkKey = (c) => `${c.room}|${c.season}|${c.role}`;
   function walkList() {
-    const b = bucket('walk');
-    render(head('茶室の歩き方') + `
-      ${say('happy', 'にじり口から入って、床の間と釜を拝見してから、自分の席に着こう。畳の縁を踏んだり、点前畳に入ったりするとミス！')}
-      <div class="card"><b>畳の歩き方</b><ul class="pt">${WALK_RULES.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>
-      ${WALK_STAGES.map((st, i) => `<button class="btn seqbtn" data-go="walkPlay:${st.id}">${ART.menu('walk', save.school)}<span><span class="t">ステージ${i + 1}　${st.name}</span><span class="d">${st.months}のしつらえ・${st.winter ? '炉に気をつけて' : '風炉は点前畳の上'}　<span class="stars">${b[st.id] ? stars(b[st.id]) : ''}</span></span></span></button>`).join('')}
+    const c = save.walkCfg, b = bucket('walk');
+    const seg = (name, list) => `<div class="segrow">${list.map((x) => `<button class="seg ${c[name] === x.id ? 'on' : ''}" data-cfg="${name}:${x.id}">${x.label}</button>`).join('')}</div>`;
+    const role = WALK_ROLES.find((r) => r.id === c.role) || WALK_ROLES[0];
+    const best = b[walkKey(c)];
+    render(head('茶室の歩き方（席入り）') + `
+      ${say('happy', '戸口から入って、床の間と点前座の釜を拝見してから、自分の席に着こう。客は正客・次客・お詰めの順に入るよ。')}
+      <div class="card"><b>席入りの心得</b><ul class="pt">${WALK_RULES.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>
+      <h3>茶室の広さ</h3>${seg('room', ROOMS.map((r) => ({ id: r.id, label: r.name })))}
+      <h3>季節</h3>${seg('season', WALK_SEASONS.map((s) => ({ id: s.id, label: `${s.name}（${s.months}）` })))}
+      <h3>あなたの役</h3>${seg('role', WALK_ROLES.map((r) => ({ id: r.id, label: r.name })))}
+      <p class="sub">${esc(role.seat)}に座ります。${role.id === 'tsume' ? '最後に入って戸口を閉めるのも、お詰めの大切な役目です。' : ''}</p>
+      <button class="btn primary" data-go="walkPlay:${walkKey(c)}">はじめる　<span class="stars">${best ? stars(best) : ''}</span></button>
       <button class="btn" data-go="videoPlay:walk">お手本の動画を見る</button>
-      <div class="note">※ 歩き方や拝見のしかたの細部は、流派・教室・茶室によって異なります。ここでは一般的な心得をゲームにしています。</div>`);
+      ${refs()}
+      <div class="note">※ 足の運び（右足から入る など）や拝見の細部は、流派・教室・茶室によって異なります。ここでは、各流派の公式サイトなどで確かめた一般的な心得をゲームにしています。</div>`);
+    app.querySelectorAll('[data-cfg]').forEach((btn) => btn.onclick = () => {
+      const [k, v] = btn.dataset.cfg.split(':');
+      save.walkCfg = Object.assign({}, save.walkCfg, { [k]: v }); persist();
+      const y = window.scrollY; walkList(); window.scrollTo(0, y);
+    });
   }
 
-  function cellType(stage, gx, gy) {
-    const L = ROOM_LAYOUT, sx = gx % 3, sy = gy % 3, ux = Math.floor(gx / 3), uy = Math.floor(gy / 3);
-    const kind = (m) => (m === 'B' ? 'temae' : 'mat');
-    let t;
-    if (sx !== 2 && sy !== 2) t = kind(L[uy][ux]);
-    else if (sx === 2 && sy !== 2) t = L[uy][ux] === L[uy][ux + 1] ? kind(L[uy][ux]) : 'heri';
-    else if (sy === 2 && sx !== 2) t = L[uy][ux] === L[uy + 1][ux] ? kind(L[uy][ux]) : 'heri';
-    else { const s = new Set([L[uy][ux], L[uy][ux + 1], L[uy + 1][ux], L[uy + 1][ux + 1]]); t = s.size === 1 ? kind(L[uy][ux]) : 'heri'; }
-    if (stage.ro && stage.ro[0] === gx && stage.ro[1] === gy) t = 'ro';
-    return t;
+  // マスの種類：畳の縁（境目で畳が違う）・炉や風炉・ふつうの畳
+  function cellKind(room, fire, gx, gy) {
+    const L = room.mats, sx = gx % 3, sy = gy % 3, ux = Math.floor(gx / 3), uy = Math.floor(gy / 3);
+    const m = (x, y) => L[y][x];
+    let heri = false;
+    if (sx === 2 && sy !== 2) heri = m(ux, uy) !== m(ux + 1, uy);
+    else if (sy === 2 && sx !== 2) heri = m(ux, uy) !== m(ux, uy + 1);
+    else if (sx === 2 && sy === 2) heri = new Set([m(ux, uy), m(ux + 1, uy), m(ux, uy + 1), m(ux + 1, uy + 1)]).size > 1;
+    if (heri) return 'heri';
+    if (fire[0] === gx && fire[1] === gy) return 'fire';
+    return 'mat';
   }
-  const inBoard = (x, y) => x >= 0 && y >= 0 && x < 8 && y < 8;
   const has = (cells, p) => cells.some((c) => c[0] === p[0] && c[1] === p[1]);
   function placeToken(p, how) {
     const me = document.getElementById('wk-me');
@@ -506,97 +543,146 @@
     me.style.transform = `translate(${c.x + c.w / 2}px, ${c.y + c.h / 2 + 16}px)`;
     if (how) { const bob = me.querySelector('.bob'); bob.classList.remove('step', 'hop'); void bob.getBoundingClientRect(); bob.classList.add(how); }
   }
+  const seatedNpc = (room, roles) => roles.map((r) => ART.walkNpc(room.seats[r.id][0], room.seats[r.id][1], r.color, r.male)).join('');
 
-  function walkPlay(id) {
-    const st = WALK_STAGES.find((x) => x.id === id);
-    const stage = Object.assign({ school: save.school }, st);
-    let pos = st.start.slice(), goal = 0, miss = 0, steps = 0, strided = false;
-    render(head(`茶室の歩き方・${st.name}`) + `
+  function walkPlay(arg) {
+    const [rid, sid, roleId] = String(arg || '').split('|');
+    const room = ROOMS.find((r) => r.id === rid) || ROOMS[1];
+    const winter = sid === 'ro';
+    const role = WALK_ROLES.find((r) => r.id === roleId) || WALK_ROLES[0];
+    const ri = WALK_ROLES.indexOf(role);
+    const key = `${room.id}|${winter ? 'ro' : 'furo'}|${role.id}`;
+    const gate = room.small ? 'にじり口' : '入口';
+    const fire = winter ? room.ro : room.furo;
+    const gw = room.mats[0].length * 3 - 1, gh = room.mats.length * 3 - 1;
+    const goals = (role.id === 'tsume' ? ['door'] : []).concat(['toko', 'kama', 'seat']);
+    const cells = { door: [room.start], toko: room.toko, kama: room.kama[winter ? 'ro' : 'furo'], seat: [room.seats[role.id]] };
+    const seated = WALK_ROLES.slice(0, ri);     // 先に入って、もう席に着いている客
+    const blocked = seated.map((r) => room.seats[r.id]);
+    const fill = (s) => s.replace(/\{gate\}/g, gate).replace(/\{seat\}/g, role.seat).replace(/\{role\}/g, role.name);
+    const title = `茶室の歩き方・${room.name}`;
+    let pos = room.start.slice(), gi = 0, miss = 0, steps = 0, strided = false, asking = false;
+    render(head(title) + `
       <div class="status"><span id="wk-obj"></span>${lives(0)}</div>
-      <div class="board" id="wk-board">${ART.walkBoard(stage)}</div>
-      <div id="wk-talk">${say('happy', 'にじり口から入りました。足あとをタップして進もう！')}</div>
+      <p class="sub center">${WALK_SEASONS.find((s) => s.id === (winter ? 'ro' : 'furo')).name}・あなたは<b>${role.name}</b></p>
+      <div class="board" id="wk-board">${ART.walkBoard(room, { winter, school: save.school, color: role.color })}</div>
+      <div id="wk-talk"></div>
+      <div id="wk-ask"></div>
       <button class="btn primary" id="wk-act" hidden></button>
       <p class="sub center" id="wk-steps"></p>`);
     const board = app.querySelector('#wk-board');
     const talk = (expr, html) => render(say(expr, html), app.querySelector('#wk-talk'));
+    document.getElementById('wk-npc').innerHTML = seatedNpc(room, seated);
+    talk('happy', ri === 0
+      ? `${gate}から入りました。あなたは正客、いちばん先に入る客です。足あとをタップして進もう！`
+      : `${seated.map((r) => r.name).join('と')}は、もう席に着いているよ。あなたは${role.name}。${role.id === 'tsume' ? 'まずは入ってきた戸を閉めよう。' : '足あとをタップして進もう！'}`);
+    const isBlocked = (x, y) => has(blocked, [x, y]);
+    const inside = (x, y) => x >= 0 && y >= 0 && x < gw && y < gh;
     function options() {
       const out = [];
       [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => {
         const x1 = pos[0] + dx, y1 = pos[1] + dy;
-        if (!inBoard(x1, y1)) return;
-        const t1 = cellType(stage, x1, y1);
-        out.push({ x: x1, y: y1, kind: t1, stride: false });
+        if (!inside(x1, y1) || isBlocked(x1, y1)) return;
+        const k1 = cellKind(room, fire, x1, y1);
+        out.push({ x: x1, y: y1, kind: k1, stride: false });
         const x2 = pos[0] + dx * 2, y2 = pos[1] + dy * 2;
-        if (t1 === 'heri' && inBoard(x2, y2) && cellType(stage, x2, y2) !== 'heri') out.push({ x: x2, y: y2, kind: cellType(stage, x2, y2), stride: true });
+        if (k1 === 'heri' && inside(x2, y2) && !isBlocked(x2, y2) && cellKind(room, fire, x2, y2) !== 'heri') out.push({ x: x2, y: y2, kind: cellKind(room, fire, x2, y2), stride: true });
       });
       return out;
     }
     function update() {
       placeToken(pos);
-      document.getElementById('wk-fp').innerHTML = options().map((o) => `<g class="fp" data-x="${o.x}" data-y="${o.y}" data-kind="${o.kind}" data-stride="${o.stride ? 1 : ''}">${ART.walkFoot(ART.walkCell(o.x, o.y))}</g>`).join('');
-      document.getElementById('wk-goal').innerHTML = goal < 3 ? st.goals[goal].map((c) => ART.walkGoal(ART.walkCell(c[0], c[1]))).join('') : '';
-      render(goal < 3 ? `目標 ${goal + 1}/3：${WALK_GOALS[goal].target}` : '', app.querySelector('#wk-obj'));
-      render(`歩数 ${steps}`, app.querySelector("#wk-steps"));
+      const g = goals[gi];
+      document.getElementById('wk-fp').innerHTML = asking ? '' : options().map((o) => `<g class="fp" data-x="${o.x}" data-y="${o.y}" data-kind="${o.kind}" data-stride="${o.stride ? 1 : ''}">${ART.walkFoot(ART.walkCell(o.x, o.y))}</g>`).join('');
+      document.getElementById('wk-goal').innerHTML = g ? cells[g].map((c) => ART.walkGoal(ART.walkCell(c[0], c[1]))).join('') : '';
+      render(g ? `目標 ${gi + 1}/${goals.length}：${fill(WALK_GOALS[g].target)}` : '', app.querySelector('#wk-obj'));
+      render(`歩数 ${steps}`, app.querySelector('#wk-steps'));
       const act = app.querySelector('#wk-act');
-      const here = goal < 3 && has(st.goals[goal], pos);
+      const here = g && !asking && has(cells[g], pos);
       act.hidden = !here;
-      if (here) render(WALK_GOALS[goal].label, act);
+      if (here) render(WALK_GOALS[g].label, act);
     }
-    board.addEventListener('click', (e) => {
-      const f = e.target.closest('.fp');
-      if (!f) return;
-      const kind = f.dataset.kind, stride = !!f.dataset.stride;
-      if (kind === 'mat') {
-        pos = [+f.dataset.x, +f.dataset.y]; steps++;
-        placeToken(pos, stride ? 'hop' : 'step');
-        if (stride && !strided) { strided = true; talk('joy', '縁をまたぎました！ その調子。'); }
-        else {
-          const later = st.goals.findIndex((g, i) => i > goal && has(g, pos));
-          if (later > goal && !has(st.goals[goal], pos)) talk('think', `先に「${WALK_GOALS[goal].label}」をしよう。`);
-          else if (goal < 3 && has(st.goals[goal], pos)) talk('happy', `ここで「${WALK_GOALS[goal].label}」ボタンを押そう。`);
-        }
-        update();
-        return;
-      }
+    function missed(msg) {
       miss++;
       app.querySelector('.lives').outerHTML = lives(miss);
       shake(board);
-      if (miss >= MAX_MISS) return fail(WALK_MISS[kind]);
-      talk('oops', esc(WALK_MISS[kind]));
-    });
-    app.querySelector('#wk-act').onclick = () => {
-      const g = WALK_GOALS[goal];
-      goal++;
-      if (goal >= 3) return clear();
-      render(`<div class="viewpic">${ART.viewPic(g.pic)}</div>` + say('joy', esc(g.done)), app.querySelector('#wk-talk'));
+      if (miss >= MAX_MISS) { fail(msg); return true; }
+      talk('oops', esc(msg));
+      return false;
+    }
+    board.addEventListener('click', (e) => {
+      const f = e.target.closest('.fp');
+      if (!f || asking) return;
+      const kind = f.dataset.kind, stride = !!f.dataset.stride;
+      if (kind !== 'mat') { missed(WALK_MISS[kind]); return; }
+      pos = [+f.dataset.x, +f.dataset.y]; steps++;
+      placeToken(pos, stride ? 'hop' : 'step');
+      const g = goals[gi];
+      if (stride && !strided) { strided = true; talk('joy', '縁を踏まずに越えました！ その調子。'); }
+      else if (g && has(cells[g], pos)) talk('happy', `ここで「${WALK_GOALS[g].label}」ボタンを押そう。`);
+      else if (goals.some((x, i) => i > gi && has(cells[x], pos))) talk('think', `先に「${WALK_GOALS[g].label}」をしよう。`);
       update();
+    });
+    // 目標の場所でボタンを押すと、そこでの作法を問う（正しく答えると次の目標へ）
+    app.querySelector('#wk-act').onclick = () => {
+      const g = goals[gi], def = WALK_GOALS[g];
+      if (g === 'seat') return clear();
+      const q = def.ask[save.school] || def.ask.all;
+      asking = true; update();
+      render(`<p class="q">${esc(q.q)}</p><div class="opts one">${q.c.map((c, i) => `<button class="btn" data-a="${i}"><span>${esc(c)}</span></button>`).join('')}</div>`, app.querySelector('#wk-ask'));
+      app.querySelectorAll('#wk-ask [data-a]').forEach((b) => b.onclick = () => {
+        if (+b.dataset.a !== q.a) { b.classList.add('wrong'); b.onclick = null; missed(q.e); return; }
+        asking = false;
+        app.querySelector('#wk-ask').innerHTML = '';
+        render(`<div class="viewpic">${ART.viewPic(def.pic)}</div>` + say('joy', esc(fill(q.e))), app.querySelector('#wk-talk'));
+        gi++; update();
+      });
     };
     function clear() {
       const n = starsByMiss(miss);
-      const b = bucket('walk'); b[id] = Math.max(b[id] || 0, n); persist();
-      render(head(`茶室の歩き方・${st.name}`) + `
-        <div class="viewpic big">${ART.viewPic('seat')}</div>
+      const b = bucket('walk'); b[key] = Math.max(b[key] || 0, n); persist();
+      const after = WALK_ROLES.slice(ri + 1);
+      const next = role.id === 'tsume'
+        ? 'お詰めが戸を閉めて知らせたので、亭主が入ってきました。'
+        : `続いて${after.map((r) => r.name).join('・')}も拝見して席に着き、お詰めが戸口を閉めて知らせると、亭主が入ってきます。`;
+      render(head(title) + `
+        <div class="board">${ART.walkBoard(room, { winter, school: save.school, color: role.color })}</div>
         <div class="big stars">${stars(n)}</div>
-        ${say(miss === 0 ? 'joy' : 'happy', `${esc(WALK_GOALS[2].done)}（歩数 ${steps}・ミス${miss}回）`)}
-        <div class="card"><b>畳の歩き方のおさらい</b><ul class="pt">${WALK_RULES.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>
-        <button class="btn primary" data-go="walkPlay:${id}">もう一度</button>
-        <button class="btn" data-go="walkList">ステージをえらぶ</button>`);
+        ${say(miss === 0 ? 'joy' : 'happy', `${esc(fill(WALK_GOALS.seat.done))}（歩数 ${steps}・ミス${miss}回）<br>${esc(next)}`)}
+        <div class="card"><b>席入りの心得</b><ul class="pt">${WALK_RULES.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>
+        <button class="btn primary" data-go="walkPlay:${key}">もう一度</button>
+        <button class="btn" data-go="walkList">広さ・季節・役をえらぶ</button>`);
+      // 全員が席に着き、亭主が入ってきたところ
+      document.getElementById('wk-me').style.display = 'none';
+      document.getElementById('wk-npc').innerHTML = seatedNpc(room, WALK_ROLES.filter((r) => r !== role))
+        + ART.walkNpc(room.seats[role.id][0], room.seats[role.id][1], role.color, save.gender === 'm') + ART.walkHost(room, save.school);
       if (miss === 0) confetti();
     }
     function fail(reason) {
-      render(head(`茶室の歩き方・${st.name}`) + FAIL + say('sad', `${esc(reason)}<br>ミスが${MAX_MISS}回になりました。`) + `
-        <div class="card"><b>畳の歩き方</b><ul class="pt">${WALK_RULES.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>
-        <button class="btn primary" data-go="walkPlay:${id}">もう一度</button>
+      render(head(title) + FAIL + say('sad', `${esc(reason)}<br>ミスが${MAX_MISS}回になりました。`) + `
+        <div class="card"><b>席入りの心得</b><ul class="pt">${WALK_RULES.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>
+        <button class="btn primary" data-go="walkPlay:${key}">もう一度</button>
         <button class="btn" data-go="videoPlay:walk">お手本の動画を見る</button>
-        <button class="btn" data-go="walkList">ステージをえらぶ</button>`);
+        <button class="btn" data-go="walkList">広さ・季節・役をえらぶ</button>`);
     }
     update();
   }
 
   // ---------- ⑥ 作法の動画 ----------
-  // 絵が動き、字幕（フリガナつき）と読み上げで説明する。読み上げは端末の音声（なければ字幕だけ）。
+  // 絵が動き、字幕（フリガナつき）と読み上げで説明する。読み上げは端末の声（なければ字幕だけ）。
+  // 声は、端末にある日本語の声の中から自然な女性の声を選び、少し高く、明るい話し方にする。
   const synth = window.speechSynthesis;
   const canSpeak = !!(synth && window.SpeechSynthesisUtterance);
+  const jaVoices = () => (canSpeak ? synth.getVoices().filter((v) => /^ja/i.test(v.lang)) : []);
+  const MALE_VOICE = /Ichiro|Keita|Otoya|Hattori|Daichi|Naoki|Kenji|male/i;
+  function pickVoice() {
+    const vs = jaVoices();
+    if (save.voiceName) { const v = vs.find((x) => x.name === save.voiceName); if (v) return v; }
+    const rank = [/Nanami.*(Natural|Online)/i, /(Natural|Neural|Online)/i, /Google/i, /Kyoko.*(Enhanced|Premium)|O-ren/i, /Kyoko/i, /Sayaka|Haruka|Ayumi|Nanami|Mizuki/i];
+    for (const r of rank) { const v = vs.find((x) => r.test(x.name) && !MALE_VOICE.test(x.name)); if (v) return v; }
+    return vs.find((x) => !MALE_VOICE.test(x.name)) || vs[0] || null;
+  }
+  const voiceLabel = (n) => n.replace(/^Microsoft\s*/, '').replace(/\s*-\s*Japanese.*$/, '').replace(/\s*\(Japan\)/, '');
   const ICON = {
     prev: '<svg viewBox="0 0 24 24"><path d="M6 5 V19 M19 5 L9 12 L19 19 Z" fill="currentColor" stroke="currentColor" stroke-width="2"/></svg>',
     next: '<svg viewBox="0 0 24 24"><path d="M18 5 V19 M5 5 L15 12 L5 19 Z" fill="currentColor" stroke="currentColor" stroke-width="2"/></svg>',
@@ -607,9 +693,9 @@
   };
   function videoList() {
     render(head('作法の動画') + `
-      ${say('happy', '絵が動いて、声で作法を説明するよ。字幕にもフリガナが付くから、いっしょに読んでみてね。')}
-      ${SEQUENCES.map((q) => `<button class="btn seqbtn" data-go="videoPlay:${q.id}">${ART.step(q.steps[0].p, save.school)}<span><span class="t">${esc(q.title)}</span><span class="d">${q.role}の作法・${q.steps.length}場面</span></span></button>`).join('')}
-      <button class="btn seqbtn" data-go="videoPlay:walk">${ART.menu('walk', save.school)}<span><span class="t">畳の歩き方</span><span class="d">にじり口から床の間・釜を拝見して席に着くまで</span></span></button>
+      ${say('happy', '絵が動いて、わたしが声で作法を説明するよ。字幕にもフリガナが付くから、いっしょに読んでみてね。')}
+      ${SEQUENCES.map((q) => `<button class="btn seqbtn" data-go="videoPlay:${q.id}">${ART.step(stepsOf(q)[0].p, save.school)}<span><span class="t">${esc(q.title)}</span><span class="d">${q.role}の作法・${stepsOf(q).length}場面</span></span></button>`).join('')}
+      <button class="btn seqbtn" data-go="videoPlay:walk">${ART.menu('walk', save.school)}<span><span class="t">茶室の歩き方（席入り）</span><span class="d">戸口から入り、床の間と釜を拝見して席に着くまで</span></span></button>
       ${canSpeak ? '' : '<div class="note">この端末では読み上げが使えないため、字幕だけで再生します。</div>'}`);
   }
 
@@ -627,16 +713,24 @@
           <button id="vd-next" aria-label="次へ">${ICON.next}</button>
           <button id="vd-voice" class="${save.voice && canSpeak ? '' : 'off'}" aria-label="読み上げ">${save.voice && canSpeak ? ICON.voiceOn : ICON.voiceOff}</button>
         </div>
+        ${canSpeak ? `<div class="vset"><span>声</span><button class="vs ${save.voiceStyle !== 'normal' ? 'on' : ''}" data-vs="cute">かわいい</button><button class="vs ${save.voiceStyle === 'normal' ? 'on' : ''}" data-vs="normal">ふつう</button><select id="vd-vsel" aria-label="声の種類"></select></div>` : ''}
       </div>
       <div id="vd-end"></div>`);
     const $ = (s) => app.querySelector(s);
     const stopAll = () => { clearTimeout(timer); timer = null; token++; if (canSpeak) synth.cancel(); };
+    function fillVoices() {
+      const sel = $('#vd-vsel');
+      if (!sel) return;
+      const vs = jaVoices();
+      sel.innerHTML = '<option value="">おまかせ</option>' + vs.map((v) => `<option value="${esc(v.name)}"${v.name === save.voiceName ? ' selected' : ''}>${esc(voiceLabel(v.name))}</option>`).join('');
+    }
     function speak(text, done) {
       if (!canSpeak || !save.voice) return false;
       synth.cancel();
       const u = new SpeechSynthesisUtterance(RUBY.kana(text));
-      u.lang = 'ja-JP'; u.rate = 0.95;
-      const v = synth.getVoices().find((x) => /^ja/i.test(x.lang));
+      const cute = save.voiceStyle !== 'normal';
+      u.lang = 'ja-JP'; u.pitch = cute ? 1.45 : 1; u.rate = cute ? 1.05 : 0.95;
+      const v = pickVoice();
       if (v) u.voice = v;
       const my = token;
       let fired = false;
@@ -677,8 +771,18 @@
       $('#vd-voice').classList.toggle('off', !save.voice);
       if (playing) show(i);
     };
+    app.querySelectorAll('[data-vs]').forEach((b) => b.onclick = () => {
+      save.voiceStyle = b.dataset.vs; persist();
+      app.querySelectorAll('[data-vs]').forEach((x) => x.classList.toggle('on', x === b));
+      show(i);
+    });
+    if ($('#vd-vsel')) {
+      fillVoices();
+      if (canSpeak) synth.onvoiceschanged = fillVoices;
+      $('#vd-vsel').onchange = (e) => { save.voiceName = e.target.value; persist(); show(i); };
+    }
     BGM.duck(true);
-    leaveHook = () => { stopAll(); BGM.duck(false); };
+    leaveHook = () => { stopAll(); BGM.duck(false); if (canSpeak) synth.onvoiceschanged = null; };
     pauseHook = () => { playing = false; stopAll(); setPlayIcon(); };
     show(0);
   }
@@ -687,18 +791,19 @@
     if (id === 'walk') return walkVideo();
     const q = SEQUENCES.find((x) => x.id === id);
     const title = `${q.title}（${q.role}の作法）`;
-    const scenes = [{ html: `<div class="vtitle">${ART.mascot('joy')}</div>`, cap: q.title, sub: `${q.role}の作法・${sc().name}`, say: `これから、${q.title}をご紹介します。` }]
-      .concat(q.steps.map((st, k) => {
-        const text = stepText(st);
-        return { html: `<span class="vnum">${k + 1}</span>${ART.step(st.p, save.school, true)}`, cap: text, sub: st.note, say: `${text}。${st.note}` };
+    const scenes = [{ html: `<div class="vtitle">${ART.mascot('joy')}</div>`, cap: q.title, sub: `${q.role}の作法・${sc().name}`, say: `これから、${q.title}を、いっしょに見ていこうね！` }]
+      .concat(stepsOf(q).map((st, k) => {
+        const g = st.gkey ? gtext(st.gkey) : '';
+        return { html: `<span class="vnum">${k + 1}</span>${ART.step(st.p, save.school, true)}`, cap: stepText(st), sub: st.note + (g ? `（${g}）` : ''), say: sayOf(st) };
       }))
-      .concat([{ html: `<div class="vtitle">${ART.mascot('happy')}</div>`, cap: 'おしまい', sub: '順序ゲームで、覚えたか試してみよう！', say: 'おつかれさまでした。順序ゲームで、覚えたか試してみよう。' }]);
+      .concat([{ html: `<div class="vtitle">${ART.mascot('happy')}</div>`, cap: 'おしまい', sub: '順序ゲームで、覚えたか試してみよう！', say: 'おつかれさま！ 順序ゲームで、覚えたか、ためしてみよう！' }]);
     player(title, scenes, `<button class="btn primary" data-go="seqPlay:${id}">順序ゲームで練習する</button><button class="btn" data-go="videoPlay:${id}">もう一度見る</button><button class="btn" data-go="videoList">ほかの動画へ</button>`);
     app.querySelector('#vd-screen').classList.add('anim');
   }
 
   function walkVideo() {
-    const stage = Object.assign({ school: save.school }, WALK_STAGES[0]);
+    const room = ROOMS.find((r) => r.id === '4.5');
+    const role = WALK_ROLES[0];
     // 台本を「話す場面」ごとにまとめ、その後の移動を場面の中で歩いて見せる
     const scenes = [];
     WALK_DEMO.forEach((d) => {
@@ -706,18 +811,26 @@
       else scenes[scenes.length - 1].moves.push(d.to);
     });
     const posAt = [];   // 各場面のはじめの位置
-    let p = stage.start;
+    let p = room.start;
     scenes.forEach((s) => { posAt.push(p); if (s.moves.length) p = s.moves[s.moves.length - 1]; });
     let walkTimer = null;
-    const list = [{ html: `<div class="vtitle">${ART.mascot('joy')}</div>`, cap: '畳の歩き方', sub: '茶室に入ってから席に着くまで', say: 'これから、茶室での畳の歩き方をご紹介します。' }]
+    const list = [{ html: `<div class="vtitle">${ART.mascot('joy')}</div>`, cap: '茶室の歩き方（席入り）', sub: '四畳半・風炉の季節・正客', say: 'これから、茶室に入ってから席に着くまでの、畳の歩き方を見ていこうね！' }]
       .concat(scenes.map((s, k) => ({
         cap: s.cap, say: s.say, dur: 3200 + s.moves.length * 600,
         onShow: () => {
           clearInterval(walkTimer);
           const scr = app.querySelector('#vd-screen');
-          if (!scr.querySelector('#wk-me')) scr.innerHTML = ART.walkBoard(stage) + '<div class="vpic" id="vd-pic"></div>';
+          if (!scr.querySelector('#wk-me')) scr.innerHTML = ART.walkBoard(room, { winter: false, school: save.school, color: role.color }) + '<div class="vpic" id="vd-pic"></div>';
+          document.getElementById('wk-npc').innerHTML = '';
+          document.getElementById('wk-me').style.display = '';
           placeToken(posAt[k]);
           app.querySelector('#vd-pic').innerHTML = s.pic ? ART.viewPic(s.pic) : '';
+          if (k === scenes.length - 1) {   // 最後：次客・お詰めも席に着き、亭主が入ってくる
+            setTimeout(() => {
+              const n = document.getElementById('wk-npc');
+              if (n) n.innerHTML = seatedNpc(room, WALK_ROLES.slice(1)) + ART.walkHost(room, save.school);
+            }, 1200 + s.moves.length * 600);
+          }
           let j = 0;
           walkTimer = setInterval(() => {
             if (j >= s.moves.length) return clearInterval(walkTimer);
@@ -726,8 +839,8 @@
           }, 600);
         },
       })))
-      .concat([{ html: `<div class="vtitle">${ART.mascot('happy')}</div>`, cap: 'おしまい', sub: '歩き方ステージでためしてみよう！', say: 'おつかれさまでした。歩き方ステージで、ためしてみよう。', onShow: () => clearInterval(walkTimer) }]);
-    player('作法の動画・畳の歩き方', list, '<button class="btn primary" data-go="walkList">歩き方ステージで練習する</button><button class="btn" data-go="videoPlay:walk">もう一度見る</button><button class="btn" data-go="videoList">ほかの動画へ</button>');
+      .concat([{ html: `<div class="vtitle">${ART.mascot('happy')}</div>`, cap: 'おしまい', sub: '歩き方ステージでためしてみよう！', say: 'おつかれさま！ 歩き方ステージで、ためしてみてね。', onShow: () => clearInterval(walkTimer) }]);
+    player('作法の動画・茶室の歩き方', list, '<button class="btn primary" data-go="walkList">歩き方ステージで練習する</button><button class="btn" data-go="videoPlay:walk">もう一度見る</button><button class="btn" data-go="videoList">ほかの動画へ</button>');
     const prevLeave = leaveHook;
     leaveHook = () => { clearInterval(walkTimer); prevLeave(); };
   }
@@ -774,6 +887,7 @@
         <li>帛紗は左腰。一般に男性は紫、女性は朱</li>
         <li>濃茶には主菓子、薄茶には干菓子</li>
       </ul></div>
+      ${refs()}
       ${DISCLAIMER}`);
   }
 

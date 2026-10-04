@@ -247,6 +247,19 @@
   .vctl button.off{color:#ffffff70;}
   .vctl svg{width:24px;height:24px;}
 
+  /* 歩き方の設定・男女の違い・参考資料・声の設定 */
+  .segrow{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px;}
+  .segrow .seg{font-size:.92rem;padding:7px 14px;}
+  .gdl .me{color:var(--school);font-weight:bold;}
+  .refs{margin:14px 0;font-size:.84rem;color:var(--sub);background:#fffdf7;border:1px solid var(--line);border-radius:10px;padding:8px 12px;}
+  .refs summary{cursor:pointer;font-weight:bold;}
+  .refs ul{margin:6px 0 0;padding-left:1.2em;line-height:1.9;}
+  .refs a{color:var(--school);word-break:break-all;}
+  .vset{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;margin-top:10px;font-size:.86rem;color:#e8dcc4;}
+  .vset .vs{border:1px solid #ffffff40;background:transparent;color:#fff;border-radius:999px;padding:4px 12px;font:inherit;font-size:.86rem;cursor:pointer;}
+  .vset .vs.on{background:#f6c84b;border-color:#f6c84b;color:#2b2622;}
+  .vset select{max-width:46%;background:#3a3530;color:#fff;border:1px solid #ffffff40;border-radius:8px;padding:4px 6px;font:inherit;font-size:.82rem;}
+
   /* 小さいスマホ（幅360px以下）では、詰めて収める */
   @media (max-width:360px){
     #app{padding-left:10px;padding-right:10px;}
