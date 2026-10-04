@@ -1,0 +1,16 @@
+{
+  "name": "茶の湯みち｜三千家の作法をまなぶ",
+  "short_name": "茶の湯みち",
+  "description": "表千家・裏千家・武者小路千家のコース別に、お点前の順序・季節の茶席・知識クイズで茶道の作法を学べるゲーム。",
+  "lang": "ja",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5efe2",
+  "theme_color": "#3f5a2a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
