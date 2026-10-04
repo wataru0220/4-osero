@@ -221,17 +221,22 @@ const ART = (function () {
     + '<circle cx="57.5" cy="12" r="3" fill="#e0603e"/><circle cx="57.5" cy="12" r="1.2" fill="#f6d36b"/>' + chibiFace;
   const chibiHeadM = `<circle cx="50" cy="35" r="20" fill="${SKIN}"/>`
     + `<path d="M30,36 C29,19 39,12 50,12 C61,12 71,19 70,36 C67,29 61,25 50,26 C39,25 33,29 30,36 Z" fill="${HAIR}"/>` + chibiFace;
-  // 立ち姿（歩き方ステージの自分）。男性は袴
-  function chibi(K, obi, male) {
+  // 立ち姿（歩き方ステージの自分・道具を運ぶ亭主）。男性は袴。front を渡すと、それを両手で帯の前に持つ
+  function chibi(K, obi, male, front) {
+    const sleeve = (x) => (front
+      ? `<path d="M${x},56 h14 l${x < 50 ? 4 : -4},22 q-7,4 -14,0 Z" fill="${K}"/><path d="M${x},56 h14 l${x < 50 ? 4 : -4},22 q-7,4 -14,0 Z" fill="#0000001c"/>`
+      : `<rect x="${x}" y="56" width="14" height="27" rx="6" fill="${K}"/><rect x="${x}" y="56" width="14" height="27" rx="6" fill="#0000001c"/>`);
+    const hands = (front ? [[39, 76], [61, 76]] : [[28, 84], [72, 84]]).map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.6" fill="${SKIN}"/>`).join('');
     return '<ellipse cx="50" cy="96" rx="18" ry="3" fill="#00000026"/>'
       + '<ellipse cx="43" cy="93" rx="5" ry="3" fill="#fff" stroke="#d6cfbd"/><ellipse cx="57" cy="93" rx="5" ry="3" fill="#fff" stroke="#d6cfbd"/>'
       + `<path d="M34,56 L66,56 L65,92 L35,92 Z" fill="${K}"/><path d="M50,57 L45,92" stroke="#00000022" stroke-width="1.5"/>`
       + (male ? `<path d="M34,69 L66,69 L68,92 L32,92 Z" fill="${HAKAMA}"/><path d="M42,71 L41,92 M50,71 L50,92 M58,71 L59,92" stroke="#00000030" stroke-width="1.4"/>` : '')
-      + `<rect x="21" y="56" width="14" height="27" rx="6" fill="${K}"/><rect x="65" y="56" width="14" height="27" rx="6" fill="${K}"/><rect x="21" y="56" width="14" height="27" rx="6" fill="#0000001c"/><rect x="65" y="56" width="14" height="27" rx="6" fill="#0000001c"/>`
-      + (male ? '' : kimonoDots([[40, 80], [58, 84], [52, 88], [28, 66], [72, 70]])) + `<circle cx="28" cy="84" r="3.6" fill="${SKIN}"/><circle cx="72" cy="84" r="3.6" fill="${SKIN}"/>`
+      + sleeve(21) + sleeve(65)
+      + (male ? '' : kimonoDots([[40, 80], [58, 84], [52, 88], [28, 66], [72, 70]])) + (front ? '' : hands)
       + '<path d="M43,56 L50,66 L57,56" fill="none" stroke="#f6f1e4" stroke-width="3"/>'
       + (male ? '<rect x="34" y="65" width="32" height="5" fill="#3a3530"/>' : `<rect x="34" y="66" width="32" height="8" fill="${obi || '#f2cf5b'}"/><line x1="34" y1="70" x2="66" y2="70" stroke="#e0603e" stroke-width="1.4"/>`)
-      + (male ? chibiHeadM : chibiHead);
+      + (male ? chibiHeadM : chibiHead)
+      + (front ? front + hands : '');
   }
   // 正面を向いて座る人（盤面の亭主・席に着いた客）
   function chibiSeat(K, male, fukusa) {
@@ -276,6 +281,22 @@ const ART = (function () {
   const matView = () => '<rect x="0" y="14" width="100" height="74" fill="#d6c690"/>' + [22, 30, 38, 62, 70, 78].map((y) => `<line x1="0" y1="${y}" x2="100" y2="${y}" stroke="#c8b77e" stroke-width="1"/>`).join('')
     + '<rect x="0" y="45" width="100" height="9" fill="#2f3a2a"/>'
     + `<path d="M14,100 Q16,86 34,84 L66,84 Q84,86 86,100 Z" fill="${MALE ? HAKAMA : GUEST}"/><path d="M50,85 L50,100" stroke="#00000022" stroke-width="1.5"/>`;
+  // 亭主の立ち姿（点前の道具を運ぶ）。front は両手で前に持つ道具
+  const hostChibi = (o, front) => chibi(schoolColor(o.school), '#e9dcb5', MALE, front);
+  // 茶道口（右）の前に座ってお辞儀をする亭主。水指は表千家は膝前、裏千家は右側（手前）に置く。closing は襖を閉めるところ
+  function sadoguchi(o, closing) {
+    const side = o.school === 'ura';
+    const door = '<rect x="76" y="12" width="20" height="80" fill="#e6d8a6"/>' + [30, 48, 66, 84].map((y) => `<line x1="76" y1="${y}" x2="96" y2="${y}" stroke="#d3c48e" stroke-width="1"/>`).join('')
+      + (closing
+        ? an(o, 'slideL', '<rect x="86" y="12" width="14" height="80" fill="#f3ecd8" stroke="#b9a77a"/><circle cx="89" cy="54" r="1.8" fill="#8a6c3b"/>')
+        : '<rect x="93" y="12" width="7" height="80" fill="#f3ecd8" stroke="#b9a77a"/>')
+      + '<rect x="73" y="8" width="27" height="5" fill="#8a6c3b"/><rect x="73" y="8" width="4" height="86" fill="#8a6c3b"/><rect x="96" y="8" width="4" height="86" fill="#8a6c3b"/>'
+      + (closing ? arrowH(95, 79, 34) : '');
+    const mz = side ? place(TOOL.mizusashi(), 40, 87, .26) : place(TOOL.mizusashi(), 64, 84, .27);
+    return door + floor + (side ? '' : mz) + fig(H('bow', o.school, { anim: o.anim }), -10, 17, .82) + (side ? mz : '');
+  }
+  // 風炉の釜の口（蓋を取ったところ）。furo を (x, 64) に .72 倍で置いたときの位置
+  const kamaMouth = (x) => `<ellipse cx="${x}" cy="43" rx="7.5" ry="2.3" fill="#1d1a19"/>`;
   const STEP = {
     'osakini': (o) => pair(at(48, 88, .3, kashikiP()), o),
     'bow-kashi': (o) => floor + fig(G('bow', o), -8, 9, .9) + at(83, 88, .36, kashikiP()),
@@ -317,6 +338,26 @@ const ART = (function () {
     'foam': (o) => at(44, 52, 1.1, bowlTop(school(o).foam)) + an(o, 'sway', place(chasenBody(school(o).chasenKey), 88, 62, .45)),
     'serve': (o) => an(o, 'slideR', bowl('normal', 36, 62, .9, 'usucha', 'right')) + arrowH(64, 95, 62),
     'shimai': (o) => floor + fig(H('eshaku', o.school, { anim: o.anim }), 0, 9, .9) + place(TOOL.kensui(), 84, 82, .34),
+    // ここから運び点前（水指の運び出し〜下がるまで）
+    'sadoguchi': (o) => sadoguchi(o, false),
+    'hakobi-mizusashi': (o) => floor + place(TOOL.furo(), 88, 76, .3) + an(o, 'float', fig(hostChibi(o, place(TOOL.mizusashi(), 50, 72, .44)), 2, 2, .92)),
+    'hakobi-kensui': (o) => floor + an(o, 'float', fig(hostChibi(o) + place(TOOL.kensui(), 72, 91, .3)
+      + `<line x1="60" y1="89" x2="90" y2="85" stroke="#c9a96b" stroke-width="2.2" stroke-linecap="round"/><rect x="86" y="81" width="7" height="6" rx="1.5" fill="#d8bf87"/><circle cx="72" cy="86" r="3.6" fill="${SKIN}"/>`, 6, 2, .92)),
+    'narabe': (o) => '<rect x="0" y="78" width="100" height="22" fill="#d6c690"/>' + place(TOOL.mizusashi(), 72, 36, .42) + place(TOOL.kensui(), 13, 84, .34)
+      + an(o, 'drop', bowl('normal', 46, 68, .5, 'empty')) + an(o, 'drop', place(TOOL.natsume(), 48, 89, .28)),
+    // 帛紗をかけた手で釜の蓋を取り、右の蓋置へ
+    'kama-futa': (o) => place(TOOL.furo(), 32, 64, .72) + kamaMouth(32) + steam(28, 40, o) + steam(36, 38, o) + place(TOOL.futaoki(), 84, 80, .4) + swish('M64,24 Q80,22 84,66')
+      + an(o, 'slideR', `<ellipse cx="52" cy="27" rx="8.5" ry="2.8" fill="#6a5f58"/><path d="M45,25 Q52,14 59,25 Z" fill="${MALE ? FUKUSA : FUKUSA_F}"/><ellipse cx="52" cy="17" rx="4.2" ry="3" fill="${SKIN}"/>`),
+    // 表千家：茶筅通しが、お菓子を取り回す合図
+    'chasen-kashi': (o) => bowl('normal', 40, 72, .8, 'empty') + an(o, 'sway', place(chasenBody(school(o).chasenKey), 40, 40, .58, 180)) + swish('M14,58 q-6,-12 2,-22') + swish('M66,58 q6,-12 -2,-22')
+      + at(84, 88, .42, kashikiP()) + an(o, 'pulse', sparkle(80, 70, 5) + sparkle(93, 63, 3.5, BLUSH)),
+    // 裏千家：茶杓を取って「お菓子をどうぞ」
+    'okashi': (o) => floor + fig(H('sit', o.school), -10, 9, .9) + '<line x1="43" y1="75" x2="58" y2="66" stroke="#c9a96b" stroke-width="2.6" stroke-linecap="round"/>' + bubble(o) + at(86, 88, .36, kashikiP()),
+    'nakajimai': (o) => '<rect x="0" y="84" width="100" height="16" fill="#d6c690"/>'
+      + an(o, 'slideL', bowl('normal', 40, 72, .62, 'empty') + '<path d="M23,59 Q40,55 58,57" stroke="#c9a96b" stroke-width="2.6" fill="none" stroke-linecap="round"/>') + an(o, 'drop', place(TOOL.natsume(), 72, 74, .4)),
+    'kama-mizu': (o) => place(TOOL.furo(), 40, 64, .72) + kamaMouth(40) + '<line x1="98" y1="10" x2="66" y2="28" stroke="#c9a96b" stroke-width="3" stroke-linecap="round"/><g transform="translate(60,32) rotate(35)"><rect x="-7" y="-6" width="14" height="12" rx="2" fill="#d8bf87"/></g>'
+      + stream('M55,37 Q46,38 42,42', o) + place(TOOL.mizusashi(), 86, 80, .3),
+    'taishutsu': (o) => sadoguchi(o, true),
   };
 
   // 歩き方ステージで拝見したときの絵
@@ -446,47 +487,59 @@ const ART = (function () {
   }
 
   // ---------- 歩き方ステージの盤面（茶室を上から見た図） ----------
-  // 半畳を1区画とし、マスは「畳2マス＋境目1マス」のくり返し。境目のマスが畳の縁（へり）になる。
-  const WALL = 10, TOKO = 40;
-  const axis = (i) => { const u = Math.floor(i / 3), s = i % 3; return { o: u * 104 + (s === 0 ? 0 : s === 1 ? 44 : 88), w: s === 2 ? 16 : 44 }; };
-  function walkCell(gx, gy) { const a = axis(gx), b = axis(gy); return { x: WALL + a.o, y: TOKO + WALL + b.o, w: a.w, h: b.w }; }
-  const unitRect = (ux0, uy0, ux1, uy1) => { const a = walkCell(ux0 * 3, uy0 * 3), b = walkCell(ux1 * 3 + 1, uy1 * 3 + 1); return { x: a.x, y: a.y, w: b.x + b.w - a.x, h: b.y + b.h - a.y }; };
-  // room: ROOMS の1つ。o: { winter, school, color（自分の着物の色） }
+  // 半畳を1区画（U＝104px）とし、区画の中央と区画の境目をマス（52px）にする（data.js の ROOMS の説明を参照）。
+  // 境目のマスは、同じ畳なら畳のまん中、違う畳なら畳の縁（へり）。縁は、畳と畳のすき間の色で描く。
+  const WALL = 10, TOKO = 40, U = 104, CELL = 52;
+  function walkCell(gx, gy) { return { x: WALL + CELL / 2 + gx * CELL, y: TOKO + WALL + CELL / 2 + gy * CELL, w: CELL, h: CELL }; }
+  const unitRect = (ux0, uy0, ux1, uy1) => ({ x: WALL + ux0 * U, y: TOKO + WALL + uy0 * U, w: (ux1 - ux0 + 1) * U, h: (uy1 - uy0 + 1) * U });
+  // 出入口（左の壁か下の壁）。small＝にじり口（小さな戸）、そうでなければ襖（茶道口・広間の入口）
+  function wallDoor(d, small, W, Hh) {
+    const len = small ? 66 : U - 16, col = small ? ['#c9b47a', '#8a7448'] : ['#efe9d6', '#b9ad8f'];
+    if (d.side === 'bottom') {
+      const x = unitRect(d.u, 0, d.u, 0).x + (U - len) / 2;
+      return `<rect x="${x}" y="${Hh - WALL}" width="${len}" height="${WALL}" fill="${col[0]}"/><line x1="${x + 4}" y1="${Hh - 5}" x2="${x + len - 4}" y2="${Hh - 5}" stroke="${col[1]}" stroke-width="2"/>`;
+    }
+    const y = unitRect(0, d.u, 0, d.u).y + (U - len) / 2, x = d.side === 'left' ? 0 : W - WALL;
+    return `<rect x="${x}" y="${y}" width="${WALL}" height="${len}" fill="${col[0]}"/><line x1="${x + 5}" y1="${y + 4}" x2="${x + 5}" y2="${y + len - 4}" stroke="${col[1]}" stroke-width="2"/>`;
+  }
+  // room: ROOMS の1つ。o: { winter, school, color（自分の着物の色）, noMe（自分の人形を出さない＝下見用） }
   function walkBoard(room, o) {
-    const uw = room.mats[0].length, uh = room.mats.length;
-    const iw = uw * 104 - 16, ih = uh * 104 - 16;
-    const W = iw + WALL * 2, Hh = TOKO + WALL * 2 + ih;
+    const L = matsOf(room, o.winter), uw = L[0].length, uh = L.length;
+    const W = uw * U + WALL * 2, Hh = TOKO + WALL * 2 + uh * U;
     const mat = (r, vertical) => `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="#dccf98"/>` + (vertical
       ? [...Array(Math.floor(r.w / 6))].map((_, i) => `<line x1="${r.x + 3 + i * 6}" y1="${r.y}" x2="${r.x + 3 + i * 6}" y2="${r.y + r.h}" stroke="#cbbd84" stroke-width="1"/>`).join('')
       : [...Array(Math.floor(r.h / 6))].map((_, i) => `<line x1="${r.x}" y1="${r.y + 3 + i * 6}" x2="${r.x + r.w}" y2="${r.y + 3 + i * 6}" stroke="#cbbd84" stroke-width="1"/>`).join(''));
     let s = `<rect width="${W}" height="${Hh}" fill="#efe6d0"/>`;
-    // 床の間（床前畳 A の上、2区画ぶん）
-    s += `<rect x="${WALL}" y="0" width="192" height="${TOKO + WALL}" fill="#e6dbc0"/><rect x="${WALL}" y="${TOKO}" width="192" height="${WALL}" fill="#b89a6a"/><rect x="${WALL}" y="${TOKO + WALL - 3}" width="192" height="3" fill="#2b2622"/>`
-      + '<rect x="62" y="4" width="26" height="34" fill="#f7f3e8" stroke="#a89668"/><rect x="59" y="2" width="32" height="4" fill="#7a5c3a"/><path d="M75,10 q-3,5 1,8 q4,3 -1,7" stroke="#2b2622" stroke-width="1.6" fill="none"/>'
-      + `<path d="M136,40 L148,40 L146,26 L138,26 Z" fill="#c9b47a"/>${o.winter ? fl(140, 22, 6, '#d04a5a', '#f2d36b') : fl(140, 22, 6, '#5a63b8', '#e8e4f8')}`;
-    // 壁
-    s += `<rect x="${WALL + 192}" y="0" width="${W - WALL - 192}" height="${TOKO + WALL}" fill="#7a5c3a"/><rect x="0" y="0" width="${WALL}" height="${Hh}" fill="#7a5c3a"/><rect x="${W - WALL}" y="0" width="${WALL}" height="${Hh}" fill="#7a5c3a"/><rect x="0" y="${Hh - WALL}" width="${W}" height="${WALL}" fill="#7a5c3a"/>`;
-    // 畳（すき間が縁の色になる）。点前畳 B は少し色分け
-    s += `<rect x="${WALL}" y="${TOKO + WALL}" width="${iw}" height="${ih}" fill="#2f3a2a"/>`;
-    [...new Set(room.mats.join(''))].forEach((L) => {
+    // 床の間（上の壁の、区画 toko の上）。掛物と花
+    const tk = unitRect(room.toko[0], 0, room.toko[1], 0), cx = tk.x + tk.w / 2;
+    s += `<rect x="${tk.x}" y="0" width="${tk.w}" height="${TOKO + WALL}" fill="#e6dbc0"/><rect x="${tk.x}" y="${TOKO}" width="${tk.w}" height="${WALL}" fill="#b89a6a"/><rect x="${tk.x}" y="${TOKO + WALL - 3}" width="${tk.w}" height="3" fill="#2b2622"/>`
+      + `<rect x="${cx - 40}" y="4" width="26" height="34" fill="#f7f3e8" stroke="#a89668"/><rect x="${cx - 43}" y="2" width="32" height="4" fill="#7a5c3a"/><path d="M${cx - 27},10 q-3,5 1,8 q4,3 -1,7" stroke="#2b2622" stroke-width="1.6" fill="none"/>`
+      + `<path d="M${cx + 24},40 L${cx + 36},40 L${cx + 34},26 L${cx + 26},26 Z" fill="#c9b47a"/>${o.winter ? fl(cx + 30, 22, 6, '#d04a5a', '#f2d36b') : fl(cx + 30, 22, 6, '#5a63b8', '#e8e4f8')}`;
+    // 壁（床の間の左右の上の壁と、左・右・下の壁）
+    s += `<rect x="0" y="0" width="${tk.x}" height="${TOKO + WALL}" fill="#7a5c3a"/><rect x="${tk.x + tk.w}" y="0" width="${W - tk.x - tk.w}" height="${TOKO + WALL}" fill="#7a5c3a"/>`
+      + `<rect x="0" y="0" width="${WALL}" height="${Hh}" fill="#7a5c3a"/><rect x="${W - WALL}" y="0" width="${WALL}" height="${Hh}" fill="#7a5c3a"/><rect x="0" y="${Hh - WALL}" width="${W}" height="${WALL}" fill="#7a5c3a"/>`;
+    // 畳：下地を縁の色で塗り、一枚ずつ少し内側に描く（違う畳どうしのすき間が縁になる）。点前畳 B は少し色分け
+    s += `<rect x="${WALL}" y="${TOKO + WALL}" width="${uw * U}" height="${uh * U}" fill="#2f3a2a"/>`;
+    [...new Set(L.join(''))].forEach((ch) => {
       let x0 = 99, y0 = 99, x1 = -1, y1 = -1;
-      room.mats.forEach((row, uy) => [...row].forEach((ch, ux) => { if (ch === L) { x0 = Math.min(x0, ux); y0 = Math.min(y0, uy); x1 = Math.max(x1, ux); y1 = Math.max(y1, uy); } }));
-      const r = unitRect(x0, y0, x1, y1);
+      L.forEach((row, uy) => [...row].forEach((c, ux) => { if (c === ch) { x0 = Math.min(x0, ux); y0 = Math.min(y0, uy); x1 = Math.max(x1, ux); y1 = Math.max(y1, uy); } }));
+      const u = unitRect(x0, y0, x1, y1), r = { x: u.x + 3, y: u.y + 3, w: u.w - 6, h: u.h - 6 };
       s += mat(r, y1 - y0 > x1 - x0);
-      if (L === 'B') s += `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="#e0603e" opacity=".12"/>`;
+      if (ch === 'B') s += `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="#e0603e" opacity=".12"/>`;
     });
-    // 客の入口（左の壁）：小間はにじり口、広間は襖。茶道口は右の壁
-    const ent = unitRect(0, Math.floor(room.start[1] / 3), 0, Math.floor(room.start[1] / 3));
-    s += room.small
-      ? `<rect x="0" y="${ent.y + ent.h - 70}" width="${WALL}" height="66" fill="#c9b47a"/><line x1="5" y1="${ent.y + ent.h - 66}" x2="5" y2="${ent.y + ent.h - 8}" stroke="#8a7448" stroke-width="2"/>`
-      : `<rect x="0" y="${ent.y}" width="${WALL}" height="${ent.h}" fill="#efe9d6"/><line x1="5" y1="${ent.y + 4}" x2="5" y2="${ent.y + ent.h - 4}" stroke="#b9ad8f" stroke-width="2"/>`;
-    const sd = unitRect(uw - 1, 0, uw - 1, 0);
-    s += `<rect x="${W - WALL}" y="${sd.y}" width="${WALL}" height="${sd.h}" fill="#efe9d6"/><line x1="${W - 5}" y1="${sd.y + 4}" x2="${W - 5}" y2="${sd.y + sd.h - 4}" stroke="#b9ad8f" stroke-width="2"/>`;
-    // 炉（冬）または風炉（夏）と釜
-    if (o.winter) { const c = walkCell(room.ro[0], room.ro[1]); s += `<rect x="${c.x + 3}" y="${c.y + 3}" width="${c.w - 6}" height="${c.h - 6}" fill="#2a2421" stroke="#6b4a2a" stroke-width="5"/><circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="12" fill="#3a3533"/><circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="5" fill="#6a5f58"/>`; }
-    else { const c = walkCell(room.furo[0], room.furo[1]); s += `<circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="19" fill="#7d6a55"/><circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="12" fill="#3a3533"/><circle cx="${c.x + c.w / 2}" cy="${c.y + c.h / 2}" r="5" fill="#6a5f58"/>`; }
+    // 出入口：客の入口（小間はにじり口、広間は襖）と、亭主の茶道口
+    s += wallDoor(room.gate, room.small, W, Hh) + wallDoor(room.sado, false, W, Hh);
+    // 炉（冬）は、その半畳の左上の角に一尺四寸角（点前畳の長い辺の真ん中から下座側）。風炉（夏）は点前畳の上半分の左寄り
+    if (o.winter) {
+      const r = unitRect(room.ro[0] / 2, room.ro[1] / 2, room.ro[0] / 2, room.ro[1] / 2), sz = 46, x = r.x + 3, y = r.y + 3;
+      s += `<rect x="${x}" y="${y}" width="${sz}" height="${sz}" fill="#2a2421" stroke="#6b4a2a" stroke-width="5"/><circle cx="${x + sz / 2}" cy="${y + sz / 2}" r="12" fill="#3a3533"/><circle cx="${x + sz / 2}" cy="${y + sz / 2}" r="5" fill="#6a5f58"/>`;
+    } else {
+      const r = unitRect(room.furo[0] / 2, room.furo[1] / 2, room.furo[0] / 2, room.furo[1] / 2), x = r.x + 38, y = r.y + 46;
+      s += `<rect x="${x - 25}" y="${y - 25}" width="50" height="50" fill="#a07d50" opacity=".5"/><circle cx="${x}" cy="${y}" r="19" fill="#7d6a55"/><circle cx="${x}" cy="${y}" r="12" fill="#3a3533"/><circle cx="${x}" cy="${y}" r="5" fill="#6a5f58"/>`;
+    }
     // 亭主は席入りのあいだ茶道口の向こうで待つ。客が全員座ったら walkHost で入ってくる
-    s += '<g id="wk-goal"></g><g id="wk-npc"></g><g id="wk-fp"></g><g id="wk-me" style="transition:transform .28s"><g class="bob">' + `<g transform="translate(-24,-50) scale(.48)">${chibi(o.color || GUEST, null, MALE)}</g>` + '</g></g>';
+    s += '<g id="wk-goal"></g><g id="wk-npc"></g><g id="wk-fp"></g>'
+      + (o.noMe ? '' : `<g id="wk-me" style="transition:transform .28s"><g class="bob"><g transform="translate(-24,-50) scale(.48)">${chibi(o.color || GUEST, null, MALE)}</g></g></g>`);
     return svg(s, `0 0 ${W} ${Hh}`);
   }
   // 席に着いているほかの客

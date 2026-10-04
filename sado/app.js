@@ -282,13 +282,14 @@
   function answerList(q) {
     const list = stepsOf(q);
     const perSchool = !Array.isArray(q.steps);
-    return (perSchool ? `<p class="sub">この作法は、流派によって手順の順番や所作が少しずつ違います（いまは${sc().name}の手順）。${save.school === 'mushako' ? MUSHAKO_NOTE : ''}</p>` : '')
+    const memo = (q.memo && q.memo[save.school]) || (save.school === 'mushako' ? MUSHAKO_NOTE : '');
+    return (perSchool ? `<p class="sub">この作法は、流派によって手順の順番や所作が少しずつ違います（いまは${sc().name}の手順）。${memo}</p>` : '')
       + `<ol class="placed">${list.map((st) => {
         const bySchool = !st.t && !st.tg;
         const others = bySchool ? Object.values(SCHOOLS).filter((x) => x.id !== save.school).map((x) => `${x.name}：${esc(st[x.id])}`).join('<br>') : '';
         const otherG = st.tg ? `${GENDERS[save.gender === 'm' ? 'f' : 'm'].name}：${esc(st.tg[save.gender === 'm' ? 'f' : 'm'])}` : '';
         const g = st.gkey ? gtext(st.gkey) : '';
-        return `<li><span class="tx">${esc(stepText(st))}${bySchool ? '<span class="diff">流派で違う</span>' : ''}${st.tg ? '<span class="diff">男女で違う</span>' : ''}<span class="n2">${esc(st.note)}${g ? '<br>' + esc(g) : ''}${bySchool ? '<br>' + others : ''}${otherG ? '<br>' + otherG : ''}</span></span>${ART.step(st.p, save.school)}</li>`;
+        return `<li><span class="tx">${esc(stepText(st))}${bySchool || st.x ? '<span class="diff">流派で違う</span>' : ''}${st.tg ? '<span class="diff">男女で違う</span>' : ''}<span class="n2">${esc(st.note)}${g ? '<br>' + esc(g) : ''}${bySchool ? '<br>' + others : ''}${st.x ? '<br>' + esc(st.x) : ''}${otherG ? '<br>' + otherG : ''}</span></span>${ART.step(st.p, save.school)}</li>`;
       }).join('')}</ol>`;
   }
 
@@ -297,13 +298,18 @@
     const steps = stepsOf(q).map((st, i) => ({ i, text: stepText(st), p: st.p }));
     let pool = shuffle(steps), next = 0, miss = 0, missHere = 0;
     const pic = (s) => ART.step(s.p, save.school);
+    // 手順が多いときは、置いたカードを直近の3枚だけ見せ（前は折りたたむ）、選ぶカードも小さめにする
+    const long = steps.length > 14, KEEP = 3;
+    const li = (s) => `<li><span class="tx">${esc(s.text)}</span>${pic(s)}</li>`;
     function draw() {
+      const hide = long && next > KEEP ? next - KEEP : 0;
       render(head(q.title) + `
         <div class="status"><span>${next}/${steps.length} 手順</span>${lives(miss)}</div>
         <div class="progress"><i style="width:${next / steps.length * 100}%"></i></div>
-        <ol class="placed">${steps.slice(0, next).map((s) => `<li><span class="tx">${esc(s.text)}</span>${pic(s)}</li>`).join('')}</ol>
+        ${hide ? `<details class="earlier"><summary>1〜${hide}番目を見る</summary><ol class="placed">${steps.slice(0, hide).map(li).join('')}</ol></details>` : ''}
+        <ol class="placed" style="counter-reset:n ${hide}">${steps.slice(hide, next).map(li).join('')}</ol>
         <div class="slot">${next + 1}番目はどれ？</div>
-        <div class="pool">${pool.map((s) => `<button class="btn ${missHere >= 2 && s.i === next ? 'hint' : ''}" data-i="${s.i}">${pic(s)}<span>${esc(s.text)}</span></button>`).join('')}</div>`);
+        <div class="pool${long ? ' compact' : ''}">${pool.map((s) => `<button class="btn ${missHere >= 2 && s.i === next ? 'hint' : ''}" data-i="${s.i}">${pic(s)}<span>${esc(s.text)}</span></button>`).join('')}</div>`);
       app.querySelectorAll('.pool .btn').forEach((b) => b.onclick = () => {
         const i = +b.dataset.i;
         if (i === next) {
@@ -511,12 +517,15 @@
     const c = save.walkCfg, b = bucket('walk');
     const seg = (name, list) => `<div class="segrow">${list.map((x) => `<button class="seg ${c[name] === x.id ? 'on' : ''}" data-cfg="${name}:${x.id}">${x.label}</button>`).join('')}</div>`;
     const role = WALK_ROLES.find((r) => r.id === c.role) || WALK_ROLES[0];
+    const room = ROOMS.find((r) => r.id === c.room) || ROOMS[1];
     const best = b[walkKey(c)];
     render(head('茶室の歩き方（席入り）') + `
       ${say('happy', '戸口から入って、床の間と点前座の釜を拝見してから、自分の席に着こう。客は正客・次客・お詰めの順に入るよ。')}
       <div class="card"><b>席入りの心得</b><ul class="pt">${WALK_RULES.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>
       <h3>茶室の広さ</h3>${seg('room', ROOMS.map((r) => ({ id: r.id, label: r.name })))}
       <h3>季節</h3>${seg('season', WALK_SEASONS.map((s) => ({ id: s.id, label: `${s.name}（${s.months}）` })))}
+      <div class="board">${ART.walkBoard(room, { winter: c.season === 'ro', school: save.school, noMe: true })}</div>
+      <p class="sub center">${esc(room.name)}・本勝手（上＝床の間、左上＝点前畳、左下＝茶道口、右下＝${room.small ? 'にじり口' : '入口'}）</p>
       <h3>あなたの役</h3>${seg('role', WALK_ROLES.map((r) => ({ id: r.id, label: r.name })))}
       <p class="sub">${esc(role.seat)}に座ります。${role.id === 'tsume' ? '最後に入って戸口を閉めるのも、お詰めの大切な役目です。' : ''}</p>
       <button class="btn primary" data-go="walkPlay:${walkKey(c)}">はじめる　<span class="stars">${best ? stars(best) : ''}</span></button>
@@ -530,17 +539,15 @@
     });
   }
 
-  // マスの種類：畳の縁（境目で畳が違う）・炉や風炉・ふつうの畳
-  function cellKind(room, fire, gx, gy) {
-    const L = room.mats, sx = gx % 3, sy = gy % 3, ux = Math.floor(gx / 3), uy = Math.floor(gy / 3);
-    const m = (x, y) => L[y][x];
-    let heri = false;
-    if (sx === 2 && sy !== 2) heri = m(ux, uy) !== m(ux + 1, uy);
-    else if (sy === 2 && sx !== 2) heri = m(ux, uy) !== m(ux, uy + 1);
-    else if (sx === 2 && sy === 2) heri = new Set([m(ux, uy), m(ux + 1, uy), m(ux, uy + 1), m(ux + 1, uy + 1)]).size > 1;
+  // マスの種類：畳の縁（違う畳との境目）・炉や風炉・ふつうの畳（畳の中央や、同じ畳のまん中）
+  // 偶数のマスは半畳の中央、奇数のマスは半畳どうしの境目。四つの半畳が接する角は、かならず縁になる
+  function cellKind(room, winter, gx, gy) {
+    const L = matsOf(room, winter), m = (ux, uy) => L[uy][ux];
+    const ux = gx >> 1, uy = gy >> 1, ox = gx & 1, oy = gy & 1;
+    const heri = ox && oy ? true : ox ? m(ux, uy) !== m(ux + 1, uy) : oy ? m(ux, uy) !== m(ux, uy + 1) : false;
     if (heri) return 'heri';
-    if (fire[0] === gx && fire[1] === gy) return 'fire';
-    return 'mat';
+    const fire = winter ? room.ro : room.furo;
+    return fire[0] === gx && fire[1] === gy ? 'fire' : 'mat';
   }
   const has = (cells, p) => cells.some((c) => c[0] === p[0] && c[1] === p[1]);
   function placeToken(p, how) {
@@ -560,10 +567,10 @@
     const ri = WALK_ROLES.indexOf(role);
     const key = `${room.id}|${winter ? 'ro' : 'furo'}|${role.id}`;
     const gate = room.small ? 'にじり口' : '入口';
-    const fire = winter ? room.ro : room.furo;
-    const gw = room.mats[0].length * 3 - 1, gh = room.mats.length * 3 - 1;
+    const L = matsOf(room, winter);
+    const gw = L[0].length * 2 - 1, gh = L.length * 2 - 1;
     const goals = (role.id === 'tsume' ? ['door'] : []).concat(['toko', 'kama', 'seat']);
-    const cells = { door: [room.start], toko: room.toko, kama: room.kama[winter ? 'ro' : 'furo'], seat: [room.seats[role.id]] };
+    const cells = { door: [room.start], toko: tokoCells(room), kama: room.kama[winter ? 'ro' : 'furo'], seat: [room.seats[role.id]] };
     const seated = WALK_ROLES.slice(0, ri);     // 先に入って、もう席に着いている客
     const blocked = seated.map((r) => room.seats[r.id]);
     const fill = (s) => s.replace(/\{gate\}/g, gate).replace(/\{seat\}/g, role.seat).replace(/\{role\}/g, role.name);
@@ -590,10 +597,10 @@
       [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => {
         const x1 = pos[0] + dx, y1 = pos[1] + dy;
         if (!inside(x1, y1) || isBlocked(x1, y1)) return;
-        const k1 = cellKind(room, fire, x1, y1);
+        const k1 = cellKind(room, winter, x1, y1);
         out.push({ x: x1, y: y1, kind: k1, stride: false });
         const x2 = pos[0] + dx * 2, y2 = pos[1] + dy * 2;
-        if (k1 === 'heri' && inside(x2, y2) && !isBlocked(x2, y2) && cellKind(room, fire, x2, y2) !== 'heri') out.push({ x: x2, y: y2, kind: cellKind(room, fire, x2, y2), stride: true });
+        if (k1 === 'heri' && inside(x2, y2) && !isBlocked(x2, y2) && cellKind(room, winter, x2, y2) !== 'heri') out.push({ x: x2, y: y2, kind: cellKind(room, winter, x2, y2), stride: true });
       });
       return out;
     }
@@ -656,6 +663,7 @@
         <div class="board">${ART.walkBoard(room, { winter, school: save.school, color: role.color })}</div>
         <div class="big stars">${stars(n)}</div>
         ${say(miss === 0 ? 'joy' : 'happy', `${esc(fill(WALK_GOALS.seat.done))}（歩数 ${steps}・ミス${miss}回）<br>${esc(next)}`)}
+        <div class="card"><b>${esc(room.name)}の席</b><p>${esc(room.note)}</p><p class="sub">※ 席の決まりは、流派・先生・茶室の造りや客の人数で変わることがあります。</p></div>
         <div class="card"><b>席入りの心得</b><ul class="pt">${WALK_RULES.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>
         <button class="btn primary" data-go="walkPlay:${key}">もう一度</button>
         <button class="btn" data-go="walkList">広さ・季節・役をえらぶ</button>`);
@@ -667,6 +675,7 @@
     }
     function fail(reason) {
       render(head(title) + FAIL + say('sad', `${esc(reason)}<br>ミスが${MAX_MISS}回になりました。`) + `
+        <div class="card"><b>${esc(room.name)}の席</b><p>${esc(room.note)}</p></div>
         <div class="card"><b>席入りの心得</b><ul class="pt">${WALK_RULES.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>
         <button class="btn primary" data-go="walkPlay:${key}">もう一度</button>
         <button class="btn" data-go="videoPlay:walk">お手本の動画を見る</button>
