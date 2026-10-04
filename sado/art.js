@@ -98,12 +98,11 @@ const ART = (function () {
   }
   const bowl = (shape, x, y, s, tea, mark) => at(x, y, s || 1, bowlBody(shape, tea, mark));
 
-  // 上から見た茶碗（原点中心・半径31）。kind: full / mikazuki / least / koicha / empty
+  // 上から見た茶碗（原点中心・半径31）。kind: full / mikazuki / koicha / empty
   function bowlTop(kind, mark) {
     let s = '<circle r="31" fill="#2f2a28"/><circle r="31" fill="none" stroke="#1d1a19" stroke-width="2"/><circle r="25.5" fill="#3a3330"/>';
     if (kind === 'full') s += '<circle r="24" fill="#c5d77c"/>' + dots(34, '#e4edb8', 1.4, 21, 11);
     else if (kind === 'mikazuki') s += '<circle r="24" fill="#c5d77c"/>' + dots(22, '#e4edb8', 1.3, 21, 5) + '<path d="M-20.8,-12 A24,24 0 0 1 20.8,-12 A45.8,45.8 0 0 0 -20.8,-12 Z" fill="#5f8a2a"/>';
-    else if (kind === 'least') s += '<circle r="24" fill="#6f9634"/>' + dots(10, '#b9cf76', 2.2, 11, 3);
     else if (kind === 'koicha') s += '<circle r="24" fill="#3d5a1e"/><ellipse cx="-7" cy="-9" rx="9" ry="4" fill="#ffffff2a" transform="rotate(-25)"/>';
     else s += '<circle r="24" fill="#4a3f38"/>';
     if (mark) s += ume(0, 28, 3.4, '#f7d6dc', '#e0603e');
@@ -119,7 +118,7 @@ const ART = (function () {
       <circle cx="-27" cy="0" r="3" fill="#6a5f58"/><circle cx="27" cy="0" r="3" fill="#6a5f58"/>
       <path d="M-22,6 Q0,12 22,6" stroke="#57504b" stroke-width="1.5" fill="none"/><path d="M-17,-6 Q-20,6 -14,14" stroke="#ffffff22" stroke-width="3" fill="none" stroke-linecap="round"/></g>`;
   }
-  const CH = { shira: ['#eadfbf', '#b8a77c', '#d5c391'], susu: ['#b07a40', '#6e4520', '#7a4f28'], shichiku: ['#5a4650', '#241b20', '#33272d'] };
+  const CH = { shira: ['#eadfbf', '#b8a77c', '#d5c391'], susu: ['#b07a40', '#6e4520', '#7a4f28'] };
   function chasenBody(kind) {
     const c = CH[kind] || CH.shira;
     let s = `<path d="M37,19 Q50,11 63,19 L58,62 L42,62 Z" fill="${c[0]}"/>`;
@@ -555,9 +554,9 @@ const ART = (function () {
 
   // ---------- クイズ・メニューの絵 ----------
   // 上から順に、問題文に含まれる語で絵を選ぶ（答えを絵でばらさない順にしてある）
-  const threeChasen = () => place(chasenBody('susu'), 22, 52, .7) + place(chasenBody('shira'), 50, 52, .7) + place(chasenBody('shichiku'), 78, 52, .7);
+  const twoChasen = () => place(chasenBody('susu'), 32, 52, .72) + place(chasenBody('shira'), 68, 52, .72);
   const QUIZ_PIC = [
-    ['茶筅の竹', threeChasen], ['点て方', TOOL.chawan],
+    ['茶筅の竹', twoChasen], ['点て方', TOOL.chawan],
     ['茶筅', () => chasenBody('shira')], ['茶杓', TOOL.chashaku], ['棗', TOOL.natsume], ['茶入', TOOL.chaire], ['水指', TOOL.mizusashi],
     ['建水', TOOL.kensui], ['蓋置', TOOL.futaoki], ['柄杓', TOOL.hishaku], ['帛紗', TOOL.fukusa], ['茶巾', TOOL.chakin],
     ['風炉', TOOL.furo], ['炉', TOOL.ro], ['香合', OPT.kogo['陶磁器']], ['香', OPT.ko['練香']], ['扇子', TOOL.sensu], ['釜', TOOL.kama],
@@ -583,7 +582,7 @@ const ART = (function () {
       case 'video': return svg('<rect x="8" y="18" width="84" height="60" rx="8" fill="#2b2622"/><rect x="13" y="23" width="74" height="50" rx="4" fill="#f6efe0"/>' + place(mascot('happy'), 50, 48, .42) + '<circle cx="78" cy="68" r="12" fill="#e0603e"/><path d="M74,62 L84,68 L74,74 Z" fill="#fff"/><rect x="30" y="80" width="40" height="5" rx="2" fill="#7a5c3a"/>');
       case 'app': return svg('<rect x="27" y="5" width="46" height="90" rx="9" fill="#2b2622"/><rect x="31" y="13" width="38" height="72" rx="3" fill="#f6efe0"/><circle cx="50" cy="90" r="2.4" fill="#8a7a5c"/>' + place(mascot('happy'), 50, 49, .38) + sparkle(78, 18, 5) + sparkle(20, 30, 3.5, BLUSH));
       case 'zukan': return svg(place(chasenBody(school(o).chasenKey), 34, 50, .9) + place(TOOL.chashaku(), 62, 54, .8));
-      case 'compare': return svg(threeChasen());
+      case 'compare': return svg(twoChasen());
     }
     return '';
   }

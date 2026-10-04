@@ -14,6 +14,8 @@
       if (s.voiceVer !== 2) { save.voiceStyle = 'natural'; save.voiceVer = 2; }
     }
   } catch (_) {}
+  // いまは無い流派（前の版の武者小路千家など）をえらんでいたときは、流派をえらび直してもらう
+  if (save.school && !SCHOOLS[save.school]) save.school = null;
   const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (_) {} };
   const bucket = (name) => { save[name] = save[name] || {}; return (save[name][save.school] = save[name][save.school] || {}); };
 
@@ -33,7 +35,7 @@
   const thisMonth = () => new Date().getMonth() + 1;
   const DISCLAIMER = '<div class="note">※ 流派の違いは「一般にそう教えられることが多い」代表的なものです。細部は教室・先生・点前の種類によって異なります。お稽古では先生の教えを優先してください。</div>';
   const RUBY_MODES = [['all', 'ぜんぶ'], ['term', '茶道のことばだけ'], ['none', 'なし']];
-  const FOAM_SHORT = { full: 'たっぷり', mikazuki: '控えめ（三日月）', least: '最も少なめ' };
+  const FOAM_SHORT = { full: 'たっぷり', mikazuki: '控えめ（三日月）' };
   const say = (expr, html) => `<div class="talk"><span class="mc">${ART.mascot(expr)}</span><div class="bub">${html}</div></div>`;
   const lives = (miss) => `<span class="lives" aria-label="のこり${MAX_MISS - miss}">${[...Array(MAX_MISS)].map((_, i) => ART.life(i < MAX_MISS - miss)).join('')}</span>`;
   const FAIL = '<div class="fail"><span>失格</span></div>';
@@ -190,7 +192,7 @@
         ${item('videoList', 'video', '作法の動画', '絵が動いて、声で説明します')}
         ${item('course', 'course', `${sc().name}とは`, '庵号・家元・この流派の見分けポイント')}
         ${item('zukan', 'zukan', '道具図鑑', '道具ごとの季節・流派の違い')}
-        ${item('compare', 'compare', '三千家くらべ', '三つの流派の違いを一覧で')}
+        ${item('compare', 'compare', '表千家・裏千家くらべ', '二つの流派の違いを一覧で')}
       </div>`;
     }
     render(`
@@ -265,7 +267,7 @@
         <p class="sub">いまは「${GENDERS[save.gender].name}」でお点前を学んでいます（ホームで切り替えられます）。</p></div>
       <h3>お辞儀の真・行・草（裏千家の例）</h3>
       <div class="card"><dl class="dl">${BOWS.map((b) => `<dt>${b.k}</dt><dd>${esc(b.d)}</dd>`).join('')}</dl></div>
-      <p class="sub">三千家はいずれも、千利休の孫・千宗旦の息子たちがおこした家です。根っこは同じなので、作法の大部分は共通しています。</p>
+      <p class="sub">表千家と裏千家は、どちらも千利休の孫・千宗旦の息子たちがおこした家です。根っこは同じなので、作法の大部分は共通しています。</p>
       <button class="btn primary" data-go="seqList">お点前の順序をはじめる</button>
       ${refs()}
       ${DISCLAIMER}`);
@@ -282,7 +284,7 @@
   function answerList(q) {
     const list = stepsOf(q);
     const perSchool = !Array.isArray(q.steps);
-    const memo = (q.memo && q.memo[save.school]) || (save.school === 'mushako' ? MUSHAKO_NOTE : '');
+    const memo = (q.memo && q.memo[save.school]) || '';
     return (perSchool ? `<p class="sub">この作法は、流派によって手順の順番や所作が少しずつ違います（いまは${sc().name}の手順）。${memo}</p>` : '')
       + `<ol class="placed">${list.map((st) => {
         const bySchool = !st.t && !st.tg;
@@ -379,11 +381,14 @@
     Q.push({ k: 'cup', part: '道具組み', q: '茶碗の形は？', c: Object.values(CUP), a: CUP[mo.cup], e: CUP_NOTE[mo.cup] });
     Q.push({ k: 'kashi', part: '道具組み', q: '主菓子は？', c: shuffle([mo.kashi].concat(otherPicks('kashi', m, 2))), a: mo.kashi, e: `${m}月らしい菓子は「${mo.kashi}」。` });
     Q.push({ k: 'hana', part: '道具組み', q: '床に生ける茶花は？', c: shuffle([mo.hana].concat(otherPicks('hana', m, 2))), a: mo.hana, e: `${m}月の茶花には「${mo.hana}」など。茶花は季節を先取りしすぎず、野にあるように。` });
-    Q.push({ k: 'chasen', part: '道具組み', q: '茶筅は？', c: Object.values(CHASEN), a: CHASEN[x.chasenKey], e: `${x.name}では${x.chasen}の茶筅が一般的。（表千家＝煤竹、裏千家＝白竹、武者小路千家＝紫竹）` });
+    Q.push({ k: 'chasen', part: '道具組み', q: '茶筅は？', c: Object.values(CHASEN), a: CHASEN[x.chasenKey], e: `${x.name}では${x.chasen}の茶筅が一般的。（表千家＝煤竹、裏千家＝白竹）` });
 
-    Q.push({ k: 'hishaku', part: '点前', q: '湯を汲んで茶碗に注いだあと、柄杓の扱いは？', c: ['切り柄杓', '置き柄杓'], a: ro ? '置き柄杓' : '切り柄杓', e: '一般に風炉では「切り柄杓」、炉では「置き柄杓」で釜に柄杓を戻す。' });
+    // 柄杓の置き方は流派で順番が違う。風炉の運び点前で確かめたものだけを出す（炉の季節は出さない）
+    if (!ro) Q.push(save.school === 'ura'
+      ? { k: 'hishaku', part: '点前', q: 'お茶を点てる湯を注いだあと、柄杓の置き方は？', c: ['切り柄杓', '置き柄杓', '引き柄杓'], a: '切り柄杓', e: '裏千家の風炉では、茶筅通しの湯のあとは置き柄杓、点てる湯のあとは切り柄杓、水を入れたあとは引き柄杓にする。' }
+      : { k: 'hishaku', part: '点前', q: 'お茶を点てる湯を注ぎ、残りを釜に戻したあと、柄杓の置き方は？', c: ['切り柄杓', '置き柄杓', '引き柄杓'], a: '置き柄杓', e: '表千家の風炉では、はじめに茶碗へ湯を入れたあとは切り柄杓、点てる湯の残りを釜に戻したあとは置き柄杓、水を入れたあとは引き柄杓にする。' });
     Q.push({ k: 'foam', part: '点前', q: '薄茶をどう点てる？', c: Object.values(FOAM), a: FOAM[x.foam], e: `${x.name}は「${FOAM[x.foam]}」。泡の加減は流派の違いがよく出るところ。` });
-    Q.push({ k: 'dashi', part: '点前', q: '濃茶の茶碗に添えて客が受ける帛紗は？', c: Object.values(DASHI), a: DASHI[x.dashi], e: `${x.name}では一般に${DASHI[x.dashi]}。表千家・武者小路千家は出帛紗、裏千家は古帛紗。` });
+    Q.push({ k: 'dashi', part: '点前', q: '濃茶の茶碗に添えて客が受ける帛紗は？', c: Object.values(DASHI), a: DASHI[x.dashi], e: `${x.name}では一般に${DASHI[x.dashi]}。表千家は出帛紗、裏千家は古帛紗。` });
     const ev = EVENTS[m] && (EVENTS[m].q ? EVENTS[m] : (save.school === 'ura' ? EVENTS[m].ura : EVENTS[m].all));
     if (ev) Q.push(Object.assign({ k: 'event', part: '季節の心得' }, ev));
     return Q;
@@ -877,7 +882,7 @@
           <p class="sub center">よみ：${t.yomi}</p>
           <p>${esc(t.desc)}</p>
           ${t.season ? `<h3>季節による違い</h3><p>${esc(t.season)}</p>` : ''}
-          ${t.diff ? `<h3>流派による違い</h3><div class="tbl"><table>${Object.values(SCHOOLS).map((x) => `<tr><th style="${x.id === save.school ? `color:${x.color};font-weight:bold` : ''}">${x.name}</th><td>${esc(t.diff[x.id])}</td></tr>`).join('')}</table></div>` : '<p class="sub">三千家でおおむね共通です。</p>'}
+          ${t.diff ? `<h3>流派による違い</h3><div class="tbl"><table>${Object.values(SCHOOLS).map((x) => `<tr><th style="${x.id === save.school ? `color:${x.color};font-weight:bold` : ''}">${x.name}</th><td>${esc(t.diff[x.id])}</td></tr>`).join('')}</table></div>` : '<p class="sub">表千家・裏千家でおおむね共通です。</p>'}
         </div>${DISCLAIMER}`);
       return;
     }
@@ -887,12 +892,12 @@
       <button class="btn" data-go="dougu">④ お道具の名前当てで腕だめし</button>`);
   }
 
-  // ---------- 三千家くらべ ----------
+  // ---------- 表千家・裏千家くらべ ----------
   function compare() {
-    // スマホの幅に収まるよう、絵でくらべる3列と、流派ごとのカードに分ける
+    // スマホの幅に収まるよう、絵でくらべる列（流派の数だけ）と、流派ごとのカードに分ける
     const S = Object.values(SCHOOLS);
-    const cols = (f, cls) => `<div class="cmp3">${S.map((x) => `<div class="cmpc ${cls || ''}" style="--c:${x.color}">${f(x)}</div>`).join('')}</div>`;
-    render(head('三千家くらべ') + `
+    const cols = (f, cls) => `<div class="cmp3" style="grid-template-columns:repeat(${S.length},1fr)">${S.map((x) => `<div class="cmpc ${cls || ''}" style="--c:${x.color}">${f(x)}</div>`).join('')}</div>`;
+    render(head('表千家・裏千家くらべ') + `
       <h3>絵でくらべる</h3>
       ${cols((x) => esc(x.name), 'head')}
       <p class="cmpl">茶筅の竹</p>${cols((x) => `${ART.chasen(x.chasenKey)}${esc(x.chasen)}`)}
@@ -904,7 +909,7 @@
         <dt>門下</dt><dd>${esc(x.group)}</dd><dt>名の由来</dt><dd>${esc(x.origin)}</dd></dl></div>`).join('')}
       <h3>共通していること</h3>
       <div class="card"><ul class="pt">
-        <li>どの家も千利休の孫・千宗旦の息子がおこした</li>
+        <li>どちらも千利休の孫・千宗旦の息子がおこした</li>
         <li>炉は11月〜4月、風炉は5月〜10月</li>
         <li>客は茶碗を回して正面を避けて飲む</li>
         <li>帛紗は左腰。一般に男性は紫、女性は朱</li>
