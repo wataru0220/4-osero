@@ -74,21 +74,49 @@
     else if (save.bgm && BGM.started) BGM.start();
   });
 
+  // ---------- アプリにする（ホーム画面に追加） ----------
+  // Android・パソコンの Chrome/Edge はインストールの画面を出せる。iPhone は Safari の共有ボタンから自分で追加する。
+  let installEvt = null;
+  const UA = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/i.test(UA);
+  const inAppBrowser = /Line\/|FBAN|FBAV|Instagram|MicroMessenger|Twitter/i.test(UA);
+  const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const APP_URL = 'https://wataru0220.github.io/4-osero/sado/';
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); installEvt = e;
+    if (cur.name === 'home' || cur.name === 'install') go(cur.name);   // ボタンを「追加する」に変える
+  });
+  window.addEventListener('appinstalled', () => {
+    installEvt = null;
+    toast('joy', 'アプリに追加しました！ ホーム画面のまっちゃんから開けます');
+    if (cur.name === 'home' || cur.name === 'install') go(cur.name);
+  });
+  async function doInstall() {
+    if (!installEvt) return go('install');
+    const e = installEvt;
+    installEvt = null;
+    e.prompt();
+    try { await e.userChoice; } catch (_) {}
+    if (cur.name === 'home' || cur.name === 'install') go(cur.name);
+  }
+
   // ---------- 画面の移動・戻る ----------
   // 戻る先は「ひとつ上の画面」。スマホの戻る操作（ブラウザの戻る）でも同じ動きにする。
-  const PARENT = { course: 'home', seqList: 'home', seqPlay: 'seqList', simMonths: 'home', simPlay: 'simMonths', quiz: 'home', dougu: 'home', walkList: 'home', walkPlay: 'walkList', videoList: 'home', videoPlay: 'videoList', zukan: 'home', compare: 'home' };
+  const PARENT = { install: 'home', course: 'home', seqList: 'home', seqPlay: 'seqList', simMonths: 'home', simPlay: 'simMonths', quiz: 'home', dougu: 'home', walkList: 'home', walkPlay: 'walkList', videoList: 'home', videoPlay: 'videoList', zukan: 'home', compare: 'home' };
   let cur = { name: 'home' };
   let leaveHook = null;   // 画面を離れるときの後片付け（動画のタイマー・読み上げ）
   const parentOf = (c) => (c.name === 'zukan' && c.arg) ? { name: 'zukan' } : { name: PARENT[c.name] || 'home' };
   const HOME_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 L12 3 L21 11 M6 9 V21 H18 V9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/></svg>';
   function head(title) {
     const deep = parentOf(cur).name !== 'home';
-    return `<div class="bar"><button class="back" data-back>‹ もどる</button>${deep ? `<button class="homebtn" data-go="home" aria-label="ホームへ">${HOME_ICON}</button>` : ''}<button class="homebtn snd${save.bgm ? '' : ' off'}" data-bgm aria-label="BGM">${SND(save.bgm)}</button><span class="chip">${esc(sc().name)}</span></div><h2>${esc(title)}</h2>`;
+    return `<div class="bar"><button class="back" data-back>‹ もどる</button>${deep ? `<button class="homebtn" data-go="home" aria-label="ホームへ">${HOME_ICON}</button>` : ''}<button class="homebtn snd${save.bgm ? '' : ' off'}" data-bgm aria-label="BGM">${SND(save.bgm)}</button>${save.school ? `<span class="chip">${esc(sc().name)}</span>` : ''}</div><h2>${esc(title)}</h2>`;
   }
 
   app.addEventListener('click', (e) => {
     if (e.target.closest('[data-bgm]')) return setBgm(!save.bgm);
     if (e.target.closest('[data-back]')) return back();
+    if (e.target.closest('[data-install]')) return doInstall();
     const t = e.target.closest('[data-go]');
     if (!t) return;
     const [name, arg] = t.dataset.go.split(':');
@@ -155,6 +183,7 @@
         <h1>茶の湯みち</h1>
         ${say('happy', 'ようこそ！ わたしは<b>まっちゃん</b>。いっしょに茶道をまなぼう！')}
       </div>
+      ${isStandalone() ? '' : `<button class="btn appcard" data-install><span class="ic">${ART.menu('app', s, m)}</span><span><span class="t">${installEvt ? 'アプリとして追加する' : 'アプリにする'}</span><span class="d">ホーム画面にまっちゃんのアイコンを置いて、すぐ遊べる</span></span></button>`}
       <h3>コースをえらぶ</h3>
       <div class="schools">
         ${Object.values(SCHOOLS).map((x) => `<button class="school ${s === x.id ? 'on' : ''}" style="--c:${x.color}" data-school="${x.id}"><b>${x.name}</b><span>${x.an}</span></button>`).join('')}
@@ -166,6 +195,30 @@
     app.querySelectorAll('[data-school]').forEach((b) => b.onclick = () => { save.school = b.dataset.school; persist(); go('home'); });
     app.querySelectorAll('[data-ruby]').forEach((b) => b.onclick = () => { save.ruby = b.dataset.ruby; persist(); go('home'); });
     app.querySelectorAll('[data-bgmset]').forEach((b) => b.onclick = () => setBgm(b.dataset.bgmset === 'on'));
+  }
+
+  // ---------- アプリにする ----------
+  function install() {
+    const step = (n, html) => `<li><span class="no">${n}</span><span>${html}</span></li>`;
+    const SHARE = '<svg class="ico" viewBox="0 0 24 24" aria-label="共有ボタン"><path d="M8 9 H5 V21 H19 V9 H16" fill="none" stroke="#2f7ae5" stroke-width="2"/><path d="M12 15 V3 M8 7 L12 3 L16 7" fill="none" stroke="#2f7ae5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const DOTS = '<svg class="ico" viewBox="0 0 24 24" aria-label="メニュー"><circle cx="12" cy="5" r="2" fill="#555"/><circle cx="12" cy="12" r="2" fill="#555"/><circle cx="12" cy="19" r="2" fill="#555"/></svg>';
+    let how;
+    if (isStandalone()) how = say('joy', 'いまアプリとして開いています！ ホーム画面のまっちゃんから、いつでも遊べるよ。');
+    else if (installEvt) how = say('happy', '下のボタンを押すと、アプリとして追加できるよ。') + '<button class="btn primary" data-install>アプリとして追加する</button>';
+    else if (isIOS && inAppBrowser) how = say('think', 'LINE などのアプリの中で開いているときは、アプリにできません。まず Safari で開いてね。')
+      + `<ol class="steps">${step(1, '右上（または右下）のメニューをタップ')}${step(2, '「Safariで開く」（「ブラウザで開く」）をえらぶ')}${step(3, 'Safari で開いたら、もう一度この画面へ')}</ol>`;
+    else if (isIOS) how = say('happy', 'iPhone・iPad は、Safari の共有ボタンから追加するよ。')
+      + `<ol class="steps">${step(1, `画面の下（iPad は上）にある共有ボタン ${SHARE} をタップ`)}${step(2, 'メニューを下へ動かして「ホーム画面に追加」をタップ')}${step(3, '右上の「追加」をタップすると、ホーム画面にまっちゃんのアイコンができます')}</ol>`;
+    else if (isAndroid) how = say('happy', 'ブラウザのメニューから追加するよ。')
+      + `<ol class="steps">${step(1, `右上のメニュー ${DOTS} をタップ`)}${step(2, '「アプリをインストール」または「ホーム画面に追加」をタップ')}${step(3, '「インストール」（「追加」）をタップ')}</ol>`;
+    else how = say('happy', 'スマホで下の QR コードを読み取ると、すぐ開けるよ。開いたら「アプリにする」から入れてね。')
+      + '<p class="sub">パソコンにも入れるときは、Chrome か Edge でこのページを開き、アドレスバーの右にある「インストール」のボタンを押します。</p>';
+    render(head('アプリにする') + `
+      <div class="appicon"><img src="icon-192.png" alt="" width="88" height="88"><b>茶の湯みち</b></div>
+      ${how}
+      <div class="card"><b>アプリにすると</b><ul class="pt"><li>ホーム画面のアイコンから、すぐに起動できる</li><li>画面いっぱいに大きく遊べる</li><li>一度開いておけば、ネットがなくても遊べる（読み上げは端末によります）</li><li>アイコンを長押しすると、ゲームや動画へ直接行ける</li></ul></div>
+      <h3>スマホ・友だちのスマホで開く</h3>
+      <div class="qrbox">${ART.qr()}<p class="sub">${APP_URL}</p></div>`);
   }
 
   // ---------- 流派紹介 ----------
@@ -700,20 +753,19 @@
 
   // ---------- 三千家くらべ ----------
   function compare() {
+    // スマホの幅に収まるよう、絵でくらべる3列と、流派ごとのカードに分ける
     const S = Object.values(SCHOOLS);
-    const row = (label, f) => `<tr><th>${label}</th>${S.map((x) => `<td>${f(x)}</td>`).join('')}</tr>`;
+    const cols = (f, cls) => `<div class="cmp3">${S.map((x) => `<div class="cmpc ${cls || ''}" style="--c:${x.color}">${f(x)}</div>`).join('')}</div>`;
     render(head('三千家くらべ') + `
-      <div class="tbl"><table>
-        <thead><tr><th style="background:#8a7a5c"></th>${S.map((x) => `<th style="background:${x.color}">${x.name}</th>`).join('')}</tr></thead>
-        ${row('庵号', (x) => esc(x.an))}
-        ${row('家元', (x) => esc(x.iemoto))}
-        ${row('祖', (x) => esc(x.founder))}
-        ${row('茶筅', (x) => `<span class="cpic">${ART.chasen(x.chasenKey)}</span>${esc(x.chasen)}`)}
-        ${row('薄茶の泡', (x) => `<span class="cpic">${ART.foam(x.foam)}</span>${esc(FOAM[x.foam])}`)}
-        ${row('濃茶の帛紗', (x) => `<span class="cpic">${ART.dashi(x.dashi)}</span>${esc(DASHI[x.dashi])}`)}
-        ${row('門下', (x) => esc(x.group))}
-        ${row('名の由来', (x) => esc(x.origin))}
-      </table></div>
+      <h3>絵でくらべる</h3>
+      ${cols((x) => esc(x.name), 'head')}
+      <p class="cmpl">茶筅の竹</p>${cols((x) => `${ART.chasen(x.chasenKey)}${esc(x.chasen)}`)}
+      <p class="cmpl">薄茶の泡</p>${cols((x) => `${ART.foam(x.foam)}${esc(FOAM_SHORT[x.foam])}`)}
+      <p class="cmpl">濃茶の帛紗</p>${cols((x) => `${ART.dashi(x.dashi)}${esc(DASHI[x.dashi])}`)}
+      <h3>流派ごとに見る</h3>
+      ${S.map((x) => `<div class="card scard" style="--c:${x.color}"><b class="sname">${x.name}</b><dl class="dl">
+        <dt>庵号</dt><dd>${esc(x.an)}</dd><dt>家元</dt><dd>代々 ${esc(x.iemoto)}</dd><dt>祖</dt><dd>${esc(x.founder)}</dd>
+        <dt>門下</dt><dd>${esc(x.group)}</dd><dt>名の由来</dt><dd>${esc(x.origin)}</dd></dl></div>`).join('')}
       <h3>共通していること</h3>
       <div class="card"><ul class="pt">
         <li>どの家も千利休の孫・千宗旦の息子がおこした</li>
@@ -725,6 +777,10 @@
       ${DISCLAIMER}`);
   }
 
-  const SCREENS = { home, course, seqList, seqPlay, simMonths, simPlay, quiz, dougu, walkList, walkPlay, videoList, videoPlay, zukan, compare };
+  const SCREENS = { home, install, course, seqList, seqPlay, simMonths, simPlay, quiz, dougu, walkList, walkPlay, videoList, videoPlay, zukan, compare };
+  // アイコン長押しのショートカット（index.html#seqList など）から開いたときは、その画面へ
+  const startHash = decodeURIComponent(location.hash.slice(1));
+  if (startHash) history.replaceState(null, '', location.pathname + location.search);
   go('home');
+  if (startHash && save.school) { const [n, a] = startHash.split(':'); if (SCREENS[n] && n !== 'home') go(n, a); }
 })();
