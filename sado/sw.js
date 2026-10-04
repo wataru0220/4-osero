@@ -1,9 +1,9 @@
 // ===== 茶の湯みち Service Worker =====
-// SW_VERSION: 2026-10-04b
+// SW_VERSION: 2026-10-04c
 // PWA「アプリにする（ホーム画面に追加）」を可能にし、オフラインでも遊べるようにする。
 // 方針：ネット優先（常に最新を取得）＋失敗時はキャッシュへ退避。
-const CACHE = 'sado-v2';
-const SHELL = ['./', './index.html', './data.js', './art.js', './ruby.js', './app.js', './manifest.json',
+const CACHE = 'sado-v3';
+const SHELL = ['./', './index.html', './data.js', './art.js', './ruby.js', './bgm.js', './app.js', './manifest.json',
                './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {

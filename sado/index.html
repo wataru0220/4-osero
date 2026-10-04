@@ -19,6 +19,7 @@
     --school:#3f6b3a;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  [hidden]{display:none !important;}
   html,body{margin:0;min-height:100%;}
   body{
     font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;
@@ -154,6 +155,72 @@
   .dl dt{color:var(--sub);}
   .dl dd{margin:0;}
   ul.pt{padding-left:1.2em;margin:6px 0;font-size:14px;line-height:2;}
+
+  /* 楽しい絵まわり：まっちゃんの吹き出し・絵の背景 */
+  .talk{display:flex;gap:8px;align-items:flex-end;margin:10px 0;}
+  .talk .mc{flex:none;width:58px;height:58px;}
+  .talk .mc svg{width:100%;height:100%;}
+  .talk .bub{position:relative;flex:1;background:#fffdf7;border:2px solid var(--school);border-radius:14px;padding:8px 12px;font-size:14px;line-height:1.9;}
+  .talk .bub::before{content:"";position:absolute;left:-9px;bottom:14px;border:8px solid transparent;border-right-color:var(--school);border-left:0;}
+  .seqbtn svg,.pool .btn svg,.placed li svg,.menu .ic,.qpic svg,.viewpic svg{background:radial-gradient(circle at 50% 38%,#fffaf0 0%,#f3e6c8 100%) !important;}
+  .viewpic svg{width:120px;height:120px;margin:4px auto;border-radius:16px;}
+  .viewpic.big svg{width:160px;height:160px;}
+  .snd.off{color:#b3a891;}
+
+  /* ミス（残りのお茶）と失格 */
+  .lives{display:inline-flex;gap:3px;align-items:center;}
+  .lives svg{width:22px;height:22px;}
+  .fail{text-align:center;margin:10px 0 4px;}
+  .fail span{display:inline-block;font-size:44px;font-weight:bold;color:var(--shu);border:5px double var(--shu);border-radius:12px;padding:0 18px;transform:rotate(-8deg);letter-spacing:.2em;background:#fff7f2;line-height:1.6;}
+  .fail rt{color:var(--shu);}
+  .unit{font-size:18px;}
+  .res .rpic svg{width:44px;height:44px;flex:none;}
+  .res .rpic{flex:none;}
+  #toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translate(-50%,140%);width:min(92vw,420px);z-index:60;transition:transform .3s;pointer-events:none;}
+  #toast.show{transform:translate(-50%,0);}
+  #toast .talk{margin:0;}
+  #toast .bub{box-shadow:0 4px 14px #0002;}
+  .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:70;}
+  .confetti i{position:absolute;top:-14px;width:8px;height:13px;border-radius:2px;animation:fall 2.6s ease-in forwards;}
+  @keyframes fall{to{transform:translateY(110vh) rotate(620deg);}}
+
+  /* ④ 名前当て：絵を選ぶ問題 */
+  .qpic.big svg{width:150px;height:150px;border-radius:24px;padding:8px;}
+  .opts.picq .btn svg{width:96px;height:96px;margin:0 auto 4px;}
+  .lbl.hide{visibility:hidden;}
+
+  /* ⑤ 歩き方ステージ */
+  .board{max-width:380px;margin:0 auto;}
+  .board svg{width:100%;height:auto;border-radius:12px;box-shadow:0 2px 10px #0002;}
+  .board .fp{cursor:pointer;}
+  .board .fp:hover ellipse{opacity:.9;}
+  .goalmark{animation:glow 1.4s ease-in-out infinite;}
+  @keyframes glow{50%{opacity:.15;}}
+  #wk-me .bob.step{animation:bob .28s;}
+  #wk-me .bob.hop{animation:hop .45s;}
+  @keyframes bob{50%{transform:translateY(-5px);}}
+  @keyframes hop{50%{transform:translateY(-22px);}}
+
+  /* ⑥ 動画プレーヤー */
+  .player{background:#2b2622;border-radius:16px;padding:10px;color:#fff;}
+  .screen{position:relative;background:radial-gradient(circle at 50% 40%,#fffaf0 0%,#efe2c4 100%);border-radius:10px;aspect-ratio:1/1;max-height:62vh;margin:0 auto;display:grid;place-items:center;overflow:hidden;}
+  .screen > svg{width:86%;height:86%;}
+  .screen .vtitle svg{width:58%;height:auto;margin:auto;}
+  .screen .vnum{position:absolute;top:10px;left:10px;width:34px;height:34px;border-radius:50%;background:var(--school);color:#fff;font-size:18px;display:grid;place-items:center;z-index:1;}
+  .screen .vpic{position:absolute;right:8px;bottom:8px;width:34%;}
+  .screen .vpic svg{width:100%;height:auto;background:#fffaf0;border-radius:12px;box-shadow:0 2px 8px #0003;}
+  .screen:has(#wk-me) > svg{width:100%;height:100%;}
+  .caption{min-height:84px;padding:10px 6px 6px;font-size:16px;line-height:2;text-align:center;}
+  .caption b{display:block;font-weight:normal;}
+  .caption small{display:block;font-size:13px;color:#e8dcc4;line-height:1.9;margin-top:2px;}
+  .caption rt{color:#e8dcc4;}
+  .vbar{height:5px;background:#ffffff26;border-radius:3px;overflow:hidden;margin:4px 4px 10px;}
+  .vbar i{display:block;height:100%;background:#f6c84b;transition:width .4s;}
+  .vctl{display:flex;justify-content:center;gap:14px;}
+  .vctl button{width:48px;height:48px;border-radius:50%;border:none;background:#ffffff1f;color:#fff;cursor:pointer;display:grid;place-items:center;padding:0;}
+  .vctl button.big{width:58px;height:58px;background:#f6c84b;color:#2b2622;}
+  .vctl button.off{color:#ffffff70;}
+  .vctl svg{width:22px;height:22px;}
 </style>
 </head>
 <body>
@@ -161,6 +228,7 @@
 <script src="data.js"></script>
 <script src="art.js"></script>
 <script src="ruby.js"></script>
+<script src="bgm.js"></script>
 <script src="app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
