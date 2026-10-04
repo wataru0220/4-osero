@@ -5,8 +5,15 @@
   const MAX_MISS = 3;   // ミスがこの回数になったら失格
 
   // ---------- 保存 ----------
-  let save = { school: null, gender: 'f', ruby: 'all', bgm: true, voice: true, voiceStyle: 'cute', voiceName: '', walkCfg: { room: '4.5', season: 'furo', role: 'shokyaku' }, seq: {}, sim: {}, stamp: {}, quiz: {}, dougu: {}, walk: {} };
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) save = Object.assign(save, s); } catch (_) {}
+  let save = { school: null, gender: 'f', ruby: 'all', bgm: true, voice: true, voiceStyle: 'natural', voiceVer: 2, voiceName: '', walkCfg: { room: '4.5', season: 'furo', role: 'shokyaku' }, seq: {}, sim: {}, stamp: {}, quiz: {}, dougu: {}, walk: {} };
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s) {
+      save = Object.assign(save, s);
+      // 前の版の「かわいい（高すぎる声）」の設定は、しぜんに戻す
+      if (s.voiceVer !== 2) { save.voiceStyle = 'natural'; save.voiceVer = 2; }
+    }
+  } catch (_) {}
   const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (_) {} };
   const bucket = (name) => { save[name] = save[name] || {}; return (save[name][save.school] = save[name][save.school] || {}); };
 
@@ -682,6 +689,8 @@
     for (const r of rank) { const v = vs.find((x) => r.test(x.name) && !MALE_VOICE.test(x.name)); if (v) return v; }
     return vs.find((x) => !MALE_VOICE.test(x.name)) || vs[0] || null;
   }
+  // 声の調子。しぜん＝少しだけ明るく、かわいい＝高め、ふつう＝そのまま
+  const VOICE_STYLES = { natural: { label: 'しぜん', pitch: 1.08, rate: 1 }, cute: { label: 'かわいい', pitch: 1.22, rate: 1.03 }, plain: { label: 'ふつう', pitch: 1, rate: 0.96 } };
   const voiceLabel = (n) => n.replace(/^Microsoft\s*/, '').replace(/\s*-\s*Japanese.*$/, '').replace(/\s*\(Japan\)/, '');
   const ICON = {
     prev: '<svg viewBox="0 0 24 24"><path d="M6 5 V19 M19 5 L9 12 L19 19 Z" fill="currentColor" stroke="currentColor" stroke-width="2"/></svg>',
@@ -713,7 +722,7 @@
           <button id="vd-next" aria-label="次へ">${ICON.next}</button>
           <button id="vd-voice" class="${save.voice && canSpeak ? '' : 'off'}" aria-label="読み上げ">${save.voice && canSpeak ? ICON.voiceOn : ICON.voiceOff}</button>
         </div>
-        ${canSpeak ? `<div class="vset"><span>声</span><button class="vs ${save.voiceStyle !== 'normal' ? 'on' : ''}" data-vs="cute">かわいい</button><button class="vs ${save.voiceStyle === 'normal' ? 'on' : ''}" data-vs="normal">ふつう</button><select id="vd-vsel" aria-label="声の種類"></select></div>` : ''}
+        ${canSpeak ? `<div class="vset"><span>声</span>${Object.entries(VOICE_STYLES).map(([k, s]) => `<button class="vs ${(VOICE_STYLES[save.voiceStyle] ? save.voiceStyle : 'natural') === k ? 'on' : ''}" data-vs="${k}">${s.label}</button>`).join('')}<select id="vd-vsel" aria-label="声の種類"></select></div>` : ''}
       </div>
       <div id="vd-end"></div>`);
     const $ = (s) => app.querySelector(s);
@@ -724,19 +733,24 @@
       const vs = jaVoices();
       sel.innerHTML = '<option value="">おまかせ</option>' + vs.map((v) => `<option value="${esc(v.name)}"${v.name === save.voiceName ? ' selected' : ''}>${esc(voiceLabel(v.name))}</option>`).join('');
     }
+    // 漢字はそのまま（茶道のことばだけ読みがなに）にして、一文ずつ区切って読む。声の高さは控えめに
     function speak(text, done) {
       if (!canSpeak || !save.voice) return false;
       synth.cancel();
-      const u = new SpeechSynthesisUtterance(RUBY.kana(text));
-      const cute = save.voiceStyle !== 'normal';
-      u.lang = 'ja-JP'; u.pitch = cute ? 1.45 : 1; u.rate = cute ? 1.05 : 0.95;
+      const style = VOICE_STYLES[save.voiceStyle] || VOICE_STYLES.natural;
       const v = pickVoice();
-      if (v) u.voice = v;
+      const parts = RUBY.speech(text).replace(/([。！？!?])/g, '$1\n').split('\n').map((x) => x.trim()).filter(Boolean);
       const my = token;
-      let fired = false;
+      let fired = false, left = parts.length;
       const fin = () => { if (fired || my !== token) return; fired = true; done(); };
-      u.onend = fin; u.onerror = fin;
-      synth.speak(u);
+      parts.forEach((p) => {
+        const u = new SpeechSynthesisUtterance(p);
+        u.lang = 'ja-JP'; u.pitch = style.pitch; u.rate = style.rate;
+        if (v) u.voice = v;
+        u.onend = () => { if (--left <= 0) fin(); };
+        u.onerror = fin;
+        synth.speak(u);
+      });
       timer = setTimeout(fin, 4000 + text.length * 260);   // 読み上げが終わりを知らせない端末のための保険
       return true;
     }

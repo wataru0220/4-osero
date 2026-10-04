@@ -194,8 +194,11 @@ const RUBY = (function () {
     });
   }
 
-  // 読み上げ用：漢字を読みがなに置きかえた文
+  // 読みがなに置きかえた文（すべての漢字）
   const kana = (text) => segs(text).map(([s, r]) => r || s).join('');
+  // 読み上げ用：漢字はそのまま残し（端末が区切りやアクセントを自然に付けられる）、
+  // 読み間違えやすい茶道のことば・名前（TERMS）と数字のあとの読みだけを読みがなに置きかえる
+  const speech = (text) => segs(text).map(([s, r, cls]) => (r && (cls === 'rb-t' || /^\d/.test(s)) ? r : s)).join('');
 
-  return { apply, segs, kana, missing };
+  return { apply, segs, kana, speech, missing };
 })();

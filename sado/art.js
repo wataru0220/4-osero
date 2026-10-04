@@ -254,9 +254,11 @@ const ART = (function () {
       : arm('M18,60 Q8,64 9,72') + arm('M82,60 Q92,64 91,72');
     s += '<path d="M14,44 Q14,88 50,90 Q86,88 86,44 Z" fill="#f3e2bd"/><path d="M14,44 Q14,88 50,90 Q86,88 86,44" fill="none" stroke="#c9a46a" stroke-width="2"/>'
       + '<path d="M20,76 Q50,86 80,76" stroke="#d98a5a" stroke-width="3" fill="none" opacity=".45"/><rect x="38" y="87" width="24" height="6" rx="3" fill="#c9a46a"/>'
-      + '<ellipse cx="50" cy="44" rx="36" ry="8" fill="#c9a46a"/><path d="M15,44 Q15,19 50,17 Q85,19 85,44 Z" fill="#8fc24f"/>'
-      + [[24, 40], [33, 30], [46, 24], [60, 26], [72, 32], [79, 41], [40, 38], [58, 37]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i % 2 ? 2.6 : 3.4}" fill="#b5dc7a"/>`).join('')
-      + '<ellipse cx="36" cy="27" rx="7" ry="3.5" fill="#ffffff55" transform="rotate(-15 36 27)"/>';
+      // 茶碗の口に、点てたお茶が少しふんわり見えるくらい（山盛りにしない）
+      + '<ellipse cx="50" cy="44" rx="36" ry="8" fill="#c9a46a"/><ellipse cx="50" cy="43.5" rx="32.5" ry="6.2" fill="#7fb547"/>'
+      + '<path d="M21,43.5 Q50,34 79,43.5 Q50,48 21,43.5 Z" fill="#9ccd5c"/>'
+      + [[30, 42], [39, 39.5], [50, 38.5], [61, 39.5], [70, 42], [44, 43], [57, 43]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i % 2 ? 1.3 : 1.8}" fill="#c4e48f"/>`).join('')
+      + '<ellipse cx="38" cy="40" rx="5" ry="1.5" fill="#ffffff66"/>';
     const eye = (x) => `<ellipse cx="${x}" cy="59" rx="4.6" ry="6" fill="#2b2622"/><circle cx="${x - 1.6}" cy="56.5" r="1.8" fill="#fff"/>`;
     s += `<ellipse cx="27" cy="68" rx="6" ry="3.4" fill="${BLUSH}"/><ellipse cx="73" cy="68" rx="6" ry="3.4" fill="${BLUSH}"/>`;
     if (expr === 'joy') s += '<path d="M31,60 Q37,52 43,60 M57,60 Q63,52 69,60" stroke="#2b2622" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M41,65 Q50,79 59,65 Z" fill="#c84d4d"/><ellipse cx="50" cy="72" rx="4" ry="2.2" fill="#f08a8a"/>'
@@ -265,7 +267,7 @@ const ART = (function () {
     else if (expr === 'sad') s += eye(37) + eye(63) + '<path d="M30,49 L42,52 M70,49 L58,52" stroke="#2b2622" stroke-width="2" stroke-linecap="round"/><path d="M44,72 Q50,66 56,72" stroke="#2b2622" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M33,66 Q30,74 33,77 Q36,74 33,66 Z" fill="#8cc8ea"/><path d="M67,66 Q64,74 67,77 Q70,74 67,66 Z" fill="#8cc8ea"/>';
     else if (expr === 'think') s += '<ellipse cx="37" cy="57" rx="4.6" ry="6" fill="#2b2622"/><ellipse cx="63" cy="57" rx="4.6" ry="6" fill="#2b2622"/><circle cx="38" cy="53.5" r="1.8" fill="#fff"/><circle cx="64" cy="53.5" r="1.8" fill="#fff"/><path d="M45,70 L55,69" stroke="#2b2622" stroke-width="2.2" stroke-linecap="round"/><path d="M84,10 q8,0 8,7 q0,5 -6,7 l0,4 M86,32 l0,.5" stroke="#8a7a5c" stroke-width="3" fill="none" stroke-linecap="round"/>';
     else s += eye(37) + eye(63) + '<path d="M43,66 Q50,74 57,66" stroke="#2b2622" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
-    return s;
+    return `<g transform="translate(0,-6)">${s}</g>`;   // お茶を減らした分、少し上に寄せる
   }
 
   // ---------- 作法の手順の絵 ----------
