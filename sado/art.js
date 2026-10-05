@@ -109,27 +109,98 @@ const ART = (function () {
     return s;
   }
 
-  // ---------- 道具（100×100） ----------
-  function kama(x, y, s, wing) {
-    return `<g transform="translate(${x},${y}) scale(${s || 1})">
-      ${wing ? '<ellipse cx="0" cy="6" rx="34" ry="5" fill="#2b2b2b"/>' : ''}
-      <path d="M-26,-6 Q-30,22 0,24 Q30,22 26,-6 Q20,-16 0,-16 Q-20,-16 -26,-6 Z" fill="#3a3533"/>
-      <ellipse cx="0" cy="-14" rx="13" ry="4" fill="#6a5f58"/><circle cx="0" cy="-18" r="3" fill="#6a5f58"/>
-      <circle cx="-27" cy="0" r="3" fill="#6a5f58"/><circle cx="27" cy="0" r="3" fill="#6a5f58"/>
-      <path d="M-22,6 Q0,12 22,6" stroke="#57504b" stroke-width="1.5" fill="none"/><path d="M-17,-6 Q-20,6 -14,14" stroke="#ffffff22" stroke-width="3" fill="none" stroke-linecap="round"/></g>`;
+  // ---------- 質感（グラデーションと影） ----------
+  // 同じ絵がページに何度も出るので、グラデーションの id は呼ぶたびに新しくする
+  let gidN = 0;
+  const stopsSvg = (stops) => stops.map(([o, c, a]) => `<stop offset="${o}" stop-color="${c}"${a === undefined ? '' : ` stop-opacity="${a}"`}/>`).join('');
+  // 線形グラデーション。向きは 0〜1 の (x1,y1)→(x2,y2)。省略すると左→右
+  function gLin(stops, x1, y1, x2, y2) {
+    const id = `gl${++gidN}`;
+    return { url: `url(#${id})`, def: `<linearGradient id="${id}" x1="${x1 || 0}" y1="${y1 || 0}" x2="${x2 === undefined ? 1 : x2}" y2="${y2 || 0}">${stopsSvg(stops)}</linearGradient>` };
   }
-  const CH = { shira: ['#eadfbf', '#b8a77c', '#d5c391'], susu: ['#b07a40', '#6e4520', '#7a4f28'] };
+  // 絵の座標で向きを決める線形グラデーション（斜めに置いた細長い道具の、幅の方向の陰影に使う）
+  function gLinU(stops, x1, y1, x2, y2) {
+    const id = `gu${++gidN}`;
+    return { url: `url(#${id})`, def: `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n1(x1)}" y1="${n1(y1)}" x2="${n1(x2)}" y2="${n1(y2)}">${stopsSvg(stops)}</linearGradient>` };
+  }
+  // 放射グラデーション。中心 (cx,cy) と半径 r は 0〜1
+  function gRad(stops, cx, cy, r) {
+    const id = `gr${++gidN}`;
+    return { url: `url(#${id})`, def: `<radialGradient id="${id}" cx="${cx === undefined ? .5 : cx}" cy="${cy === undefined ? .5 : cy}" r="${r === undefined ? .5 : r}">${stopsSvg(stops)}</radialGradient>` };
+  }
+  const gDefs = (...g) => `<defs>${g.map((x) => x.def).join('')}</defs>`;
+  // 置いた道具の下のやわらかい影
+  const shade = (cx, cy, rx, ry, a) => { const k = a || .3, g = gRad([[0, '#000', k], [.55, '#000', k * .5], [1, '#000', 0]]); return gDefs(g) + `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${g.url}"/>`; };
+  // つやの筋
+  const gloss = (d, w, a) => `<path d="${d}" stroke="#fff" stroke-width="${w || 2.4}" stroke-linecap="round" fill="none" opacity="${a || .22}"/>`;
+
+  // ---------- 道具（100×100） ----------
+  // 釜（真形の鉄釜）。肌に霰（あられ）、両脇に鐶付、蓋は唐銅。wing は羽のある釜（透木釜）
+  function kama(x, y, s, wing) {
+    const iron = gLin([[0, '#151413'], [.2, '#3b3936'], [.36, '#5a5652'], [.55, '#2e2c2a'], [.85, '#121110'], [1, '#1d1b1a']]);
+    const lid = gLin([[0, '#4e3f2a'], [.45, '#9a8358'], [.7, '#6e5a3c'], [1, '#3b301f']]);
+    let ar = '';
+    for (let r = 0; r < 3; r++) for (let i = -6; i <= 6; i++) {
+      const ax = i * 4 + (r % 2 ? 2 : 0), ay = -9 + r * 4.4;
+      if (Math.abs(ax) <= 21 - r * 1.5) ar += `<circle cx="${ax}" cy="${n1(ay)}" r="1" fill="#100f0e"/><circle cx="${n1(ax - .35)}" cy="${n1(ay - .4)}" r=".45" fill="#9a948d" opacity=".55"/>`;
+    }
+    return `<g transform="translate(${x},${y}) scale(${s || 1})">${gDefs(iron, lid)}`
+      + (wing ? '<ellipse cx="0" cy="6.5" rx="34" ry="5" fill="#141313"/><ellipse cx="0" cy="5.5" rx="33.5" ry="4" fill="#3a3734"/>' : '')
+      + `<path d="M-26,-6 Q-30,22 0,24 Q30,22 26,-6 Q20,-16 0,-16 Q-20,-16 -26,-6 Z" fill="${iron.url}"/>` + ar
+      + '<path d="M-25.5,3 Q0,9 25.5,3" stroke="#000" stroke-width="1.1" opacity=".4" fill="none"/><path d="M-23,15 Q0,23 23,15" stroke="#000" stroke-width="5" opacity=".18" fill="none"/>'
+      + '<rect x="-30.5" y="-4" width="5.5" height="8" rx="2.2" fill="#2a2826"/><rect x="25" y="-4" width="5.5" height="8" rx="2.2" fill="#2a2826"/>'
+      + '<rect x="-29.5" y="-3" width="2" height="3" rx="1" fill="#6b6762" opacity=".6"/><rect x="26" y="-3" width="2" height="3" rx="1" fill="#6b6762" opacity=".6"/>'
+      + `<ellipse cx="0" cy="-14" rx="13.5" ry="4.2" fill="${lid.url}"/><ellipse cx="0" cy="-14.8" rx="11" ry="2.6" fill="#b49a6a" opacity=".35"/>`
+      + '<path d="M-2.6,-16 Q-2.6,-20.5 0,-20.5 Q2.6,-20.5 2.6,-16 Z" fill="#5c4a30"/><circle cx="-.9" cy="-19" r=".9" fill="#d9c49a" opacity=".7"/>'
+      + gloss('M-18,-8 Q-21.5,4 -15,15', 2.6, .13) + '</g>';
+  }
+  // 茶筅：竹を細く割った穂。外穂は外へふくらんで先が内へ巻き、中に内穂。根元を糸で編み、下が持ち手
+  const CH = {
+    shira: { lt: '#f3ead0', md: '#d9c79a', dk: '#a8935f', h: ['#a8915c', '#efe2bb', '#cdb985'] },
+    susu: { lt: '#c99a63', md: '#8e623a', dk: '#5a391d', h: ['#4e3218', '#a77548', '#6e4826'] },
+  };
   function chasenBody(kind) {
     const c = CH[kind] || CH.shira;
-    let s = `<path d="M37,19 Q50,11 63,19 L58,62 L42,62 Z" fill="${c[0]}"/>`;
-    for (let i = 0; i < 9; i++) s += `<line x1="${n1(39 + i * 2.75)}" y1="20" x2="${n1(43.5 + i * 1.6)}" y2="60" stroke="${c[1]}" stroke-width="1"/>`;
-    return s + `<rect x="44" y="60" width="12" height="28" rx="2" fill="${c[2]}"/><line x1="44" y1="65" x2="56" y2="65" stroke="#1d1a19" stroke-width="2"/>`;
+    const hd = gLin([[0, c.h[0]], [.45, c.h[1]], [1, c.h[2]]]);
+    const tine = (o, sx, col, w, op) => { const X = (k) => n1(50 + o * k * sx); return `<path d="M${X(6.5)},57 C${X(15.5)},50 ${X(22.5)},37 ${X(20.5)},27 C${X(19)},19.5 ${X(13.5)},14.5 ${X(9)},17.5" stroke="${col}" stroke-width="${w}" fill="none" opacity="${op}"/>`; };
+    let s = gDefs(hd) + shade(50, 90, 12, 2.4, .25);
+    for (let i = 0; i <= 26; i++) s += tine(i / 13 - 1, .9, c.dk, .9, .9);   // 外穂の奥側
+    for (let i = 0; i <= 12; i++) { const o = i / 6 - 1; s += `<path d="M${n1(50 + o * 5)},57 C${n1(50 + o * 5.5)},44 ${n1(50 + o * 5)},32 ${n1(50 + o * 3.5)},23" stroke="${i % 2 ? c.md : c.lt}" stroke-width=".9" fill="none"/>`; }   // 内穂
+    for (let i = 0; i <= 30; i++) s += tine(i / 15 - 1, 1, i % 3 === 0 ? c.md : c.lt, 1, 1);   // 外穂の手前側
+    return s + '<path d="M42.5,55 Q50,57 57.5,55 L57.5,60.5 Q50,62.5 42.5,60.5 Z" fill="#1b1714"/><path d="M42.8,56.6 Q50,58.4 57.2,56.6" stroke="#5a5048" stroke-width=".6" fill="none"/>'
+      + `<path d="M43,60.5 Q50,62.5 57,60.5 L57,87.5 Q50,90.5 43,87.5 Z" fill="${hd.url}"/>`
+      + `<path d="M43,82.2 Q50,84.2 57,82.2" stroke="${c.dk}" stroke-width="1" fill="none"/><path d="M43,83.4 Q50,85.4 57,83.4" stroke="#fff" stroke-width=".5" opacity=".35" fill="none"/>`
+      + `<ellipse cx="50" cy="88" rx="7" ry="1.6" fill="${c.dk}" opacity=".5"/>`;
   }
-  const kashikiP = () => '<path d="M-22,-6 L22,-6 Q20,8 0,10 Q-20,8 -22,-6 Z" fill="#1d1a19"/><ellipse cx="0" cy="-6" rx="22" ry="5" fill="#7a2418"/><ellipse cx="-7" cy="-9" rx="7.5" ry="5" fill="#f2c0cb"/><ellipse cx="7" cy="-9.5" rx="7.5" ry="5" fill="#f7f0e2"/><line x1="-24" y1="-16" x2="23" y2="-9" stroke="#a87b44" stroke-width="1.6" stroke-linecap="round"/><line x1="-24" y1="-13" x2="23" y2="-6" stroke="#a87b44" stroke-width="1.6" stroke-linecap="round"/><rect x="-9" y="9" width="18" height="3" rx="1" fill="#1d1a19"/>';
-  // 懐紙＝真っ白な和紙を重ねて二つ折り（手前が折り目）
-  const kaishiP = () => '<rect x="-24" y="-11" width="48" height="26" rx="1" fill="#e3dccb"/><rect x="-25" y="-13" width="48" height="26" rx="1" fill="#f2eee3"/><rect x="-26" y="-15" width="48" height="26" rx="1" fill="#fffefa" stroke="#d6cfbd" stroke-width="1"/><line x1="-26" y1="10" x2="22" y2="10" stroke="#cfc6b2" stroke-width="1.2"/>';
-  const sweetP = (c) => `<ellipse cx="0" cy="0" rx="11" ry="7.5" fill="${c || '#f0b7c4'}"/><path d="M-6,-3 q6,-4 12,0" stroke="#fff" stroke-width="1.2" fill="none" opacity=".7"/>`;
-  const fukusaP = (c) => `<rect x="-20" y="-12" width="40" height="24" fill="${c || FUKUSA}"/><path d="M-20,-12 L0,2 L20,-12" stroke="#00000033" stroke-width="1.5" fill="none"/>`;
+  // 主菓子（練り切り・薯蕷饅頭など）。上から光が当たったように
+  const sweetP = (c) => {
+    const hi = gRad([[0, '#fff', .7], [1, '#fff', 0]], .38, .3, .55), lo = gRad([[0, '#000', 0], [.68, '#000', 0], [1, '#000', .24]], .5, .38, .62);
+    return gDefs(hi, lo) + `<ellipse cx="0" cy="0" rx="11" ry="7.5" fill="${c || '#f0b7c4'}"/><ellipse cx="0" cy="0" rx="11" ry="7.5" fill="${lo.url}"/><ellipse cx="-2" cy="-2" rx="7" ry="4" fill="${hi.url}"/>`
+      + '<path d="M-5,-2.5 q5,-3.6 10,0" stroke="#fff" stroke-width=".9" fill="none" opacity=".55"/>';
+  };
+  // 菓子器（織部の菓子鉢）に主菓子を二つ。黒文字（箸）を一膳のせる。原点が中心
+  const kashikiP = () => {
+    const gz = gLin([[0, '#23422c'], [.35, '#4f8a5c'], [.65, '#3c7049'], [1, '#1d3825']]);
+    const inside = gRad([[0, '#f6f1e3'], [.75, '#e6dcc4'], [1, '#c9bc9a']], .5, .4, .7);
+    return gDefs(gz, inside) + '<ellipse cx="0" cy="11.5" rx="20" ry="2.4" fill="#000" opacity=".2"/><path d="M-8,9 L-7,12 L7,12 L8,9 Z" fill="#7a6447"/>'
+      + `<path d="M-23.5,-5.5 Q-22.5,8 -6,10.2 L6,10.2 Q22.5,8 23.5,-5.5 Z" fill="${gz.url}"/>`
+      + '<path d="M-3,-1 Q5,1 13,-1.5 L12,6.5 Q5,8.3 -2.5,6.8 Z" fill="#efe8d4"/><path d="M0,1 q3,2 6,0 M1,4 q3,1.6 6,-.4" stroke="#6b4a2a" stroke-width=".7" fill="none"/>'
+      + `<ellipse cx="0" cy="-5.5" rx="23.5" ry="5.2" fill="#2f5a3a"/><ellipse cx="0" cy="-5.6" rx="21.6" ry="4.2" fill="${inside.url}"/>`
+      + at(-7.5, -7.6, .62, sweetP('#f2b3c4')) + at(7.5, -8.2, .6, sweetP('#fbf7ef'))
+      + '<g stroke-linecap="round" stroke-width="1.5"><line x1="-24.5" y1="-16" x2="23.5" y2="-9.5" stroke="#cdbf8f"/><line x1="-24.5" y1="-13.4" x2="23.5" y2="-6.9" stroke="#c4b583"/>'
+      + '<line x1="-24.5" y1="-16" x2="-15" y2="-14.7" stroke="#5b4a2b"/><line x1="-24.5" y1="-13.4" x2="-15" y2="-12.1" stroke="#5b4a2b"/></g>';
+  };
+  // 懐紙＝真っ白な和紙を重ねて二つ折り（手前が折り目＝わ）。原点が中心
+  const kaishiP = () => {
+    const pp = gLin([[0, '#f3efe4'], [.6, '#fffefa'], [1, '#ece6d6']], 0, 0, 0, 1);
+    return gDefs(pp) + '<rect x="-25" y="-12" width="50" height="28" rx="1.5" fill="#000" opacity=".12"/>'
+      + '<rect x="-24" y="-11" width="48" height="26" rx="1" fill="#e6dfcd"/><rect x="-25" y="-13" width="48" height="26" rx="1" fill="#f3efe3"/>'
+      + `<rect x="-26" y="-15" width="48" height="26" rx="1" fill="${pp.url}" stroke="#d8d0bc" stroke-width=".8"/>`
+      + '<path d="M-26,10.2 L22,10.2" stroke="#cbc2ad" stroke-width="1.1"/><path d="M-26,9 L22,9" stroke="#fff" stroke-width=".6"/>'
+      + '<g stroke="#e3dccb" stroke-width=".35" fill="none"><path d="M-20,-9 q6,2 12,0"/><path d="M-4,-4 q5,1.5 10,0"/><path d="M6,3 q4,1 8,0"/></g>';
+  };
+  // 帛紗（手順の絵）。色を渡さなければ、男手前は紫・女手前は朱
+  const fukusaP = (c) => `<rect x="-20" y="-12" width="40" height="24" fill="${c || (MALE ? FUKUSA : FUKUSA_F)}"/><path d="M-20,-12 L0,2 L20,-12" stroke="#00000033" stroke-width="1.5" fill="none"/>`;
   function clothP(w, h, base, pat) {
     let s = `<rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="1.5" fill="${base}"/>`;
     for (let yy = -h / 2 + 5; yy < h / 2 - 1; yy += 8) for (let xx = -w / 2 + 5; xx < w / 2 - 1; xx += 8) s += `<path d="M${xx},${yy - 2.2} L${xx + 2.2},${yy} L${xx},${yy + 2.2} L${xx - 2.2},${yy} Z" fill="${pat}"/>`;
@@ -137,28 +208,231 @@ const ART = (function () {
   }
   // 濃茶で茶碗を受ける帛紗。古帛紗は小さく、出帛紗は帛紗と同じ大きさ。
   const dashiP = (kind) => kind === 'kobukusa' ? clothP(34, 30, '#2f4a6a', '#d8b24a') : clothP(58, 40, '#a8452e', '#e3c06a');
+  // 斜めに置いた細長い道具（茶杓・柄杓の柄・扇子）の、点 A から B への向き
+  const axisOf = (A, B) => { const dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy); return { dx, dy, nx: -dy / L, ny: dx / L, ang: n1(Math.atan2(dy, dx) * 180 / Math.PI) }; };
 
+  // 図鑑・名前当ての一覧で、小さく見える道具の拡大率
+  const ICON_ZOOM = { futaoki: 1.3, kogo: 1.25 };
   const TOOL = {
-    chawan: () => bowl('normal', 50, 58, 1.3),
+    // 黒楽茶碗：口縁はゆるやかに波打ち、少しすぼまった胴に、低い高台
+    chawan: () => {
+      const body = gLin([[0, '#3d3531'], [.16, '#1b1715'], [.42, '#2b2522'], [.6, '#141110'], [.86, '#0b0a09'], [1, '#221d1a']]);
+      const inner = gLin([[0, '#5a4c43'], [.35, '#2a231f'], [.75, '#0e0c0b'], [1, '#1c1714']], 0, 0, 0, 1);
+      const foot = gLin([[0, '#1d1714'], [.5, '#4a3a2e'], [1, '#18120e']]);
+      const kase = gRad([[0, '#6b5444', .55], [1, '#6b5444', 0]]);
+      return gDefs(body, inner, foot, kase) + shade(50, 87, 31, 4.2)
+        + `<path d="M39,78 L40.5,85.6 Q50,88 59.5,85.6 L61,78 Z" fill="${foot.url}"/>`
+        + `<path d="M15,40 C14,58 20,73 37,80 Q50,83 63,80 C80,73 86,58 85,40 Z" fill="${body.url}"/>`
+        + `<ellipse cx="66" cy="62" rx="9" ry="6" fill="${kase.url}"/><ellipse cx="30" cy="70" rx="6" ry="4" fill="${kase.url}"/>`
+        + '<path d="M15,40 Q23,33.6 33,32.2 Q42,30.6 50,31.4 Q60,30.4 68,32.4 Q78,34.2 85,40 Q68,49.4 50,49.6 Q32,49.4 15,40 Z" fill="#2e2724"/>'
+        + `<path d="M18.6,40.2 Q26,35 34,33.8 Q42,32.6 50,33.2 Q59,32.4 67,34 Q75,35.4 81.4,40.2 Q66,47.4 50,47.6 Q34,47.4 18.6,40.2 Z" fill="${inner.url}"/>`
+        + '<ellipse cx="50" cy="43.4" rx="8.5" ry="2.2" fill="#000" opacity=".45"/><path d="M24,38.5 Q37,34.6 50,34.4" stroke="#fff" stroke-width="1" fill="none" opacity=".18"/>'
+        + gloss('M21.5,47 C21,58 24.5,67 32,74', 3, .16) + gloss('M75,46 C76.5,52 76,58 73.5,63', 1.6, .1)
+        + '<circle cx="28" cy="52" r=".9" fill="#fff" opacity=".35"/><circle cx="58" cy="70" r=".7" fill="#fff" opacity=".2"/>';
+    },
     chasen: (o) => chasenBody(o && o.chasen),
-    chashaku: () => '<path d="M14,78 Q12,70 20,68 L88,24 L90,28 L24,74 Q20,80 14,78 Z" fill="#c9a96b"/><line x1="56" y1="46" x2="60" y2="50" stroke="#8a6c3b" stroke-width="2"/><path d="M30,66 L80,32" stroke="#ffffff55" stroke-width="1.2"/>',
-    natsume: () => '<path d="M24,46 Q24,82 50,84 Q76,82 76,46 Z" fill="#1d1a19"/><path d="M24,46 Q24,26 50,24 Q76,26 76,46 Z" fill="#2a2522"/><line x1="24" y1="46" x2="76" y2="46" stroke="#b08b3a" stroke-width="1.5"/><path d="M34,60 q6,-8 12,0 q6,8 12,0" stroke="#b08b3a" stroke-width="1.5" fill="none"/><ellipse cx="36" cy="34" rx="7" ry="3" fill="#ffffff2a" transform="rotate(-20 36 34)"/>',
-    chaire: () => '<path d="M34,36 Q22,50 28,76 Q50,86 72,76 Q78,50 66,36 Z" fill="#7a4b2a"/><path d="M30,60 Q50,70 70,60 L72,76 Q50,86 28,76 Z" fill="#4e2e18"/><rect x="38" y="24" width="24" height="12" rx="3" fill="#f2ead8"/><rect x="47" y="18" width="6" height="7" rx="2" fill="#f2ead8"/><path d="M34,44 Q30,54 33,64" stroke="#ffffff33" stroke-width="3" fill="none" stroke-linecap="round"/>',
+    // 茶杓：竹のへら。左下が櫂先（すくう所。少し反り上がる）、右上が切止、まん中に節
+    chashaku: () => {
+      const A = [15, 75], { dx, dy, nx, ny, ang } = axisOf(A, [87, 25]);
+      const W = (t) => 1.25 * ((t < .035 ? 2.4 + t / .035 * 3.2 : t < .1 ? 5.6 + (t - .035) / .065 * 1.4 : t < .2 ? 7 - (t - .1) / .1 * 2.7 : 4.3 - (t - .2) * .8) + (Math.abs(t - .55) < .022 ? .8 : 0));
+      const P = (t, k) => { const off = Math.sin(Math.PI * t) * 2.4 + W(t) / 2 * k; return [A[0] + dx * t + nx * off, A[1] + dy * t + ny * off]; };
+      const ts = [...Array(61)].map((_, i) => i / 60), xy = (p) => `${n1(p[0])},${n1(p[1])}`;
+      const outline = 'M' + ts.map((t) => P(t, 1)).concat(ts.slice().reverse().map((t) => P(t, -1))).map(xy).join(' L') + ' Z';
+      const M = P(.5, 0);
+      const g = gLinU([[0, '#4f331c'], [.28, '#94693d'], [.5, '#c39a62'], [.72, '#8a6036'], [1, '#4a301a']], M[0] - nx * 3, M[1] - ny * 3, M[0] + nx * 3, M[1] + ny * 3);
+      const across = (t, col, w, op) => `<line x1="${n1(P(t, 1)[0])}" y1="${n1(P(t, 1)[1])}" x2="${n1(P(t, -1)[0])}" y2="${n1(P(t, -1)[1])}" stroke="${col}" stroke-width="${w}" opacity="${op}"/>`;
+      const fib = (k) => 'M' + ts.filter((t) => t > .14).map((t) => P(t, k)).map(xy).join(' L');
+      const rot = (p) => `transform="rotate(${ang} ${n1(p[0])} ${n1(p[1])})"`;
+      const tip = P(.07, 0);
+      return gDefs(g) + `<path d="${outline}" fill="#000" opacity=".16" transform="translate(1.4,2.2)"/><path d="${outline}" fill="${g.url}"/>`
+        + `<path d="${fib(.35)}" stroke="#e8c995" stroke-width=".5" fill="none" opacity=".45"/><path d="${fib(-.4)}" stroke="#3a2412" stroke-width=".5" fill="none" opacity=".3"/>`
+        + [.3, .42, .68, .8].map((t, i) => { const p = P(t, i % 2 ? .3 : -.2); return `<ellipse cx="${n1(p[0])}" cy="${n1(p[1])}" rx="${i % 2 ? 2.2 : 1.6}" ry=".9" ${rot(p)} fill="#3a2412" opacity=".28"/>`; }).join('')
+        + across(.545, '#2e1c0e', 1.1, .8) + across(.558, '#f0d29a', .5, .6)
+        + `<ellipse cx="${n1(tip[0])}" cy="${n1(tip[1])}" rx="4.6" ry="1.9" ${rot(tip)} fill="#2e1c0e" opacity=".3"/>`
+        + `<ellipse cx="${n1(tip[0] - nx * .7)}" cy="${n1(tip[1] - ny * .7)}" rx="3.4" ry=".7" ${rot(tip)} fill="#f3d9a6" opacity=".5"/>`
+        + across(.995, '#2e1c0e', 1, .6);
+    },
+    // 棗：黒の真塗り。肩から上が蓋。つやの映り込みと、金の蒔絵（秋草）
+    natsume: () => {
+      const body = gLin([[0, '#2c2826'], [.14, '#121010'], [.36, '#201c1a'], [.58, '#0b0a0a'], [.84, '#050505'], [1, '#171514']]);
+      const lid = gRad([[0, '#4a4440'], [.45, '#1d1a18'], [1, '#080707']], .36, .25, .8);
+      return gDefs(body, lid) + shade(50, 85, 29, 3.8)
+        + `<path d="M22,47 C22,32 33,25 50,25 C67,25 78,32 78,47 L78,60 C78,75 66,83 50,83 C34,83 22,75 22,60 Z" fill="${body.url}"/>`
+        + `<path d="M22,47 C22,32 33,25 50,25 C67,25 78,32 78,47 C65,51.2 35,51.2 22,47 Z" fill="${lid.url}"/>`
+        + '<path d="M22.1,47.6 C35,51.8 65,51.8 77.9,47.6" stroke="#000" stroke-width="1.4" fill="none"/><path d="M22.4,49 C35,53.1 65,53.1 77.6,49" stroke="#fff" stroke-width=".5" fill="none" opacity=".18"/>'
+        + gloss('M28.5,55 C28,63 30,71 35,76', 3.2, .17) + gloss('M30,41 C31.5,34.5 36,30.5 42.5,29', 2.4, .28)
+        + '<circle cx="62" cy="30.5" r="1.4" fill="#fff" opacity=".35"/>'
+        + '<g stroke="#c9a23a" stroke-width=".8" fill="none" stroke-linecap="round" opacity=".9"><path d="M58,80 Q60,70 57,62"/><path d="M62,79 Q66,70 70,64"/><path d="M66,78 Q71,72 75,70"/><path d="M57,62 q-3,-2 -5,-1 M60,69 q4,-3 6,-2"/></g>'
+        + '<g fill="#d9b44a"><circle cx="57" cy="61.5" r="1.3"/><circle cx="70.3" cy="63.5" r="1.1"/><circle cx="75.3" cy="69.6" r=".9"/><circle cx="52" cy="60.5" r=".8"/></g>';
+    },
+    // 茶入（肩衝）：茶褐色の釉が肩から流れ（なだれ）、裾は土見せ。蓋は象牙
+    chaire: () => {
+      const glaze = gLin([[0, '#2a170b'], [.2, '#6e3f1e'], [.42, '#9c6232'], [.62, '#61391b'], [1, '#22130a']]);
+      const clay = gLin([[0, '#7a5a3e'], [.45, '#c4a07a'], [1, '#6e5036']]);
+      const ivory = gLin([[0, '#d9cfb6'], [.5, '#fbf6ea'], [1, '#cfc4a8']]);
+      return gDefs(glaze, clay, ivory) + shade(50, 87, 23, 3.4)
+        + `<path d="M29,72 L30,82 Q50,87 70,82 L71,72 Z" fill="${clay.url}"/>`
+        + `<path d="M42.5,31 L42,35 L28.5,38.5 Q26,40 26.4,44 L28.6,74 Q32,77 36,75 Q40,79 45,76 Q50,80 55,76.5 Q60,79 64,75 Q68,77 71.4,74 L73.6,44 Q74,40 71.5,38.5 L58,35 L57.5,31 Z" fill="${glaze.url}"/>`
+        + '<path d="M40,36.5 Q38,48 39.5,58 Q40.5,66 37.5,72 Q35,76 38.5,77.5 Q42,76 41.5,70 Q41,62 43.5,52 Q45,44 44,36.8 Z" fill="#b8893f" opacity=".55"/>'
+        + '<path d="M28.5,38.5 L71.5,38.5" stroke="#1a0d05" stroke-width=".8" opacity=".6"/>'
+        + `<path d="M41.5,27.5 L42.5,31 L57.5,31 L58.5,27.5 Z" fill="${glaze.url}"/>`
+        + `<rect x="40" y="23.6" width="20" height="3.6" rx="1.2" fill="${ivory.url}"/><ellipse cx="50" cy="23.8" rx="10" ry="1.6" fill="#fffaf0"/>`
+        + gloss('M33,43 C32,53 33,63 34.5,70', 2.6, .22) + '<circle cx="64" cy="41.5" r="1.3" fill="#fff" opacity=".35"/>';
+    },
     kama: () => kama(50, 54, 1.4),
-    furo: () => '<path d="M18,40 L82,40 L76,84 L24,84 Z" fill="#7d6a55"/><path d="M30,52 Q50,44 70,52 L68,66 Q50,60 32,66 Z" fill="#3d2f24"/><rect x="12" y="84" width="76" height="6" fill="#5b4a37"/>' + kama(50, 32, 0.8),
-    ro: () => '<rect x="10" y="50" width="80" height="36" fill="#d8c9a0"/><rect x="26" y="56" width="48" height="26" fill="#2a2421"/><rect x="22" y="52" width="56" height="34" fill="none" stroke="#3a2d22" stroke-width="4"/>' + kama(50, 52, 0.85),
-    hishaku: () => '<line x1="20" y1="80" x2="74" y2="30" stroke="#c9a96b" stroke-width="4" stroke-linecap="round"/><rect x="68" y="16" width="20" height="18" rx="3" fill="#d8bf87" transform="rotate(-42 78 25)"/>',
-    mizusashi: () => '<path d="M28,30 L72,30 L70,82 Q50,88 30,82 Z" fill="#5d6e7a"/><ellipse cx="50" cy="30" rx="24" ry="6" fill="#2d2a28"/><circle cx="50" cy="26" r="3" fill="#2d2a28"/><path d="M30,50 Q50,58 70,50" stroke="#8fa3ae" stroke-width="2" fill="none"/><path d="M35,38 L34,72" stroke="#ffffff33" stroke-width="3.5" stroke-linecap="round"/>',
-    kensui: () => '<path d="M22,46 L78,46 L72,80 Q50,86 28,80 Z" fill="#8a7046"/><ellipse cx="50" cy="46" rx="28" ry="7" fill="#5a462a"/><path d="M29,54 L32,74" stroke="#ffffff33" stroke-width="3" stroke-linecap="round"/>',
-    futaoki: () => '<rect x="36" y="34" width="28" height="44" rx="3" fill="#c9b07a"/><ellipse cx="50" cy="34" rx="14" ry="4" fill="#a68d58"/><line x1="36" y1="56" x2="64" y2="56" stroke="#8d7546" stroke-width="2"/>',
-    fukusa: () => '<path d="M18,30 L82,30 L82,74 L18,74 Z" fill="#6b3a7a"/><path d="M18,30 L50,52 L82,30" stroke="#4e2659" stroke-width="2" fill="none"/>',
-    // 茶巾＝湿らせた麻布をたたんだもの（織り目が見える）
-    chakin: () => '<path d="M18,46 Q18,38 26,38 L74,38 Q82,38 82,46 L82,62 Q82,70 74,70 L26,70 Q18,70 18,62 Z" fill="#f1ede1" stroke="#cfc8b4" stroke-width="2"/>' + [44, 50, 56, 62].map((y) => `<line x1="22" y1="${y}" x2="78" y2="${y}" stroke="#ddd5c1" stroke-width="1"/>`).join('') + [30, 40, 50, 60, 70].map((x) => `<line x1="${x}" y1="40" x2="${x}" y2="68" stroke="#e4ddca" stroke-width="1"/>`).join('') + '<path d="M18,54 L82,54" stroke="#bdb59f" stroke-width="2"/>',
-    kogo: () => '<ellipse cx="50" cy="60" rx="26" ry="14" fill="#a24030"/><ellipse cx="50" cy="52" rx="26" ry="12" fill="#c25742"/><circle cx="50" cy="50" r="5" fill="#e3b04b"/><ellipse cx="40" cy="48" rx="6" ry="2.5" fill="#ffffff33"/>',
+    // 風炉（唐銅の鬼面風炉）に釜をかけたところ。下は敷板
+    furo: () => {
+      const br = gLin([[0, '#30251a'], [.18, '#6f5a3a'], [.38, '#a8905e'], [.56, '#6a5537'], [.82, '#3a2d1e'], [1, '#261d13']]);
+      const board = gLin([[0, '#3a2c20'], [1, '#17110c']], 0, 0, 0, 1);
+      const fire = gRad([[0, '#ffb15e', .9], [.5, '#e0603e', .55], [1, '#e0603e', 0]]);
+      return gDefs(br, board, fire) + shade(50, 92, 44, 3.4, .32)
+        + `<path d="M10,86 L90,86 L92,91.5 L8,91.5 Z" fill="${board.url}"/><path d="M10,86 L90,86" stroke="#6a5644" stroke-width=".8"/>`
+        + '<rect x="25" y="79" width="7" height="7.5" rx="1" fill="#2a2015"/><rect x="68" y="79" width="7" height="7.5" rx="1" fill="#2a2015"/><rect x="46.5" y="80" width="7" height="6.5" rx="1" fill="#3a2d1e"/>'
+        + `<path d="M19,42 Q14.5,50 16.5,60 Q19,74 30,81.5 L70,81.5 Q81,74 83.5,60 Q85.5,50 81,42 Z" fill="${br.url}"/>`
+        + `<path d="M37.5,63 Q50,55 62.5,63 L60.5,77 Q50,73.5 39.5,77 Z" fill="#140e09"/><ellipse cx="50" cy="73" rx="9" ry="3.2" fill="${fire.url}"/>`
+        + '<circle cx="18.5" cy="53" r="4" fill="#4a3a24"/><circle cx="18.5" cy="53" r="2.3" fill="none" stroke="#b39a66" stroke-width="1"/><circle cx="81.5" cy="53" r="4" fill="#4a3a24"/><circle cx="81.5" cy="53" r="2.3" fill="none" stroke="#b39a66" stroke-width="1"/>'
+        + '<ellipse cx="31" cy="70" rx="4" ry="2.4" fill="#6f9b84" opacity=".22"/><ellipse cx="70" cy="48" rx="3" ry="1.8" fill="#6f9b84" opacity=".2"/>'
+        + gloss('M24,50 C23,58 25,66 30,73', 2.6, .16)
+        + kama(50, 32, 0.8)
+        + `<path d="M17.5,41 Q50,51 82.5,41 L83,46.5 Q50,57 17,46.5 Z" fill="${br.url}"/><path d="M17.5,41 Q50,51 82.5,41" stroke="#c4ab78" stroke-width=".8" fill="none" opacity=".6"/>`;
+    },
+    // 炉：畳に切った炉。炉縁の中に灰、五徳に釜をかける
+    ro: () => {
+      const tat = gLin([[0, '#c7b97f'], [1, '#ddd09c']], 0, 0, 0, 1);
+      const frame = gLin([[0, '#1c120c'], [.45, '#4b3122'], [.55, '#5a3b28'], [1, '#160e09']], 0, 0, 1, 1);
+      const ash = gRad([[0, '#ddd8cf'], [.65, '#bdb6aa'], [1, '#8e877b']], .5, .35, .75);
+      let w = '';
+      for (let y = 51; y < 92; y += 3) w += `<line x1="4" y1="${y}" x2="96" y2="${y}" stroke="#b8a96e" stroke-width=".6" opacity=".55"/>`;
+      return gDefs(tat, frame, ash) + `<rect x="4" y="48" width="92" height="44" fill="${tat.url}"/>${w}<path d="M4,48 L96,48" stroke="#2f3a2a" stroke-width="3"/>`
+        + `<path d="M23,55 L77,55 L87,87 L13,87 Z" fill="${frame.url}"/><path d="M28,58.5 L72,58.5 L80,83 L20,83 Z" fill="${ash.url}"/>`
+        + '<path d="M22,80 Q50,74 78,80" stroke="#9f978a" stroke-width="1" fill="none"/><path d="M27,63 Q50,60 73,63" stroke="#cfc9bf" stroke-width=".8" fill="none"/>'
+        + '<g stroke="#1b1a19" stroke-width="2.2" stroke-linecap="round"><path d="M36,76 L33,82"/><path d="M64,76 L67,82"/><path d="M50,74 L50,80"/></g>'
+        + kama(50, 61, .8)
+        + `<path d="M13,87 L87,87 L84.5,79 L15.5,79 Z" fill="${frame.url}"/><path d="M15.5,79 L84.5,79" stroke="#7a5238" stroke-width=".7" opacity=".7"/>`
+        + gloss('M24.5,56 L75.5,56', 1, .15);
+    },
+    // 柄杓：竹。右上の合（湯をくむ筒）に、長い柄を差し通す
+    hishaku: () => {
+      const A = [15, 87], B = [72, 33], { dx, dy, nx, ny } = axisOf(A, B);
+      const q = (t, w) => [A[0] + dx * t + nx * w, A[1] + dy * t + ny * w];
+      const pts = [q(0, 2.4), q(1, 2), q(1, -2), q(0, -2.4)].map((p) => `${n1(p[0])},${n1(p[1])}`).join(' L');
+      const M = q(.5, 0);
+      const g = gLinU([[0, '#9b7743'], [.45, '#ecd6a4'], [1, '#a98552']], M[0] - nx * 2, M[1] - ny * 2, M[0] + nx * 2, M[1] + ny * 2);
+      const cup = gLin([[0, '#a47e47'], [.35, '#e9d3a1'], [.7, '#c9a66d'], [1, '#8d6a3a']]);
+      const inside = gLin([[0, '#6b5130'], [1, '#b8955e']], 0, 0, 0, 1);
+      return gDefs(g, cup, inside) + `<path d="M${pts} Z" fill="#000" opacity=".15" transform="translate(1.2,2)"/><path d="M${pts} Z" fill="${g.url}"/>`
+        + `<path d="M${n1(A[0] - 1.2)},${n1(A[1] - 1.8)} L${n1(A[0] + 2.4)},${n1(A[1] + 1.2)}" stroke="#6b4e28" stroke-width="1.2"/>`
+        + shade(79, 43.5, 14, 2.6, .2)
+        + `<path d="M66,20 L66,38.5 Q79,44 92,38.5 L92,20 Z" fill="${cup.url}"/><path d="M66,38.5 Q79,44 92,38.5" stroke="#7a5a30" stroke-width=".9" fill="none"/>`
+        + `<ellipse cx="79" cy="20" rx="13" ry="4.8" fill="#d9bd85"/><ellipse cx="79" cy="20.4" rx="11.2" ry="3.8" fill="${inside.url}"/>`
+        + '<ellipse cx="91" cy="31.5" rx="1.5" ry="2" fill="#8d6a3a"/>' + gloss('M69.5,23.5 L69.5,36', 2, .3);
+    },
+    // 水指（染付）：白い磁器に藍の絵。蓋は黒の塗蓋
+    mizusashi: () => {
+      const po = gLin([[0, '#c3cdd1'], [.18, '#eef2f3'], [.42, '#ffffff'], [.72, '#dde3e6'], [1, '#aeb9be']]);
+      const lac = gLin([[0, '#050404'], [.35, '#2c2725'], [.55, '#141211'], [1, '#050404']]);
+      const ai = '#2c4a8f';
+      return gDefs(po, lac) + shade(50, 88.5, 26, 3.4)
+        + `<path d="M29,33 C28.5,52 29,70 30.5,81 Q50,88.5 69.5,81 C71,70 71.5,52 71,33 Z" fill="${po.url}"/><path d="M30.5,81 Q50,88.5 69.5,81" stroke="#9aa6ab" stroke-width="1" fill="none"/>`
+        + `<g stroke="${ai}" fill="none" stroke-linecap="round"><path d="M29.3,39 Q50,44 70.7,39" stroke-width="1.1"/><path d="M29.2,42.5 Q50,47.5 70.8,42.5" stroke-width=".7"/>`
+        + '<path d="M30.2,76 Q50,82 69.8,76" stroke-width="1.1"/><path d="M33,54 C38,48 44,60 50,54 S62,48 67,55" stroke-width="1.3"/><path d="M36,66 C41,60 46,71 52,65 S62,60 66,66" stroke-width="1"/></g>'
+        + `<g fill="${ai}"><path d="M40,52 q3,-4 6,0 q-3,3 -6,0 Z"/><path d="M56,58 q3,-4 6,0 q-3,3 -6,0 Z"/><path d="M45,64 q2.5,-3.5 5,0 q-2.5,2.6 -5,0 Z"/><circle cx="50" cy="54" r="1.6"/><circle cx="62" cy="64" r="1.2"/></g>`
+        + gloss('M34.5,40 C34,52 34.5,66 36,76', 3, .5)
+        + `<path d="M27.4,31.8 L27.4,34.4 Q50,41.2 72.6,34.4 L72.6,31.8 Z" fill="#0b0a09"/><ellipse cx="50" cy="31.8" rx="22.6" ry="5.6" fill="${lac.url}"/>`
+        + '<ellipse cx="50" cy="29.6" rx="3.6" ry="1.4" fill="#1a1715"/><path d="M46.4,29.6 L46.4,27.8 Q50,26.4 53.6,27.8 L53.6,29.6" fill="#221e1b"/>'
+        + gloss('M33,30.5 Q42,27.5 52,27.2', 1.4, .28);
+    },
+    // 建水（曲）：薄い檜を曲げた器。合わせ目を桜の皮で綴じる
+    kensui: () => {
+      const wd = gLin([[0, '#b28650'], [.18, '#ddbd88'], [.5, '#f0d7a8'], [.82, '#cfa871'], [1, '#a17644']]);
+      const inn = gLin([[0, '#7a5530'], [1, '#c09661']], 0, 0, 0, 1);
+      const gr = [27, 33, 40, 47, 53, 59, 66, 72].map((x, i) => `<path d="M${x},${49 + (i % 3)} C${x + 1},60 ${x - 1},70 ${x + (x < 50 ? 1 : -1)},${79 + (i % 2)}" stroke="#b07f4a" stroke-width=".55" fill="none" opacity=".55"/>`).join('');
+      return gDefs(wd, inn) + shade(50, 86.5, 31, 4)
+        + `<path d="M22,46 L25.5,80 Q50,87.5 74.5,80 L78,46 Z" fill="${wd.url}"/>` + gr
+        + '<path d="M61,48.4 L62,82.4 L66.4,81.8 L65.6,47.9 Z" fill="#c69a63"/>' + [52, 58, 64, 70, 76].map((y) => `<path d="M62.2,${y} l3.6,1.6" stroke="#5a3418" stroke-width="1.4"/>`).join('')
+        + '<path d="M25.5,80 Q50,87.5 74.5,80" stroke="#8d6538" stroke-width="1.2" fill="none"/>'
+        + `<ellipse cx="50" cy="46" rx="28" ry="6.6" fill="#e0c18e"/><ellipse cx="50" cy="46.3" rx="26.2" ry="5.3" fill="${inn.url}"/>`
+        + gloss('M28,50 C28.5,60 29,70 30,77', 2.6, .22);
+    },
+    // 蓋置（竹）：風炉の季節は節が上の方にある「天節」
+    futaoki: () => {
+      const cn = gLin([[0, '#857141'], [.2, '#c5b07a'], [.45, '#e8d9a8'], [.72, '#b8a067'], [1, '#76623a']]);
+      const fb = [39, 43, 47, 53, 57, 61].map((x) => `<line x1="${x}" y1="43" x2="${x}" y2="76" stroke="#9a8450" stroke-width=".45" opacity=".5"/>`).join('');
+      return gDefs(cn) + shade(50, 79.5, 17, 2.8)
+        + `<path d="M36,34 L36,77 Q50,81.5 64,77 L64,34 Z" fill="${cn.url}"/>` + fb
+        + '<path d="M35.6,39.2 Q50,43.4 64.4,39.2 L64.4,42.6 Q50,46.8 35.6,42.6 Z" fill="#a38c55"/><path d="M35.8,42.6 Q50,46.8 64.2,42.6" stroke="#f1e4b8" stroke-width=".6" fill="none" opacity=".7"/>'
+        + '<ellipse cx="50" cy="34" rx="14" ry="4.2" fill="#dccb95"/><ellipse cx="50" cy="34.4" rx="11.6" ry="3.1" fill="#5e4f2c"/>'
+        + '<path d="M36,77 Q50,81.5 64,77" stroke="#6e5b33" stroke-width="1" fill="none"/>' + gloss('M40,46 L40,74', 2, .3);
+    },
+    // 帛紗：絹の布をたたんだところ（男性は紫、女性は朱）。つやが斜めに走る
+    fukusa: () => {
+      const c = MALE ? ['#3c1a49', '#7d4794', '#2d1238', '#5d2f70'] : ['#8e2a1b', '#dc5a3f', '#6c1d12', '#b8432c'];
+      const silk = gLin([[0, c[0]], [.42, c[1]], [.62, c[3]], [1, c[2]]], 0, 0, 1, 1);
+      const flap = gLin([[0, c[2]], [.6, c[3]], [1, c[1]]], 0, 1, 1, 0);
+      const sh = gLin([[0, '#fff', 0], [.5, '#fff', .28], [1, '#fff', 0]], 0, 0, 1, 1);
+      return gDefs(silk, flap, sh) + shade(50, 77, 35, 4)
+        + `<path d="M17,33 Q50,30.5 83,33 L84,71 Q50,74 16,71 Z" fill="${silk.url}"/>`
+        + `<path d="M17,33 L50,33 L17,58 Z" fill="${flap.url}"/><path d="M50,33 L17,58" stroke="#000" stroke-width=".8" opacity=".25"/>`
+        + `<path d="M24,66 Q52,40 80,38 L82,46 Q55,48 30,70 Z" fill="${sh.url}"/>`
+        + '<path d="M20,69 Q50,71.6 80,69" stroke="#fff" stroke-width=".5" stroke-dasharray="1.5 1.2" fill="none" opacity=".35"/>';
+    },
+    // 茶巾：麻の布を湿らせてたたんだもの。細かな織り目と、たたんだ折り山
+    chakin: () => {
+      const ln = gLin([[0, '#e4dfd2'], [.5, '#fbf9f3'], [1, '#d9d3c4']], 0, 0, 0, 1);
+      let tx = '';
+      for (let y = 40; y < 70; y += 2.2) tx += `<line x1="19" y1="${n1(y)}" x2="81" y2="${n1(y)}" stroke="#d3ccb9" stroke-width=".35"/>`;
+      for (let x = 21; x < 80; x += 2.2) tx += `<line x1="${n1(x)}" y1="39" x2="${n1(x)}" y2="69" stroke="#ddd6c4" stroke-width=".3"/>`;
+      const edge = 'M18,45 Q18,38 26,38 L74,38 Q82,38 82,45 L82,63 Q82,70 74,70 L26,70 Q18,70 18,63 Z';
+      return gDefs(ln) + shade(50, 72, 35, 4) + `<path d="${edge}" fill="${ln.url}"/>` + tx
+        + '<path d="M18,54 Q50,56.5 82,54" stroke="#b9b19c" stroke-width="1.2" fill="none"/><path d="M18,55.5 Q50,58 82,55.5" stroke="#fff" stroke-width=".7" fill="none" opacity=".8"/>'
+        + `<path d="${edge}" fill="none" stroke="#c9c1ac" stroke-width="1.2"/>`;
+    },
+    // 香合（塗物）：黒塗りの丸い蓋物に、金の蒔絵（梅）
+    kogo: () => {
+      const lac = gLin([[0, '#262220'], [.18, '#0e0c0b'], [.45, '#221e1c'], [.7, '#090808'], [1, '#1c1917']]);
+      const top = gRad([[0, '#3b3532'], [.6, '#171413'], [1, '#0a0909']], .38, .35, .75);
+      const ume1 = (x, y, r) => [0, 1, 2, 3, 4].map((k) => { const a = (k * 72 - 90) * Math.PI / 180; return `<circle cx="${n1(x + Math.cos(a) * r * .75)}" cy="${n1(y + Math.sin(a) * r * .42)}" r="${n1(r * .5)}"/>`; }).join('');
+      return gDefs(lac, top) + shade(50, 72, 30, 3.6)
+        + `<path d="M23,52 L23,64 Q50,75 77,64 L77,52 Z" fill="${lac.url}"/>`
+        + '<path d="M23,58.2 Q50,68.6 77,58.2" stroke="#000" stroke-width="1" fill="none"/><path d="M23.4,59.4 Q50,69.8 76.6,59.4" stroke="#fff" stroke-width=".4" fill="none" opacity=".2"/>'
+        + `<ellipse cx="50" cy="52" rx="27" ry="10" fill="${top.url}"/>`
+        + '<path d="M31,55 Q40,47 52,49 Q60,50 66,45" stroke="#b8902e" stroke-width="1" fill="none"/>'
+        + `<g fill="#d9b44a">${ume1(42, 49, 3.4)}${ume1(58, 52.5, 2.8)}${ume1(64, 46.4, 2.2)}</g><g fill="#8a6a1e"><circle cx="42" cy="49" r=".8"/><circle cx="58" cy="52.5" r=".7"/></g>`
+        + gloss('M30,47.5 Q38,43.4 50,42.8', 1.8, .3) + gloss('M26.5,56 L27.2,63.5', 1.8, .2);
+    },
     kashiki: () => at(50, 60, 1.6, kashikiP()),
     kaishi: () => at(52, 56, 1.5, kaishiP()),
-    kashikiri: () => at(46, 66, 1.4, kaishiP()) + at(42, 62, 1.3, sweetP()) + '<line x1="76" y1="18" x2="54" y2="62" stroke="#9aa0a6" stroke-width="3.4" stroke-linecap="round"/>',
-    sensu: () => '<path d="M50,82 L14,34 Q50,14 86,34 Z" fill="#efe3c2" stroke="#8a6c3b" stroke-width="1.5"/>' + [...Array(7)].map((_, i) => `<line x1="50" y1="82" x2="${20 + i * 10}" y2="${n1(32 - Math.sin(i / 6 * Math.PI) * 10)}" stroke="#b39b6b" stroke-width="1"/>`).join('') + '<circle cx="50" cy="80" r="3" fill="#3a2d22"/>',
+    // 菓子切：懐紙にのせた主菓子と、銀の菓子切（楊枝）
+    kashikiri: () => {
+      const si = gLinU([[0, '#6f757b'], [.5, '#eef1f3'], [1, '#868c92']], 65.2, 39.1, 68.8, 40.9);
+      const pick = 'M76.6,16.6 L79.4,18.4 L57.4,61.2 L55.6,64.6 L55,60 Z';
+      return gDefs(si) + at(46, 66, 1.4, kaishiP()) + at(42, 62, 1.3, sweetP()) + '<line x1="45" y1="52.5" x2="43" y2="73" stroke="#fffefa" stroke-width="1.8" opacity=".9"/>'
+        + `<path d="${pick}" fill="#000" opacity=".15" transform="translate(1.5,2)"/><path d="${pick}" fill="${si.url}"/><path d="M75,15.4 L81,19.4 L79.6,21.6 L73.8,17.6 Z" fill="#9aa0a6"/>`;
+    },
+    // 扇子（茶席で使う小さな扇子）：閉じて置いたところ。左下が要（かなめ）、先に向かって広がり、紙の折り目が見える
+    sensu: () => {
+      const A = [16, 82], { dx, dy, nx, ny } = axisOf(A, [84, 22]);
+      const q = (t, w) => [A[0] + dx * t + nx * w, A[1] + dy * t + ny * w], xy = (p) => `${n1(p[0])},${n1(p[1])}`;
+      const M = q(.55, 0);
+      const bb = gLinU([[0, '#3f2815'], [.45, '#b08350'], [.6, '#9a6c3e'], [1, '#3a2412']], M[0] - nx * 6, M[1] - ny * 6, M[0] + nx * 6, M[1] + ny * 6);
+      const pp = gLinU([[0, '#e9dfc2'], [.5, '#fbf6e6'], [1, '#e2d6b4']], M[0] - nx * 9, M[1] - ny * 9, M[0] + nx * 9, M[1] + ny * 9);
+      // 紙（親骨の外に少しはみ出す）と、その先の折り山
+      const paper = [q(.3, 3.2), q(1, 9.2), q(1, -9.2), q(.3, -3.2)].map(xy).join(' L');
+      let pleats = '';
+      for (let k = -4; k <= 4; k++) { const a = q(.42, k * .55), b = q(1, k * 2); pleats += `<line x1="${n1(a[0])}" y1="${n1(a[1])}" x2="${n1(b[0])}" y2="${n1(b[1])}" stroke="${k % 2 ? '#d8cba6' : '#fff'}" stroke-width="${k % 2 ? .6 : .5}"/>`; }
+      const top = [-9.2, -6.9, -4.6, -2.3, 0, 2.3, 4.6, 6.9, 9.2].map((w, i) => xy(q(i % 2 ? .985 : 1.012, w))).join(' L');
+      // 親骨（両側の太い骨）
+      const rib = [q(0, 3.4), q(1, 7.4), q(1, 4.6), q(0, 1.2)].map(xy).join(' L');
+      const rib2 = [q(0, -1.2), q(1, -4.6), q(1, -7.4), q(0, -3.4)].map(xy).join(' L');
+      const kn = q(.035, 0);
+      return gDefs(bb, pp) + `<path d="M${[q(0, 3.4), q(1, 9.2), q(1, -9.2), q(0, -3.4)].map(xy).join(' L')} Z" fill="#000" opacity=".16" transform="translate(1.6,2.4)"/>`
+        + `<path d="M${paper} Z" fill="${pp.url}"/>` + pleats
+        + `<path d="M${top}" stroke="#c9a23a" stroke-width="1.1" fill="none" stroke-linejoin="round"/>`
+        + `<path d="M${rib} Z" fill="${bb.url}"/><path d="M${rib2} Z" fill="${bb.url}"/>`
+        + `<path d="M${[q(0, 3.4), q(.3, 4.5), q(.3, -4.5), q(0, -3.4)].map(xy).join(' L')} Z" fill="${bb.url}"/>`
+        + `<circle cx="${n1(kn[0])}" cy="${n1(kn[1])}" r="2" fill="#d6dadd" stroke="#6a6e72" stroke-width=".6"/>`
+        + gloss(`M${xy(q(.08, 2.6))} L${xy(q(.95, 6.4))}`, .9, .35);
+    },
   };
 
   // ---------- 人物（2頭身・右向き・正座。床は y=94） ----------
@@ -460,7 +734,7 @@ const ART = (function () {
       else if (kamaKey === 'sukigi') hearth += `<rect x="${hx - 34}" y="176" width="12" height="5" fill="#a68d58"/><rect x="${hx + 22}" y="176" width="12" height="5" fill="#a68d58"/>` + kama(hx, 168, 0.85, true);
       else hearth += kama(hx, 174, 0.85);
     } else {
-      hearth = `<rect x="${hx - 38}" y="186" width="76" height="6" fill="#5b4a37"/><path d="M${hx - 32},150 L${hx + 32},150 L${hx + 27},186 L${hx - 27},186 Z" fill="#7d6a55"/><path d="M${hx - 20},160 Q${hx},154 ${hx + 20},160 L${hx + 18},170 Q${hx},166 ${hx - 18},170 Z" fill="#3d2f24"/>` + kama(hx, 140, 0.75);
+      hearth = place(TOOL.furo(), hx, 152, .95);   // 道具の絵の風炉（敷板・釜つき）
     }
     const summer = m === 7 || m === 8;
     const fc = FLOWER_COLOR[m];
@@ -597,7 +871,8 @@ const ART = (function () {
 
   return {
     qr,
-    icon: (id, sch) => (TOOL[id] ? svg(TOOL[id]({ chasen: school({ school: sch }).chasenKey })) : ''),
+    // 図鑑・名前当てのアイコン。小さな道具（蓋置・香合）は少し大きく見せる
+    icon: (id, sch) => (TOOL[id] ? svg(place(TOOL[id]({ chasen: school({ school: sch }).chasenKey }), 50, 50, ICON_ZOOM[id] || 1)) : ''),
     step: (p, sch, anim) => (STEP[p] ? svg(STEP[p]({ school: sch, anim: !!anim })) : ''),
     viewPic: (k) => svg(VIEW_PIC[k]()),
     opt, room, quiz, menu, life, walkBoard, walkCell, walkFoot, walkGoal, walkNpc, walkHost,
