@@ -59,6 +59,13 @@
     transition:background .15s;
   }
   .btn-ghost:active{background:rgba(27,58,92,.18);}
+  .btn-install{
+    width:100%; padding:13px 18px; font-size:16px; font-weight:800; color:#fff; letter-spacing:.02em;
+    background:linear-gradient(180deg,#5bb85b,#3c7a3c);
+    box-shadow:0 5px 0 #2f5f2f, 0 8px 16px rgba(0,0,0,.25);
+    transition:transform .07s, box-shadow .07s;
+  }
+  .btn-install:active{transform:translateY(3px); box-shadow:0 2px 0 #2f5f2f, 0 5px 10px rgba(0,0,0,.2);}
 
   /* ===== タイトル画面 ===== */
   #title{
@@ -66,7 +73,8 @@
       radial-gradient(120% 80% at 50% -10%, #bfe6f7 0%, #eaf6ff 45%, #f6efe0 46%, #f6efe0 100%);
   }
   #title .center-col{justify-content:flex-start; padding-top:6vh; gap:6px;}
-  .logo-wrap{position:relative; width:min(78vw,320px); max-height:42vh; display:flex; align-items:flex-end; justify-content:center;}
+  .logo-wrap{position:relative; width:min(50vw,200px); max-height:28vh; display:flex; align-items:flex-end; justify-content:center;}
+  .logo-wrap svg{width:100%; height:auto; display:block;}
   .title-main{font-size:clamp(40px,13vw,74px); line-height:1; margin:0;}
   .title-sub{font-size:clamp(13px,3.6vw,17px); color:var(--ai); font-weight:700; margin:2px 0 4px; letter-spacing:.14em;}
   .title-tag{font-size:clamp(12px,3.2vw,15px); color:#6b5d44; margin:0 0 8px; text-align:center; line-height:1.6;}
@@ -86,13 +94,13 @@
   .hud{position:absolute; top:0; left:0; right:0; padding:calc(env(safe-area-inset-top) + 10px) 12px 0; pointer-events:none;}
   .hud-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
   .score-box{
-    background:rgba(27,58,92,.9); color:#fff; border-radius:14px; padding:8px 14px;
-    box-shadow:0 6px 16px rgba(0,0,0,.22); min-width:104px;
+    background:rgba(27,58,92,.85); color:#fff; border-radius:11px; padding:5px 11px;
+    box-shadow:0 4px 10px rgba(0,0,0,.18); min-width:84px;
   }
-  .score-box .lbl{font-size:11px; opacity:.85; letter-spacing:.1em;}
-  .score-box .val{font-size:30px; font-weight:900; line-height:1.05;}
-  .score-box .val small{font-size:15px; font-weight:800; margin-left:2px;}
-  .score-box .best{font-size:11px; opacity:.85; margin-top:1px;}
+  .score-box .lbl{font-size:10px; opacity:.85; letter-spacing:.08em;}
+  .score-box .val{font-size:19px; font-weight:800; line-height:1.05;}
+  .score-box .val small{font-size:11px; font-weight:700; margin-left:2px; opacity:.9;}
+  .score-box .best{font-size:10px; opacity:.8; margin-top:1px;}
   .hud-right{display:flex; flex-direction:column; align-items:flex-end; gap:8px; pointer-events:auto;}
   .icon-btn{
     width:44px; height:44px; border-radius:12px; font-size:20px; color:#fff;
@@ -241,17 +249,18 @@
       <div class="logo-wrap" id="titleMascot"><!-- 棟梁SVGを差し込む --></div>
       <h1 class="brush title-main">上棟バランス</h1>
       <p class="title-sub">じょうとう ばらんす</p>
-      <p class="title-tag">ステージごとに大工仕事が変わる5種のミニゲーム！<br>①建方 ②クレーン ③釘打ち ④丸太切り ⑤餅ひろい …くり返してレベルUP！</p>
-      <div class="best-chip">🏆 ハイスコア <span id="titleBest">0</span></div>
+      <p class="title-tag">ステージごとに大工仕事が変わる3種のミニゲーム！<br>①建方 ②釘打ち ③餅ひろい …くり返してレベルUP！</p>
+      <div class="best-chip">🏆 ハイスコア <span id="titleBest">0</span> ・ 🔥最高 <span id="titleStreak">0</span>連勝</div>
       <div class="title-btns">
         <button class="btn-primary" id="startBtn">▶ 棟上げ開始</button>
         <div class="row">
           <button class="btn-ghost" id="howBtn">遊び方</button>
           <button class="btn-ghost" id="lineBtn">📱 LINEで共有</button>
           <button class="btn-ghost" id="muteBtn2">🔊 音 ON</button>
+          <button class="btn-ghost" id="updateBtn">🔄 更新</button>
         </div>
         <div class="row">
-          <button class="btn-ghost" id="installBtn" style="width:100%;">📲 アプリにする（ホーム画面に追加）</button>
+          <button class="btn-install" id="installBtn">📲 アプリにする（ホーム画面に追加）</button>
         </div>
       </div>
     </div>
@@ -260,12 +269,12 @@
       <div class="panel" style="text-align:left;">
         <h2 class="brush" style="text-align:center;">遊び方</h2>
         <p style="line-height:1.9; font-size:15px; color:#4a4030;">
-          ステージごとに<b>大工仕事が変わる</b>よ。5種を1周したら、少しずつ難しくなってくり返し！<br>
-          <b>① 建方</b>：ゆれる木材を<b>タップで落として</b>軸組を組む。ど真ん中は<b>ピタリ！＝高得点＋コンボ</b>、傾き過ぎると倒壊。弟子が<b>はしごで登って</b>くる（タップで入手→揺れ対策アイテム）。<br>
-          <b>② クレーン操縦</b>：<b>走るトラックの荷台</b>から木材を<b>タップでつかみ</b>、動かして<b>柱の上にのせる</b>。落とし過ぎ注意！<br>
-          <b>③ 釘打ち（早打ち）</b>：<b>光る釘</b>が次々出る。消える前に<b>すばやくタップ</b>して壁板を張れ。<br>
-          <b>④ 丸太切り（早切り）</b>：<b>ノコギリを左右にこすって</b>（ドラッグ）丸太を切る。制限時間内に本数を切れ。<br>
-          <b>⑤ 餅ひろい（上棟式）</b>：上からまかれる<b>紅白・金の餅</b>を、<b>動いてキャッチ</b>してボーナスGET！
+          ステージごとに<b>大工仕事が変わる</b>よ。3種を1周したら、少しずつ難しくなってくり返し！<br>
+          <b>① 建方</b>：ゆれる木材を<b>タップで落として</b>軸組を組む。ど真ん中は<b>ピタリ！</b>。<b>💨風が吹くと落下中に流される</b>ので、風向き（上の矢印）を読んで<b>風上に落とす</b>のがコツ。傾き過ぎると倒壊。<br>
+          <b>② 釘打ち（早打ち）</b>：ライバルと競争！光る釘を<b>すばやくタップ</b>。ただし<b>🐝蜂を叩くと大損（ライバルに1本！）</b>——狙って打て。連打でボーナス。<br>
+          <b>③ 餅ひろい（上棟式）</b>：まかれる<b>紅白・金の餅</b>を取り合ってキャッチ！ でも<b>🪨炭を拾うと減点</b>。<b>2位以内に入らないと脱落</b>だ。<br>
+          🔥 <b>連続クリアで「連勝ボーナス」</b>が増える（失敗でリセット）。<b>金の釘</b>は3倍、<b>特大餅「大」</b>は大量得点、建方で<b>全部ピタリ＝神業ボーナス</b>！ジャックポットを狙え。<br>
+          ❤️ <b>ライフは3つ</b>。しくじっても残りがあれば<b>同じステージに再挑戦</b>できる。進むと<b>昇格（見習い→…→伝説の棟梁）＝ハート+1</b>！ たまに<b>得点2倍のボーナスチャンス</b>ステージも来るぞ。
         </p>
         <div style="text-align:center; margin-top:14px;">
           <button class="btn-primary" id="howClose">とじる</button>
@@ -296,10 +305,10 @@
     <div class="hud">
       <div class="hud-top">
         <div class="score-box">
-          <div class="lbl">ステージ <span id="stageNo">1</span>　<span id="hudSub">建方</span></div>
-          <span id="placed" style="display:none"></span><span id="goal" style="display:none"></span>
-          <div class="val"><span id="score">0</span><small>点</small></div>
-          <div class="best">完成 <span id="built">0</span> ・ 最高 <span id="best">0</span></div>
+          <div class="lbl">ステージ <span id="stageNo">1</span> ・ <span id="hudRank">見習い</span>　<span id="hudSub">建方</span></div>
+          <span id="placed" style="display:none"></span><span id="goal" style="display:none"></span><span id="built" style="display:none"></span>
+          <div class="val"><span id="score">0</span><small>点</small><small id="hudMul" style="color:#e0a63c; margin-left:6px; font-weight:900;"></small></div>
+          <div class="best"><span id="hudLives" style="letter-spacing:-1px;">❤️❤️❤️</span> ・ 最高 <span id="best">0</span><span id="hudStreak" style="color:#ffd24a; font-weight:800;"></span></div>
         </div>
         <div class="hud-right">
           <div class="icon-btn" id="muteBtn">🔊</div>
@@ -343,8 +352,25 @@
           <div>ハイスコア<b id="finalBest">0</b></div>
         </div>
         <button class="btn-primary" id="retryBtn" style="width:100%; margin-bottom:10px;">▶ もう一度</button>
+        <button class="btn-install" id="installBtn2" style="margin-bottom:8px;">📲 アプリにする（ホーム画面に追加）</button>
         <button class="btn-ghost" id="lineShareBtn" style="width:100%; margin-bottom:8px;">📱 スコアをLINEで共有</button>
         <button class="btn-ghost" id="toTitleBtn" style="width:100%;">タイトルへ</button>
+      </div>
+    </div>
+
+    <!-- ステージ結果発表（クリアごと。スタートで次へ） -->
+    <div class="overlay" id="srOverlay">
+      <div class="panel">
+        <div style="display:inline-block; background:#4c9a4c; color:#fff; font-weight:800; padding:6px 16px; border-radius:999px; margin-bottom:6px;">ステージ <span id="srStage">1</span> クリア！</div>
+        <h2 class="brush" id="srTitle" style="font-size:20px; margin:4px 0 8px;">結果発表</h2>
+        <div class="result-big"><span id="srScore">0</span><small>点</small></div>
+        <div class="stat-row">
+          <div>今回 <b id="srBonus">+0</b></div>
+          <div>ハイスコア <b id="srBest">0</b></div>
+        </div>
+        <div id="srStreak" style="color:#c9871f; font-weight:800; font-size:14px; margin-top:6px;"></div>
+        <button class="btn-primary" id="srNextBtn" style="width:100%; margin-top:6px;">▶ <span id="srNextLabel">次のステージ</span>スタート</button>
+        <button class="btn-ghost" id="srQuitBtn" style="width:100%; margin-top:8px;">タイトルへ</button>
       </div>
     </div>
 
@@ -413,8 +439,9 @@
   <path class="sweat" d="M176 118 q6 8 0 14 q-6 -6 0 -14 Z" fill="#8fd0ff" stroke="#5aa9e6" stroke-width="1"/>
 
   <!-- ===== 体：青い法被 ===== -->
-  <!-- 首 -->
-  <rect x="120" y="172" width="20" height="14" fill="#e9c090"/>
+  <!-- 首（顎と法被をつなぐ） -->
+  <rect x="117" y="168" width="26" height="26" rx="6" fill="#e9c090"/>
+  <path d="M117 172 Q130 180 143 172 L143 176 Q130 184 117 176 Z" fill="#d9a878" opacity=".5"/>
   <!-- 黒い下シャツ -->
   <path d="M104 186 Q130 200 156 186 L162 262 Q130 274 98 262 Z" fill="#2a2622"/>
   <!-- 法被（左右の身頃） -->
@@ -479,6 +506,9 @@
   <path d="M114 192 L118 220 L102 220 L100 194 Z" fill="#221f1b"/>
   <path d="M76 218 Q88 224 98 220 L96 230 Q86 232 78 227 Z" fill="#15120f"/>
   <path d="M124 218 Q112 224 102 220 L104 230 Q114 232 122 227 Z" fill="#15120f"/>
+  <!-- 首（胴より先に描いて衿が自然に重なる） -->
+  <path d="M91 120 L109 120 L114 160 L86 160 Z" fill="#f3cf9f"/>
+  <path d="M88 130 Q100 136 112 130 L112 135 Q100 141 88 135 Z" fill="#d9a878" opacity=".4"/>
   <path class="hp" d="M74 148 Q100 160 126 148 L130 196 Q100 206 70 196 Z"/>
   <path d="M96 150 L92 196 L100 198 L104 152 Z" fill="rgba(255,255,255,.35)"/>
   <path d="M108 150 L112 196 L104 198 L100 152 Z" fill="rgba(255,255,255,.35)"/>
@@ -512,6 +542,7 @@
   document.getElementById('titleMascot').innerHTML = mascotSVG;
   document.getElementById('gameMascot').innerHTML  = mascotSVG;
   const gameMascot = document.getElementById('gameMascot');
+  const mascotImg = new Image(); try{ mascotImg.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(mascotSVG); }catch(e){}   // 餅まきの投げ手用
   const deshiSVG = document.getElementById('deshiTpl').innerHTML;
 
   // ---- DOM ----
@@ -545,14 +576,22 @@
   let seq=[], seqI=0, current=null;         // 組み立て順・落下/揺れ中の材
   let placed=0, total=0;                    // 進捗（本数）
   let score=0, combo=0, maxCombo=0, bestScore=0;   // スコア・連続ピタリ
+  let streak=0, bestStreak=0, buildFlawless=true, srTimer=null;  // 連勝・全ピタリ判定・結果パネル遅延タイマー
+  let lives=3, maxLives=5, scoreMul=1;             // ライフ（ハート）・得点倍率（ボーナスチャンス）
+  const RANKS=[{n:'見習い',s:1},{n:'一人前',s:3},{n:'腕利き',s:6},{n:'棟梁',s:10},{n:'名棟梁',s:15},{n:'大棟梁',s:20},{n:'伝説の棟梁',s:30}];
+  function rankIndex(st){ let i=0; for(let k=0;k<RANKS.length;k++){ if(st>=RANKS[k].s) i=k; } return i; }
+  function rankName(st){ return RANKS[rankIndex(st)].n; }
+  function addScore(n){ score += Math.round(n*scoreMul); }   // 倍率つき加点
   let lean=0, leanRatio=0;                  // 重心バランス（水平器）
   let swayT=0, curSway=0;                   // 傾くほど建物が揺れ続ける（難化）
+  let windPhase=0, windAmp=0, curWind=0;    // 建方の風（落下中に材が流される）
   let deshi=null, deshiSpawnT=10, heldItem=null;      // 動き回る弟子・出現タイマー・所持アイテム
   let swayDamp=1, swayDampT=0, timeScale=1, slowT=0;  // 弟子の効果（揺れ抑制・スロー）
   let mochis=[], mochiPops=[], catcher={x:0,tx:0}, mochiT=0, mochiScore=0, mochiSpawnT=0;  // 餅ひろい
+  let crowd=[], mochiThrowT=0;               // 拾いに来る人々・大工の投げモーション
   // ---- ステージごとに変わるミニゲーム ----
   let mode='build', lvl=0;                  // 現ステージの種別・レベル（1周=5ステージ）
-  const MODES=['build','crane','nail','saw','mochi'];
+  const MODES=['build','nail','mochi'];          // クレーン・丸太切りは除外（コードは残置＝再有効化容易）
   const MODE_LABEL={build:'建方',crane:'クレーン操縦',nail:'釘打ち',saw:'丸太切り',mochi:'餅ひろい'};
   let crane=null, nail=null, saw=null, sfx=[];   // 各ミニゲームの状態＋画面エフェクト
   const BASE_HALF=100;                      // 倒壊しきい値（重心の許容。小さいほどシビア）
@@ -562,7 +601,9 @@
 
   bestStage = Math.max(1, +(localStorage.getItem('daiku_beststage')||1));
   bestScore = Math.max(0, +(localStorage.getItem('daiku_bestscore')||0));
+  bestStreak = Math.max(0, +(localStorage.getItem('daiku_beststreak')||0));
   $('titleBest').textContent = bestScore; bestEl.textContent = bestScore;
+  if($('titleStreak')) $('titleStreak').textContent = bestStreak;
 
   // ================= サウンド（軽量シンセ） =================
   const audio = {
@@ -586,7 +627,7 @@
       src.connect(g); g.connect(this.ctx.destination); src.start(t);
     },
     place(){ this.tone(150,.08,'square',.25); this.tone(90,.12,'triangle',.2); },   // トン
-    thud(){ this.tone(72,.20,'sine',.36,-34); this.tone(120,.09,'triangle',.22); this.noise(.13,.22); },  // ドスン（柱を立てる）
+    thud(){ this.tone(100,.30,'sine',.55,-58); this.tone(160,.12,'triangle',.32,-95); this.noise(.17,.34); },  // ドスン（柱を立てる・重め）
     hit(p){ p=p||0; this.tone(150+p*130,.05,'square',.12+p*0.18); this.tone(70,.10,'triangle',.13+p*0.15); }, // カケヤの打撃（強さで音が変化）
     perfect(){ this.tone(660,.09,'square',.2); setTimeout(()=>this.tone(990,.14,'square',.2),70); },
     combo(n){ const f=560*Math.pow(1.06, Math.min(n,14)); this.tone(f,.08,'square',.2); setTimeout(()=>this.tone(f*1.5,.12,'square',.18),55); },
@@ -668,10 +709,11 @@
   function bumpBest(){
     if(stage>bestStage){ bestStage=stage; localStorage.setItem('daiku_beststage', bestStage); }
     if(score>bestScore){ bestScore=score; localStorage.setItem('daiku_bestscore', bestScore); }
+    if(streak>bestStreak){ bestStreak=streak; localStorage.setItem('daiku_beststreak', bestStreak); }
   }
   // 現ステージの軸組を用意（下から組む順を作り、最初の材を吊る）
-  function modeForStage(s){ return MODES[(s-1)%5]; }
-  function stageLevel(s){ return Math.floor((s-1)/5); }
+  function modeForStage(s){ return MODES[(s-1)%MODES.length]; }
+  function stageLevel(s){ return Math.floor((s-1)/MODES.length); }
   function buildCfgForLvl(l){ return { floors:Math.min(5,2+l), cols:3+Math.min(l,3), postTh:Math.max(20,32-l), swing:130+l*22 }; }
 
   // 建方モードの用意（軸組を下から組む）
@@ -680,45 +722,72 @@
     floors=c.floors; cols=c.cols; bays=cols-1; postTh=c.postTh; swingSpeed=c.swing;
     setGeometry();
     beams=[sillTimber()]; lean=0; leanRatio=0; swayT=0; curSway=0;
-    seq=buildSequence(); seqI=0; total=seq.length; placed=0;
+    seq=buildSequence(); seqI=0; total=seq.length; placed=0; buildFlawless=true;
+    windPhase=Math.random()*6.283; windAmp=28+lvl*10; curWind=0;   // 風（レベルで強く）
     resetDeshi(false);
     frameCamera(); setMascot(''); spawnCurrent();
     tapHint.textContent='タップで落とす！'; tapHint.style.display='block';
   }
   // ステージ開始（種別を判定してミニゲームを初期化）
   function startStage(){
+    clearTimeout(srTimer); $('srOverlay').classList.remove('show');   // 結果パネルを閉じる（保留タイマーも解除）
     mode=modeForStage(stage); lvl=stageLevel(stage);
     combo=0; effects=[]; sfx=[]; shake=0; collapsing=false; overTimer=0;
     completed=null; dims=null; current=null;
     const g=$('game'); g.classList.remove('mode-build','mode-crane','mode-nail','mode-saw','mode-mochi'); g.classList.add('mode-'+mode);
     tapHint.style.display='none';
     if(mode!=='build'){                       // 棟梁・弟子・アイテム枠は建方専用
-      gameMascot.style.left=''; gameMascot.style.top=''; gameMascot.style.width='';
+      gameMascot.style.display='none';
       deshiEl.classList.remove('show'); itemSlot.classList.remove('show');
-    } else if(heldItem){ itemSlot.classList.add('show'); }
+    } else { gameMascot.style.display=''; if(heldItem) itemSlot.classList.add('show'); }
     if(mode==='build') initBuild();
     else if(mode==='crane') initCrane();
     else if(mode==='nail') initNail();
     else if(mode==='saw') initSaw();
     else if(mode==='mochi') initMochi();
+    scoreMul = (stage>1 && Math.random()<0.22) ? 2 : 1;   // たまにボーナスチャンス（得点2倍）
     state='play'; last=performance.now(); updateHUD();
-    showToast(`ステージ${stage}：${MODE_LABEL[mode]}${lvl>0?'（Lv'+(lvl+1)+'）':''}`, '#274c74');
+    if(scoreMul>1) showToast(`✨ボーナスチャンス！ このステージ 得点2倍✨`, '#e0a63c');
+    else showToast(`ステージ${stage}：${MODE_LABEL[mode]}${lvl>0?'（Lv'+(lvl+1)+'）':''}`, '#274c74');
   }
   function startGame(){
     audio.ensure(); show('game');
     overOverlay.classList.remove('show'); pauseOverlay.classList.remove('show');
-    stage=1; built=0; score=0; combo=0; maxCombo=0;
+    stage=1; built=0; score=0; combo=0; maxCombo=0; streak=0; lives=3; scoreMul=1;
     resetDeshi(true);
     startStage();
   }
-  function nextStage(){ stage++; bumpBest(); startStage(); }
-  // ステージ共通クリア処理（各ミニゲームから呼ぶ）
+  function nextStage(){
+    const oldRank=rankIndex(stage);
+    stage++; bumpBest();
+    if(rankIndex(stage)>oldRank){                       // 昇格！ ハート回復＋祝福
+      lives=Math.min(maxLives, lives+1);
+      setTimeout(()=>{ showToast(`🎖 昇格！「${rankName(stage)}」に！ ❤️+1`, '#e0a63c'); burst(cssW/2,140,'#ffd24a',22); audio.milestone(); }, 400);
+    }
+    startStage();
+  }
+  // ステージ共通クリア処理（各ミニゲームから呼ぶ）→ 結果発表してスタート待ち
   function stageClear(bonus, msg, delay){
-    if(bonus) score+=bonus;
+    streak++;
+    const sb = streak>=2 ? streak*100 : 0;             // 連勝ボーナス
+    addScore((bonus||0) + sb);
     bumpBest(); updateHUD(); state='clear';
-    showToast(msg || `ステージ${stage} クリア！`, '#4c9a4c'); audio.milestone();
+    showToast((streak>=2?`🔥${streak}連勝！ `:'')+(msg||`ステージ${stage} クリア！`), streak>=3?'#e0a63c':'#4c9a4c'); audio.milestone();
     tapHint.style.display='none';
-    setTimeout(()=>{ if(state==='clear') nextStage(); }, delay||1800);
+    const head=(scoreMul>1?'✨2倍✨ ':'')+(msg||`ステージ${stage} クリア！`), gained=Math.round(((bonus||0)+sb)*scoreMul);
+    clearTimeout(srTimer);
+    srTimer=setTimeout(()=>{ if(state==='clear') showStageResult(head, gained, sb); }, delay||900);   // 演出を見せてから結果発表
+  }
+  function showStageResult(head, gained, sb){
+    $('srStage').textContent=stage;
+    $('srTitle').textContent=head;
+    $('srScore').textContent=score;
+    $('srBonus').textContent='+'+gained;
+    $('srBest').textContent=bestScore;
+    $('srNextLabel').textContent=MODE_LABEL[modeForStage(stage+1)]+'を';
+    if($('srStreak')) $('srStreak').textContent = (streak>=2 ? `🔥 ${streak}連勝中！（連勝ボーナス +${sb||0}）` : '');
+    $('srOverlay').classList.add('show');
+    audio.milestone();
   }
   function resetStage(){ initBuild(); }   // 互換用
 
@@ -768,18 +837,18 @@
     spawnEffect('chips', t.tx, t.ty-8, 28);            // カケヤの叩きで木くず
     const perfect = Math.abs(err) <= 9;
     const wasLeaning = Math.abs(lean);
-    score += 10;
+    addScore(10);
     if(perfect){
       combo++; maxCombo=Math.max(maxCombo,combo);
       const rec = Math.min(0.7, 0.2 + combo*0.14);     // 連続ピタリで立て直し（傾きを戻す）
       lean *= (1-rec);
-      const bonus = 20 + 30*combo; score += bonus;
+      const bonus = 20 + 30*combo; addScore(bonus);
       spawnEffect('spark', t.tx, t.ty); spawnEffect('ring', t.tx, t.ty);
       audio.combo(combo);
       if(wasLeaning>25 && combo>=2) showToast(`ピタリ！ ${combo}連★ 立て直し +${bonus}`, '#3a76c0');
       else showToast(combo>=2?`ピタリ！ ${combo}連★ +${bonus}`:'ピタリ！ +30', '#4c9a4c');
     } else {
-      combo=0;
+      combo=0; buildFlawless=false;                    // 一度でもズレたら「全ピタリ」は消える
       // ピタリ以外は必ず傾きを悪化させる（反対側に落としても立て直せない＝回復はピタリ限定）
       const dir = Math.abs(lean)>0.5 ? Math.sign(lean) : (Math.sign(err)||1);
       lean = dir * (Math.abs(lean) + Math.abs(err)*0.72);
@@ -796,46 +865,83 @@
   function onComplete(){
     current=null; built++; completed=makeDims(); dims=completed; fitWholeBuilding();
     const straight = Math.abs(lean)<18;
-    const bonus = 100 + floors*100 + (straight?300:0);   // 上棟＋まっすぐボーナス
+    const flawless = buildFlawless;                       // 全部ピタリ＝神業
+    const mega = flawless ? 500+floors*100 : 0;
+    const bonus = 100 + floors*100 + (straight?300:0) + mega;
     reactMascot('good');
-    spawnConfetti(); setTimeout(spawnConfetti, 250);     // 多めにお祝い
-    stageClear(bonus, `🎏 ${buildingName(floors)} 上棟！ +${bonus}${straight?' まっすぐ★':''}`, 2600);
+    spawnConfetti(); setTimeout(spawnConfetti, 250); if(flawless){ setTimeout(spawnConfetti,450); setTimeout(spawnConfetti,650); }
+    stageClear(bonus, `🎏 ${buildingName(floors)} 上棟！${flawless?` 🌟神業！全ピタリ +${mega}`:(straight?' まっすぐ★':'')}`, 2600);
   }
 
   // ================= 餅まきボーナス（五重塔完成時の上棟式） =================
+  function mochiRidgeY(){ return 110; }               // 屋根の棟（大工さんが立つ高さ）
+  function mochiThrowX(){ return cssW/2 + 14; }       // 屋根の上・上げた手の位置
+  function mochiThrowY(){ return mochiRidgeY() - 54; }
   function initMochi(){
-    mochis=[]; mochiPops=[]; mochiT=12+lvl*2; mochiScore=0; mochiSpawnT=0.2;
-    catcher.x=cssW/2; catcher.tx=cssW/2;
-    showToast('🎉 上棟式！餅まきだ〜！ 動いて餅を拾え！', '#e0a63c'); audio.milestone();
+    mochis=[]; mochiPops=[]; mochiT=20+lvl*3; mochiScore=0; mochiSpawnT=0.3; mochiThrowT=0;
+    catcher.x=cssW/2; catcher.tx=cssW/2; catcher.catches=0;
+    const n=Math.min(5,3+lvl), cols=['#b0532a','#b03a76','#4a6ab0','#7a5cc0','#3f7a4a'];   // 拾いに来る人々
+    crowd=[]; for(let i=0;i<n;i++) crowd.push({ x:cssW*(0.15+0.7*(i+1)/(n+1)), sp:150+Math.random()*50+lvl*20, col:cols[i%4], catches:0, target:null, bob:Math.random()*6 });
+    showToast('🎉 上棟式！大工さんが餅をまくよ〜 拾え！', '#e0a63c'); audio.milestone();
   }
   function spawnMochi(){
-    const r=Math.random(); let type,val,col;
-    if(r<0.10){ type='gold'; val=300; col='#ffe08a'; }
-    else if(r<0.42){ type='red'; val=100; col='#ffd9d0'; }
+    const r=Math.random(); let type,val,col,rr=13+Math.random()*4;
+    if(r<0.05){ type='big'; val=400; col='#ffe8a0'; rr=25; }        // 特大餅（レア・大量得点）
+    else if(r<0.13){ type='gold'; val=300; col='#ffe08a'; }
+    else if(r<0.27){ type='coal'; val=0; col='#333333'; rr=15; }    // 炭＝拾ってはいけない
+    else if(r<0.55){ type='red'; val=100; col='#ffd9d0'; }
     else { type='white'; val=50; col='#ffffff'; }
-    mochis.push({ x:cssW*(0.12+Math.random()*0.76), y:-24, vy:55+Math.random()*70, vx:(Math.random()*2-1)*45,
-      val, col, type, rot:0, vr:(Math.random()*2-1)*3, r:13+Math.random()*4 });
+    mochis.push({ x:mochiThrowX()+(Math.random()*2-1)*10, y:mochiThrowY(),
+      vx:(Math.random()*2-1)*(100+Math.random()*110), vy:-(70+Math.random()*120),   // 放り投げる（上＋横へ散る）
+      val, col, type, rot:0, vr:(Math.random()*2-1)*4, r:rr });
+    mochiThrowT=0.2;                                    // 投げモーション
   }
   function updateMochiBonus(dt){
-    mochiT-=dt;
+    mochiT-=dt; if(mochiThrowT>0) mochiThrowT-=dt;
     catcher.x += (catcher.tx-catcher.x)*Math.min(1,dt*14);
     catcher.x=Math.max(40,Math.min(cssW-40,catcher.x));
-    if(mochiT>0){ mochiSpawnT-=dt; if(mochiSpawnT<=0){ spawnMochi(); mochiSpawnT=0.30+Math.random()*0.35; } }
-    const catchY=cssH-90, catchHalf=34;
+    if(mochiT>0){ mochiSpawnT-=dt; if(mochiSpawnT<=0){ spawnMochi(); mochiSpawnT=Math.max(0.16,0.32-lvl*0.02)+Math.random()*0.24; } }
+    // 拾いに来る人々：各自が別々の「一番下の餅」を狙って寄る
+    for(const p of crowd){ if(p.target && (mochis.indexOf(p.target)<0 || p.target.hit || p.target.y>cssH-45)) p.target=null; }
+    const claimed=new Set(crowd.map(p=>p.target).filter(Boolean));
+    for(const p of crowd){ if(p.target) continue; let best=null,by=-1;
+      for(const m of mochis){ if(m.y<cssH*0.32 || claimed.has(m) || m.type==='coal') continue; if(m.y>by){by=m.y; best=m;} }   // 炭は狙わない
+      if(best){ p.target=best; claimed.add(best); } }
+    for(const p of crowd){ let goal=p.x;
+      if(p.target){ const m=p.target, tt=Math.max(0,Math.min(1.3,((cssH-90)-m.y)/Math.max(60,m.vy))); goal=Math.max(28,Math.min(cssW-28, m.x+m.vx*tt*0.7)); }   // 落下地点を予測
+      p.x += Math.max(-p.sp*dt, Math.min(p.sp*dt, goal-p.x)); p.x=Math.max(28,Math.min(cssW-28,p.x)); p.bob+=dt*11; }
+    const catchY=cssH-90, catchHalf=34, npcHalf=30;
     for(let i=mochis.length-1;i>=0;i--){ const m=mochis[i];
       m.vy+=480*dt; m.y+=m.vy*dt; m.x+=m.vx*dt; m.rot+=m.vr*dt;
       if(m.x<20){m.x=20;m.vx*=-1;} if(m.x>cssW-20){m.x=cssW-20;m.vx*=-1;}
-      if(m.y>=catchY && m.y<=catchY+34 && Math.abs(m.x-catcher.x)<catchHalf){   // 升でキャッチ
-        mochiScore+=m.val; score+=m.val;
-        mochiPops.push({x:m.x,y:catchY-6,val:m.val,t:0,col:m.type==='gold'?'#e0a63c':(m.type==='red'?'#d1503a':'#4c9a4c')});
-        audio.combo(2); mochis.splice(i,1); continue;
+      if(m.y>=catchY && m.y<=catchY+40){
+        if(Math.abs(m.x-catcher.x)<catchHalf){        // 自分が拾う
+          if(m.type==='coal'){                        // 炭を拾った＝ペナルティ
+            catcher.catches=Math.max(0,catcher.catches-2); score=Math.max(0,score-120); shake=8;
+            mochiPops.push({x:m.x,y:catchY-6,val:-120,t:0,col:'#d1503a'}); audio.tone(120,.2,'sawtooth',.3,-50); showToast('💥 炭を拾った！ -120','#d1503a');
+            mochis.splice(i,1); continue;
+          }
+          mochiScore+=m.val; addScore(m.val); catcher.catches++;
+          mochiPops.push({x:m.x,y:catchY-6,val:m.val,t:0,col:(m.type==='gold'||m.type==='big')?'#e0a63c':(m.type==='red'?'#d1503a':'#4c9a4c')});
+          if(m.type==='big'){ ring(m.x,catchY,'#ffd24a'); showToast('🎉 特大餅！ +'+m.val,'#e0a63c'); }
+          audio.combo(2); mochis.splice(i,1); continue;
+        }
+        if(m.type==='coal') continue;                 // 炭はNPCも拾わずすり抜ける
+        let bestP=null, bd=npcHalf;                   // 一番近い人が拾う（偏り防止）
+        for(const p of crowd){ const dd=Math.abs(m.x-p.x); if(dd<bd){ bd=dd; bestP=p; } }
+        if(bestP){ bestP.catches++; bestP.bob=0; burst(m.x,catchY,'#cdd2d8',5); mochis.splice(i,1); continue; }
       }
       if(m.y>cssH+30) mochis.splice(i,1);
     }
     for(let i=mochiPops.length-1;i>=0;i--){ const p=mochiPops[i]; p.t+=dt; p.y-=46*dt; if(p.t>=0.8) mochiPops.splice(i,1); }
     if(mochiT<=-1.6) endMochiBonus();                  // 時間切れ後、落下中の餅を拾い切ってから締め
   }
-  function endMochiBonus(){ stageClear(0, `餅ひろい終了！ +${mochiScore}点`, 900); }
+  function mochiRank(){ const above=crowd.filter(p=>p.catches>(catcher.catches||0)).length; return {rank:above+1, total:crowd.length+1}; }
+  function endMochiBonus(){
+    const {rank,total}=mochiRank();
+    if(total>2 && rank>2){ gameOver(`餅ひろい ${rank}位／${total}人…2位以内に入れず脱落！`); return; }
+    stageClear((3-rank)*150+100, `餅ひろい ${rank}位／${total}人！ +${mochiScore}`, 1300);
+  }
   function roundRectS(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
   function drawMiniTower(cx, topY, baseW){
     const tiers=5, step=11, rh=8, bh=6;
@@ -869,50 +975,97 @@
   }
   function drawMochi(m){
     ctx.save(); ctx.translate(m.x,m.y); ctx.rotate(m.rot||0);
+    if(m.type==='coal'){                               // 炭（ゴツゴツした黒い塊＝避ける）
+      ctx.fillStyle='#333'; ctx.strokeStyle='#111'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(-m.r,0); ctx.lineTo(-m.r*0.5,-m.r*0.85); ctx.lineTo(m.r*0.4,-m.r*0.7); ctx.lineTo(m.r,m.r*0.1); ctx.lineTo(m.r*0.5,m.r*0.85); ctx.lineTo(-m.r*0.6,m.r*0.7); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='rgba(150,150,150,.5)'; ctx.beginPath(); ctx.arc(-m.r*0.2,-m.r*0.25,2,0,6.283); ctx.arc(m.r*0.3,m.r*0.2,1.5,0,6.283); ctx.fill();
+      ctx.restore(); return;
+    }
     ctx.fillStyle=m.col; ctx.strokeStyle='rgba(120,90,60,.35)'; ctx.lineWidth=1.5;
     ctx.beginPath(); ctx.ellipse(0,0,m.r,m.r*0.82,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
     ctx.fillStyle='rgba(255,255,255,.6)'; ctx.beginPath(); ctx.ellipse(-m.r*0.3,-m.r*0.3,m.r*0.3,m.r*0.2,0,0,Math.PI*2); ctx.fill();
     if(m.type==='gold'){ ctx.fillStyle='#b8860b'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('¥',0,1); }
+    else if(m.type==='big'){ ctx.fillStyle='#d1503a'; ctx.font='bold 22px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('大',0,1); }
     else if(m.type==='red'){ ctx.fillStyle='#d1503a'; ctx.beginPath(); ctx.arc(0,0,m.r*0.35,0,Math.PI*2); ctx.fill(); }
     ctx.restore();
   }
-  function drawCatcher(x){
-    const baseY=cssH-58, w=68, h=32, boxY=baseY-h;
-    ctx.fillStyle='rgba(0,0,0,.12)'; ctx.beginPath(); ctx.ellipse(x,cssH-14,42,8,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#221f1b'; ctx.fillRect(x-10,baseY,7,16); ctx.fillRect(x+3,baseY,7,16);        // 脚
-    ctx.fillStyle='#3f7a4a'; roundRectS(x-16,baseY-20,32,26,6); ctx.fill();                        // 法被
-    ctx.fillStyle='#e0a63c'; ctx.fillRect(x-16,baseY-2,32,4);
-    ctx.fillStyle='#f3cf9f'; ctx.beginPath(); ctx.arc(x, baseY-30, 13,0,Math.PI*2); ctx.fill();     // 頭
-    ctx.fillStyle='#20160f'; ctx.beginPath(); ctx.arc(x,baseY-33,13,Math.PI,0); ctx.fill();
-    ctx.fillStyle='#fbfbf7'; ctx.fillRect(x-13,baseY-32,26,5);                                      // 鉢巻
-    ctx.fillStyle='#20160f'; ctx.fillRect(x-6,baseY-30,3,3); ctx.fillRect(x+3,baseY-30,3,3);
-    ctx.strokeStyle='#3f7a4a'; ctx.lineWidth=7; ctx.lineCap='round';                                // 腕
-    ctx.beginPath(); ctx.moveTo(x-12,baseY-14); ctx.lineTo(x-w/2+8,boxY+6); ctx.moveTo(x+12,baseY-14); ctx.lineTo(x+w/2-8,boxY+6); ctx.stroke();
-    ctx.fillStyle='#c79a5b'; ctx.fillRect(x-w/2,boxY,w,h);                                          // 升
-    ctx.fillStyle='#8a5a2b'; ctx.fillRect(x-w/2,boxY,w,7);
+  function drawCatcher(x, col, s, me, bob){
+    col=col||'#3f7a4a'; s=s==null?1:s; bob=bob||0;
+    const baseY=cssH-58-bob, w=68*s, h=32*s, boxY=baseY-h, R=13*s;
+    ctx.fillStyle='rgba(0,0,0,.12)'; ctx.beginPath(); ctx.ellipse(x,cssH-14,42*s,8,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#221f1b'; ctx.fillRect(x-10*s,baseY,7*s,16*s); ctx.fillRect(x+3*s,baseY,7*s,16*s);   // 脚
+    ctx.fillStyle=col; roundRectS(x-16*s,baseY-20*s,32*s,26*s,6); ctx.fill();                            // 法被
+    ctx.fillStyle='#e0a63c'; ctx.fillRect(x-16*s,baseY-2*s,32*s,4*s);
+    ctx.fillStyle='#f3cf9f'; ctx.beginPath(); ctx.arc(x, baseY-30*s, R,0,Math.PI*2); ctx.fill();          // 頭
+    ctx.fillStyle='#20160f'; ctx.beginPath(); ctx.arc(x,baseY-33*s,R,Math.PI,0); ctx.fill();
+    ctx.fillStyle='#fbfbf7'; ctx.fillRect(x-R,baseY-32*s,R*2,5*s);                                        // 鉢巻
+    ctx.fillStyle='#20160f'; ctx.fillRect(x-6*s,baseY-30*s,3*s,3*s); ctx.fillRect(x+3*s,baseY-30*s,3*s,3*s);
+    ctx.strokeStyle=col; ctx.lineWidth=7*s; ctx.lineCap='round';                                          // 腕
+    ctx.beginPath(); ctx.moveTo(x-12*s,baseY-14*s); ctx.lineTo(x-w/2+8*s,boxY+6); ctx.moveTo(x+12*s,baseY-14*s); ctx.lineTo(x+w/2-8*s,boxY+6); ctx.stroke();
+    ctx.fillStyle='#c79a5b'; ctx.fillRect(x-w/2,boxY,w,h);                                                // 升
+    ctx.fillStyle='#8a5a2b'; ctx.fillRect(x-w/2,boxY,w,7*s);
     ctx.strokeStyle='#7a4f22'; ctx.lineWidth=2; ctx.strokeRect(x-w/2,boxY,w,h);
+    if(me){ ctx.fillStyle='#d1503a'; ctx.beginPath(); ctx.moveTo(x,boxY-12); ctx.lineTo(x-7,boxY-22); ctx.lineTo(x+7,boxY-22); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center'; ctx.fillText('YOU',x,boxY-24); }   // 自分マーカー
+  }
+  function drawMochiHouse(){                          // 建方で建てた家（餅まきの背景）
+    const cx=cssW/2, hw=Math.min(cssW*0.32,124), ridgeY=mochiRidgeY(), eaveY=178, wallBot=266, ridgeHalf=46;
+    ctx.fillStyle='#efe6d0'; ctx.fillRect(cx-hw, eaveY, hw*2, wallBot-eaveY);                 // 壁
+    ctx.fillStyle='#bfe0f0';                                                                   // 窓
+    ctx.fillRect(cx-hw*0.64, eaveY+24, hw*0.5, 44); ctx.fillRect(cx+hw*0.14, eaveY+24, hw*0.5, 44);
+    ctx.strokeStyle='#8a5a2b'; ctx.lineWidth=3;
+    ctx.strokeRect(cx-hw*0.64, eaveY+24, hw*0.5, 44); ctx.strokeRect(cx+hw*0.14, eaveY+24, hw*0.5, 44);
+    ctx.fillStyle='#a9733f'; ctx.fillRect(cx-hw, eaveY, 12, wallBot-eaveY); ctx.fillRect(cx+hw-12, eaveY, 12, wallBot-eaveY); ctx.fillRect(cx-6, eaveY, 12, wallBot-eaveY);   // 柱
+    ctx.fillStyle='#8a5a2b'; ctx.fillRect(cx-hw, eaveY, hw*2, 12); ctx.fillRect(cx-hw, wallBot-12, hw*2, 12);   // 梁
+    const rg=ctx.createLinearGradient(0,ridgeY,0,eaveY); rg.addColorStop(0,'#7a4a30'); rg.addColorStop(1,'#5c3a20');   // 屋根
+    ctx.fillStyle=rg; ctx.beginPath(); ctx.moveTo(cx-hw-16, eaveY+8); ctx.lineTo(cx-ridgeHalf, ridgeY); ctx.lineTo(cx+ridgeHalf, ridgeY); ctx.lineTo(cx+hw+16, eaveY+8); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.14)'; ctx.lineWidth=1;                                        // 瓦ライン
+    for(let k=1;k<=3;k++){ const yy=ridgeY+(eaveY-ridgeY)*k/4, t=k/4, half=ridgeHalf+(hw+16-ridgeHalf)*t; ctx.beginPath(); ctx.moveTo(cx-half-2,yy); ctx.lineTo(cx+half+2,yy); ctx.stroke(); }
+    ctx.fillStyle='#4a2f18'; ctx.fillRect(cx-ridgeHalf, ridgeY-5, ridgeHalf*2, 9);            // 棟木
+    return {cx, ridgeY, ridgeHalf, eaveY, hw};
+  }
+  function drawGoshiki(x, baseY){                     // 屋根の上の五色旗（風になびく）
+    const t=performance.now()*0.004, topY=baseY-98;
+    ctx.strokeStyle='#9ab06a'; ctx.lineWidth=5; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(x,baseY); ctx.lineTo(x,topY); ctx.stroke();   // 竹の柱
+    ctx.strokeStyle='#a9733f'; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(x+6, topY+14); ctx.lineTo(x-42, topY+2); ctx.stroke();             // 横木
+    ctx.fillStyle='#fbfbf7'; ctx.beginPath(); ctx.arc(x, topY-3, 6, 0, 6.283); ctx.fill(); ctx.strokeStyle='#c9a24a'; ctx.lineWidth=1.5; ctx.stroke();   // 御幣
+    const cols=['#6a3fa0','#2f6fd6','#4a9a4c','#e8c531','#d1503a'];                             // 五色（紫青緑黄赤）
+    for(let i=0;i<cols.length;i++){ const y0=topY+8+i*6;
+      ctx.strokeStyle=cols[i]; ctx.lineWidth=7; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(x-2, y0);
+      for(let s=1;s<=6;s++){ const px=x-2-s*11, py=y0 + s*3 + Math.sin(t + s*0.6 + i*0.5)*6; ctx.lineTo(px, py); }
+      ctx.stroke(); }
   }
   function drawMochiBonus(){
-    const g=ctx.createLinearGradient(0,0,0,cssH); g.addColorStop(0,'#a9def7'); g.addColorStop(.6,'#dff2ff'); g.addColorStop(1,'#eef8ff');
+    const g=ctx.createLinearGradient(0,0,0,cssH); g.addColorStop(0,'#7db8e8'); g.addColorStop(.55,'#bfe0f5'); g.addColorStop(1,'#eef8ff');
     ctx.fillStyle=g; ctx.fillRect(0,0,cssW,cssH);
-    for(let i=0;i<Math.ceil(cssW/40)+1;i++){ ctx.fillStyle=i%2?'#d1503a':'#fff'; ctx.fillRect(i*40,0,40,26); }   // 紅白幕
-    ctx.fillStyle='#e0a63c'; ctx.fillRect(0,26,cssW,4);
-    drawMiniTower(cssW/2, 36, Math.min(cssW*0.5,210));
+    drawCloud(cssW*0.78, 60, 30); drawCloud(cssW*0.16, 96, 24);   // 雲
+    const house=drawMochiHouse();                                            // 建方で建てた家＝背景
+    drawGoshiki(house.cx - house.ridgeHalf + 2, house.ridgeY);               // 屋根の上の五色旗
+    if(mascotImg.complete && mascotImg.naturalWidth){ const mh=98, mw=mh*260/340, bob=mochiThrowT>0?(mochiThrowT/0.2)*6:0; ctx.drawImage(mascotImg, cssW/2-mw/2, mochiRidgeY()-mh-bob, mw, mh); }   // 屋根の棟に立つ大工が餅まき
     for(const m of mochis) drawMochi(m);
-    drawCatcher(catcher.x);
+    for(const p of crowd) drawCatcher(p.x, p.col, 0.82, false, Math.abs(Math.sin(p.bob))*3);   // 拾いに来た人々
+    drawCatcher(catcher.x, '#3f7a4a', 1, true, 0);                                             // 自分
+    // 各自の拾った数（升の上に表示）
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='bold 12px sans-serif'; ctx.fillStyle='#5c3a18';
+    for(const p of crowd) ctx.fillText(p.catches, p.x, cssH-71);
+    ctx.font='bold 14px sans-serif'; ctx.fillStyle='#1b3a5c'; ctx.fillText((catcher.catches||0), catcher.x, cssH-73);
+    ctx.textBaseline='alphabetic';
     ctx.textAlign='center'; ctx.font='900 16px sans-serif';
-    for(const p of mochiPops){ ctx.globalAlpha=Math.max(0,1-p.t/0.8); ctx.fillStyle=p.col; ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.strokeText('+'+p.val,p.x,p.y); ctx.fillText('+'+p.val,p.x,p.y); }
+    for(const p of mochiPops){ const txt=(p.val<0?'':'+')+p.val; ctx.globalAlpha=Math.max(0,1-p.t/0.8); ctx.fillStyle=p.col; ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.strokeText(txt,p.x,p.y); ctx.fillText(txt,p.x,p.y); }
     ctx.globalAlpha=1;
-    ctx.fillStyle='rgba(27,58,92,.92)'; roundRectS(cssW/2-98,150,196,50,14); ctx.fill();
-    ctx.fillStyle='#fff'; ctx.textAlign='center';
-    ctx.font='900 20px sans-serif'; ctx.fillText('🎉 餅まき！', cssW/2, 172);
-    ctx.font='bold 13px sans-serif'; ctx.fillText(`残り ${Math.max(0,mochiT).toFixed(1)}秒 ・ ボーナス +${mochiScore}`, cssW/2, 190);
+    // 上部の小さなタイマー／得点
+    ctx.fillStyle='rgba(27,58,92,.9)'; roundRectS(8,32,116,26,8); ctx.fill(); ctx.fillStyle='#fff'; ctx.textAlign='left'; ctx.font='bold 13px sans-serif'; ctx.fillText('残り '+Math.max(0,mochiT).toFixed(1)+'秒', 16, 49);
+    const rk=mochiRank(), danger=(rk.total>2 && rk.rank>2);
+    ctx.fillStyle=danger?'rgba(209,80,58,.95)':(rk.rank<=2?'rgba(76,154,76,.95)':'rgba(27,58,92,.9)'); roundRectS(cssW-128,32,120,26,8); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.textAlign='right'; ctx.font='bold 14px sans-serif'; ctx.fillText((danger?'圏外 ':'')+rk.rank+'/'+rk.total+'位', cssW-16, 50);
+    ctx.textAlign='center';
     if(mochiT<=0){
       ctx.fillStyle='rgba(76,154,76,.95)'; roundRectS(cssW/2-120,cssH/2-42,240,84,16); ctx.fill();
       ctx.fillStyle='#fff'; ctx.font='900 26px sans-serif'; ctx.fillText('餅まき終了！', cssW/2, cssH/2-4);
       ctx.font='bold 16px sans-serif'; ctx.fillText(`ボーナス +${mochiScore}点`, cssW/2, cssH/2+24);
     } else {
-      ctx.fillStyle='rgba(27,58,92,.8)'; ctx.font='bold 12px sans-serif'; ctx.fillText('← 動かして餅をキャッチ →', cssW/2, cssH-14);
+      ctx.fillStyle='rgba(27,58,92,.8)'; ctx.font='bold 12px sans-serif'; ctx.fillText('← 餅を拾え！ 炭は拾うな！ 2位以内で生存 →', cssW/2, cssH-14);
     }
   }
 
@@ -1032,33 +1185,50 @@
 
   // ================= ③ 釘打ち（早打ち） =================
   function initNail(){
-    nail={ need:6+lvl*2, done:0, miss:0, maxMiss:5, spawnT:0.4,
-      life:Math.max(1.3,2.4-lvl*0.12), maxOn:Math.min(3,1+lvl), items:[] };
-    tapHint.textContent='光る釘をすばやくタップ！'; tapHint.style.display='block';
-    setTimeout(()=>{ if(mode==='nail') tapHint.style.display='none'; }, 1800);
+    nail={ need:12+lvl*3, done:0, combo:0, spawnT:0.3, myBob:0, beeChance:0.10+lvl*0.03,
+      life:Math.max(2.2,3.2-lvl*0.1), maxOn:4, items:[],
+      rival:{ done:0, target:null, react:0, base:Math.max(0.6,1.2-lvl*0.07), bob:0 } };   // ライバル大工（少しゆっくり）
+    tapHint.textContent='釘を打て！ 蜂🐝は叩くな！ タップ'; tapHint.style.display='block';
+    setTimeout(()=>{ if(mode==='nail') tapHint.style.display='none'; }, 2000);
   }
   function spawnNail(){
-    const m=54, top=120, bot=cssH-120;
+    const m=54, top=120, bot=cssH-120, bee=(Math.random()<nail.beeChance);
     nail.items.push({ x:m+Math.random()*(cssW-2*m), y:top+Math.random()*(bot-top),
-      r:Math.max(24,34-lvl*1.2), t:0, life:nail.life, hit:false, anim:0, rot:Math.random()*0.6-0.3 });
+      r:Math.max(28,38-lvl), t:0, life: bee?Math.max(1.4,2.2-lvl*0.1):nail.life, hit:false, by:null, anim:0, rot:Math.random()*0.6-0.3, bee, gold: bee?false:(Math.random()<0.14) });
   }
   function updateNail(dt){
-    const n=nail; n.spawnT-=dt;
-    const remaining=n.need-n.done, onNow=n.items.filter(i=>!i.hit).length;
-    if(n.spawnT<=0 && onNow<Math.min(n.maxOn,remaining)){ spawnNail(); n.spawnT=Math.max(0.35,0.6-lvl*0.04)+Math.random()*0.4; }
+    const n=nail, rv=n.rival; n.spawnT-=dt;
+    if(n.myBob>0) n.myBob-=dt; if(rv.bob>0) rv.bob-=dt;
+    const live=n.items.filter(i=>!i.hit).length;
+    if(n.spawnT<=0 && live<n.maxOn){ spawnNail(); n.spawnT=Math.max(0.28,0.5-lvl*0.03)+Math.random()*0.3; }
+    // ライバルAI（未打の釘を狙って一定時間後に打つ）
+    if(rv.target && (n.items.indexOf(rv.target)<0 || rv.target.hit)) rv.target=null;
+    if(!rv.target){ let best=null,bt=1e9; for(const it of n.items){ if(it.hit||it.bee) continue; if(it.t<bt){bt=it.t; best=it;} }   // 新しい釘を狙う（蜂は避ける）
+      if(best){ rv.target=best; rv.react=rv.base*(0.7+Math.random()*0.6); } }
+    else { rv.react-=dt;
+      if(rv.react<=0){ const it=rv.target; it.hit=true; it.by='rival'; it.anim=0; rv.done++; rv.bob=0.25; audio.tone(880,.04,'square',.1); rv.target=null;
+        if(rv.done>=n.need){ updateHUD(); gameOver('ライバルに先を越された…'); return; } } }
     for(let i=n.items.length-1;i>=0;i--){ const it=n.items[i];
       if(it.hit){ it.anim+=dt; if(it.anim>0.42) n.items.splice(i,1); continue; }
-      it.t+=dt;
-      if(it.t>=it.life){ n.miss++; n.items.splice(i,1); audio.tone(120,.1,'sawtooth',.2,-30); updateHUD();
-        if(n.miss>=n.maxMiss){ gameOver('板を打ち逃した…'); return; } }
+      it.t+=dt; if(it.t>=it.life) n.items.splice(i,1);   // 逃してもペナルティ無し（レースが勝負）
     }
+    updateHUD();
   }
   function nailTap(px,py){
     const n=nail; let hit=false;
     for(const it of n.items){ if(it.hit) continue;
-      if(Math.hypot(px-it.x,py-it.y)<=it.r+10){ it.hit=true; it.anim=0; n.done++; score+=60+lvl*15; burst(it.x,it.y,'#cfd6dd',7); audio.tone(1500,.03,'square',.16); audio.tone(520,.06,'square',.12,-260); hit=true;   // カンッ（ハンマー）
-        if(n.done>=n.need){ updateHUD(); stageClear(200+lvl*100,'壁張り完了！ 早打ち名人🔨'); return; } break; } }
-    if(!hit) audio.tone(200,.05,'square',.1);
+      if(Math.hypot(px-it.x,py-it.y)<=it.r+10){ hit=true; it.hit=true; it.anim=0;
+        if(it.bee){                                     // 蜂を叩いた＝ペナルティ（コンボ消滅＋ライバルに1本）
+          it.by='bee'; n.combo=0; shake=8; audio.tone(180,.2,'sawtooth',.3,-50); burst(it.x,it.y,'#d1503a',12); showToast('🐝 蜂を叩いた！ ライバルに1本！','#d1503a');
+          n.rival.done++; updateHUD(); if(n.rival.done>=n.need){ gameOver('蜂にやられて負けた…'); return; } break;
+        }
+        it.by='me'; n.done++; n.myBob=0.25; n.combo++;
+        const base=(60+lvl*15)*(1+Math.min(n.combo,12)*0.1);   // 連打で加点UP
+        if(it.gold){ addScore(base*3); burst(it.x,it.y,'#ffe08a',16); ring(it.x,it.y,'#ffd24a'); showToast('🌟金の釘！ +'+Math.round(base*3*scoreMul),'#e0a63c'); audio.combo(4); audio.tone(1500,.03,'square',.18); }
+        else { addScore(base); burst(it.x,it.y,'#cfd6dd',7); audio.tone(1500,.03,'square',.16); audio.tone(520,.06,'square',.12,-260); if(n.combo>=4 && n.combo%2===0) showToast(n.combo+'連打！','#3a76c0'); }
+        if(it===n.rival.target) n.rival.target=null;      // 取られたらライバルは狙い直し
+        if(n.done>=n.need){ updateHUD(); stageClear(200+lvl*100+(n.done-n.rival.done)*20+n.combo*10,'壁張り勝利！ ライバルに勝った🔨'); return; } break; } }
+    if(!hit){ audio.tone(200,.05,'square',.1); n.combo=0; }   // 空振りは連打リセット
     updateHUD();
   }
   function drawWall(){
@@ -1068,9 +1238,31 @@
     for(let y=0;y<cssH;y+=46){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cssW,y); ctx.stroke(); }
     ctx.fillStyle='rgba(120,90,55,.16)'; for(let x=cssW*0.2;x<cssW;x+=cssW*0.3) ctx.fillRect(x-6,0,12,cssH);
   }
+  function drawRivalCarpenter(x, bob){                 // ライバル大工（青・ハンマーを持つ）
+    const baseY=cssH-14-(bob>0?bob*18:0);
+    ctx.fillStyle='rgba(0,0,0,.12)'; ctx.beginPath(); ctx.ellipse(x,cssH-8,24,6,0,0,6.283); ctx.fill();
+    ctx.fillStyle='#221f1b'; ctx.fillRect(x-8,baseY-16,6,16); ctx.fillRect(x+2,baseY-16,6,16);   // 脚
+    ctx.fillStyle='#3a5a8a'; roundRectS(x-15,baseY-42,30,28,6); ctx.fill();                        // 青法被
+    ctx.fillStyle='#e0a63c'; ctx.fillRect(x-15,baseY-20,30,4);                                     // 帯
+    ctx.fillStyle='#f3cf9f'; ctx.beginPath(); ctx.arc(x,baseY-52,12,0,6.283); ctx.fill();          // 頭
+    ctx.fillStyle='#20160f'; ctx.beginPath(); ctx.arc(x,baseY-55,12,Math.PI,0); ctx.fill();        // 髪
+    ctx.fillStyle='#fbfbf7'; ctx.fillRect(x-12,baseY-54,24,4);                                      // 鉢巻
+    ctx.fillStyle='#20160f'; ctx.fillRect(x-6,baseY-52,3,3); ctx.fillRect(x+3,baseY-52,3,3);
+    ctx.strokeStyle='#3a5a8a'; ctx.lineWidth=6; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(x+8,baseY-38); ctx.lineTo(x+18,baseY-56); ctx.stroke();  // 腕
+    ctx.save(); ctx.translate(x+20,baseY-58); ctx.rotate(-0.5);                                      // ハンマー（青）
+    ctx.fillStyle='#a9733f'; roundRectS(-3,0,6,20,2); ctx.fill(); ctx.fillStyle='#5b6b80'; roundRectS(-11,-6,22,11,2); ctx.fill(); ctx.fillStyle='#8a9096'; roundRectS(-11,-6,22,4,2); ctx.fill();
+    ctx.restore();
+  }
   function drawNail(){
     const n=nail; drawWall(); if(!n) return;
     for(const it of n.items){
+      if(it.bee){                                     // 蜂＝叩いてはいけない
+        if(it.hit){ const a=1-it.anim/0.42; ctx.save(); ctx.globalAlpha=Math.max(0,a); ctx.strokeStyle='#d1503a'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(it.x-11,it.y-11); ctx.lineTo(it.x+11,it.y+11); ctx.moveTo(it.x+11,it.y-11); ctx.lineTo(it.x-11,it.y+11); ctx.stroke(); ctx.restore(); continue; }
+        const wob=Math.sin(it.t*14)*3;
+        ctx.save(); ctx.strokeStyle='rgba(209,80,58,.7)'; ctx.setLineDash([4,4]); ctx.lineWidth=2; ctx.beginPath(); ctx.arc(it.x,it.y,it.r*0.92,0,6.283); ctx.stroke(); ctx.restore();
+        ctx.font=Math.round(it.r*1.5)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🐝', it.x+wob, it.y);
+        continue;
+      }
       if(it.hit){                                     // ハンマーで打つ演出
         const ph=Math.min(1,it.anim/0.34), down=ph<0.4?(ph/0.4):1, ang=-0.7+down*0.95;
         // 打ち込まれた釘（頭だけ）
@@ -1078,22 +1270,33 @@
         // 打撃の火花
         if(down>=1 && ph<0.85){ const a=1-(ph-0.4)/0.45; ctx.save(); ctx.globalAlpha=Math.max(0,a); ctx.strokeStyle='#ffd24a'; ctx.lineWidth=3;
           for(let k=0;k<5;k++){ const an=-2.2+k*0.55; ctx.beginPath(); ctx.moveTo(it.x+Math.cos(an)*it.r*0.4, it.y+Math.sin(an)*it.r*0.4); ctx.lineTo(it.x+Math.cos(an)*it.r*1.25, it.y+Math.sin(an)*it.r*1.25); ctx.stroke(); } ctx.restore(); }
-        // ハンマー（右上を支点に振り下ろす）
+        // ハンマー（右上を支点に振り下ろす。ライバルは青）
+        const rvh=it.by==='rival';
         ctx.save(); ctx.translate(it.x+30, it.y-32); ctx.rotate(ang);
-        ctx.fillStyle='#a9733f'; roundRectS(-5,0,10,40,3); ctx.fill(); ctx.strokeStyle='#7a4f22'; ctx.lineWidth=1.5; ctx.strokeRect(-5,0,10,40);
+        ctx.fillStyle=rvh?'#3a5a8a':'#a9733f'; roundRectS(-5,0,10,40,3); ctx.fill(); ctx.strokeStyle=rvh?'#26436b':'#7a4f22'; ctx.lineWidth=1.5; ctx.strokeRect(-5,0,10,40);
         ctx.fillStyle='#6b7076'; roundRectS(-17,38,34,16,3); ctx.fill(); ctx.fillStyle='#8a9096'; roundRectS(-17,38,34,5,3); ctx.fill();
         ctx.fillStyle='#565b60'; roundRectS(11,38,8,16,2); ctx.fill();
         ctx.restore(); continue; }
       ctx.save(); ctx.translate(it.x,it.y); ctx.rotate(it.rot);
-      ctx.fillStyle='#d9b877'; roundRectS(-it.r*1.3,-it.r*0.7,it.r*2.6,it.r*1.4,4); ctx.fill();
-      ctx.strokeStyle='rgba(90,55,20,.4)'; ctx.lineWidth=2; ctx.strokeRect(-it.r*1.3,-it.r*0.7,it.r*2.6,it.r*1.4); ctx.restore();
-      ctx.fillStyle='#8a8f96'; ctx.beginPath(); ctx.arc(it.x,it.y,it.r*0.34,0,6.283); ctx.fill();
-      ctx.fillStyle='#cfd6dd'; ctx.beginPath(); ctx.arc(it.x-it.r*0.1,it.y-it.r*0.1,it.r*0.14,0,6.283); ctx.fill();
+      ctx.fillStyle=it.gold?'#f0d488':'#d9b877'; roundRectS(-it.r*1.3,-it.r*0.7,it.r*2.6,it.r*1.4,4); ctx.fill();
+      ctx.strokeStyle=it.gold?'rgba(150,100,20,.6)':'rgba(90,55,20,.4)'; ctx.lineWidth=2; ctx.strokeRect(-it.r*1.3,-it.r*0.7,it.r*2.6,it.r*1.4); ctx.restore();
+      ctx.fillStyle=it.gold?'#d99a2c':'#8a8f96'; ctx.beginPath(); ctx.arc(it.x,it.y,it.r*0.34,0,6.283); ctx.fill();
+      ctx.fillStyle=it.gold?'#ffe9a8':'#cfd6dd'; ctx.beginPath(); ctx.arc(it.x-it.r*0.1,it.y-it.r*0.1,it.r*0.14,0,6.283); ctx.fill();
+      if(it.gold){ ctx.fillStyle='#fff8dc'; ctx.font='bold '+Math.round(it.r*0.55)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('✦', it.x+it.r*0.66, it.y-it.r*0.6); }
       const p=1-it.t/it.life; ctx.strokeStyle=p<0.35?'#d1503a':'#4c9a4c'; ctx.lineWidth=3;
       ctx.beginPath(); ctx.arc(it.x,it.y,it.r,-Math.PI/2,-Math.PI/2+p*6.283); ctx.stroke();
     }
+    // 大工さん（あなた＝カケヤを持つ）を左下、ライバルを右下に
+    if(mascotImg.complete && mascotImg.naturalWidth){ const mh=80, mw=mh*260/340, by=cssH-6-mh-(n.myBob>0?n.myBob*22:0); ctx.drawImage(mascotImg, 4, by, mw, mh); }
+    drawRivalCarpenter(cssW-40, n.rival.bob);
     drawSfx();
-    drawStatusBar(`板 ${n.done}/${n.need}　うち逃し ${n.miss}/${n.maxMiss}`);
+    drawStatusBar(`あなた ${n.done} ・ ライバル ${n.rival.done}（目標${n.need}）${n.combo>=3?'　🔥'+n.combo+'連打':''}`);
+    const bw=150, bx=cssW/2-bw/2, by1=cssH-42, by2=cssH-26;
+    ctx.fillStyle='rgba(0,0,0,.12)'; roundRectS(bx,by1,bw,10,5); ctx.fill(); roundRectS(bx,by2,bw,10,5); ctx.fill();
+    ctx.fillStyle='#4c9a4c'; roundRectS(bx,by1,bw*Math.min(1,n.done/n.need),10,5); ctx.fill();
+    ctx.fillStyle='#d1503a'; roundRectS(bx,by2,bw*Math.min(1,n.rival.done/n.need),10,5); ctx.fill();
+    ctx.textAlign='right'; ctx.font='bold 11px sans-serif';
+    ctx.fillStyle='#3c7a3c'; ctx.fillText('あなた',bx-6,by1+9); ctx.fillStyle='#d1503a'; ctx.fillText('ライバル',bx-6,by2+9); ctx.textAlign='center';
   }
 
   // ================= ④ 丸太切り（早切り） =================
@@ -1182,6 +1385,7 @@
     if(e.code==='Space'||e.code==='Enter'){
       e.preventDefault();
       if(state==='play'){ if(mode==='build') drop(); else if(mode==='crane') craneDrop(); }
+      else if(state==='clear' && $('srOverlay').classList.contains('show')) nextStage();   // 結果発表→次へ
       else if(state==='title'||state==='over') startGame();
     }
   });
@@ -1189,6 +1393,8 @@
   // ================= 倒壊 =================
   function gameOver(reason, dir){
     state='over'; collapsing=true; overTimer=0; audio.crash(); reactMascot('fell');
+    streak=0; scoreMul=1;                              // 連勝・倍率リセット
+    lives--;                                            // ハートを1つ失う
     tapHint.style.display='none';
     const push=dir||Math.sign(lean)||1;
     for(const b of beams){ if(b.kind==='sill') continue;
@@ -1196,9 +1402,15 @@
       b.vy=-(50+Math.random()*130);
       b.va=(Math.random()*7-3.5);
     }
-    setTimeout(showResult, 1100);
-    bumpBest();
+    bumpBest(); updateHUD();
     $('overReason').textContent=reason;
+    if(lives>0){                                        // ハートが残っていれば同じステージに再挑戦
+      showToast(`しくじった！ 残り ❤️×${lives}　もう一度！`, '#d1503a');
+      clearTimeout(srTimer);
+      srTimer=setTimeout(()=>{ if(state==='over') startStage(); }, 1700);
+    } else {
+      setTimeout(showResult, 1100);                     // 本当のゲームオーバー
+    }
   }
   function makeDims(){
     const fl=[]; for(let f=0;f<floors;f++) fl.push({ floorY:floorBaseY(f), postTop:postTopY(f), beamY:postTopY(f)-BEAMTH });
@@ -1213,9 +1425,9 @@
     $('finalCombo').textContent=maxCombo;
     $('finalBest').textContent=bestScore;
     $('newBest').style.display = (score>0 && score>=bestScore) ? 'inline-block':'none';
-    $('overTitle').textContent = (built>=3) ? '見事な棟梁だ！' : (built>=1?'まずまずの仕事だ':'残念…倒れた');
+    $('overTitle').textContent = `到達：ステージ${stage}・「${rankName(stage)}」`;
     overOverlay.classList.add('show');
-    bestEl.textContent=bestScore; $('titleBest').textContent=bestScore;
+    bestEl.textContent=bestScore; $('titleBest').textContent=bestScore; if($('titleStreak'))$('titleStreak').textContent=bestStreak;
   }
 
   // ================= 演出 =================
@@ -1277,12 +1489,16 @@
     scoreEl.textContent=score;
     builtEl.textContent=built;
     bestEl.textContent=bestScore;
+    const hr=$('hudRank'); if(hr) hr.textContent=rankName(stage);
+    const hl=$('hudLives'); if(hl) hl.textContent='❤️'.repeat(Math.max(0,lives));
+    const hm=$('hudMul'); if(hm) hm.textContent = scoreMul>1 ? '×2' : '';
+    const hs=$('hudStreak'); if(hs) hs.textContent = streak>=2 ? ('　🔥'+streak+'連勝') : '';
     hudSub.textContent = MODE_LABEL[mode] + (lvl>0?(' Lv'+(lvl+1)):'') + '　' + hudProgress();
   }
   function hudProgress(){
     if(mode==='build') return placed+'/'+total+'本';
     if(mode==='crane') return crane? (crane.done+'/'+crane.need+'個・ミス'+crane.miss) : '';
-    if(mode==='nail')  return nail? (nail.done+'/'+nail.need+'本・ミス'+nail.miss) : '';
+    if(mode==='nail')  return nail? ('あなた'+nail.done+' vs 敵'+nail.rival.done+' /'+nail.need) : '';
     if(mode==='saw')   return saw? (saw.done+'/'+saw.need+'本') : '';
     if(mode==='mochi') return '残り'+Math.max(0,Math.ceil(mochiT))+'秒';
     return '';
@@ -1299,14 +1515,18 @@
   // 大工を「組んでいる材の上」に立たせる（カケヤで叩き入れる）
   function positionMascot(){
     const el=gameMascot;
-    if(state!=='play' || !current){ el.style.left=''; el.style.top=''; el.style.width=''; el.style.bottom=''; return; }
+    if(state!=='play' || !current){ el.style.display='none'; return; }   // 作業中の材が無ければ隠す
+    el.style.display='';
     const t=current.t, f=current.slot.f;
     const footY = (f!=null) ? floorBaseY(f) : postTopY(floors-1);   // 作業中の床（＝下階の上）
-    const sx=wx(t.tx+40), sy=wy(footY);
-    const hPx=Math.max(26, POSTH*S*0.72), wPx=hPx*260/340;   // 棟梁は小さめ（材の脇に立つ）
+    // 建物の footprint 内に収める（端からはみ出して空中に浮かないように）
+    let mxWorld = t.tx + 40;
+    mxWorld = Math.max(CX-W_HALF+24, Math.min(CX+W_HALF-24, mxWorld));
+    const sx=wx(mxWorld), sy=wy(footY);
+    const hPx=Math.max(22, POSTH*S*0.56), wPx=hPx*260/340;   // 棟梁は小さめ（材の脇に立つ）
     el.style.width=wPx+'px'; el.style.bottom='auto';
     el.style.left=(sx - wPx*0.5)+'px';
-    el.style.top=(sy - hPx)+'px';                      // 足元を床に
+    el.style.top=(sy - hPx*0.96)+'px';                 // 足を材に接地（SVG下部の影ぶんを詰める）
   }
 
   // ================= 弟子（アイテム） =================
@@ -1410,6 +1630,15 @@
       const g=ctx.createRadialGradient(cssW/2,cssH/2,cssH*0.3,cssW/2,cssH/2,cssH*0.75);
       g.addColorStop(0,'rgba(209,80,58,0)'); g.addColorStop(1,`rgba(209,80,58,${0.28*a})`);
       ctx.fillStyle=g; ctx.fillRect(0,0,cssW,cssH); ctx.restore();
+    }
+    // 風インジケータ（落下中に材が流される。矢印の数＝強さ）
+    if(state==='play' && windAmp>0){
+      const dir=curWind>=0?1:-1, mag=Math.max(1,Math.min(3,Math.round(Math.abs(curWind)/(windAmp/3))));
+      ctx.save(); ctx.fillStyle='rgba(27,58,92,.6)'; roundRectS(cssW/2-64,30,128,26,9); ctx.fill();
+      ctx.fillStyle='#dff2ff'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      const arrows=(dir>0?'▶':'◀').repeat(mag);
+      ctx.fillText(dir>0?('風 '+arrows):(arrows+' 風'), cssW/2, 44);
+      ctx.textBaseline='alphabetic'; ctx.restore();
     }
     ctx.restore();
   }
@@ -1689,6 +1918,7 @@
   function updateBuild(mdt,dt){
     swayT += (3.0 + Math.abs(leanRatio)*3.5)*mdt;      // 傾くほど揺れ続ける
     curSway = (leanRatio*0.09 + Math.abs(leanRatio)*0.14*Math.sin(swayT)) * swayDamp;
+    windPhase += 0.5*mdt; curWind = windAmp*Math.sin(windPhase);   // ゆっくり変わる風
     if(current){
       if(current.mode==='swing'){
         current.x += current.dir*swingSpeed*mdt;
@@ -1697,6 +1927,7 @@
         if(current.x>=maxX){ current.x=maxX; current.dir=-1; }
       } else if(current.mode==='drop'){
         current.vy += GRAVITY*mdt; current.y += current.vy*mdt;
+        current.x += curWind*mdt;                      // 落下中は風で流される
         if(current.y>=current.t.ty){ current.y=current.t.ty; land(); }
       }
       if(current){
@@ -1739,8 +1970,10 @@
   // ================= ボタン =================
   $('startBtn').onclick=()=>{ resize(); startGame(); };
   $('retryBtn').onclick=()=>{ startGame(); };
-  $('toTitleBtn').onclick=()=>{ state='title'; show('title'); $('titleBest').textContent=bestScore; };
-  $('quitBtn').onclick=()=>{ state='title'; pauseOverlay.classList.remove('show'); show('title'); $('titleBest').textContent=bestScore; };
+  $('srNextBtn').onclick=()=>{ if(state==='clear') nextStage(); };            // 結果発表→スタートで次のステージ
+  $('srQuitBtn').onclick=()=>{ $('srOverlay').classList.remove('show'); state='title'; show('title'); $('titleBest').textContent=bestScore; if($('titleStreak'))$('titleStreak').textContent=bestStreak; };
+  $('toTitleBtn').onclick=()=>{ state='title'; show('title'); $('titleBest').textContent=bestScore; if($('titleStreak'))$('titleStreak').textContent=bestStreak; };
+  $('quitBtn').onclick=()=>{ state='title'; pauseOverlay.classList.remove('show'); show('title'); $('titleBest').textContent=bestScore; if($('titleStreak'))$('titleStreak').textContent=bestStreak; };
   $('resumeBtn').onclick=()=>{ pauseOverlay.classList.remove('show'); state='play'; last=performance.now(); };
   $('pauseBtn').onclick=()=>{ if(state==='play'){ state='pause'; $('pauseScore').textContent=score; pauseOverlay.classList.add('show'); } };
   $('howBtn').onclick=()=>$('howOverlay').classList.add('show');
@@ -1751,18 +1984,27 @@
   // ===== PWA：アプリにする（ホーム画面に追加）=====
   let deferredPrompt=null;
   function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true; }
+  const installBtns=['installBtn','installBtn2'].map($).filter(Boolean);
   window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; });   // Android/PCは1タップ用に保持
-  window.addEventListener('appinstalled', ()=>{ deferredPrompt=null; const b=$('installBtn'); if(b) b.style.display='none'; });
-  $('installBtn').onclick=async ()=>{
+  window.addEventListener('appinstalled', ()=>{ deferredPrompt=null; installBtns.forEach(b=>b.style.display='none'); });
+  async function doInstall(){
     if(deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){ } deferredPrompt=null; return; }
     $('installOverlay').classList.add('show');           // iOS等 beforeinstallprompt が来ない端末は手順を表示
-  };
+  }
+  installBtns.forEach(b=>b.onclick=doInstall);
   $('installClose').onclick=()=>$('installOverlay').classList.remove('show');
   $('installOverlay').addEventListener('pointerdown', e=>{ if(e.target===$('installOverlay')) $('installOverlay').classList.remove('show'); });
-  if(isStandalone()){ const b=$('installBtn'); if(b) b.style.display='none'; }   // 既にアプリ起動なら隠す
+  if(isStandalone()){ installBtns.forEach(b=>b.style.display='none'); }   // 既にアプリ起動なら隠す
   if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
     window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   }
+  // 更新（最新版を取り直す）：SW解除＋キャッシュ削除＋キャッシュ回避で再読込
+  $('updateBtn').onclick=async ()=>{
+    $('updateBtn').textContent='🔄 更新中…';
+    try{ if('serviceWorker' in navigator){ const rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r=>r.unregister())); } }catch(e){}
+    try{ if(window.caches){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); } }catch(e){}
+    location.replace(location.pathname + '?v=' + Date.now());
+  };
 
   // ===== LINEで共有（押すとLINEの共有画面が開き、スコア＋ゲームURLが入る）=====
   function shareLINE(kind){
@@ -1792,7 +2034,9 @@
       cam(){ return {camY:Math.round(camY),camTarget:Math.round(camTarget),zoom:+zoom.toFixed(3),S:+S.toFixed(3),cssW,cssH,effH:Math.round(cssH/S),sway:+curSway.toFixed(3),lean:Math.round(lean)}; },
       spawnDeshi:()=>spawnDeshi(), catchDeshi:()=>catchDeshi(), useItem:()=>useItem(),
       moveCatcher(x){ catcher.tx=x; },
-      mochiState(){ return {state, mode, mochiT:+mochiT.toFixed(2), n:mochis.length, mochiScore, catcher:Math.round(catcher.x)}; },
+      mochiState(){ return {state, mode, mochiT:+mochiT.toFixed(2), n:mochis.length, mochiScore, catcher:Math.round(catcher.x), myCatches:catcher.catches||0, crowd:crowd.map(p=>p.catches), rank:crowd.length?mochiRank():null}; },
+      mochiItems(){ return mochis.map(m=>({x:Math.round(m.x),y:Math.round(m.y),type:m.type})); },
+      setCatcher(x){ catcher.x=x; catcher.tx=x; },
       setStage(n){ stage=n; startStage(); return {mode:modeForStage(n), lvl:stageLevel(n)}; },
       modeInfo(){ return {stage, mode, lvl, state}; },
       // クレーン
@@ -1801,15 +2045,17 @@
       craneTimber(){ const n=crane&&craneNearestTimber(); return n? {x:Math.round(n.x), dx:Math.round(n.dx), slot:n.tm.slot, gold:n.tm.gold} : null; },
       craneState(){ return crane&&{x:Math.round(crane.x), bob:Math.round(craneBobX()), theta:+crane.theta.toFixed(3), frameX:crane.frameX, load:crane.load, gold:crane.loadGold, stack:crane.stack, done:crane.done, need:crane.need, miss:crane.miss, combo, drop:!!crane.dropObj, grabAnim:+crane.grabAnim.toFixed(2), timbers:crane.truck?crane.truck.timbers.length:0}; },
       // 釘打ち
-      nailHitAll(){ if(nail) for(const it of nail.items.slice()) if(!it.hit) nailTap(it.x,it.y); return nail&&{done:nail.done,need:nail.need,miss:nail.miss}; },
-      nailState(){ return nail&&{done:nail.done, need:nail.need, miss:nail.miss, on:nail.items.filter(i=>!i.hit).length}; },
+      nailHitAll(){ if(nail) for(const it of nail.items.slice()) if(!it.hit && !it.bee) nailTap(it.x,it.y); return nail&&{done:nail.done,rival:nail.rival.done,need:nail.need}; },
+      nailItems(){ return nail? nail.items.filter(i=>!i.hit).map(i=>({x:Math.round(i.x),y:Math.round(i.y),bee:!!i.bee,gold:!!i.gold})) : []; },
+      nailTapAt(x,y){ nailTap(x,y); return nail&&{done:nail.done,rival:nail.rival.done,combo:nail.combo}; },
+      nailState(){ return nail&&{done:nail.done, rival:nail.rival.done, need:nail.need, on:nail.items.filter(i=>!i.hit).length}; },
       // 丸太切り
       sawStroke(px){ if(saw){ saw.sawing=true; saw.lastX=(saw.lastX||cssW/2); sawMove(px); } },
       autoSaw(){ if(!saw) return; let x=40, d=1, guard=0; while(mode==='saw' && saw.done<saw.need && guard++<4000){ x+=d*14; if(x>cssW-40){x=cssW-40;d=-1;} if(x<40){x=40;d=1;} saw.sawing=true; saw.lastX=x-d*14; sawMove(x); update(1/60); } return saw&&{done:saw.done,need:saw.need}; },
       sawState(){ return saw&&{cut:Math.round(saw.cut), need:saw.cutNeeded, done:saw.done, T:+saw.T.toFixed(1), splitting:+(saw.splitting||0).toFixed(2)}; },
       giveItem(type){ heldItem=type; const d=DESHI[type]; $('itemChip').textContent=d.badge; $('itemLbl').textContent=d.name+' 発動'; itemSlot.classList.add('show'); },
       deshiState(){ return {deshi:deshi&&deshi.type, life:deshi&&+deshi.life.toFixed(1), held:heldItem, swayDamp:+swayDamp.toFixed(2), swayDampT:+swayDampT.toFixed(1), timeScale:+timeScale.toFixed(2), slowT:+slowT.toFixed(1)}; },
-      snap(){ return {state, mode, lvl, stage, floors, placed, total, score, combo, maxCombo, bestScore, lean:Math.round(lean), leanRatio:+leanRatio.toFixed(2), built, bestStage, pieces:beams.length,
+      snap(){ return {state, mode, lvl, stage, floors, placed, total, score, combo, maxCombo, bestScore, streak, bestStreak, lives, scoreMul, rank:rankName(stage), lean:Math.round(lean), leanRatio:+leanRatio.toFixed(2), built, bestStage, pieces:beams.length,
         cur: current&&{type:current.slot.type, f:current.slot.f, mode:current.mode, x:Math.round(current.x), tx:Math.round(current.t.tx)}}; },
       dataURL(scale){ scale=scale||0.5; const o=document.createElement('canvas');
         o.width=Math.round(cssW*scale); o.height=Math.round(cssH*scale);

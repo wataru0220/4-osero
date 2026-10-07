@@ -12,6 +12,7 @@
   H.workTypes = CFG.workTypes || [];
   H.constructionWorks = CFG.constructionWorks || [];
   H.qualifications = CFG.qualifications || [];
+  H.regChecks = CFG.regChecks || [];
 
   H.statusOf = (key) => H.statuses.find((s) => s.key === key) || H.statuses[0];
 
