@@ -78,7 +78,7 @@
 
 **(2) Realtime Database → ルール**（下記を**まるごとコピペして「公開」**。書き換え不要）
 
-> 📌 **最新の「まるごと貼り替え用」ルールはリポジトリ直下の [`firebase-rules.json`](../firebase-rules.json)** です（rooms／kintai／shokunin／takyo／mitsumori の全部入り）。下のルールには takyo・mitsumori が入っていないので、これだけを貼ると匠協コネクトと見積帳が動かなくなります。
+> 📌 **本番（shokunin-prod-45145）のルールの正は [`shokunin/database.rules.json`](database.rules.json) です。** リポジトリ直下の `firebase-rules.json` は旧共有プロジェクト（osero-77308）向けの全アプリ入りで、**本番へ貼らないこと・deployしないこと**（強化前の旧ルールを含むため）。詳細は [HANDOFF.md](HANDOFF.md)。
 
 > ⚠️ **この1つのFirebaseプロジェクトを3つのアプリで共有しています**（`rooms`＝オセロ／`kintai`＝勤怠／`shokunin`＝大工コネクト）。ルールは**全体を置き換える**ため、下記には3つすべてを含めてあります。**一部だけを貼ると、抜けたアプリが動かなくなります**（例：`rooms` を消すとオセロが、`kintai` を消すと勤怠アプリが停止）。
 > なお `rooms`（オセロの対戦部屋）は、オセロ側が認証を使わない作りのため未認証のまま開いています。ゲームの盤面情報のみで個人情報を含まないため現状は許容していますが、将来オセロにも匿名サインインを入れて閉じるのが望ましい状態です（残課題）。
