@@ -349,7 +349,21 @@ kbd{font-family:var(--en);font-size:10.5px;border:1px solid var(--line2);border-
 .bd dd{margin:0;font-weight:700;overflow-wrap:anywhere}
 .bd ul{margin:0;padding-left:1.2em;display:grid;gap:4px;font-size:13.5px}
 .bd li span{color:var(--ink2);margin-left:6px}
-.bd.cmp{grid-column:1 / -1}
+.bd.cmp,.bd.jrank{grid-column:1 / -1}
+.bd.jrank ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.bd.jrank li{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 12px;border-radius:14px;background:var(--soft);border:1.5px solid var(--line)}
+.bd.jrank li:first-child{background:#FFF6D8;border-color:#FFB547}
+.bd.jrank li>i{font-style:normal;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-family:var(--en);font-weight:700}
+.bd.jrank li:first-child>i{background:#E0A100}
+.bd.jrank li div{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;min-width:0}
+.bd.jrank li div b{font-size:15px;overflow-wrap:anywhere}
+.bd.jrank li div small{flex-basis:100%;font-size:11.5px;color:var(--muted)}
+.rk-tag{font-size:10.5px;font-weight:800;border-radius:999px;padding:1px 8px}
+.rk-tag.own{background:#EAF3FE;color:#1F6FC0}
+.rk-tag.new{background:#E9F7EF;color:#128A5E}
+.bd.jrank li em{font-style:normal;display:grid;justify-items:end;font-weight:800;font-size:12px}
+.bd.jrank li em b{font-family:var(--en);font-size:22px;line-height:1}
+.bd.jrank li em small{font-size:10.5px;color:#A66F00;white-space:nowrap}
 .ikg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
 .ikg span{display:grid;gap:2px;align-content:start;padding:9px 11px;border-radius:14px;font-size:13px;font-weight:700;line-height:1.45;overflow-wrap:anywhere;min-height:3.6em}
 .ikg em{font-style:normal;font-size:11px;font-weight:800}
@@ -696,6 +710,15 @@ details.own[open] summary{margin-bottom:8px}
 .theme-input:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 5px rgba(242,85,78,.12)}
 .theme-input::placeholder{color:#B4B9CC;font-weight:700}
 .examples{display:flex;flex-wrap:wrap;gap:8px}
+.purpose,.job-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.purpose button,.job-menu button{display:grid;gap:3px;align-content:start;text-align:left;border:2px solid var(--line);background:#fff;border-radius:18px;padding:12px 16px;color:var(--ink)}
+.purpose button b,.job-menu button b{font-size:16px;font-weight:800}
+.purpose button small,.job-menu button small{font-size:12px;color:var(--muted);line-height:1.5}
+.purpose button[aria-checked="true"],.job-menu button[aria-checked="true"]{border-color:var(--accent);box-shadow:0 0 0 4px rgba(242,85,78,.12);background:#FFF7F4}
+.job-menu p{grid-column:1 / -1;margin:0;font-size:12.5px;font-weight:700;color:#128A5E}
+.theme-block{display:grid;gap:8px}
+.tb-l{font-size:12px;font-weight:800;color:var(--muted)}
+@media (max-width:620px){.purpose,.job-menu{grid-template-columns:1fr}}
 .ex{border:1.5px solid var(--line2);background:#fff;color:var(--ink2);border-radius:999px;padding:5px 14px;font-size:13px;font-weight:500}
 .ex:hover{border-color:var(--accent);color:var(--accent-ink)}
 .modes{display:grid;grid-template-columns:1.45fr 1fr;gap:12px}
@@ -1067,9 +1090,21 @@ details.own[open] summary{margin-bottom:8px}
     </div>
     <p class="lede" data-hs="1">夢や目標をテーマに書いたら、あなたが勇者になって冒険へ。関所で出会う人の問いに答えるほど強くなり、モンスターやドラゴンをたおして城をめざします。ゴールすると、冒険の答えがマインドマップにまとまり、実現可能性を採点。同じ夢で第3章まで深掘りできます。</p>
 
-    <div class="step" data-hs="1"><i>STEP 1</i>真ん中のテーマ</div>
-    <input id="themeInput" class="theme-input" data-hs="1" maxlength="24" placeholder="例：科学者になりたい" aria-label="真ん中のテーマ" autocomplete="off">
-    <div class="examples" data-hs="1" id="examples"></div>
+    <div class="step" data-hs="1"><i>STEP 1</i>なにを冒険する？</div>
+    <div class="purpose" data-hs="1" id="purposeCtl" role="radiogroup" aria-label="冒険の目的">
+      <button type="button" role="radio" data-purpose="dream" aria-checked="true"><b>夢・目標をかなえる</b><small>テーマを自分で決めて冒険する</small></button>
+      <button type="button" role="radio" data-purpose="job" aria-checked="false"><b>仕事・天職をさがす</b><small>テーマが決まっていなくてもOK</small></button>
+    </div>
+    <div class="job-menu" data-hs="1" id="jobMenu" role="radiogroup" aria-label="仕事さがしのコース" hidden>
+      <button type="button" role="radio" data-job="calling" aria-checked="true"><b>天職探しの旅</b><small>やりたいことがまだわからない・迷っている人。好き・得意・大切なことから、仕事のたまごを見つける</small></button>
+      <button type="button" role="radio" data-job="career" aria-checked="false"><b>職業をえらぶ</b><small>気になる仕事がいくつかあって、どれにするか決めたい人。候補を調べて点数でくらべる</small></button>
+      <p>どちらも最後に「おすすめ職業ランキング」が出ます（AIにとられにくい仕事かどうかも）</p>
+    </div>
+    <div class="theme-block" data-hs="1" id="themeBlock">
+      <small class="tb-l">真ん中のテーマ</small>
+      <input id="themeInput" class="theme-input" maxlength="24" placeholder="例：科学者になりたい" aria-label="真ん中のテーマ" autocomplete="off">
+      <div class="examples" id="examples"></div>
+    </div>
     <div class="age-row" data-hs="1"><label for="ageInput">あなたの年齢<input id="ageInput" type="number" min="3" max="110" inputmode="numeric" placeholder="例：15">歳</label><small>入れると、最後に「何歳で何をするか」の人生のタイムスケジュールを作ります（任意）</small></div>
 
     <div class="step" data-hs="2"><i>STEP 2</i>あそび方<small class="step-note">いちばん楽しいのはクエスト！</small></div>
@@ -1400,11 +1435,11 @@ const PRESETS = {
       {l:'働く軸', type:'plan', fields:[['why','どうして働く？ 仕事で手に入れたいものは？','働く理由','例：ありがとうと言われる仕事がしたい','why'],['for','誰のために働きたい？','誰のため','例：家族と地域の人','vowfor'],['years','何年後に、どうなっていたい？','何年後','例：5年後に一人前の職人','years'],['core','仕事えらびで、絶対に譲れない条件は？','譲れない','例：土日は家族と過ごせる','core'],['score','いまの決まり具合は10点満点で何点？','決まり具合','例：3点','score']], q:'旅に出る前に、仕事えらびの「軸」を決めよう。どうして働く？ 誰のために？ 何年後にどうなっていたい？ 絶対に譲れない条件は？', vq:['旅に出る前に、仕事えらびの「軸」を決めよう。どうして働く？ 誰のために？ 何年後にどうなっていたい？ 絶対に譲れない条件は？','長老が羅針盤を手わたした。「{t}」の旅で迷わないように、働く理由・誰のため・何年後の姿・譲れない条件を書きこもう。','長老が問う。仕事は人生の長い旅じゃ。何のために、誰のために働く？ 何年後にどうなっていて、何だけは譲れない？'], p:-1, min:5, sec:150, v:1, o:'why', npc:'旅立ちの長老', seg:'town', hint:'軸がはっきりすると、たくさんの仕事の中から選びやすくなります。条件は「土日休み」「地元で働く」のように具体的に。'},
       {l:'好きなこと', q:'町の子どもが聞く。時間を忘れて夢中になれることや、つい人に話したくなる「好き」は何？', vq:['町の子どもが聞く。時間を忘れて夢中になれることや、つい人に話したくなる「好き」は何？','町の子どもが目をかがやかせる。休みの日、気づいたらやっていることは何？','小さいころ、何をしている時がいちばん楽しかった？','人に「くわしいね」と言われることは何？'], p:-1, min:2, sec:90, o:'like', npc:'町の子ども', seg:'town', hint:'遊び・勉強・手伝い、なんでもOK。好きなことの中に、向いている仕事のヒントがあります。'},
       {l:'候補の仕事', q:'職業案内所の受付が聞く。気になっている職業や会社を挙げてみよう。', vq:['職業案内所の受付が聞く。気になっている職業や会社を挙げてみよう。','受付が求人の束を広げた。「{t}」で、候補にしたい仕事や会社はどれ？','受付が聞く。「やってみたい」「ちょっと気になる」仕事を、迷っているものも全部書いてみよう。'], p:-1, min:2, sec:120, o:'job', npc:'職業案内所の受付', seg:'town', hint:'「大工」「看護師」「〇〇工務店」のように名前で。2つ以上あげると、あとで比べられます。'},
-      {l:'仕事の中身', q:'「{a}」の人は、1日の中でどんな仕事をしている？', vq:['「{a}」の人は、1日の中でどんな仕事をしている？','「{a}」の仕事で、いちばん楽しそうなことと大変そうなことは？','「{a}」になるには、どんな資格や経験がいる？','「{a}」で働くと、朝から夜までどんな1日になりそう？','「{a}」の仕事で、お客様や相手からどんなことで感謝される？'], p:2, min:1, sec:80, o:'jobday', npc:'職業案内所の先輩', seg:'town', hint:'わからなければ「〇〇を調べる」「〇〇さんに聞く」でもOK。'},
+      {l:'仕事の中身', q:'「{a}」の人は、1日の中でどんな仕事をしている？', vq:['「{a}」の人は、1日の中でどんな仕事をしている？','「{a}」の仕事で、いちばん楽しそうなことと大変そうなことは？','「{a}」になるには、どんな資格や経験がいる？','「{a}」で働くと、朝から夜までどんな1日になりそう？','「{a}」の仕事で、お客様や相手からどんなことで感謝される？','「{a}」の仕事で、AIやロボットにはまねできない「人ならではの部分」は？'], p:2, min:1, sec:80, o:'jobday', npc:'職業案内所の先輩', seg:'town', hint:'わからなければ「〇〇を調べる」「〇〇さんに聞く」でもOK。'},
       {l:'話を聞く', type:'plan', route:'A1', fields:[['who','誰に話を聞く？','聞く相手','例：大工をしている叔父','ally'],['ask','何を聞く？','聞くこと','例：一日の仕事の流れ','askjob']], q:'先輩の森だ。実際に働いている人に話を聞こう。誰に、何を聞く？', vq:['先輩の森だ。実際に働いている人に話を聞こう。誰に、何を聞く？','森の案内人が言う。「本当のことは、働いている人が知っている」。誰に会って、何を聞く？','職場見学やインターンシップで会えそうな人はだれ？ 何を聞いてみたい？'], p:-1, min:2, sec:90, o:'ally', npc:'森の案内人', seg:'A1', hint:'家族・先輩・先生の知り合いなど。職場見学やインターンシップも立派な「話を聞く」です。'},
       {l:'強み', type:'plan', route:'B1', fields:[['str','あなたの得意なことは？','得意','例：コツコツ続けられる','str'],['use','それが生きる仕事は？','生きる仕事','例：ものづくりの仕事','usejob']], q:'丘の上から、自分を見つめてみよう。人からほめられる得意なことは？ それは、どんな仕事で生きる？', vq:['丘の上から、自分を見つめてみよう。人からほめられる得意なことは？ それは、どんな仕事で生きる？','丘の羊飼いが聞く。苦にならずに続けられることは？ それを生かせる仕事は？','あなたの「当たり前にできること」は？ それを喜んでくれる仕事は？'], p:-1, min:2, sec:90, o:'str', npc:'丘の羊飼い', seg:'B1', hint:'人からほめられたことや、苦にならずに続けられることを思い出そう。'},
       {l:'SWOT分析', type:'plan', fields:[['s','強み：自分の得意なことや、持っているもの（資格・経験）は？','強み','例：体力があって手先が器用','str'],['w','弱み：苦手なことや、足りないものは？','弱み','例：朝が苦手','swotw'],['o','機会：追い風になる、仕事のまわりのチャンスは？','機会','例：人手不足で若手が求められている','swoto'],['t','脅威：向かい風になる、心配ごとは？','脅威','例：機械化で仕事がへるかもしれない','swott']], q:'川のほとりで、軍師が地図を広げた。「{t}」の作戦会議だ。あなたの強み・弱みと、仕事のまわりの機会・脅威は？', vq:['川のほとりで、軍師が地図を広げた。「{t}」の作戦会議だ。あなたの強み・弱みと、仕事のまわりの機会・脅威は？','軍師が4つの旗を立てた。強み・弱み（自分のこと）と、機会・脅威（業界や社会のこと）を書きだそう。','軍師が言う。「敵を知り己を知れば、百戦あやうからず」。仕事えらびのSWOT（強み・弱み・機会・脅威）は？'], p:-1, min:4, sec:150, o:'swot', npc:'川の軍師', seg:'river', hint:'強み・弱みは「自分の中」のこと、機会・脅威は「業界や社会」のこと。'},
-      {l:'仕事くらべ', type:'plan', fields:[['like','好き・やりがい：10点満点で何点？','やりがい','例：8点','score10'],['fit','自分への向き：10点満点で何点？','向き','例：6点','score10'],['life','条件（給料・休み・場所）：10点満点で何点？','条件','例：7点','score10'],['fut','将来性：10点満点で何点？','将来性','例：7点','score10']], q:'軍師が天びんを取り出した。「{a}」を4つのものさしで点数にしよう。', vq:['軍師が天びんを取り出した。「{a}」を4つのものさしで点数にしよう。','軍師が言う。「くらべれば、見えてくる」。「{a}」のやりがい・向き・条件・将来性は、それぞれ何点？','「{a}」に4つの点数をつけよう。直感でOK。'], p:2, min:4, sec:120, o:'compare', npc:'川の軍師', seg:'river', hint:'直感でOK。点数にすると、候補どうしを比べやすくなります。結果の「仕事くらべ表」にまとまります。'},
+      {l:'仕事くらべ', type:'plan', fields:[['like','好き・やりがい：10点満点で何点？','やりがい','例：8点','score10'],['fit','自分への向き：10点満点で何点？','向き','例：6点','score10'],['life','条件（給料・休み・場所）：10点満点で何点？','条件','例：7点','score10'],['fut','将来性：10点満点で何点？','将来性','例：7点','score10'],['ai','AIやロボットにとられにくさ：10点満点で何点？','AIに強い','例：8点','score10']], q:'軍師が天びんを取り出した。「{a}」を5つのものさしで点数にしよう。', vq:['軍師が天びんを取り出した。「{a}」を5つのものさしで点数にしよう。','軍師が言う。「くらべれば、見えてくる」。「{a}」のやりがい・向き・条件・将来性・AIへの強さは、それぞれ何点？','「{a}」に5つの点数をつけよう。直感でOK。'], p:2, min:5, sec:130, o:'compare', npc:'川の軍師', seg:'river', hint:'直感でOK。「AIに強い」は、人の気持ちにふれる・現場で手を動かす・その場で判断する仕事ほど高くなります。結果の「仕事くらべ表」と「おすすめ職業ランキング」にまとまります。'},
       {l:'不安', q:'モンスター「ふあん」がささやく…「その仕事、本当に向いてる？」。仕事えらびで、いちばん心配なことは？', vq:['モンスター「ふあん」がささやく…「その仕事、本当に向いてる？」。仕事えらびで、いちばん心配なことは？','モンスター「ふあん」が道をふさいだ！ 働きはじめてから「こんなはずじゃなかった」となるとしたら、何が原因？','モンスター「ふあん」が笑う…「選んだら後もどりできないぞ」。いちばん怖いことは何？'], p:-1, min:1, sec:70, o:'wall', npc:'モンスター「ふあん」', monster:'normal', mk:'ghost', mcol:'#7C4DDB', seg:'cave', hint:'不安は書き出すと小さくなる。「向いているか」「お金」「人間関係」など、正直に。'},
       {l:'作戦', q:'「{a}」が本当になったら、どう切りぬける？', alt:['「{a}」を確かめるために、決める前にできることは？','「{a}」で迷ったら、誰に相談する？'], p:8, min:1, sec:70, o:'over', npc:'洞窟の賢者', seg:'cave', hint:'「もし〇〇になったら、△△する」と決めておくと強い。見学や体験で確かめるのも作戦です。'},
       {l:'先のばし', q:'モンスター「いいわけ」が「まだ決めなくていいよ」とささやく…。仕事えらびを先のばしにしている言い訳や、悪いクセは？', vq:['モンスター「いいわけ」が「まだ決めなくていいよ」とささやく…。仕事えらびを先のばしにしている言い訳や、悪いクセは？','モンスター「いいわけ」がにやりと笑う。調べるのを後回しにしてしまうのは、どんな時？'], p:-1, min:1, sec:60, o:'stop', npc:'モンスター「いいわけ」', monster:'normal', mk:'imp', mcol:'#C8362F', seg:'cave', hint:'正直に書くほど強くなれる。書いたものが「やめること」になります。'},
@@ -1432,15 +1467,16 @@ const PRESETS = {
       {l:'やりたくないこと', type:'plan', route:'B1', fields:[['no','どうしてもやりたくないことは？','やりたくない','例：一日中座っている仕事','nojob'],['flip','裏返すと、どんな働き方がしたい？','裏返すと','例：体を動かす仕事','flip']], q:'いやいやの丘だ。どうしてもやりたくないことは？ それを裏返すと、どんな働き方がしたい？', vq:['いやいやの丘だ。どうしてもやりたくないことは？ それを裏返すと、どんな働き方がしたい？','丘の羊飼いが言う。「いやなことの反対側に、好きな道がある」。やりたくないことと、その裏返しは？'], p:-1, min:2, sec:90, o:'nojob', npc:'丘の羊飼い', seg:'B1', hint:'「〜はいや」を「〜がいい」に言いかえると、望む働き方が見えてきます。'},
       {l:'天職の4つの円', type:'plan', fields:[['iklike','好き：やっていて楽しいことは？','好き','例：ものを作ること','like'],['ikgood','得意：人より上手にできることは？','得意','例：手先が器用','str'],['ikhelp','役に立つ：だれのどんな困りごとを助けられる？','役に立つ','例：古い家に住むお年寄りの不便','help'],['ikearn','お金になる：それでお金をもらうなら、どんな形？','お金になる','例：修理や工事を引き受ける','earn']], q:'川のほとりで、賢者が水面に4つの円を描いた。ここまでの答えから、「好き」「得意」「役に立つ」「お金になる」を1つずつ書こう。', vq:['川のほとりで、賢者が水面に4つの円を描いた。ここまでの答えから、「好き」「得意」「役に立つ」「お金になる」を1つずつ書こう。','賢者が言う。「4つの円が重なるところに、天職がある」。好き・得意・役に立つ・お金になる、をそれぞれ書こう。'], p:-1, min:4, sec:150, o:'ikigai', npc:'川の賢者', seg:'river', hint:'前の答え（夢中だった時・ほめられたこと）を見ながら書こう。結果に「天職の4つの円」としてまとまります。'},
       {l:'仕事のたまご', q:'賢者が問う。4つの円が重なるあたりに、どんな仕事がありそう？ 思いつくものを挙げよう（まだ決めなくていい）。', vq:['賢者が問う。4つの円が重なるあたりに、どんな仕事がありそう？ 思いつくものを挙げよう（まだ決めなくていい）。','賢者が言う。「天職のたまごは、いくつあってもよい」。気になる仕事を、思いつくだけ書こう。','好き・得意・役に立つ・お金になる。この4つが少しでも重なる仕事は？'], p:-1, min:3, sec:120, o:'job', npc:'川の賢者', seg:'river', hint:'知らない仕事でもOK。「〜を作る仕事」「〜を助ける仕事」のように書いてもいい。3つ以上あげよう。'},
+      {l:'たまごくらべ', type:'plan', fields:[['tl','好き：10点満点で何点？','好き','例：8点','score10'],['tg','得意が生かせる：10点満点で何点？','得意','例：7点','score10'],['th','人の役に立つ：10点満点で何点？','役に立つ','例：9点','score10'],['te','お金になる：10点満点で何点？','お金','例：6点','score10'],['ai','AIやロボットにとられにくさ：10点満点で何点？','AIに強い','例：8点','score10']], q:'賢者が天びんを取り出した。「{a}」を5つのものさしで点数にしよう。', vq:['賢者が天びんを取り出した。「{a}」を5つのものさしで点数にしよう。','賢者が言う。「たまごを温めるには、よく見ることじゃ」。「{a}」の好き・得意・役に立つ・お金・AIへの強さは、それぞれ何点？','「{a}」に5つの点数をつけよう。直感でOK。'], p:8, min:5, sec:130, o:'compare', npc:'川の賢者', seg:'river', hint:'直感でOK。「AIに強い」は、人の気持ちにふれる・現場で手を動かす・その場で判断する仕事ほど高くなります。'},
       {l:'不安', q:'モンスター「どうせ」がささやく…「天職なんて、見つかるわけない」。天職さがしで、いちばんこわいことは？', vq:['モンスター「どうせ」がささやく…「天職なんて、見つかるわけない」。天職さがしで、いちばんこわいことは？','モンスター「どうせ」が笑う…「選んでも、きっと後悔するよ」。選ぶのがこわい理由は？','モンスター「どうせ」が道をふさいだ！ 「才能がないから無理」と思ってしまうのは、どんな時？'], p:-1, min:1, sec:70, o:'wall', npc:'モンスター「どうせ」', monster:'normal', mk:'ghost', mcol:'#7C4DDB', seg:'cave', hint:'不安は書き出すと小さくなる。こわさの正体を言葉にしよう。'},
-      {l:'作戦', q:'「{a}」と思った時、どうやって前に進む？', alt:['「{a}」を小さくするために、だれに相談する？','「{a}」が本当になっても大丈夫なように、今からできることは？'], p:9, min:1, sec:70, o:'over', npc:'洞窟の賢者', seg:'cave', hint:'「完ぺきに選ばなくていい。試して、ちがったら直せばいい」と決めておくと、ぐっと楽になります。'},
+      {l:'作戦', q:'「{a}」と思った時、どうやって前に進む？', alt:['「{a}」を小さくするために、だれに相談する？','「{a}」が本当になっても大丈夫なように、今からできることは？'], p:10, min:1, sec:70, o:'over', npc:'洞窟の賢者', seg:'cave', hint:'「完ぺきに選ばなくていい。試して、ちがったら直せばいい」と決めておくと、ぐっと楽になります。'},
       {l:'小さなお試し', q:'「{a}」を、お金をかけずに小さく試すなら、何をする？', vq:['「{a}」を、お金をかけずに小さく試すなら、何をする？','「{a}」の1日を体験するには、どこへ行けばいい？','「{a}」に近いことを、家や学校でやってみるなら何をする？','「{a}」をしている人に、どうやって会いに行く？'], p:8, min:1, sec:80, o:'trial', npc:'洞窟の案内人', seg:'cave', hint:'見学・1日体験・ボランティア・本・動画・話を聞く。小さく試すほど、早くわかります。'},
       {l:'必殺技', type:'plan', fields:[['what','必殺技：天職をさがすために何をする？','何を','例：気になる仕事の1日体験に行く','what'],['pace','どのペースで？','ペース','例：月に1回','pace'],['start','いつから？','いつから','例：今月から','start']], q:'ボスドラゴン「まよい」がほえる！「考えているだけで、一生決まらないぞ」──必殺技でたおせ！ 天職をさがすために、何を・どのペースで・いつからやる？', vq:['ボスドラゴン「まよい」がほえる！「考えているだけで、一生決まらないぞ」──必殺技でたおせ！ 天職をさがすために、何を・どのペースで・いつからやる？','ドラゴン「まよい」が霧をはいた！ 必殺技で晴らせ！ 動いて確かめるために、何を・どのペースで・いつから？','ドラゴン「まよい」が笑う「どれも決め手がないだろう」。必殺技で答えろ！ 試す・会う・やってみる…何を・どのペースで・いつから？'], p:-1, min:3, sec:120, o:'what', npc:'ボス「まよい」', monster:'boss', mk:'dragon', mcol:'#4D6BDB', seg:'cave', hint:'天職は、考えるより動いた先で見つかります。「試す」行動を必殺技にしよう。'},
       {l:'ふり返り', q:'旅の記録係が聞く。お試しをしたあと、何を確かめれば「これだ！」とわかる？', vq:['旅の記録係が聞く。お試しをしたあと、何を確かめれば「これだ！」とわかる？','記録係が言う。「心の声を記録しよう」。お試しのあと、自分に聞く質問は？','お試しをしたら、ノートに何を書いておく？'], p:-1, min:2, sec:90, o:'reflect', npc:'旅の記録係', seg:'post', hint:'「またやりたいと思えたか」「時間を忘れたか」など、心が動いたかを確かめよう。'},
       {l:'喜ばせたい人', route:'A2', q:'笑顔の道へようこそ。あなたが本気で喜ばせたいのは、どんな人？', vq:['笑顔の道へようこそ。あなたが本気で喜ばせたいのは、どんな人？','星の子どもが聞く。あなたの仕事で「ありがとう」と言ってほしいのは、だれ？','あなたが「放っておけない」と思うのは、どんな人の、どんな困りごと？'], p:-1, min:1, sec:70, v:1, o:'vision', npc:'星の子ども', seg:'A2', hint:'喜ばせたい人の顔がうかぶと、天職の向きが決まります。'},
       {l:'10年後の自分', route:'B2', q:'未来の道で、10年後に天職で働く自分に会った！ どんな表情で、今のあなたに何と言う？', vq:['未来の道で、10年後に天職で働く自分に会った！ どんな表情で、今のあなたに何と言う？','10年後のあなたの1日を想像しよう。どこで、だれと、何をしている？','未来の自分が手紙をくれた。「迷っていたあの頃のわたしへ」──何と書いてある？'], p:-1, min:1, sec:70, v:1, o:'future', npc:'10年後のあなた', seg:'B2', hint:'未来の自分になりきって、ひとこと。'},
       {l:'天職の仮説', q:'王さまが問う。いまのあなたの「天職の仮説」は？「〇〇な人のために、△△を生かして、□□する仕事」の形で書いてみよう。', vq:['王さまが問う。いまのあなたの「天職の仮説」は？「〇〇な人のために、△△を生かして、□□する仕事」の形で書いてみよう。','王さまが言う。「仮説でよい。旅はまだ続く」。だれのために、何を生かして、何をする仕事？'], p:-1, min:1, sec:120, o:'hypo', npc:'王さま', seg:'castle', hint:'まだ「仮説」でOK。4つの円と、喜ばせたい人を思い出しながら書こう。'},
-      {l:'確かめ方', q:'「{a}」が本当に天職か確かめるために、3か月でやることは？', vq:['「{a}」が本当に天職か確かめるために、3か月でやることは？','「{a}」に近づくために、まず身につけたいことは？','「{a}」をしている人に会って、何を聞く？'], p:16, min:2, sec:100, o:'act', npc:'城の大臣', seg:'castle', hint:'見学・体験・学ぶ・人に会う。3か月で確かめられる大きさにしよう。'},
+      {l:'確かめ方', q:'「{a}」が本当に天職か確かめるために、3か月でやることは？', vq:['「{a}」が本当に天職か確かめるために、3か月でやることは？','「{a}」に近づくために、まず身につけたいことは？','「{a}」をしている人に会って、何を聞く？'], p:17, min:2, sec:100, o:'act', npc:'城の大臣', seg:'castle', hint:'見学・体験・学ぶ・人に会う。3か月で確かめられる大きさにしよう。'},
       {l:'最初の一歩', q:'城の門をひらく合言葉は「最初の一歩」。必殺技「{@what}」のために、今日・明日やることは？', qf:'城の門をひらく合言葉は「最初の一歩」。今日・明日から何をする？', vq:['城の門をひらく合言葉は「最初の一歩」。必殺技「{@what}」のために、今日・明日やることは？','王さまが言う。天職の旅の「最初の一歩」を聞かせておくれ。今週中に、何をする？'], p:-1, min:1, sec:70, h:1, o:'first', npc:'王さま', seg:'castle', hint:'「今夜、気になる仕事を1つ調べる」くらい小さな一歩がベスト。'}
     ]}
 };
@@ -1545,6 +1581,7 @@ const BANKS = {
   trial: ['職場見学に行く','1日体験に申し込む','ボランティアに参加する','その仕事の人に話を聞く','関係する本を読む','仕事の様子を動画で見る','似た作業を家でやってみる','アルバイトで試す'],
   reflect: ['またやりたいと思えたか','時間を忘れたか','疲れても満足できたか','人に話したくなったか','もっと知りたくなったか','自分らしくいられたか'],
   hypo: ['暮らしを木で支える仕事','子どもの成長を助ける仕事','困っている人の話を聞く仕事','ものづくりで喜ばれる仕事','体を動かして人を守る仕事','新しいしくみを作る仕事'],
+  wild: ['人を笑顔にすること','ものを作ること','新しいことを知ること','だれかを助けること','自分らしくいること','仲間と何かをすること','自然の中にいること','体を動かすこと'],
   pick: ['大工・建築の仕事','設計士','看護師・医療の仕事','保育士・先生','エンジニア・プログラマー','料理人・パティシエ','美容師','公務員','営業・販売','介護の仕事','デザイナー','農業']
 };
 const BANK_NAMES = [['expert','専門知識'],['why','理由'],['ally','味方'],['str','強み'],['stop','やめること'],['rise','立ち直り'],['future','未来'],['need','必要なもの'],['act','やること'],['what','具体的な行動'],['pace','ペース'],['start','いつから'],['when','いつ・期限'],['wall','壁・障害'],['over','乗り越え方'],['vision','志・貢献'],['first','最初の一歩'],['who','誰のため'],['trouble','困りごと'],['idea','アイデア'],['thanks','お世話になった人'],['repay','恩返し'],['like','好きなこと'],['job','仕事の候補'],['jobday','仕事の中身'],['askjob','働く人に聞くこと'],['praise','ほめられたこと'],['value','大切にしたいこと'],['trial','小さなお試し']];
@@ -4626,7 +4663,7 @@ const BAD_RE = /(盗|だま|騙|ずる|カンニング|不正|嘘をつ|うそ�
 const GOOD_RE = /(感謝|協力|誠実|相談|約束|守る|助け|教え|学ぶ|ありがとう|謝|ルール|健康|安全|正直|丁寧|応援)/g;
 /* ---------- answer coach: a gentle nudge when an answer is too vague to act on ---------- */
 const ACT_O = new Set(['act', 'first', 'over', 'd100', 'keep', 'cheap', 'learn', 'check', 'repay']);
-const NUM_F = {pace: '毎朝15分', start: '今週の土曜から', when: '来年の春', goal: '80点をこえる', money: '月5000円', time: '週5時間', score: '3点', years: '5年', like: '8点', fit: '6点', life: '7点', fut: '7点'};
+const NUM_F = {pace: '毎朝15分', start: '今週の土曜から', when: '来年の春', goal: '80点をこえる', money: '月5000円', time: '週5時間', score: '3点', years: '5年', like: '8点', fit: '6点', life: '7点', fut: '7点', ai: '8点', tl: '8点', tg: '7点', th: '9点', te: '6点'};
 /* plan fields that should name something concrete (SWOT, cross-SWOT, time matrix), and the ones that should be an action */
 const FIELD_ASK = {s: 'どんな場面で発揮される強み？', w: 'どんな場面で困る？', o: 'どんなチャンス？ 名前で言えると強い。', t: 'どんなことが起きたら困る？', so: '何をするか、動きの言葉で書こう。', wo: '何をするか、動きの言葉で書こう。', st: '何をするか、動きの言葉で書こう。', wt: '何をするか、動きの言葉で書こう。', q1: '具体的に何をする？', q2: '具体的に何をする？', q3: '具体的に何を減らす？', q4: '具体的に何をやめる？'};
 const ACT_F = new Set(['what', 'q2']);
@@ -4682,15 +4719,65 @@ function qualityHTML(x){
 /* ---------- frameworks: the vow, SWOT analysis and the time-management matrix, laid out as boards ---------- */
 const fieldOf = (x, o, f) => { const i = x.stages.findIndex(s => s.o === o); if (i < 0) return ''; const a = x.ans.find(v => v.s === i && v.f === f); return a ? a.t : ''; };
 const SW_Q = [['s', '強み'], ['w', '弱み'], ['o', '機会'], ['t', '脅威']];
+/* jobs to suggest: [name, how hard to replace by AI and robots (1-5, a rough guide), words in the answers that point to it] */
+const JOBS = [
+  ['大工', 5, '作る|もの|木|家|建|工作|DIY|プラモ|手先|器用|体を動か|形に'], ['家具・伝統工芸の職人', 5, '作る|木|手先|伝統|ものづくり|長く使|ていねい|形に'],
+  ['建築士・設計士', 3, '家|建|図|設計|デザイン|考え|絵|まちづくり'], ['電気工事士', 5, '電気|機械|手先|配線|直す|修理|体を動か'],
+  ['自動車整備士', 4, '車|機械|乗り物|直す|修理|バイク|エンジン'], ['リフォームの相談員', 4, '家|相談|暮らし|お年寄り|直す|話を聞'],
+  ['看護師', 5, '世話|助け|病|医療|やさし|話を聞|命|けが'], ['介護福祉士', 5, 'お年寄り|世話|助け|やさし|話を聞|介護'],
+  ['保育士', 5, '子ども|世話|遊び|やさし|成長|小さい子'], ['学校の先生', 4, '教え|説明|子ども|勉強|わかりやす|成長'],
+  ['カウンセラー', 4, '相談|話を聞|気持ち|悩み|心|話しやす'], ['理学療法士', 5, '体|スポーツ|リハビリ|助け|健康|運動'],
+  ['医師', 4, '病|医療|命|科学|助け|勉強'], ['薬剤師', 3, '薬|科学|ていねい|医療|調べ'],
+  ['料理人', 4, '料理|食べ|味|作る|ごはん'], ['パティシエ', 4, 'お菓子|料理|甘|かわいい|作る'],
+  ['美容師', 5, '髪|おしゃれ|美容|手先|かわいい|話す'], ['農家', 4, '植物|野菜|育て|自然|外|土|花'],
+  ['林業・漁業', 4, '自然|外|海|山|川|体を動か|生き物'], ['消防士', 5, '守る|助け|体|力持ち|勇気|命'],
+  ['警察官', 4, '守る|正義|体|ルール|安全'], ['獣医・動物看護師', 5, '動物|ペット|犬|猫|生き物|世話'],
+  ['スポーツトレーナー', 5, 'スポーツ|運動|体|走|部活|筋トレ|健康'], ['営業', 3, '話す|人と|明る|交渉|売る|話しやす'],
+  ['ホテル・接客', 3, '人と|話す|笑顔|おもてなし|旅行|明る'], ['観光ガイド', 4, '旅行|案内|話す|地域|外国|英語|歴史'],
+  ['プログラマー', 3, 'パソコン|ゲーム|プログラ|考え|論理|機械|しくみ'], ['AIエンジニア', 4, 'パソコン|数学|データ|AI|分析|新しいこと|しくみ'],
+  ['デザイナー', 3, 'デザイン|おしゃれ|色|絵|かわいい|作る'], ['イラストレーター・漫画家', 2, '絵|漫画|イラスト|描'],
+  ['動画クリエイター', 3, '動画|撮|編集|YouTube|発信|おもしろ'], ['音楽家', 3, '音楽|歌|楽器|ピアノ|ギター|ダンス'],
+  ['研究者', 4, '調べ|科学|実験|なぜ|新しいこと|生き物|宇宙'], ['記者・ライター', 2, '書く|文章|調べ|話を聞|本'],
+  ['事務', 1, '整理|パソコン|ていねい|コツコツ|書類'], ['経理', 1, '数字|お金|計算|ていねい'],
+  ['起業家', 4, 'アイデア|リーダー|新しい|挑戦|お店|自由'], ['地域の公務員', 3, '地域|町|安定|役に立|ルール|まちづくり'],
+  ['通訳・翻訳', 2, '英語|外国|言葉|語学'], ['ドライバー', 2, '車|運転|乗り物|道']
+];
+const JOB_O = new Set(['like', 'whylike', 'praise', 'value', 'ikigai', 'nojob', 'str', 'vision', 'why', 'jobday', 'hypo', 'pick', 'ally', 'wild', 'job']);
+const aiStars = v => v == null ? '—' : '★'.repeat(Math.round(v)) + '☆'.repeat(5 - Math.round(v));
+/* the recommended jobs: the player's own candidates (their scores) plus jobs from the list that fit the answers */
+function jobRanking(x){
+  if (!x || !['career', 'calling'].includes(x.course)) return [];
+  const texts = x.ans.filter(a => { const st = x.stages[a.s]; return st && JOB_O.has(st.o) && st.o !== 'job' && a.f !== 'no' && a.f !== 'score'; }).map(a => a.t);
+  const hits = kw => { const re = new RegExp(kw); return texts.filter(t => re.test(t)); };
+  const same = (a, b) => { const k = b.split('・')[0]; return a.includes(k) || b.includes(a); };
+  const pickT = ['pick', 'hypo'].map(o => { const i = x.stages.findIndex(st => st.o === o); return i >= 0 ? (x.ans.find(a => a.s === i) || {}).t || '' : ''; }).join(' ');
+  const cmp = compareRows(x), ji = x.stages.findIndex(st => st.o === 'job'), out = [];
+  (ji >= 0 ? x.ans.filter(a => a.s === ji) : []).forEach(a => {
+    const r = cmp.find(c => c.name === a.t), cat = JOBS.find(([n]) => same(a.t, n)), why = [];
+    let sc = r ? r.sum / r.max * 60 : 35;
+    if (r) why.push(`自分でつけた点数 ${r.sum}/${r.max}`);
+    const aiC = r && r.row.find(c => c.f === 'ai'), ai = aiC && aiC.n != null ? aiC.n / 2 : cat ? cat[1] : null;
+    if (cat){ const h = hits(cat[2]); if (h.length){ sc += Math.min(20, h.length * 7); why.push(`「${h[0]}」と相性◎`); } }
+    if (pickT && pickT.includes(a.t)){ sc += 10; why.push('いちばん心がひかれている'); }
+    out.push({name: a.t, sc: sc + (ai != null ? ai : 3) * 4, ai, why, own: true});
+  });
+  JOBS.forEach(([n, ai, kw]) => {
+    if (out.some(o => same(o.name, n))) return;
+    const h = hits(kw); if (!h.length) return;
+    out.push({name: n, sc: Math.min(50, h.length * 13) + ai * 4, ai, why: [`「${h[0]}」から見つけた`], own: false});
+  });
+  return out.map(o => ({...o, sc: Math.min(99, Math.round(o.sc))})).sort((a, b) => b.sc - a.sc).slice(0, 5);
+}
 const IK_Q = [['iklike', '好き'], ['ikgood', '得意'], ['ikhelp', '役に立つ'], ['ikearn', 'お金になる']];
 const CMP_Q = [['like', 'やりがい'], ['fit', '向き'], ['life', '条件'], ['fut', '将来性']];
 /* the candidate jobs with their four scores (from the "仕事くらべ" question), best first */
 function compareRows(x){
   const ci = x.stages.findIndex(s => s.o === 'compare'); if (ci < 0) return [];
   const num = v => { const n = parseFloat(String(v || '').replace(/[０-９．]/g, d => String.fromCharCode(d.charCodeAt(0) - 65248))); return Number.isFinite(n) ? Math.max(0, Math.min(10, n)) : null; };
+  const fl = fieldsOf(x.stages[ci]);
   return x.ans.filter(a => a.s === x.stages[ci].p).map(a => {
-    const row = CMP_Q.map(([f]) => { const t = (x.ans.find(c => c.s === ci && c.par === a.id && c.f === f) || {}).t || ''; return {t, n: num(t)}; });
-    return {name: a.t, row, sum: row.reduce((t, c) => t + (c.n || 0), 0)};
+    const row = fl.map(([f, , n]) => { const t = (x.ans.find(c => c.s === ci && c.par === a.id && c.f === f) || {}).t || ''; return {f, n: num(t), t, l: n}; });
+    return {name: a.t, row, sum: row.reduce((t, c) => t + (c.n || 0), 0), max: fl.length * 10};
   }).filter(r => r.row.some(c => c.t)).sort((a, b) => b.sum - a.sum);
 }
 const TM_Q = [['q1', '第1領域', '重要・緊急', '今すぐやる'], ['q2', '第2領域', '重要・緊急でない', '時間を作ってやる'], ['q3', '第3領域', '重要でない・緊急', '減らす・任せる'], ['q4', '第4領域', '重要でない・緊急でない', 'やめる']];
@@ -4706,12 +4793,14 @@ function boardHTML(x){
   const sw = SW_Q.map(([f]) => F('swot', f)), cr = ['so', 'wo', 'st', 'wt'].map(f => F('cross', f)), tm = TM_Q.map(([f]) => F('tm', f));
   const ti = x.stages.findIndex(s => s.o === 'thanks'), thanks = ti >= 0 ? x.ans.filter(a => a.s === ti) : [];
   const out = [], cmp = compareRows(x), ik = IK_Q.map(([f]) => F('ikigai', f)), hi = x.stages.findIndex(s => s.o === 'hypo'), hypo = hi >= 0 ? (x.ans.find(a => a.s === hi) || {}).t : '';
+  const rk = jobRanking(x);
+  if (rk.length) out.push(`<div class="bd jrank"><h3>おすすめ職業ランキング</h3><ol>${rk.map((r, i) => `<li><i>${i + 1}</i><div><b>${esc(r.name)}</b><span class="rk-tag ${r.own ? 'own' : 'new'}">${r.own ? 'あなたの候補' : '新しい発見'}</span><small>${r.why.map(esc).join('／')}</small></div><em><b>${r.sc}</b>点<small>AIに強い ${aiStars(r.ai)}</small></em></li>`).join('')}</ol><p class="cmp-note">点数は、答えと点数から計算した目安です。「AIに強い」は、人の気持ちにふれる・現場で手を動かす・その場で判断する仕事ほど高くなります。「新しい発見」の仕事も、ぜひ調べてみよう。</p></div>`);
   if (ik.some(Boolean) || hypo) out.push(`<div class="bd ik"><h3>天職の4つの円</h3><div class="ikg">${IK_Q.map(([, n], k) => `<span class="k${k}"><em>${n}</em>${E(ik[k])}</span>`).join('')}</div>${hypo ? `<p class="ik-hypo"><small>天職の仮説</small>${esc(hypo)}</p>` : ''}</div>`);
   const ti2 = x.stages.findIndex(s => s.o === 'trial'), eggs = ti2 >= 0 ? x.ans.filter(a => a.s === x.stages[ti2].p) : [];
   if (eggs.length) out.push(`<div class="bd"><h3>仕事のたまごと、小さなお試し</h3><ul>${eggs.map(a => { const r = x.ans.filter(c => c.s === ti2 && c.par === a.id).map(c => c.t); return `<li><b>${esc(a.t)}</b>${r.length ? `<span>→ ${esc(r.join('・'))}</span>` : ''}</li>`; }).join('')}</ul></div>`);
   const lost = [['now', '迷い'], ['why', '理由'], ['when', '期限'], ['score', '見えている度']].map(([f, n]) => [n, F('lost', f)]).filter(v => v[1]);
   if (lost.length) out.push(`<div class="bd"><h3>旅のはじまりの迷い</h3><dl>${lost.map(([n, t]) => `<dt>${n}</dt><dd>${esc(t)}</dd>`).join('')}</dl></div>`);
-  if (cmp.length) out.push(`<div class="bd cmp"><h3>仕事くらべ表</h3><div class="cmp-wrap"><table><thead><tr><th>仕事</th>${CMP_Q.map(([, n]) => `<th>${n}</th>`).join('')}<th>合計</th></tr></thead><tbody>${cmp.map((r, i) => `<tr${i === 0 && cmp.length > 1 && r.sum > cmp[1].sum ? ' class="cmp-best"' : ''}><th>${esc(r.name)}</th>${r.row.map(c => `<td>${c.n != null ? c.n : c.t ? esc(c.t) : '—'}</td>`).join('')}<td><b>${r.sum}</b><small>/40</small></td></tr>`).join('')}</tbody></table></div><p class="cmp-note">点数は目安。いちばん高い仕事が正解とはかぎりません。話を聞いて感じたことも大切に。</p></div>`);
+  if (cmp.length) out.push(`<div class="bd cmp"><h3>仕事くらべ表</h3><div class="cmp-wrap"><table><thead><tr><th>仕事</th>${cmp[0].row.map(c => `<th>${esc(c.l)}</th>`).join('')}<th>合計</th></tr></thead><tbody>${cmp.map((r, i) => `<tr${i === 0 && cmp.length > 1 && r.sum > cmp[1].sum ? ' class="cmp-best"' : ''}><th>${esc(r.name)}</th>${r.row.map(c => `<td>${c.n != null ? c.n : c.t ? esc(c.t) : '—'}</td>`).join('')}<td><b>${r.sum}</b><small>/${r.max}</small></td></tr>`).join('')}</tbody></table></div><p class="cmp-note">点数は目安。いちばん高い仕事が正解とはかぎりません。話を聞いて感じたことも大切に。</p></div>`);
   if (vow.length) out.push(`<div class="bd vow"><h3>誓い</h3><dl>${vow.map(([n, t]) => `<dt>${n}</dt><dd>${esc(t)}</dd>`).join('')}</dl></div>`);
   if (sw.some(Boolean) || cr.some(Boolean)) out.push(`<div class="bd"><h3>SWOT分析とクロスSWOT</h3><div class="mx sw"><span class="corner">SWOT</span><b class="hx">強み<small>${E(sw[0])}</small></b><b class="hx">弱み<small>${E(sw[1])}</small></b><b class="hy">機会<small>${E(sw[2])}</small></b><span class="cell"><em>強み×機会</em>${E(cr[0])}</span><span class="cell"><em>弱み×機会</em>${E(cr[1])}</span><b class="hy">脅威<small>${E(sw[3])}</small></b><span class="cell"><em>強み×脅威</em>${E(cr[2])}</span><span class="cell"><em>弱み×脅威</em>${E(cr[3])}</span></div></div>`);
   if (tm.some(Boolean)) out.push(`<div class="bd"><h3>時間管理マトリクス</h3><div class="mx tmx"><span class="corner"></span><b class="hx">緊急度が高い</b><b class="hx">緊急度が低い</b><b class="hy">重要度が高い</b><span class="cell"><em>第1領域 今すぐやる</em>${E(tm[0])}</span><span class="cell key"><em>第2領域 時間を作ってやる</em>${E(tm[1])}</span><b class="hy">重要度が低い</b><span class="cell"><em>第3領域 減らす・任せる</em>${E(tm[2])}</span><span class="cell"><em>第4領域 やめる</em>${E(tm[3])}</span></div></div>`);
@@ -5260,7 +5349,7 @@ function sheetPages(stages, theme){
   return h;
 }
 function printBody(){
-  if (printKind === 'sheet' || !S) return sheetPages(S ? S.stages : draftStages(), S ? S.theme : $('#themeInput').value.trim());
+  if (printKind === 'sheet' || !S) return sheetPages(S ? S.stages : draftStages(), S ? S.theme : homeTheme());
   return resultPages(S);
 }
 function openPrint(kind){
@@ -5565,8 +5654,42 @@ setInterval(() => {
 /* =========================================================
    HOME
    ========================================================= */
+const JOB_COURSES = {calling: '天職を見つける', career: '自分に合う職業をえらぶ'};
+let homePurpose = 'dream', homeJob = 'calling';
 let presetKey = 'dream', draft = clone(PRESETS.dream.st), editing = false, homeMode = store.get('mindquest-mode', 'quest') === 'map' ? 'map' : 'quest', homeLevel = 'normal', homeCpu = 3;
+/* surprise questions: three of them join every game at random, so each journey brings something new */
+const WILD = [
+  ['子どもの目', '10歳の自分が「{t}」を聞いたら、なんて言うと思う？'], ['魔法の杖', 'もし魔法が1つだけ使えるなら、「{t}」のために何をかなえる？'],
+  ['予算は無限', 'お金も時間も無限にあったら、「{t}」をどんなふうに進める？'], ['逆転の発想', '「{t}」を絶対に失敗させる方法を考えるなら？ その反対が、きっと作戦になる！'],
+  ['あこがれの人なら', 'あこがれの有名人が「{t}」に挑戦するなら、最初に何をすると思う？'], ['明日1日だけ', 'もし明日1日だけ「{t}」に全部の時間を使えるなら、何をする？'],
+  ['ネコの質問', '「{t}」って、それ楽しいニャ？ いちばん楽しみなところはどこニャ？'], ['ちがう国で', '「{t}」を外国でやるとしたら、どの国で、何が変わる？'],
+  ['100年前の人', '100年前の人が「{t}」を聞いたら、何におどろくと思う？'], ['ひとことで', '「{t}」を、まだ知らない人に10文字以内で伝えるなら？'],
+  ['色にたとえる', '「{t}」を色にたとえると何色？ それはなぜ？'], ['心の天気', '今の「{t}」への気持ちを天気で言うと？ 晴れにするには何がいる？'],
+  ['ライバルの手', 'ライバルが「{t}」であなたに勝つとしたら、どんな手を使ってくると思う？'], ['おばあちゃんの一言', '近所のおばあちゃんが「{t}」に一言アドバイスするとしたら、何と言いそう？'],
+  ['本の題名', '「{t}」の物語を本にするなら、題名は？'], ['ごほうびの朝', '「{t}」がうまくいった次の日の朝、最初に何をしたい？'],
+  ['半分の力', '元気が半分しかない日でも、「{t}」のためにできることは？'], ['見落とし', '「{t}」で、みんながうっかり見落としていそうなことは？'],
+  ['相棒の道具', '「{t}」の相棒になる道具を1つ選ぶなら？ なぜそれ？'], ['かなった音', '「{t}」がかなった瞬間、どんな音が聞こえる？'],
+  ['料理なら', '「{t}」を料理にたとえると、今どの段階？（材料集め・下ごしらえ・煮こみ中…）'], ['未来のニュース', '5年後のニュースに「{t}」が出るとしたら、どんな見出し？'],
+  ['もしもの時', 'もし「{t}」が明日からできなくなったら、何がいちばんさびしい？'], ['寄り道', '「{t}」と関係ないけど、最近気になっていることは？ 意外とつながるかも！'],
+  ['3分でできること', '3分だけ時間があるとき、「{t}」のためにできることは？'], ['先生になる', '「{t}」について、あなたが人に教えられることは何？'],
+  ['いい失敗', '「{t}」で、してもいい失敗はどんな失敗？'], ['ドラゴンの本音', 'ドラゴンがこっそり言った。「本当はお前の〇〇がこわい」。あなたの何をこわがっていると思う？']
+];
+const WILD_JOB = [
+  ['AIの質問', '未来から来たAIが言う。「わたしにできない仕事は何だと思う？」 あなたの答えは？'], ['1週間の職場体験', '1週間だけどんな仕事でも体験できるなら、どれを選ぶ？ なぜ？'],
+  ['小さいころの夢', '小さいころなりたかったものは？ その中に、今も残っている気持ちは？'], ['お給料ゼロでも', 'もしお給料がもらえなくても続けたい仕事があるとしたら、何？'],
+  ['使ってみたい道具', '使ってみたい道具や機械は？ それを使う仕事は何だろう？'], ['困っている人', '最近見かけた「困っている人」は？ その人を助ける仕事には何がある？'],
+  ['月曜の朝', '月曜日の朝、ワクワクしながら出かけるとしたら、どんな仕事に行く？'], ['身近な人の仕事', '家族や身近な人の仕事で、すごいと思ったことは？'],
+  ['うれしいありがとう', '仕事でもらう「ありがとう」で、いちばんうれしいのはだれからの言葉？'], ['苦手の裏側', 'あなたの苦手なことが、逆に役立つ仕事はあるかな？（例：心配性→安全を守る仕事）'],
+  ['町の仕事さがし', '町を歩いて目に入る仕事を3つ挙げよう。その中でいちばん気になるのは？'], ['100人の村', '100人の村に「あなたの仕事」が1つだけあるとしたら、どんな仕事で村を助ける？']
+];
+const WILD_NPC = ['旅の吟遊詩人', '迷子のネコ', '未来から来たロボット', 'いたずら好きの妖精', 'なぞの旅人', 'おしゃべりなフクロウ', '旅の絵かき', '星の案内人'];
+function addWild(stages, course){
+  const R = rng(rnd(1e9)), take = (list, n) => { const a = [...list]; for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, n); };
+  const job = course === 'career' || course === 'calling', picks = job ? [...take(WILD_JOB, 2), ...take(WILD, 1)] : take(WILD, 3), segs = take(['town', 'river', 'post'], 3);
+  return [...stages, ...picks.map(([l, q], k) => ({l: 'ひらめき：' + l, q, p: -1, min: 1, sec: 80, o: 'wild', wild: 1, npc: WILD_NPC[Math.floor(R() * WILD_NPC.length)], seg: segs[k], hint: '毎回ちがう「ひらめきの問い」。正解はありません。思いついたことをそのまま書くと、新しい発見があるかも！'}))];
+}
 function newSession(theme, stages, timed, mode, level, keep){
+  stages = addWild(stages.filter(st => !st.wild), (keep && keep.course) || presetKey);
   keep = keep || {world: homeWorld, avatar: clone(homeAvatar), heroName: ($('#heroNameInput').value || '').trim().slice(0, 8), age: parseAge($('#ageInput').value)};
   S = {v: 4, theme, stages: clone(stages), world: keep.world, avatar: cleanAvatar(keep.avatar), heroName: keep.heroName || '', age: keep.age, course: keep.course || presetKey, vseed: rnd(1e9), chapter: 1, lvCarry: 0, chapters: [], forks: clone((PRESETS[presetKey] || {}).forks || {}), routes: {}, timed, mode, level, ans: [], seq: 1, cur: '0:r', stat: {}, phase: 'play', result: null, aiopts: {},
     quest: mode === 'quest' ? {pos: 'start', pts: 0, rolls: 0, done: {}, qs: 'roll', ev: null, timeMod: 0, log: [], last: 1, rivals: null, finN: 0, place: 0, free: false} : null};
@@ -5582,7 +5705,7 @@ function openHome(){
   $('#btnResume').hidden = !S; $('#resumeNote').hidden = !S;
   if (S){ $('#btnResume').textContent = `続きから：「${S.theme}」`; if (view !== S){ view = S; clearMap(); setStageView(stageView); renderMap(); if (S.mode === 'quest') renderBoard(); } }
   else { view = sampleSession(); clearMap(); setStageView('map'); renderMap(); }
-  renderRadios(); renderPresets(); renderExamples(); renderQList(); renderInstall(); setHomeStep(1);
+  renderRadios(); renderPurpose(); renderPresets(); renderExamples(); renderQList(); renderInstall(); setHomeStep(1);
   setTimeout(() => { if (matchMedia('(pointer:fine)').matches) $('#themeInput').focus({preventScroll: true}); }, 60);
 }
 /* phone: the home screen is split into steps (theme → how to play → hero → course), one screen each */
@@ -5637,12 +5760,28 @@ function renderRadios(){
 }
 $('#modeCtl').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (b){ homeMode = b.dataset.mode; store.set('mindquest-mode', homeMode); renderRadios(); renderQList(); setHomeStep(homeStep); } });
 $('#levelCtl').addEventListener('click', e => { const b = e.target.closest('[data-level]'); if (b){ homeLevel = b.dataset.level; renderRadios(); } });
+function renderPurpose(){
+  const job = homePurpose === 'job';
+  $('#purposeCtl').querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.purpose === homePurpose)));
+  $('#jobMenu').querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.job === presetKey)));
+  $('#jobMenu').hidden = !job; $('#themeBlock').hidden = job; checkBegin();
+}
+function setPurpose(pp, course){
+  homePurpose = pp;
+  const k = pp === 'job' ? (course || homeJob) : (JOB_COURSES[presetKey] ? 'dream' : presetKey);
+  if (pp === 'job') homeJob = k;
+  if (k !== presetKey || course){ presetKey = k; draft = clone(PRESETS[k].st); editing = false; }
+  renderPurpose(); renderPresets(); renderExamples(); renderQList();
+}
+$('#purposeCtl').addEventListener('click', e => { const b = e.target.closest('[data-purpose]'); if (b) setPurpose(b.dataset.purpose); });
+$('#jobMenu').addEventListener('click', e => { const b = e.target.closest('[data-job]'); if (b) setPurpose('job', b.dataset.job); });
+const homeTheme = () => homePurpose === 'job' ? JOB_COURSES[presetKey] || '' : $('#themeInput').value.trim();
 function renderPresets(){
   const c = $('#presetCtl'); c.innerHTML = '';
-  Object.entries(PRESETS).forEach(([k, p]) => {
+  Object.entries(PRESETS).filter(([k]) => !!JOB_COURSES[k] === (homePurpose === 'job')).forEach(([k, p]) => {
     const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'radio');
     b.setAttribute('aria-checked', String(k === presetKey)); b.textContent = p.name;
-    b.onclick = () => { presetKey = k; draft = clone(p.st); editing = false; renderPresets(); renderExamples(); renderQList(); };
+    b.onclick = () => { presetKey = k; if (JOB_COURSES[k]) homeJob = k; draft = clone(p.st); editing = false; renderPurpose(); renderPresets(); renderExamples(); renderQList(); };
     c.append(b);
   });
 }
@@ -5703,11 +5842,11 @@ $('#btnAddQ').onclick = () => {
   if (draft.length >= 10){ toast('問いは10個までです'); return; }
   draft.push({l: '', q: '', p: -1, min: 1, sec: 70, o: ''}); renderQList(); $('#el' + (draft.length - 1)).focus();
 };
-const checkBegin = () => { $('#btnBegin').disabled = !$('#themeInput').value.trim(); };
+const checkBegin = () => { $('#btnBegin').disabled = !homeTheme(); };
 $('#themeInput').addEventListener('input', checkBegin);
 $('#themeInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229 && !$('#btnBegin').disabled){ e.preventDefault(); if (PHONE.matches){ e.target.blur(); homeGo(1); } else begin(); } });
 function begin(){
-  const theme = $('#themeInput').value.trim(); if (!theme) return;
+  const theme = homeTheme(); if (!theme) return;
   if (homeMode === 'quest' && $('#chkOnline').checked && !$('#raceCode').value.trim()){ toast('通信対戦の合言葉を入れてください'); $('#raceCode').focus(); return; }
   if (draft.some(q => !(q.q || '').trim())){ editing = true; renderQList(); toast('問いの文が空の行があります'); return; }
   if (aiCtl) aiCtl.abort();
