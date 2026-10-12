@@ -177,7 +177,7 @@ const RUBY = (function () {
   // 要素の中の文字に読みを付ける（絵・すでに付いた読みは飛ばす）
   function apply(root) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode: (n) => n.parentNode.closest('svg, ruby, script, style') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+      acceptNode: (n) => n.parentNode.closest('svg, ruby, script, style, select, [data-noruby]') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
     });
     const nodes = [];
     let last = '';

@@ -32,7 +32,26 @@
     background-size:6px 6px;
     line-height:1.8;
     overflow-x:hidden;
+    overflow-wrap:break-word;
   }
+  /* 言語ごとの書体（日本語の明朝で中国語・韓国語を出すと字の形が変わるため） */
+  html[lang="zh-Hans"] body{font-family:"Songti SC","STSong","Noto Serif SC","Source Han Serif SC","SimSun",serif;}
+  html[lang="zh-Hant"] body{font-family:"Songti TC","Noto Serif TC","Source Han Serif TC","PMingLiU","MingLiU",serif;}
+  html[lang="ko"] body{font-family:"AppleMyungjo","Nanum Myeongjo","Noto Serif KR","Source Han Serif K","Batang",serif;}
+  html[data-script="alpha"] body{font-family:Georgia,"Times New Roman","Noto Serif",serif;}
+  html[lang="vi"] body{font-family:"Times New Roman","Noto Serif",Georgia,serif;}   /* ベトナム語の声調記号がそろう書体を先に */
+  html[lang="th"] body{font-family:"Noto Serif Thai","Leelawadee UI",Tahoma,Thonburi,serif;}
+  /* 英語など（1語が長い言語）：せまいマスでは語の途中でも折り返す */
+  html[data-script="alpha"] #app{hyphens:auto;-webkit-hyphens:auto;}
+  html[data-script="alpha"] :is(.tool,.month,.mark,.cmpc,.school,.seg){overflow-wrap:anywhere;}
+  html[data-script="alpha"] h1{letter-spacing:.04em;}
+  html[data-script="alpha"] .month b{font-size:.98rem;}
+  html[data-script="alpha"] .dl{grid-template-columns:minmax(0,38%) minmax(0,1fr);}   /* 見出しが長い言語は、見出しの列を折り返す */
+  html[data-script="alpha"] .dl dt{white-space:normal;}
+  .langbar{display:flex;justify-content:flex-end;padding-top:calc(8px + env(safe-area-inset-top));margin-bottom:-6px;}
+  .langbar label{display:inline-flex;align-items:center;gap:6px;color:var(--sub);}
+  .langbar svg{width:20px;height:20px;}
+  .langbar select{font:inherit;font-size:.86rem;color:var(--ink);background:#fffdf7;border:1px solid var(--line);border-radius:999px;padding:4px 10px;max-width:60vw;}
   #app{max-width:560px;margin:0 auto;padding:0 14px calc(36px + env(safe-area-inset-bottom));}
   h1{font-size:1.8rem;letter-spacing:.15em;margin:6px 0 0;text-align:center;line-height:1.5;}
   h2{font-size:1.3rem;margin:6px 0 12px;letter-spacing:.04em;line-height:1.6;}
@@ -279,6 +298,8 @@
 </head>
 <body>
 <div id="app"></div>
+<script src="i18n.js"></script>
+<script>I18N.boot();</script>
 <script src="data.js"></script>
 <script src="art.js"></script>
 <script src="ruby.js"></script>
