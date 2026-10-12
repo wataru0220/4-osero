@@ -4293,7 +4293,7 @@ function playHTML(){
       <div class="pf${vals[k] ? ' done' : ''}">
         <label for="pf-${k}"><i>${fi + 1}</i>${esc(lbl)}${vals[k] ? '<span>決定</span>' : ''}</label>
         ${S.level === 'beginner' ? `<div class="choices" style="--c:${col}">${withKind(S, bk || k, BANKS[bk || k] || []).map(o => `<button type="button" class="choice${vals[k] && vals[k].t === o ? ' on' : ''}" data-field="${k}" data-choice="${esc(o)}">${esc(o)}</button>`).join('')}</div>` : ''}
-        <div class="entry"><input id="pf-${k}" data-field="${k}" value="${vals[k] ? esc(vals[k].t) : ''}" maxlength="24" placeholder="${S.level === 'beginner' ? 'ほかにあれば入力' : esc(ph || '')}" autocomplete="off" enterkeyhint="next" aria-label="${esc(lbl)}"><button class="btn primary" type="button" data-act="setf">決定</button></div>
+        <div class="entry"><input id="pf-${k}" data-field="${k}" value="${vals[k] ? esc(vals[k].t) : ''}" maxlength="60" placeholder="${S.level === 'beginner' ? 'ほかにあれば入力' : esc(ph || '')}" autocomplete="off" enterkeyhint="next" aria-label="${esc(lbl)}"><button class="btn primary" type="button" data-act="setf">決定</button></div>
       </div>`).join('')}</div>
     <p class="hint">入力して <kbd>Enter</kbd> で次の項目へ。${flds.length}つそろったら${quest ? '関所を通過' : '次の問いへ'}。</p>`;
   } else if (S.level === 'beginner'){
@@ -4304,9 +4304,9 @@ function playHTML(){
     entry = `<div class="pick-head">選んでください（${st.min}個以上）<span>もう一度押すと外せます</span></div>
       <div class="choices" style="--c:${col}">${[...ai.map(o => [o, 1]), ...bank.map(o => [o, 0])].map(([o, isAi]) => `<button type="button" class="choice${chosen.has(o) ? ' on' : ''}${isAi ? ' ai' : ''}" data-choice="${esc(o)}" aria-pressed="${chosen.has(o)}">${esc(o)}</button>`).join('')}</div>
       ${sampleAvail ? `<button class="btn sm" type="button" data-act="ai-opts" id="btnAiOpts" style="align-self:flex-start">${ai.length ? 'AIにほかの選択肢も出してもらう' : 'テーマに合った選択肢をAIに出してもらう'}</button>` : ''}
-      <details class="own"${own.length ? ' open' : ''}><summary>選択肢にない答えを自分で書く</summary><div class="entry"><input id="ans" maxlength="24" placeholder="答えを入力" aria-label="答え" autocomplete="off" enterkeyhint="enter"><button class="btn primary" type="button" data-act="add">追加</button></div></details>`;
+      <details class="own"${own.length ? ' open' : ''}><summary>選択肢にない答えを自分で書く</summary><div class="entry"><input id="ans" maxlength="60" placeholder="答えを入力" aria-label="答え" autocomplete="off" enterkeyhint="enter"><button class="btn primary" type="button" data-act="add">追加</button></div></details>`;
   } else {
-    entry = `<div class="entry"><input id="ans" maxlength="24" placeholder="${st.monster ? '答えて攻撃！' : kex[0] ? `例：${esc(kex[0])}` : '答えを入力'}" aria-label="答え" autocomplete="off" enterkeyhint="enter"><button class="btn primary" type="button" data-act="add">${st.monster ? '攻撃' : '追加'}</button></div>
+    entry = `<div class="entry"><input id="ans" maxlength="60" placeholder="${st.monster ? '答えて攻撃！' : kex[0] ? `例：${esc(kex[0])}` : '答えを入力'}" aria-label="答え" autocomplete="off" enterkeyhint="enter"><button class="btn primary" type="button" data-act="add">${st.monster ? '攻撃' : '追加'}</button></div>
     <p class="hint">答えるたびに枝が伸びます。空欄のまま <kbd>Enter</kbd> で${quest ? '関所を通過' : '次の問いへ'}。</p>`;
   }
   const nextLbl = quest ? '答えを決めて進む →' : last ? '採点する →' : '次の問いへ →';
@@ -4461,7 +4461,7 @@ function addText(t){
 }
 function addAnswer(){
   const inp = $('#ans'); if (!inp || !canAnswer()) return;
-  const t = inp.value.trim().slice(0, 24);
+  const t = inp.value.trim().slice(0, 60);
   if (!t){ next(); return; }
   if (!addText(t)){ inp.select(); return; }
   const p = current(), msg = coachOf(S, S.stages[p.s], t);
@@ -4479,7 +4479,7 @@ function saveFields(){
   const p = current(); if (!isPlan(S.stages[p.s])) return false;
   const before = answersFor(S, p).length; let changed = false;
   let msg = null;
-  panel.querySelectorAll('input[data-field]').forEach(inp => { const v = inp.value.trim().slice(0, 24); if (v && setField(p, inp.dataset.field, v)){ changed = true; msg = msg || coachOf(S, S.stages[p.s], v, inp.dataset.field); } });
+  panel.querySelectorAll('input[data-field]').forEach(inp => { const v = inp.value.trim().slice(0, 60); if (v && setField(p, inp.dataset.field, v)){ changed = true; msg = msg || coachOf(S, S.stages[p.s], v, inp.dataset.field); } });
   if (changed) S.coach = msg ? {key: p.key, msg} : null;
   if (changed){ const n = answersFor(S, p).length, m = S.stages[p.s].min; if (n >= m && before < m){ sfx.clear(); toast('そろいました！ 条件クリア'); } else sfx.add(n); }
   return changed;
