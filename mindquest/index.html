@@ -522,6 +522,45 @@ details.own[open] summary{margin-bottom:8px}
 .first ul{margin:0;padding-left:1.2em;font-size:13.5px;font-weight:700}
 
 /* rival match */
+.mbar{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--muted)}
+.mbar i{display:block;height:10px;border-radius:999px;background:#EEF0F6;overflow:hidden}
+.mbar em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#15A37C,#7ED3A8);transition:width .4s}
+.mbar.low em{background:linear-gradient(90deg,#D93A3F,#F2A33A)}
+.mbar b{font-family:var(--en);font-size:15px;color:var(--ink);min-width:2ch;text-align:right}
+.mbar .fx{font-size:14px;letter-spacing:2px}
+.ibar{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.ibar small{font-size:11px;font-weight:800;color:var(--muted)}
+.ibar button{display:inline-flex;align-items:center;gap:4px;border:1.5px solid var(--line2);background:#fff;border-radius:999px;padding:4px 10px;font-size:12.5px;font-weight:700;color:var(--ink)}
+.ibar button em{font-style:normal;font-size:11px;color:var(--muted)}
+.ibar button:not(:disabled):hover{border-color:var(--accent)}
+.ibar button:disabled{opacity:.4;cursor:default}
+.ibar button.magic{border-color:#FFB547;background:#FFF6E5}
+.crys{border-radius:14px;padding:10px 14px;background:#F4F0FF;border:1.5px solid #DCD0FF;display:grid;gap:4px}
+.crys b{font-size:13px;color:#5B3FC4}
+.crys ul{margin:0;padding-left:1.2em;font-size:13.5px;display:grid;gap:2px}
+.shop{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.shop li{display:grid;grid-template-columns:34px minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:var(--soft);border:1.5px solid var(--line)}
+.shop .si{font-size:24px;text-align:center}
+.shop li div{display:grid;gap:1px;min-width:0}
+.shop li b{font-size:14px}
+.shop li small{font-size:11.5px;color:var(--muted);line-height:1.45}
+.shop li em{font-style:normal;font-size:12px;font-weight:800;color:var(--accent)}
+.fate-now{margin:0;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;font-size:13px;color:var(--muted)}
+.fate-now b{color:var(--ink);font-size:15px}
+.cls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.cls-card{display:grid;gap:3px;align-content:start;text-align:left;border:2px solid var(--line);background:#fff;border-radius:16px;padding:10px 12px;color:var(--ink)}
+.cls-card b{font-size:14.5px}
+.cls-card span{font-size:11.5px;color:var(--muted);line-height:1.45}
+.cls-card.on{border-color:var(--accent);background:#FFF7F4;box-shadow:0 0 0 4px rgba(242,85,78,.12)}
+.cls-note{display:block;font-size:12px;color:var(--muted);margin:-2px 0 2px}
+.pick-die{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.pick-die .btn{min-width:44px;font-family:var(--en);font-size:18px}
+.bd.goal{grid-column:1 / -1;background:linear-gradient(135deg,#FFF6D8,#fff)}
+.bd.goal p{margin:0}
+.goal-big{font-size:30px}
+.goal-big b{font-size:24px}
+.bd.goal small{color:var(--muted)}
+.lv5 .person.keephair .hair{display:inline}
 .duel-vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;padding:8px 12px;border-radius:18px;background:linear-gradient(90deg,#FFF1EC,#fff 42%,#fff 58%,color-mix(in srgb,var(--c) 14%,#fff));border:1.5px solid var(--line)}
 .duel-vs .side{display:grid;justify-items:center;gap:2px;font-weight:800;font-size:13px;min-width:0}
 .duel-vs svg{width:66px;height:92px}
@@ -1120,6 +1159,7 @@ details.own[open] summary{margin-bottom:8px}
     </div>
     <div class="vs" data-hs="3" id="vsBox" hidden>
       <div class="vs-sec"><b>ワールドをえらぶ</b><div class="worlds" id="worldCtl" role="radiogroup" aria-label="ワールド"></div></div>
+      <div class="vs-sec"><b>職業をえらぶ</b><small class="cls-note">職業で装備・仲間・とくい技が変わります。旅のとちゅうの「転職の館」で一度だけ変えられます。</small><div class="cls-grid" id="clsCtl" role="radiogroup" aria-label="職業"></div></div>
       <div class="vs-sec"><b>勇者をつくる</b>
         <div class="maker">
           <svg id="heroPreview" viewBox="-70 -104 140 112" aria-label="勇者の見た目"></svg>
@@ -2172,7 +2212,7 @@ function effective(e){
   if (S && !S.timed && e.time){ const c = {...e}; c.pts = (c.pts || 0) + (e.time > 0 ? 5 : -5); delete c.time; c.d = c.d.replace(/次の問いの持ち時間が.+?。/, ''); return c; }
   return e;
 }
-const evOf = sqKey => effective(EVENTS[hash(sqKey) % EVENTS.length]);
+const evOf = sqKey => effective(sqKey === '__clover' ? EVENTS.find(v => v.id === 'friend') : EVENTS[hash(sqKey) % EVENTS.length]);
 function effText(e){
   const t = [];
   if (e.pts) t.push((e.pts > 0 ? '+' : '') + e.pts + 'pt');
@@ -2254,7 +2294,7 @@ function segName(seg){
   const f = 'f' + seg.slice(1), fk = S && S.forks && S.forks[f];
   return fk && fk.opts[seg] ? fk.opts[seg].n : (seg[1] === '1' ? '森の道' : '星の道');
 }
-const GAP = 62, WEIGHT = {start: 1.2, fork: 1.3, q: 1.3, goal: 1.3, ev: 1, plain: .75};
+const GAP = 62, WEIGHT = {start: 1.2, fork: 1.3, q: 1.3, goal: 1.3, ev: 1, plain: .75, shop: 1.3, fate: 1.3, job: 1.3};
 const filler = key => hash('f' + key) % 100 < 45 ? {k: 'e:' + key, type: 'ev', ev: evOf('e:' + key)} : {k: 'n:' + key, type: 'plain'};
 function track(x){
   setGeo(x.mode === 'quest' ? x.chapter || 1 : 1);
@@ -2272,6 +2312,9 @@ function track(x){
     if (!G[seg]) seg = 'town';
     G[seg].push({k: 'q:' + p.key, type: 'q', p});
   });
+  if (x.mode === 'quest' && x.quest){ /* three shops, three fate crossroads and the job hall */
+    G.town.push({k: 'shop:1', type: 'shop'}); G.river.unshift({k: 'job:1', type: 'job'}); G.river.push({k: 'fate:1', type: 'fate'});
+    G.post.unshift({k: 'shop:2', type: 'shop'}); G.post.push({k: 'fate:2', type: 'fate'}); G.castle.unshift({k: 'fate:3', type: 'fate'}); G.castle.push({k: 'shop:3', type: 'shop'}); }
   ['town', 'post'].forEach(seg => { const f = G[seg].filter(g => g.type === 'fork'); G[seg] = G[seg].filter(g => g.type !== 'fork').concat(f); });
   const all = [['town', 1], [r1 || 'A1', 1], ['river', 1], ['cave', 2], ['post', 3], [r2 || 'A2', 3], ['castle', 3]];
   const seq = stop === 'f1' ? all.slice(0, 1) : stop === 'f2' ? all.slice(0, 5) : all;
@@ -2386,8 +2429,9 @@ const W = () => {
   const X = WORLDS[w], B = BIOME[ch];
   return W_MIX[k] = {...X, sky: B.sky, hill: B.hill, river: B.river, names: {...X.names, ...(B.names[w] || B.names.euro)}};
 };
-const lvName = lv => W().lv[lv] || '';
-const gearOf = lv => { const g = W().gear[lv - 2]; return g ? {n: g[0], d: `${g[1]}。Lv.${lv} ${lvName(lv)}になった！`} : {n: '', d: ''}; };
+const gearList = () => CLASSES[curCls()].gear || W().gear;
+const lvName = lv => (CLASSES[curCls()].lv || W().lv)[lv] || '';
+const gearOf = lv => { const g = gearList()[lv - 2]; return g ? {n: g[0], d: `${g[1]}。Lv.${lv} ${lvName(lv)}になった！`} : {n: '', d: ''}; };
 /* scenery symbols per world (house / tree / pine / landmark) */
 const W_SYM = {
   euro: {
@@ -2508,9 +2552,46 @@ const HERO_GEAR = {
     helm: `<g class="g-helm"><path d="M-10.5 -42 Q-11 -57.5 0 -57.5 Q11 -57.5 10.5 -42 Z" fill="#F4F7FF" stroke="#8FA3D8" stroke-width="1"/><path d="M-1 -49 H10.5 Q11 -42.5 8 -40.5 H-1Z" fill="#39E1F0" opacity=".85"/><path d="M-9 -54 L-13 -61" stroke="#8FA3D8" stroke-width="1.5"/><circle cx="-13.5" cy="-62" r="1.8" fill="#FF5FD2"/></g>`
   }
 };
+/* ---------- jobs: chosen at the start, changeable once at the job hall. Each changes the gear, the allies and a special skill ---------- */
+const CLASSES = {
+  warrior: {n: '戦士', ic: '⚔️', d: '剣と盾で道を切りひらく。モンスターから受けるメンタルダメージが半分', tag: 'pow'},
+  mage: {n: '魔法使い', ic: '🪄', d: '知恵と魔法で進む。最初から魔法「ファイア」を3回使える', tag: 'wis',
+    lv: ['', '見習い', '魔法使い', '魔導士', '大魔導士', '大賢者'], gear: [['知恵の杖', '答えに光をともす杖'], ['魔法の書', '不安をはね返す呪文の本'], ['星のローブ', 'くじけない心のローブ'], ['三角帽子とマント', '夢をかなえる魔法使いのあかし']]},
+  merchant: {n: '商人', ic: '💰', d: 'お金のやりくり上手。もらえるゴールドが1.5倍、お店で1割引', tag: 'rich',
+    lv: ['', '行商人', '商人', '大商人', '豪商', '商人王'], gear: [['そろばん', 'チャンスを数える道具'], ['金貨の袋', '不安を買い取る金貨'], ['旅のベスト', 'くじけない心のベスト'], ['羽根つき帽子とマント', '夢を商う大商人のあかし']]},
+  craft: {n: '職人', ic: '🔨', d: '手で形にする。関所を通るたびに夢ポイント+5', tag: 'make',
+    lv: ['', '見習い', '職人', '一人前', '親方', '名工'], gear: [['匠の金づち', '答えを形にする金づち'], ['道具箱', '不安を直す道具箱'], ['仕事の前かけ', 'くじけない心の前かけ'], ['ヘルメットと法被', '夢をきざむ名工のあかし']]},
+  healer: {n: 'いやし手', ic: '🌿', d: '心をいやす。関所を通るたびにメンタル+5', tag: 'heart',
+    lv: ['', '見習い', 'いやし手', '神官', '大神官', '聖者'], gear: [['いやしの杖', '心をととのえる杖'], ['薬草ぶくろ', '不安をいやす薬草'], ['白いローブ', 'くじけない心のローブ'], ['光の冠とマント', '人を救う聖者のあかし']]}
+};
+let homeCls = 'warrior', clsOverride = null;
+const curCls = () => clsOverride || (S && S.mode === 'quest' && CLASSES[S.cls] ? S.cls : homeCls);
+const KEEP_HAIR = new Set(['merchant', 'healer', 'craft']);
+const CLASS_GEAR = {
+  mage: {cape: '<path class="g-cape" d="M-8 -34 Q-21 -18 -18 -2 L-6 -9 Z" fill="#2A1F5C"/>',
+    armor: '<g class="g-armor"><path d="M-8.5 -35.5 H8.5 L11 -14 H-11Z" fill="#4A3AA8" stroke="#2A1F5C" stroke-width="1"/><path d="M0 -35 V-15" stroke="#FFD66B" stroke-width="1.2"/><circle cx="0" cy="-30" r="1.6" fill="#FFD66B"/></g>',
+    sword: '<g class="g-sword"><path d="M10 -14 L14 -58" stroke="#7A5236" stroke-width="2.4" stroke-linecap="round"/><circle cx="14.4" cy="-60" r="4" fill="#8FD8FF" stroke="#2E6FD8" stroke-width="1.2"/><circle cx="13.4" cy="-61" r="1.3" fill="#fff"/></g>',
+    shield: '<g class="g-shield"><rect x="-17" y="-33" width="10" height="13" rx="1.5" fill="#6B46C9" stroke="#2A1F5C" stroke-width="1"/><rect x="-16" y="-32" width="1.5" height="11" fill="#FFD66B"/><path d="M-11 -30 l2 3 l-2 3 l-2 -3z" fill="#FFD66B"/></g>',
+    helm: '<g class="g-helm"><path d="M-13 -47 H13 L6 -50 L2 -68 L-6 -50 Z" fill="#4A3AA8" stroke="#2A1F5C" stroke-width="1"/><path d="M-6 -50 H6" stroke="#FFD66B" stroke-width="1.6"/><circle cx="1" cy="-58" r="1.4" fill="#FFD66B"/></g>'},
+  merchant: {cape: '<path class="g-cape" d="M-8 -34 Q-19 -20 -17 -3 L-6 -9 Z" fill="#7A2E2A"/>',
+    armor: '<g class="g-armor"><path d="M-8.5 -35.5 H-2 L-1 -17 H-8.5Z M8.5 -35.5 H2 L1 -17 H8.5Z" fill="#2F8A5B" stroke="#1E5A3B" stroke-width=".9"/><circle cx="-4" cy="-26" r=".9" fill="#FFD66B"/><circle cx="-4" cy="-22" r=".9" fill="#FFD66B"/></g>',
+    sword: '<g class="g-sword"><rect x="9" y="-34" width="12" height="9" rx="1" fill="#8B5E3C" stroke="#5B3A22" stroke-width="1"/><path d="M10 -31 H20 M10 -28 H20" stroke="#5B3A22" stroke-width=".7"/><circle cx="12" cy="-31" r=".9" fill="#FFD66B"/><circle cx="15" cy="-31" r=".9" fill="#FFD66B"/><circle cx="18" cy="-28" r=".9" fill="#FFD66B"/><circle cx="13" cy="-28" r=".9" fill="#FFD66B"/></g>',
+    shield: '<g class="g-shield"><path d="M-17 -22 Q-19 -12 -11 -12 Q-3 -12 -5 -22 Q-8 -26 -11 -26 Q-14 -26 -17 -22Z" fill="#C89B4A" stroke="#7A5226" stroke-width="1"/><path d="M-14 -26 L-11 -29 L-8 -26" stroke="#7A5226" stroke-width="1.2" fill="none"/><circle cx="-11" cy="-18" r="2.4" fill="#FFD66B" stroke="#B07A28" stroke-width=".8"/></g>',
+    helm: '<g class="g-helm"><ellipse cx="0" cy="-49" rx="14" ry="3.2" fill="#7A2E2A"/><path d="M-8 -49 Q-8 -59 0 -59 Q8 -59 8 -49Z" fill="#9A3A34"/><path d="M5 -57 Q14 -66 18 -58" stroke="#FFD66B" stroke-width="2.4" fill="none" stroke-linecap="round"/></g>'},
+  craft: {cape: '<path class="g-cape" d="M-8 -34 Q-19 -20 -17 -3 L-6 -9 Z" fill="#23365A"/>',
+    armor: '<g class="g-armor"><path d="M-7 -30 H7 V-14 Q0 -11 -7 -14Z" fill="#3E5A8A" stroke="#23365A" stroke-width="1"/><rect x="-3.5" y="-24" width="7" height="5" rx="1" fill="#2E4670"/><path d="M-7 -30 L-5 -35 M7 -30 L5 -35" stroke="#23365A" stroke-width="1.2"/></g>',
+    sword: '<g class="g-sword"><path d="M10 -18 L16 -40" stroke="#8B5E3C" stroke-width="2.6" stroke-linecap="round"/><rect x="10" y="-46" width="13" height="6" rx="1.2" fill="#9AA4B8" stroke="#5B6378" stroke-width="1" transform="rotate(20 16.5 -43)"/></g>',
+    shield: '<g class="g-shield"><rect x="-19" y="-26" width="13" height="10" rx="1.5" fill="#C8362F" stroke="#7A1E18" stroke-width="1"/><path d="M-15 -26 V-29 H-10 V-26" stroke="#3A3A3A" stroke-width="1.4" fill="none"/><rect x="-19" y="-22" width="13" height="1.5" fill="#7A1E18"/></g>',
+    helm: '<g class="g-helm"><path d="M-10.5 -45 Q-10.5 -57 0 -57 Q10.5 -57 10.5 -45Z" fill="#FFD84D" stroke="#B08A00" stroke-width="1"/><rect x="-12" y="-46.5" width="24" height="3" rx="1.4" fill="#F2C200"/><path d="M0 -57 V-46" stroke="#E0B000" stroke-width="2"/></g>'},
+  healer: {cape: '<path class="g-cape" d="M-8 -34 Q-19 -20 -17 -3 L-6 -9 Z" fill="#F7F4EC" stroke="#C9BFA8" stroke-width=".8"/>',
+    armor: '<g class="g-armor"><path d="M-8.5 -35.5 H8.5 L10.5 -14 H-10.5Z" fill="#F7F4EC" stroke="#C9BFA8" stroke-width="1"/><path d="M-3 -32 H3 M0 -35 V-29" stroke="#4FA3D8" stroke-width="1.6"/></g>',
+    sword: '<g class="g-sword"><path d="M10 -14 L14 -56" stroke="#E0C080" stroke-width="2.4" stroke-linecap="round"/><path d="M14 -64 V-52 M9 -59 H19" stroke="#FFD66B" stroke-width="2.6" stroke-linecap="round"/></g>',
+    shield: '<g class="g-shield"><path d="M-17 -24 Q-17 -13 -11 -13 Q-5 -13 -5 -24Z" fill="#7FB86A" stroke="#3F7A34" stroke-width="1"/><path d="M-11 -24 Q-14 -30 -10 -32 Q-9 -28 -11 -24Z" fill="#3FA564"/></g>',
+    helm: '<g class="g-helm"><path d="M-9.5 -48 Q0 -52 9.5 -48 L9.5 -46 Q0 -50 -9.5 -46Z" fill="#FFD66B" stroke="#B08A00" stroke-width=".8"/><circle cx="0" cy="-50" r="1.8" fill="#4FA3D8"/></g>'}
+};
 let heroPerson = function(w){
-  w = w || curWorld(); const G = HERO_GEAR[w]; if (!G) return HERO_PERSON;
-  return HERO_PERSON.replace(/<path class="g-cape"[^>]*\/>/, G.cape).replace(/<g class="g-armor">[\s\S]*?<\/g>\n/, G.armor + '\n')
+  w = w || curWorld(); const cg = CLASS_GEAR[curCls()], G = cg || HERO_GEAR[w]; if (!G) return HERO_PERSON;
+  return (cg && KEEP_HAIR.has(curCls()) ? HERO_PERSON.replace('<g class="person">', '<g class="person keephair">') : HERO_PERSON).replace(/<path class="g-cape"[^>]*\/>/, G.cape).replace(/<g class="g-armor">[\s\S]*?<\/g>\n/, G.armor + '\n')
     .replace(/<g class="g-sword">[\s\S]*?<\/g>\n/, G.sword + '\n').replace(/<g class="g-shield">[\s\S]*?<\/g>\n/, G.shield + '\n').replace(/<g class="g-helm">[\s\S]*?<\/g>\n/, G.helm + '\n');
 };
 
@@ -2726,10 +2807,238 @@ function partySVG(){
   let x = -28, h = '';
   PARTY_ORDER.filter(m => party.includes(m)).forEach(m => {
     const fly = m === 'fairy' || m === 'owl';
-    h += `<g class="pm" transform="translate(${fly ? -18 : x} ${fly ? -58 : 0})">${pxSprite(`<use href="#pm-${m}"/>`)}</g>`;
+    h += `<g class="pm" transform="translate(${fly ? -18 : x} ${fly ? -58 : 0})">${pxSprite(memberUse(m))}</g>`;
     if (!fly) x -= m === 'cat' ? 20 : m === 'beast' ? 30 : 24;
   });
   return `<g class="party">${h}</g>`;
+}
+/* =========================================================
+   RPG SYSTEMS: gold and an item shop, a mental gauge (0 = 人生リタイヤ, back to the last rest spot),
+   fate crossroads that decide one of ten goals, jobs with their own allies, and a job hall
+   ========================================================= */
+/* allies look and are named after your job (their skills stay the same) */
+const CLASS_PARTY = {
+  mage: {cat: {n: '使い魔のネコ ノワ', short: 'ノワ', kind: '使い魔'}, wizard: {n: '大魔導士ソラ', short: 'ソラ', kind: '大魔導士'}, fairy: {n: '星の精霊ピピ', short: 'ピピ', kind: '精霊'}},
+  merchant: {cat: {n: '招き猫のマネコ', short: 'マネコ', kind: '招き猫'}, beast: {n: '荷運びのロバ ポコ', short: 'ポコ', kind: 'ロバ'}, wizard: {n: '番頭のキヨ', short: 'キヨ', kind: '番頭', use: '<use href="#npc" style="--hat:#1F3A5F"/>'}, fairy: {n: '金貨の精キラ', short: 'キラ', kind: '金貨の精'}, owl: {n: '市場のフクロウ', short: 'フクロウ', kind: 'フクロウ'}},
+  craft: {cat: {n: '相棒の道具カンナ', short: 'カンナ', kind: '道具', use: '<use href="#pm-tool"/>'}, beast: {n: '力持ちの弟子ゴン', short: 'ゴン', kind: '弟子', use: '<use href="#npc" style="--hat:#D98A0B"/>'}, wizard: {n: '建築家のマキ', short: 'マキ', kind: '建築家', use: '<use href="#npc" style="--hat:#FFD84D"/>'}, fairy: {n: '木の精コダマ', short: 'コダマ', kind: '木の精', use: '<use href="#pm-kodama"/>'}, owl: {n: '設計図のフクロウ', short: 'フクロウ', kind: 'フクロウ'}},
+  healer: {cat: {n: 'ちびウサギのモモ', short: 'モモ', kind: 'ウサギ', use: '<g transform="translate(30 0)">' + '{RABBIT}' + '</g>'}, beast: {n: '白いおおかみユキ', short: 'ユキ', kind: 'おおかみ'}, wizard: {n: '薬師のミナ', short: 'ミナ', kind: '薬師', use: '<use href="#npc" style="--hat:#3FA564"/>'}, fairy: {n: 'いやしの精ルル', short: 'ルル', kind: 'いやしの精'}, owl: {n: '月のフクロウ', short: 'フクロウ', kind: 'フクロウ'}}
+};
+const mem = m => { const base = MEMBERS[m] || {}, o = (CLASS_PARTY[curCls()] || {})[m]; return o ? {...base, ...o, meet: `${o.n}が仲間になった！ ${base.d || ''}`} : base; };
+const memberUse = m => { const u = mem(m).use; return u ? u.replace('{RABBIT}', PET_ART.rabbit) : `<use href="#pm-${m}"/>`; };
+
+/* ---------- the quest state: gold, mental, items ---------- */
+const rpgQ = () => { const Q = S.quest; if (Q.mental == null) Q.mental = 100; Q.gold = Q.gold || 0; Q.items = Q.items || {}; Q.fx = Q.fx || {}; Q.vis = Q.vis || {}; Q.magic = Q.magic || 0; return Q; };
+function gainGold(n, why){ const Q = rpgQ(), g = Math.round(n * (curCls() === 'merchant' ? 1.5 : 1)); if (g <= 0) return 0; Q.gold += g; if (why) qlog(`${why} +${g}G`); return g; }
+function heal(n, why){ const Q = rpgQ(), was = Q.mental; Q.mental = Math.min(100, Q.mental + n); if (why && Q.mental > was) qlog(`${why}（メンタル +${Q.mental - was}）`); }
+/* damage to the mental gauge; true when it reached 0 (人生リタイヤ) */
+function hurt(n, why, monster){
+  const Q = rpgQ();
+  if (monster && Q.fx.block){ Q.fx.block = 0; qlog(`${why}…でも、ふあん消しの煙玉でふせいだ！`); toast('💨 煙玉でこうげきをふせいだ！'); return false; }
+  if (monster && curCls() === 'warrior') n = Math.ceil(n / 2);
+  if (Q.fx.halve){ Q.fx.halve = 0; n = Math.ceil(n / 2); qlog('お守りがダメージを半分にした'); }
+  Q.mental = Math.max(0, Q.mental - n); qlog(`${why} メンタル −${n}`); toast(`メンタル −${n}（のこり ${Q.mental}）`); sfx.bad();
+  if (Q.mental > 0) return false;
+  Q.beats = [{k: 'retire'}]; Q.retire = 1; Q.qs = 'story'; Q.duel = null; save(); refresh(); return true;
+}
+function respawn(){
+  const Q = rpgQ(); Q.retire = 0; Q.mental = 50; Q.pts = Math.floor(Q.pts / 2); Q.pos = Q.rest || 'start'; Q.qs = 'roll';
+  qlog('休憩地点で目をさました。メンタル50で再出発（夢ポイントは半分）'); sfx.next(); save(); renderBoard(); refresh();
+}
+
+/* ---------- items ---------- */
+const ITEMS = {
+  tea: {n: 'ハーブティー', ic: '🍵', g: 30, tier: 1, d: 'メンタルが30回復する'},
+  friend: {n: '友情の手紙', ic: '✉️', g: 40, tier: 1, d: 'メンタル+15、夢ポイント+10'},
+  pen: {n: 'ひらめきの羽ペン', ic: '🪶', g: 40, tier: 1, d: '次に関所を通るとき、答えのパワーで1マス多く進む'},
+  charm: {n: 'お守り', ic: '🧿', g: 50, tier: 1, d: '次に受けるメンタルダメージを半分にする'},
+  clover: {n: '幸運のクローバー', ic: '🍀', g: 50, tier: 2, d: '次に止まるイベントマスが、悪いことなら良いことに変わる'},
+  smoke: {n: 'ふあん消しの煙玉', ic: '💨', g: 60, tier: 2, d: 'モンスターのメンタル攻撃を1回だけ無効にする'},
+  sand: {n: '時の砂時計', ic: '⌛', g: 60, tier: 2, d: 'いまの問いの持ち時間が60秒ふえる（時間制限ありのとき）'},
+  megaphone: {n: 'やじのメガホン', ic: '📣', g: 70, tier: 2, d: 'ライバル1人のメンタルをけずって、1回休みにする'},
+  crystal: {n: 'AIの水晶玉', ic: '🔮', g: 80, tier: 3, d: 'いまの問いのヒントを、有力なAIが教えてくれる'},
+  boots: {n: 'ワープの靴', ic: '👟', g: 90, tier: 3, d: '次のサイコロの目を、自分で選べる'},
+  mirror: {n: '鏡の盾', ic: '🪞', g: 100, tier: 3, d: 'ライバル勝負に負けても、ダメージを相手にはね返す（相手は1回休み）'},
+  book: {n: '魔法の書', ic: '📕', g: 120, tier: 3, d: '魔法「ファイア」を3回使えるようになる（モンスターの関所で、ごほうび2倍）'}
+};
+const priceOf = it => Math.round(it.g * (curCls() === 'merchant' ? .9 : 1));
+function itemOk(id){
+  const Q = rpgQ(), ans = Q.qs === 'answer', roll = Q.qs === 'roll', p = ans ? current() : null;
+  return !!({tea: ans || roll, friend: ans || roll, pen: ans || roll, charm: ans || roll, clover: roll, smoke: ans || roll, mirror: ans || roll, book: ans || roll, boots: roll && !Q.fx.boots, crystal: ans,
+    sand: ans && S.timed && p && !statOf(S, p.key).to, megaphone: roll && (Q.rivals || []).some(r => !r.fin && !r.rest)})[id];
+}
+function useItem(id){
+  const Q = rpgQ(), it = ITEMS[id]; if (!it || !(Q.items[id] > 0) || !itemOk(id)) return;
+  Q.items[id]--; if (!Q.items[id]) delete Q.items[id];
+  const p = Q.qs === 'answer' ? current() : null;
+  if (id === 'tea') heal(30, 'ハーブティーで心が落ち着いた');
+  else if (id === 'friend'){ heal(15, '友情の手紙で元気が出た'); Q.pts += 10; }
+  else if (id === 'pen') Q.fx.pen = 1;
+  else if (id === 'charm') Q.fx.halve = 1;
+  else if (id === 'clover') Q.fx.clover = 1;
+  else if (id === 'smoke') Q.fx.block = 1;
+  else if (id === 'mirror') Q.fx.mirror = 1;
+  else if (id === 'boots') Q.fx.boots = 1;
+  else if (id === 'book') Q.magic += 3;
+  else if (id === 'sand' && p) statOf(S, p.key).left += 60;
+  else if (id === 'megaphone'){ const rv = (Q.rivals || []).find(r => !r.fin && !r.rest); if (rv){ rv.rest = 1; rv.say = 'やじでメンタルをけずられた…'; qlog(`${rvInfo(rv.id).n}のメンタルをけずった！ 次のターン1回休み`); } }
+  else if (id === 'crystal' && p) crystal(p);
+  qlog(`${it.n}を使った`); toast(`${it.ic} ${it.n}を使った！`); sfx.good(); save(); renderPanel();
+}
+/* the crystal ball: three hints from the built-in lists, and an AI answer when Claude is around */
+function crystal(p){
+  const Q = rpgQ(), st = S.stages[p.s], par = p.par != null ? byId(S, p.par) : null;
+  const list = (isPlan(st) ? withKind(S, fieldsOf(st)[0][4] || fieldsOf(st)[0][0], BANKS[fieldsOf(st)[0][4]] || []) : bankFor(S, p)).slice(0, 3);
+  Q.hint = {key: p.key, list, ai: '', wait: sampleAvail};
+  if (!sampleAvail) return;
+  samplePromise.then(async sample => {
+    if (!sample) return;
+    try {
+      const r = await sample(`あなたは、夢や目標を考える冒険ゲームの「AIの水晶玉」です。テーマ「${S.theme}」で、次の問いに答えようとしている人へ、考えるヒントを3つ出してください。
+- やさしい日本語で、1つ30文字以内。「・」で始まる3行だけを書く。
+- 答えそのものを決めつけず、考え方の切り口を示す。
+問い：${plainQ(S, st, par, p)}`, {modelTier: 'default'});
+      if (Q.hint && Q.hint.key === p.key){ Q.hint.ai = String((r && r.text) || '').trim().slice(0, 300); Q.hint.wait = false; save(); if (Q.qs === 'answer' && current() && current().key === p.key) renderPanel(); }
+    } catch (e){ if (Q.hint) Q.hint.wait = false; }
+  });
+}
+const FX_IC = {halve: '🧿', block: '💨', pen: '🪶', clover: '🍀', mirror: '🪞', boots: '👟'};
+function statBarHTML(){
+  const Q = rpgQ(), m = Q.mental, fx = Object.keys(FX_IC).filter(k => Q.fx[k]).map(k => FX_IC[k]).join('');
+  return `<div class="mbar${m <= 30 ? ' low' : ''}"><span>メンタル</span><i><em style="width:${m}%"></em></i><b>${m}</b>${fx ? `<span class="fx" title="使っている道具の力">${fx}</span>` : ''}</div>`;
+}
+function itemBarHTML(ctx){
+  const Q = rpgQ(), ids = Object.keys(Q.items).filter(id => Q.items[id] > 0 && ITEMS[id]), p = ctx === 'answer' ? current() : null;
+  const fireOk = p && Q.magic > 0 && S.stages[p.s].monster && Q.fx.fire !== p.key;
+  if (!ids.length && !Q.magic) return '';
+  return `<div class="ibar"><small>もちもの</small>${ids.map(id => `<button type="button" data-rpg="use" data-v="${id}" title="${esc(ITEMS[id].d)}" ${itemOk(id) ? '' : 'disabled'}>${ITEMS[id].ic}<span>${ITEMS[id].n}</span><em>×${Q.items[id]}</em></button>`).join('')}${Q.magic ? `<button type="button" class="magic" data-rpg="fire" title="モンスターの関所で使える魔法。この関所のごほうび2倍・メンタル+10" ${fireOk ? '' : 'disabled'}>🔥<span>ファイア</span><em>×${Q.magic}</em></button>` : ''}</div>`;
+}
+function hintBoxHTML(p){
+  const h = rpgQ().hint; if (!h || h.key !== p.key) return '';
+  const lines = h.ai ? h.ai.split(/\n+/).map(t => t.replace(/^[・\-\s]+/, '')).filter(Boolean) : h.list;
+  return `<div class="crys"><b>🔮 AIの水晶玉${h.ai ? '' : h.wait ? '（AIが考えています…）' : ''}</b><ul>${lines.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>`;
+}
+
+/* ---------- fate crossroads and the ten goals ---------- */
+const TAGS = {pow: '力', wis: '知恵', heart: '心', rich: '富', free: '自由', make: '創造'};
+const FATES = {
+  1: {npc: '運命の老婆', t: '旅の荷物を、ひとつだけ選びなさい。それが、あなたの運命を決める。', opts: [
+    {ic: '🗡️', n: '古い剣', d: 'どんな相手にも立ち向かう力', tags: ['pow']}, {ic: '📖', n: '分厚い本', d: 'まだ知らない世界を知る力', tags: ['wis']}, {ic: '💰', n: '金貨の袋', d: '人とものを動かす富の力', tags: ['rich']}]},
+  2: {npc: '山の仙人', t: '山の上から、遠くが見える。あなたの心をいちばん引きつけるのは？', opts: [
+    {ic: '🏘️', n: '困っている村', d: 'だれかの力になりたい', tags: ['heart']}, {ic: '🗺️', n: '宝の地図', d: '大きな宝を手に入れたい', tags: ['rich']}, {ic: '🌊', n: '果てしない海', d: 'まだ見ぬ場所へ行きたい', tags: ['free']}, {ic: '⚙️', n: 'ふしぎな工房', d: '新しいものを作りたい', tags: ['make']}]},
+  3: {npc: '城の門番', t: '旅の終わりが近い。最後に、あなたがいちばん大切にしたいことは？', opts: [
+    {ic: '🛡️', n: '人々を守る', d: '強さで、みんなの安心を守る', tags: ['pow']}, {ic: '🕯️', n: '知恵を伝える', d: '学んだことを、次の人へつなぐ', tags: ['wis']}, {ic: '✨', n: '新しいものを生み出す', d: 'まだこの世にないものを作る', tags: ['make']}, {ic: '🍵', n: 'ゆったり暮らす', d: '大切な人と、おだやかに笑う', tags: ['heart', 'free']}]}
+};
+const GOALS = [
+  {k: 'king', n: '王さま', ic: '👑', v: {pow: 1, heart: 1, wis: 1, rich: 1}, d: 'みんなの声を聞き、力と知恵で国をゆたかにするリーダー。'},
+  {k: 'hero', n: '伝説の戦士', ic: '⚔️', v: {pow: 3, free: 1}, d: 'どんな困難にも立ち向かい、人々の希望になる勇者。'},
+  {k: 'peace', n: '平和な暮らし', ic: '🏡', v: {heart: 2, free: 2}, d: '大切な人とおだやかに笑い合う、心ゆたかな毎日。'},
+  {k: 'ceo', n: '社長', ic: '🏢', v: {rich: 3, pow: 1}, d: '仲間を集め、仕事を生み出して社会を動かす経営者。'},
+  {k: 'sage', n: '大賢者', ic: '📚', v: {wis: 3, make: 1}, d: '学び続け、知恵で人々の道を照らす人。'},
+  {k: 'adv', n: '冒険家', ic: '⛵', v: {free: 3, pow: 1}, d: 'まだ見ぬ世界へ飛び出し、新しい道を切りひらく人。'},
+  {k: 'artist', n: '芸術家', ic: '🎨', v: {make: 3, free: 1}, d: '自分だけの表現で、人の心を動かす人。'},
+  {k: 'doctor', n: 'いやしの名医', ic: '💊', v: {wis: 2, heart: 1, pow: 1}, d: '知識とやさしさで、人の体と心を救う人。'},
+  {k: 'inventor', n: '発明家', ic: '⚙️', v: {make: 2, wis: 2}, d: 'アイデアを形にして、くらしを便利にする人。'},
+  {k: 'teacher', n: 'みちびきの先生', ic: '🏫', v: {heart: 2, wis: 1, make: 1}, d: '人の可能性を信じ、成長をささえる人。'}
+];
+function goalOf(x){
+  const t = x.tags || {}; let best = GOALS[0], bv = -1;
+  GOALS.forEach(g => { const dot = Object.entries(g.v).reduce((s, [k, w]) => s + (t[k] || 0) * w, 0), sc = dot / Math.hypot(...Object.values(g.v)) + (hash((x.theme || '') + g.k) % 9) / 1000; if (sc > bv){ bv = sc; best = g; } });
+  return best;
+}
+const tagLine = x => Object.entries(x.tags || {}).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${TAGS[k]}${v}`).join('・') || 'まだなし';
+const ROUTE_TAG = {A1: 'heart', B1: 'pow', A2: 'make', B2: 'free'};
+const addTag = (k, n) => { if (!TAGS[k]) return; S.tags = S.tags || {}; S.tags[k] = (S.tags[k] || 0) + n; };
+
+/* ---------- special squares: shops, fate crossroads and the job hall ---------- */
+const SPOT_N = {shop: 'お店', fate: '運命の分かれ道', job: '転職の館'};
+function spotHTML(){
+  const Q = rpgQ(), n = +(Q.spot || '').split(':')[1] || 1;
+  if (Q.qs === 'shop'){
+    const list = Object.entries(ITEMS).filter(([, it]) => it.tier <= n);
+    return `<div class="p-head"><p class="kicker">SHOP</p><span class="p-count">${['', '町の道具屋', '山の市場', '城下の名店'][n]}</span></div>
+      <div class="rpg"><span class="rpg-name">道具屋の主人</span><p>いらっしゃい！ ${n === 3 ? '城の近くだけあって、とっておきの品がそろってるよ。' : n === 2 ? '旅の後半に役立つ品を仕入れておいたよ。' : '旅のはじめに役立つ品はいかが？'}</p><p class="rpg-sub">持っているゴールド：<b>${Q.gold}G</b>${curCls() === 'merchant' ? '（商人は1割引）' : ''}　後半のお店ほど、強い品がならびます。</p></div>
+      ${statBarHTML()}
+      <ul class="shop">${list.map(([id, it]) => { const pr = priceOf(it); return `<li><span class="si">${it.ic}</span><div><b>${it.n}</b><small>${it.d}</small></div><em>${Q.items[id] ? '×' + Q.items[id] : ''}</em><button class="btn sm primary" type="button" data-rpg="buy" data-v="${id}" ${Q.gold < pr ? 'disabled' : ''}>${pr}G</button></li>`; }).join('')}</ul>
+      <div class="p-foot"><span class="grow"></span><button class="btn dark" type="button" data-rpg="leave">お店を出る →</button></div>`;
+  }
+  if (Q.qs === 'fate'){
+    const F = FATES[n] || FATES[1], g = goalOf(S);
+    return `<div class="p-head"><p class="kicker">FATE</p><span class="p-count">運命の分かれ道 ${n} / 3</span></div>
+      <div class="rpg"><span class="rpg-name">${F.npc}</span><p>${F.t}</p><p class="rpg-sub">選んだものが「運命の力」になります。旅の終わりに、運命の力に合ったゴール（全10種類）へたどり着きます。</p></div>
+      <div class="routes">${F.opts.map((o, i) => `<button type="button" class="route-card" data-rpg="fate" data-v="${i}" style="--c:${PAL[i % PAL.length]}"><small>${o.tags.map(t => TAGS[t]).join('・')}の力</small><b>${o.ic} ${o.n}</b><span>${o.d}</span></button>`).join('')}</div>
+      <p class="fate-now">いまの運命の行き先：<b>${g.ic} ${g.n}</b><span>運命の力：${tagLine(S)}</span></p>`;
+  }
+  const cur = curCls();
+  return `<div class="p-head"><p class="kicker">JOB HALL</p><span class="p-count">転職の館</span></div>
+    <div class="rpg"><span class="rpg-name">館の主</span><p>ようこそ、転職の館へ。ここで一度だけ、職業を変えられる。いまのまま進んでもよいぞ。</p><p class="rpg-sub">いまの職業：${CLASSES[cur].ic} ${CLASSES[cur].n}。職業が変わると、装備・仲間の顔ぶれ・とくい技が変わります。</p></div>
+    <div class="cls-grid">${Object.entries(CLASSES).map(([k, c]) => `<button type="button" class="cls-card${k === cur ? ' on' : ''}" data-rpg="cls" data-v="${k}"><b>${c.ic} ${c.n}${k === cur ? '（いま）' : ''}</b><span>${c.d}</span></button>`).join('')}</div>
+    <div class="p-foot"><span class="grow"></span><button class="btn dark" type="button" data-rpg="cls" data-v="${cur}">いまのまま進む →</button></div>`;
+}
+function rpgAct(a, v){
+  if (!S || !S.quest) return;
+  const Q = rpgQ();
+  if (a === 'use') return useItem(v);
+  if (a === 'buy'){ const it = ITEMS[v]; if (!it || Q.qs !== 'shop') return; const pr = priceOf(it); if (Q.gold < pr) return; Q.gold -= pr; Q.items[v] = (Q.items[v] || 0) + 1; sfx.good(); toast(`${it.ic} ${it.n}を買った！`); qlog(`${it.n}を${pr}Gで買った`); save(); renderPanel(); return; }
+  if (a === 'leave'){ Q.vis[Q.spot] = 1; Q.rest = Q.spot; Q.qs = 'roll'; sfx.next(); save(); refresh(); return; }
+  if (a === 'fate'){
+    const n = +Q.spot.split(':')[1], o = (FATES[n] || FATES[1]).opts[+v]; if (!o || Q.qs !== 'fate') return;
+    o.tags.forEach(t => addTag(t, o.tags.length > 1 ? 1 : 2)); Q.vis[Q.spot] = 1; Q.qs = 'roll'; qlog(`運命の分かれ道で「${o.n}」を選んだ`);
+    if (n === 3){ const g = goalOf(S); S.goal = g.k; toast(`運命が決まった！ ゴールは「${g.ic} ${g.n}」`); qlog(`運命のゴールは「${g.n}」に決まった`); } else toast(`「${o.n}」を選んだ！`);
+    sfx.good(); save(); renderBoard(); refresh(); return;
+  }
+  if (a === 'cls'){
+    if (Q.qs !== 'job') return;
+    const was = curCls(); Q.vis[Q.spot] = 1; Q.qs = 'roll';
+    if (v !== was && CLASSES[v]){ S.cls = v; addTag(CLASSES[v].tag, 1); if (v === 'mage' && !Q.magic) Q.magic = 3; qlog(`転職の館で${CLASSES[v].n}に転職した！`); toast(`${CLASSES[v].ic} ${CLASSES[v].n}に転職した！`); sfx.done(); }
+    else { qlog('転職の館を出た（いまのまま）'); sfx.next(); }
+    save(); renderBoard(); refresh(); return;
+  }
+  if (a === 'fire'){ const p = current(); if (!p || !Q.magic || Q.qs !== 'answer') return; Q.magic--; Q.fx.fire = p.key; heal(10, ''); sfx.good(); toast('🔥 魔法ファイア！ モンスターがひるんだ'); qlog('魔法「ファイア」をとなえた（この関所のごほうび2倍）'); save(); renderPanel(); return; }
+  if (a === 'die'){ if (Q.qs !== 'roll') return; Q.pickDie = +v; Q.fx.boots = 0; roll(); }
+}
+
+/* ---------- goal buildings for the map (the others reuse the castles) ---------- */
+const PX_GOAL = {
+  peace(P, R){
+    const V = pxSurf(150, 96), H = PX_HOUSE[P.house] || PX_HOUSE.euro;
+    V.rect(8, 92, 134, 2, P.g[3]); for (let x = 10; x < 140; x += 6) V.rect(x, 82, 2, 10, P.wood[1]); V.rect(8, 84, 134, 2, P.wood[0]);
+    V.put();
+    [[75, 62, P.roof[2 % P.roof.length]], [40, 80, P.roof[0]], [110, 80, P.roof[1 % P.roof.length]]].forEach(([x, y, r]) => { const s = H(P, r, R); V.g.drawImage(s.c, Math.round(x - s.ax), Math.round(y - s.ay)); });
+    return {c: V.c, ax: 75, ay: 92};
+  },
+  adv(P, R){
+    const V = pxSurf(140, 112), cx = 70, yb = 108;
+    for (let y = 72; y < yb; y++) V.rect(8, y, 124, 1, y % 4 ? P.water[0] : P.water[1]); V.rect(8, 72, 124, 1, P.water[2]);
+    V.rect(14, 76, 34, 6, P.wood[0]); for (let x = 16; x < 48; x += 7) V.rect(x, 82, 2, 14, P.wood[2]);
+    for (let y = 0; y < 14; y++){ const hw = 42 - Math.round(y * 1.3); V.rect(cx + 10 - hw, 62 + y, hw * 2, 1, y < 3 ? pxLt(P.wood[1], .2) : P.wood[1]); }
+    V.rect(cx - 30, 64, 80, 2, P.wood[2]); for (let x = cx - 20; x < cx + 40; x += 9) V.rect(x, 69, 3, 3, '#2A2433');
+    [[cx - 4, 10, 52], [cx + 26, 22, 40]].forEach(([mx, top, h]) => { V.rect(mx, top, 2, 64 - top, P.wood[2]); for (let y = 0; y < h - 14; y++){ const w = Math.round(12 + y * .28); V.rect(mx - w + 1, top + 6 + y, w * 2, 1, y % 9 === 0 ? '#DCD8D0' : '#FFFFFF'); } });
+    V.rect(cx - 4, 4, 12, 5, P.flag);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  artist(P, R){
+    const V = pxSurf(124, 112), cx = 62, yb = 108, wall = '#FFF4E0', rb = ['#F2554E', '#FFAE45', '#FFD84D', '#4FB35A', '#2E8FE0', '#8C6CF2'];
+    V.rect(8, yb, 108, 2, P.g[3]); V.rect(22, 50, 80, 58, wall); V.rect(94, 50, 8, 58, pxDk(wall, .12));
+    for (let i = 0; i < 26; i++) V.rect(cx - 2 - i * 2, 24 + i, 4 + i * 4, 1, rb[Math.floor(i / 5) % 6]);
+    for (let y = -12; y <= 12; y++) for (let x = -12; x <= 12; x++){ const d = x * x + y * y; if (d > 144) continue; V.set(cx + x, 70 + y, d > 110 ? '#5B3A22' : rb[(x > 0 ? 1 : 0) + (y > 0 ? 2 : 0) + (d < 30 ? 4 : 0)] || rb[5]); }
+    V.rect(cx - 7, 90, 14, 18, '#7A5236'); V.rect(cx - 7, 90, 14, 2, '#5B3A22');
+    V.rect(10, 74, 2, 34, P.wood[2]); V.rect(20, 74, 2, 34, P.wood[2]); V.rect(6, 76, 20, 16, '#FFFFFF'); V.rect(8, 80, 6, 4, rb[0]); V.rect(14, 84, 8, 5, rb[4]);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  teacher(P, R){
+    const V = pxSurf(144, 112), cx = 72, yb = 108, wall = '#F2E6D0';
+    V.rect(6, yb, 132, 2, P.g[3]); V.rect(14, 60, 116, 48, wall); V.rect(122, 60, 8, 48, pxDk(wall, .12)); pxRoof(V, 10, 48, 124, 12, '#B4532E', 'tile');
+    for (let r = 0; r < 2; r++) for (let x = 20; x < 120; x += 12) if (x < cx - 14 || x > cx + 8) pxWin(V, x, 68 + r * 16, 7, 8, '#7A5236', P.win);
+    V.rect(cx - 11, 22, 22, 38, wall); V.rect(cx + 7, 22, 4, 38, pxDk(wall, .12)); for (let i = 0; i < 12; i++) V.rect(cx - 1 - i, 10 + i, 2 + i * 2, 1, '#B4532E');
+    for (let y = -5; y <= 5; y++) for (let x = -5; x <= 5; x++) if (x * x + y * y <= 25) V.set(cx + x, 34 + y, x * x + y * y > 18 ? '#5B3A22' : '#FFFFFF');
+    V.rect(cx, 30, 1, 4, '#1B2140'); V.rect(cx, 34, 3, 1, '#1B2140'); V.rect(cx - 8, 88, 16, 20, '#7A5236'); V.rect(cx, 88, 1, 20, '#5B3A22');
+    return {c: V.put(), ax: cx, ay: yb};
+  }
+};
+function goalSprite(P, R){
+  const g = S && S.goal, alt = {hero: P.castle === 'wa' ? 'euro' : 'wa', ceo: 'usa', inventor: 'future', doctor: 'india', sage: 'china'};
+  if (PX_GOAL[g]) return PX_GOAL[g](P, R);
+  return (PX_CASTLE[alt[g]] || PX_CASTLE[P.castle] || PX_CASTLE.euro)(P, R);
 }
 const PX_WALK = ['.leg-l,.arm-r{transform:rotate(-24deg)}.leg-r,.arm-l{transform:rotate(24deg)}.person{transform:translateY(-2.5px)}', '.leg-l,.arm-r{transform:rotate(24deg)}.leg-r,.arm-l{transform:rotate(-24deg)}'];
 const PX_RIDE = ['.hl.a{transform:rotate(-20deg)}.hl.b{transform:rotate(20deg)}', '.hl.a{transform:rotate(20deg)}.hl.b{transform:rotate(-20deg)}.wh{transform:rotate(45deg)}.jf{transform:scale(.86,1.2)}.veh-sail,.veh-junk,.veh-ferry,.veh-cart,.veh-hover,.veh-aircar,.veh-board,.veh-pod{transform:translateY(-2.5px)}'];
@@ -2752,6 +3061,8 @@ const SPRITES = `<svg id="sprites" width="0" height="0" style="position:absolute
   <g id="pm-fairy"><g class="flit"><path d="M-2 -6 Q-14 -18 -12 -4 Q-10 0 -2 -3 Z M2 -6 Q14 -18 12 -4 Q10 0 2 -3 Z" fill="#BFE9FF" opacity=".9" stroke="#7CC7F0" stroke-width=".8"/><path d="M-3 4 L0 -6 L3 4 Z" fill="#FF8CC6"/><circle cx="0" cy="-9" r="3.6" fill="#F6C9A8"/><path d="M-3.6 -10 Q0 -15 3.6 -10" fill="#FFD66B"/><circle cx="1.5" cy="-9" r=".8" fill="#1B2140"/><path d="M4 2 l2 2 M-5 3 l-2 2" stroke="#FFD66B" stroke-width="1.2"/><use href="#w-spark" transform="translate(8 -14) scale(.5)" style="--sp:#FFD66B"/></g></g>
   <g id="pm-owl"><g class="flit"><path d="M-7 -8 Q-17 -14 -16 -4 Q-12 -7 -7 -3 Z M7 -8 Q17 -14 16 -4 Q12 -7 7 -3 Z" fill="#8B5E3C"/><ellipse cx="0" cy="-7" rx="8" ry="9" fill="#A9784F"/><ellipse cx="0" cy="-4" rx="5" ry="5" fill="#E9D3B0"/><path d="M-7 -14 L-5 -19 L-2 -15 Z M7 -14 L5 -19 L2 -15 Z" fill="#8B5E3C"/><circle cx="-3" cy="-11" r="3" fill="#fff"/><circle cx="3" cy="-11" r="3" fill="#fff"/><circle cx="-3" cy="-11" r="1.4" fill="#1B2140"/><circle cx="3" cy="-11" r="1.4" fill="#1B2140"/><path d="M-1 -8 L0 -6 L1 -8 Z" fill="#FFB547"/></g></g>
   <g id="pm-princess"><ellipse cx="0" cy="0" rx="10" ry="3" fill="#000" opacity=".15"/><g transform="matrix(.9 0 0 .62 0 0)"><path d="M-11 0 Q-9 -14 -5 -22 H5 Q9 -14 11 0 Z" fill="#FF8CC6"/><path d="M-11 0 Q0 -4 11 0" stroke="#fff" stroke-width="1.6" fill="none"/><rect x="-5.5" y="-30" width="11" height="10" rx="4" fill="#FF8CC6"/><path d="M-3 -26 Q0 -23 3 -26" stroke="#fff" stroke-width="1.2" fill="none"/></g><g transform="matrix(1.5 0 0 1.5 0 26.5)"><circle cx="0" cy="-36" r="7" fill="#F6C9A8"/><path d="M-7.5 -36 Q-9 -24 -5 -20 L-4 -34 Z M7.5 -36 Q9 -24 5 -20 L4 -34 Z" fill="#FFD27A"/><path d="M-7.5 -37 Q-7 -44.5 0 -44.5 Q7 -44.5 7.5 -37 Q3 -41 0 -41 Q-3 -41 -7.5 -37Z" fill="#FFD27A"/><path d="M-5 -43 L-5 -49 L-2.5 -46 L0 -50.5 L2.5 -46 L5 -49 L5 -43 Z" fill="#FFB547" stroke="#D98A0B" stroke-width=".7"/><circle cx="2.6" cy="-36" r="1.1" fill="#1B2140"/><circle cx="-2.2" cy="-36" r="1.1" fill="#1B2140"/><circle cx="4.5" cy="-33.5" r="1.3" fill="#FF8CC6" opacity=".6"/></g></g>
+  <g id="pm-tool"><ellipse cx="0" cy="0" rx="8" ry="2.4" fill="#000" opacity=".15"/><rect x="-9" y="-14" width="18" height="10" rx="2" fill="#C89B6D" stroke="#7A5236" stroke-width="1.2"/><rect x="-5" y="-17" width="10" height="3" rx="1" fill="#9AA4B8" stroke="#5B6378" stroke-width=".8"/><circle cx="-3" cy="-9" r="1.3" fill="#1B2140"/><circle cx="3" cy="-9" r="1.3" fill="#1B2140"/><path d="M-2 -6.5 Q0 -5 2 -6.5" stroke="#1B2140" stroke-width=".9" fill="none"/><rect x="-7" y="-4" width="2.5" height="4" fill="#7A5236"/><rect x="4.5" y="-4" width="2.5" height="4" fill="#7A5236"/></g>
+  <g id="pm-kodama"><g class="flit"><ellipse cx="0" cy="-8" rx="6" ry="8" fill="#F4F7EE" stroke="#B9C7A8" stroke-width=".8"/><circle cx="-2" cy="-10" r="1.2" fill="#3A4A30"/><circle cx="2" cy="-10" r="1.2" fill="#3A4A30"/><ellipse cx="0" cy="-6" rx="1" ry="1.4" fill="#3A4A30"/><path d="M-1 -16 Q0 -20 2 -18" stroke="#3FA564" stroke-width="1.4" fill="none"/></g></g>
   <g id="cage"><rect x="-17" y="-52" width="34" height="54" rx="3" fill="none" stroke="#3A3350" stroke-width="2.6"/><path d="M-17 -52 Q0 -66 17 -52" fill="none" stroke="#3A3350" stroke-width="2.6"/><path d="M-9 -58 V2 M0 -60 V2 M9 -58 V2" stroke="#3A3350" stroke-width="2"/><rect x="-19" y="0" width="38" height="4" rx="2" fill="#3A3350"/></g>
 </defs></svg>`;
 document.body.insertAdjacentHTML('beforeend', SPRITES);
@@ -3393,7 +3704,7 @@ function pxOver(){
   const house = PX_HOUSE[P.house] || PX_HOUSE.euro;
   spot(11, 40, 960, 1800, 2390, [27, 46, 27], (x, y) => { const roof = P.roof[R() * P.roof.length | 0]; put(sp('house', roof, () => house(P, roof, R)), x, y); });
   plant(16, TK, 10, 990, 1760, 2395); plant(10, 'bush', 10, 990, 1760, 2395);
-  const castle = (PX_CASTLE[P.castle] || PX_CASTLE.euro)(P, R); put(castle, 250, 120);
+  const castle = goalSprite(P, R); put(castle, 250, 120);
   items.sort((u, v) => u[0] - v[0]).forEach(v => v[1]());
   return V.c;
 }
@@ -3418,7 +3729,7 @@ function pxCave(){
 /* one picture per world, chapter and chosen route; kept as a blob URL once ready */
 const PXMAPS = {};
 function pxMap(kind){
-  const raw = kind === 'cave' ? `c|${curCh()}` : `o|${curWorld()}|${curCh()}|${JSON.stringify(S.routes || {})}|${Object.keys(S.forks || {}).join(',')}`, key = String(hash(raw));
+  const raw = kind === 'cave' ? `c|${curCh()}` : `o|${curWorld()}|${curCh()}|${JSON.stringify(S.routes || {})}|${Object.keys(S.forks || {}).join(',')}|${S.goal || ''}`, key = String(hash(raw));
   if (!PXMAPS[key]){
     const c = kind === 'cave' ? pxCave() : pxOver(), M = PXMAPS[key] = {url: c.toDataURL('image/png'), bg: kind === 'cave' ? caveCol().bg : pxPal().g[0]};
     try { c.toBlob(b => { if (!b) return; M.url = URL.createObjectURL(b); const w = $('#world'); if (w && w.dataset.px === key) w.style.backgroundImage = `url('${M.url}')`; }); } catch {}
@@ -3432,6 +3743,8 @@ function padSVG(q){
   if (q.type === 'goal') return `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-30" y="-17" width="60" height="34" fill="#F2554E" stroke="#FFD84D" stroke-width="4"/><text y="7" text-anchor="middle" fill="#FFFFFF" font-size="17" ${F}>GOAL</text></g>`;
   if (q.type === 'fork') return `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-22" y="-22" width="44" height="44" fill="#FFF3C4" stroke="#D98A0B" stroke-width="4"/><path d="M-2 -2 H2 V14 H-2Z M-13 -13 H-1 V-6 H-13Z M1 -9 H13 V-2 H1Z" fill="#8A5A0B"/></g>`;
   if (q.type === 'plain'){ const pc = caveCol().plain, cave = q.part === 2; return `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-8" y="-8" width="16" height="16" fill="${cave ? pc[0] : '#FFFFFF'}" stroke="${cave ? pc[1] : '#9C7A48'}" stroke-width="4"/></g>`; }
+  if (SPOT_N[q.type]){ const D = {shop: ['店', '#D98A0B', '#FFF3C4'], fate: ['運', '#8C6CF2', '#F1ECFF'], job: ['転', '#15A37C', '#E9F7EF']}[q.type], seen = S.quest && (S.quest.vis || {})[q.k];
+    return `<g transform="translate(${X} ${Y})" opacity="${seen ? .55 : 1}"><g shape-rendering="crispEdges"><rect x="-24" y="-24" width="48" height="48" fill="${D[2]}" stroke="${D[1]}" stroke-width="5"/></g><text y="10" text-anchor="middle" font-size="28" fill="${D[1]}" ${F}>${D[0]}</text><text y="46" text-anchor="middle" font-size="15" fill="#1B2140" stroke="#FFFFFF" stroke-width="4" paint-order="stroke" ${F}>${SPOT_N[q.type]}</text></g>`; }
   if (q.type === 'ev') return `<g transform="translate(${X} ${Y})"><rect x="-17" y="-17" width="34" height="34" fill="#FFFFFF" stroke="${q.ev.tone === 'good' ? '#15A37C' : q.ev.tone === 'bad' ? '#D93A3F' : '#2E8FE0'}" stroke-width="4" shape-rendering="crispEdges"/><use href="#ic-${q.ev.ic}"/></g>`;
   const st = S.stages[q.p.s], col = colorOf(S, q.p.s), done = qDone(q.p.key);
   let h = `<g transform="translate(${X} ${Y})"><g shape-rendering="crispEdges"><rect x="-26" y="-26" width="52" height="52" fill="${done ? hexMix(col, '#FFFFFF', .75) : '#FFFFFF'}" stroke="${col}" stroke-width="5"/><rect x="-20" y="-20" width="40" height="40" fill="none" stroke="${col}" stroke-opacity=".35" stroke-width="2"/></g><text y="10" text-anchor="middle" font-size="28" fill="${col}" ${F}>${q.p.s + 1}</text>${done ? `<g transform="translate(20 -20)" shape-rendering="crispEdges"><rect x="-9" y="-9" width="18" height="18" fill="#128A5E"/><path d="M-5 0 L-2 3 L5 -4" stroke="#FFFFFF" stroke-width="3" fill="none"/></g>` : ''}<text y="48" text-anchor="middle" font-size="16" fill="#1B2140" stroke="#FFFFFF" stroke-width="5" paint-order="stroke" ${F}>${esc(st.l)}</text></g>`;
@@ -3552,6 +3865,7 @@ async function roll(){
   if (dm) dm.textContent = 'ころころ…';
   if (ds.length){ ds.forEach(d => d.classList.add('rolling')); for (let k = 0; k < 9; k++){ v = 1 + Math.floor(Math.random() * 6); ds.forEach(d => { d.innerHTML = diceSVG(v); }); sfx.dice(); await sleep(70); } ds.forEach(d => d.classList.remove('rolling')); }
   v = 1 + Math.floor(Math.random() * 6);
+  if (S.quest.pickDie){ v = S.quest.pickDie; S.quest.pickDie = 0; }
   S.quest.last = v; ds.forEach(d => { d.innerHTML = diceSVG(v); });
   const lbl = $('#diceMsg'); if (lbl) lbl.textContent = `${v} が出た！`;
   if (dm) dm.textContent = `${v} が出た！ 進んでいます…`;
@@ -3560,7 +3874,7 @@ async function roll(){
   const before = free || !S.quest.rivals ? 0 : myPlace();
   await walkForward(v, true, free ? null : rivalsPlan(), before);
 }
-const blocks = q => (q.type === 'q' && !qDone(q.p.key)) || (q.type === 'fork' && !(S.routes || {})[q.fork]) || q.type === 'goal';
+const blocks = q => (q.type === 'q' && !qDone(q.p.key)) || (q.type === 'fork' && !(S.routes || {})[q.fork]) || q.type === 'goal' || (SPOT_N[q.type] && S.quest && !(S.quest.vis || {})[q.k]);
 
 /* rivals: three runners race to the castle on the same board */
 const RIVALS = [
@@ -3807,20 +4121,26 @@ function land(T, i, trigger){
     if (hasMember('princess')){ Q.pts += 50; qlog('お姫さまを城へ送り届けた！ +50pt'); }
     if (hasMember('fairy')){ Q.pts += 20; qlog('星の妖精ピピの祝福 +20pt'); }
     if (racers) toast(place === 1 ? 'ライバルに勝って1着でゴール！' : `${place}着でゴール！`);
-    save(); finish(); return;
+    if (!S.goal) S.goal = goalOf(S).k;
+    Q.beats = [{k: 'ending'}]; Q.ending = 1; Q.qs = 'story'; save(); refresh(); return;
   }
+  if (SPOT_N[s.type] && !(rpgQ().vis[s.k])){ S.quest.spot = s.k; S.quest.qs = s.type; sfx.next(); refresh(); return; }
   if (s.type === 'fork' && !(S.routes || {})[s.fork]){ S.cur = s.k; S.quest.qs = 'fork'; sfx.next(); refresh(); return; }
   if (s.type === 'q' && !qDone(s.p.key)){
     S.cur = s.p.key; S.quest.qs = 'answer';
     const fresh = !S.stat[s.p.key], st = statOf(S, s.p.key), stg = S.stages[s.p.s];
     if (fresh && S.quest.timeMod){ st.left = Math.max(15, st.left + S.quest.timeMod); S.quest.timeMod = 0; }
     qlog(stg.monster ? `${stg.npc}があらわれた！` : `${stg.npc || '旅人'}に出会った`);
+    if (fresh && stg.monster && hurt(stg.monster === 'boss' ? 20 : 10, `${stg.npc}のこうげき！`, true)) return;
     const rv = duelRival(s);
     if (rv){ S.quest.duel = {rv: rv.id, stage: 'pick'}; S.quest.qs = 'duel'; S.quest.duelN = clearedN(S); qlog(`関所の前で${rvInfo(rv.id).n}とばったり！ 勝負だ`); sfx.good(); refresh(); return; }
     stg.monster ? sfx.bad() : sfx.next(); lastTick = performance.now(); refresh(); return;
   }
   if (s.type === 'ev' && trigger){
-    const e = s.ev; S.quest.ev = s.k; S.quest.qs = 'event';
+    let ek = s.k; if (s.ev.tone === 'bad' && rpgQ().fx.clover){ S.quest.fx.clover = 0; ek = '__clover'; qlog('幸運のクローバーが、悪いことを良いことに変えた！'); }
+    const e = evOf(ek); S.quest.ev = ek; S.quest.qs = 'event';
+    if (e.tone === 'good'){ gainGold(20, 'ラッキー！'); heal(10, ''); } else if (e.id === 'rest') heal(20, 'ベンチでひと休み');
+    if (e.tone === 'bad' && hurt(15, `${e.t}で心がしずんだ…`)) return;
     if (e.pts) S.quest.pts = Math.max(0, S.quest.pts + e.pts);
     if (e.tone === 'good' && hasMember('cat')){ S.quest.pts += 5; qlog('ミケが喜んだ +5pt'); }
     if (e.time) S.quest.timeMod += e.time;
@@ -3846,7 +4166,7 @@ function nextChapter(){
   if (S.quest) S.lvCarry = (S.lvCarry || 0) + clearedN(S);
   S.stages.push(...add); S.chapter = ch; S.phase = 'play'; S.result = null; S.tq = null; S.seen = {}; S.vseed = rnd(1e9);
   const P = prompts(S); if (P.length) S.cur = P[0].key;
-  if (S.quest){ const Q = S.quest; S.quest = {pos: 'start', pts: 0, rolls: 0, done: {}, qs: 'story', ev: null, timeMod: 0, log: [], last: 1, rivals: newRivals(S).slice(0, (Q.rivals || []).length), finN: 0, place: 0, free: false, party: Q.party || [], beats: [{k: 'chapter', ch}]}; }
+  if (S.quest){ const Q = S.quest; S.goal = null; S.quest = {mental: Q.mental == null ? 100 : Math.max(50, Q.mental), gold: Q.gold || 0, items: Q.items || {}, fx: {}, vis: {}, rest: 'start', magic: Q.magic || 0, pos: 'start', pts: 0, rolls: 0, done: {}, qs: 'story', ev: null, timeMod: 0, log: [], last: 1, rivals: newRivals(S).slice(0, (Q.rivals || []).length), finN: 0, place: 0, free: false, party: Q.party || [], beats: [{k: 'chapter', ch}]}; }
   $('#ovResult').hidden = true; clearMap(); stageView = S.mode === 'quest' ? 'board' : 'map';
   refresh(); tailorQuestions(); sfx.done(); toast(`${CHAPTERS[ch].n} スタート！`);
 }
@@ -3855,28 +4175,39 @@ function storyOk(){
   if (!S || !S.quest || S.quest.qs !== 'story') return;
   const Q = S.quest; (Q.beats || []).shift();
   if ((Q.beats || []).length){ sfx.next(); refresh(); return; }
+  if (Q.retire){ respawn(); return; }
+  if (Q.ending){ Q.ending = 0; finish(); return; }
   const steps = Q.after || 0; Q.after = 0;
   if (!steps){ Q.qs = 'roll'; refresh(); return; }
   Q.qs = 'moving'; refresh(); toast(`${steps}マス前進！`); sfx.good();
   setTimeout(() => walkForward(steps, false), reduced ? 0 : 350);
 }
 function heroPic(lv, extra){ return `<svg class="story-pic" viewBox="-60 -80 120 88" aria-hidden="true"><ellipse cx="0" cy="2" rx="46" ry="8" fill="#fff" opacity=".08"/><g transform="scale(1.3)">${pxPerson(lv)}</g>${extra || ''}</svg>`; }
-function memberPic(m){ const fly = m === 'fairy' || m === 'owl'; return `<svg class="story-pic" viewBox="-40 -64 80 70" aria-hidden="true"><ellipse cx="0" cy="2" rx="30" ry="6" fill="#fff" opacity=".08"/><g transform="translate(0 ${fly ? -14 : 0}) scale(${fly ? 2.2 : m === 'cat' ? 2.3 : m === 'beast' ? 1.8 : 1.35})">${pxSprite(`<use href="#pm-${m}"/>`)}</g></svg>`; }
+function memberPic(m){ const fly = m === 'fairy' || m === 'owl'; return `<svg class="story-pic" viewBox="-40 -64 80 70" aria-hidden="true"><ellipse cx="0" cy="2" rx="30" ry="6" fill="#fff" opacity=".08"/><g transform="translate(0 ${fly ? -14 : 0}) scale(${fly ? 2.2 : m === 'cat' ? 2.3 : m === 'beast' ? 1.8 : 1.35})">${pxSprite(memberUse(m))}</g></svg>`; }
 function storyHTML(){
   const Q = S.quest, b = (Q.beats || [])[0]; if (!b) return rollHTML();
   const more = (Q.beats || []).length - 1, boss = bossName(S);
   let tag = 'STORY', title = '', pic = '', text = '', sub = '';
-  if (b.k === 'intro'){
+  if (b.k === 'retire'){
+    tag = 'GAME OVER'; title = '人生リタイヤ…'; pic = heroPic(heroLevel());
+    text = 'メンタルが0になってしまった…。';
+    sub = 'でも大丈夫。休憩地点（最後に通った関所かお店）で目をさました。メンタル50で再出発しよう。これまでの答えはそのまま、夢ポイントは半分になります。';
+  } else if (b.k === 'ending'){
+    const g = GOALS.find(v => v.k === S.goal) || goalOf(S); tag = 'YOUR GOAL'; title = `${g.ic} ${g.n}`;
+    pic = `<svg class="story-pic" viewBox="-110 -84 220 92" aria-hidden="true"><g transform="translate(-40 0) scale(1.3)">${pxPerson(heroLevel())}</g><text x="44" y="-12" font-size="62" text-anchor="middle">${g.ic}</text></svg>`;
+    text = `あなたがたどり着いたのは「${g.n}」のゴール！`;
+    sub = `${g.d} 旅で集めた運命の力：${tagLine(S)}。職業：${CLASSES[curCls()].n}。`;
+  } else if (b.k === 'intro'){
     title = 'ものがたりのはじまり';
     pic = `<svg class="story-pic" viewBox="-110 -96 220 104" aria-hidden="true"><g transform="translate(-44 0) scale(1.3)">${pxSprite('<use href="#pm-princess"/><use href="#cage"/>')}</g><g transform="translate(46 2) scale(1.05)">${pxSprite(`<use href="#mon-dragon" style="--mc:#C8362F"/>`)}</g></svg>`;
     text = `${W().names.castle}のお姫さまが、${boss}にさらわれてしまった！`;
-    sub = `${heroName() ? `勇者${heroName()}よ、` : ''}関所で問いに答えて力をつけ、${W().names.cave}の奥にいる${boss}をたおして姫を助け出そう。答えるたびにレベルが上がり、${W().gear.map(g => g[0].replace(/「.*」/, '')).slice(0, 3).join('・')}…と装備がそろって「${W().lv[5]}」になれる。道中では家来も増えるぞ。ライバルも城をめざしている…関所でライバルと出くわしたら、ミニゲームで勝負だ！`;
+    sub = `${heroName() ? `勇者${heroName()}よ、` : ''}関所で問いに答えて力をつけ、${W().names.cave}の奥にいる${boss}をたおして姫を助け出そう。答えるたびにレベルが上がり、${gearList().map(g => g[0].replace(/「.*」/, '')).slice(0, 3).join('・')}…と装備がそろって「${lvName(5)}」になれる。道中では家来も増えるぞ。ライバルも城をめざしている…関所でライバルと出くわしたら、ミニゲームで勝負だ！`;
   } else if (b.k === 'lv'){
     tag = 'LEVEL UP'; title = `${heroName() ? heroName() + 'は' : ''}Lv.${b.lv} ${lvName(b.lv)}になった！`;
     pic = heroPic(b.lv, `<g transform="translate(40 -54)"><use href="#w-spark" transform="scale(1.4)" style="--sp:#FFD66B"/></g><g transform="translate(-42 -30)"><use href="#w-spark" style="--sp:#FFD66B"/></g>`);
     text = `${gearOf(b.lv).n}を手に入れた！`; sub = gearOf(b.lv).d;
   } else if (b.k === 'join' || b.k === 'fate'){
-    const M = MEMBERS[b.m]; tag = b.k === 'fate' ? 'FATE' : 'NEW ALLY';
+    const M = mem(b.m); tag = b.k === 'fate' ? 'FATE' : 'NEW ALLY';
     title = b.k === 'fate' ? `運命の出会い：${M.n}` : `${M.n}が家来になった！`;
     pic = memberPic(b.m); text = M.meet; sub = `家来の力：${M.d}`;
   } else if (b.k === 'finish'){
@@ -3904,13 +4235,13 @@ function storyHTML(){
 }
 function heroCardHTML(){
   const lv = heroLevel(), party = (S.quest.party || []), next = LV_STEP[lv + 1];
-  const gear = W().gear.slice(0, lv - 1).map(g => g[0].replace(/(とマント|と旗|と戦袍|とバンダナ|とジェットパック)$/, ''));
-  return `<div class="herocard"><svg viewBox="-24 -78 48 82" aria-hidden="true"><g>${pxPerson(lv)}</g></svg><div><b>${heroName() ? esc(heroName()) + ' ' : ''}Lv.${lv} ${lvName(lv)}</b><span>${gear.length ? '装備：' + gear.join('・') : '装備：なし'}${next ? `（あと${next - clearedN(S) - (S.lvCarry || 0)}関所でレベルアップ）` : ''}</span><span>${party.length ? '家来：' + PARTY_ORDER.filter(m => party.includes(m)).map(m => MEMBERS[m].short).join('・') : '家来：まだいない'}</span></div>${party.length ? `<div class="hc-party">${PARTY_ORDER.filter(m => party.includes(m)).map(m => `<svg viewBox="-16 -${m === 'wizard' || m === 'princess' ? 52 : 30} 32 ${m === 'wizard' || m === 'princess' ? 56 : 34}" aria-label="${MEMBERS[m].n}">${pxSprite(`<use href="#pm-${m}"/>`)}</svg>`).join('')}</div>` : ''}</div>`;
+  const gear = gearList().slice(0, lv - 1).map(g => g[0].replace(/(とマント|と旗|と戦袍|とバンダナ|とジェットパック)$/, ''));
+  return `<div class="herocard"><svg viewBox="-24 -78 48 82" aria-hidden="true"><g>${pxPerson(lv)}</g></svg><div><b>${heroName() ? esc(heroName()) + ' ' : ''}Lv.${lv} ${lvName(lv)}</b><span>${gear.length ? '装備：' + gear.join('・') : '装備：なし'}${next ? `（あと${next - clearedN(S) - (S.lvCarry || 0)}関所でレベルアップ）` : ''}</span><span>${party.length ? '家来：' + PARTY_ORDER.filter(m => party.includes(m)).map(m => mem(m).short).join('・') : '家来：まだいない'}</span></div>${party.length ? `<div class="hc-party">${PARTY_ORDER.filter(m => party.includes(m)).map(m => `<svg viewBox="-16 -${m === 'wizard' || m === 'princess' ? 52 : 30} 32 ${m === 'wizard' || m === 'princess' ? 56 : 34}" aria-label="${mem(m).n}">${pxSprite(memberUse(m))}</svg>`).join('')}</div>` : ''}</div>`;
 }
 function answerPower(p){
   const st = S.stages[p.s], n = answersFor(S, p).length, s = statOf(S, p.key);
   if (n < st.min) return 0;
-  return Math.min(hasMember('wizard') ? 4 : 3, 1 + Math.min(2, n - st.min) + (S.timed && s.left >= st.sec * .5 ? 1 : 0) + (hasMember('wizard') ? 1 : 0));
+  return Math.min(hasMember('wizard') ? 4 : 3, 1 + Math.min(2, n - st.min) + (S.timed && s.left >= st.sec * .5 ? 1 : 0) + (hasMember('wizard') ? 1 : 0)) + (S.quest && S.quest.fx && S.quest.fx.pen ? 1 : 0);
 }
 /* answers concrete enough to act on (numbers, dates or a verb, and no coach nudge) earn a few extra points */
 function specN(p){
@@ -3924,7 +4255,12 @@ async function clearGate(){
   const pts = (n >= st.min ? 10 + Math.min(3, n - st.min) * 5 + (st.monster === 'boss' ? 20 : st.monster ? 5 : 0) : n ? 5 : 0) + garo + spec;
   S.coach = null;
   const lv0 = heroLevel();
-  S.quest.done[p.key] = true; S.quest.pts += pts; S.quest.qs = bonus ? 'moving' : 'roll';
+  const Qr = rpgQ(), fire = Qr.fx.fire === p.key, extra = (fire ? pts : 0) + (curCls() === 'craft' ? 5 : 0);
+  if (fire) Qr.fx.fire = 0; if (Qr.fx.pen && bonus) Qr.fx.pen = 0;
+  S.quest.done[p.key] = true; S.quest.pts += pts + extra; S.quest.qs = bonus ? 'moving' : 'roll'; Qr.rest = 'q:' + p.key;
+  gainGold((n * 10 + (st.monster === 'boss' ? 100 : st.monster ? 50 : 0)) * (fire ? 2 : 1), st.monster ? `${st.npc}をたおしてゴールドを手に入れた` : '答えのごほうび');
+  if (curCls() === 'healer') heal(5, 'いやしの力');
+  if (fire) qlog('魔法ファイアの力で、ごほうびが2倍！');
   qlog((st.monster ? `${st.npc}をたおした！ +${pts}pt${garo ? '（ガロの力 +10）' : ''}` : `関所「${st.l}」を通過 +${pts}pt`) + (spec ? `（具体的な答え +${spec}）` : ''));
   if (n < st.min) toast('条件に届かないまま進みました'); else { sfx.clear(); if (st.monster) toast(`${st.npc}をたおした！`); }
   const i = $('#ans'); if (i) i.value = '';
@@ -4011,8 +4347,10 @@ function duelFinish(d, res, detail){
   const Q = S.quest, rv = (Q.rivals || []).find(r => r.id === d.rv), R = rvInfo(d.rv), G = DUEL_GAMES[d.game];
   d.stage = 'done'; d.res = res; d.detail = detail;
   Q.duels = Q.duels || {w: 0, l: 0, d: 0};
-  if (res === 'win'){ Q.pts += 20; Q.duels.w++; if (rv) rv.rest = 1; qlog(`${G.n}で${R.n}に勝った！ +20pt（${R.n}は1回休み）`); sfx.done(); }
-  else if (res === 'lose'){ Q.duels.l++; if (rv) rv.boost = 2; qlog(`${G.n}で${R.n}に負けた…（${R.n}の次のサイコロ+2）`); sfx.bad(); }
+  if (res === 'win'){ Q.pts += 20; Q.duels.w++; if (rv) rv.rest = 1; gainGold(30, '勝負のごほうび'); qlog(`${G.n}で${R.n}に勝った！ +20pt（${R.n}は1回休み）`); sfx.done(); }
+  else if (res === 'lose'){ Q.duels.l++; if (rv) rv.boost = 2; qlog(`${G.n}で${R.n}に負けた…（${R.n}の次のサイコロ+2）`); sfx.bad();
+    if (rpgQ().fx.mirror){ Q.fx.mirror = 0; if (rv){ rv.boost = 0; rv.rest = 1; } qlog('鏡の盾でダメージをはね返した！ ライバルは1回休み'); }
+    else if (hurt(20, `${R.n}に負けて落ちこんだ…`)) return; }
   else { Q.pts += 5; Q.duels.d++; qlog(`${G.n}で${R.n}と引き分け +5pt`); sfx.clear(); }
   save(); renderPanel();
 }
@@ -4181,7 +4519,7 @@ function renderPanel(){
   if (duelStop){ duelStop(); duelStop = null; }
   const keep = $('#ans') ? $('#ans').value : '';
   const qs = S && S.mode === 'quest' ? S.quest.qs : '';
-  panel.dataset.st = !S ? 'ready' : building ? 'build' : S.phase === 'done' ? 'done' : ['fork', 'event', 'story', 'duel'].includes(qs) ? qs : qs && qs !== 'answer' ? 'roll' : 'play';
+  panel.dataset.st = !S ? 'ready' : building ? 'build' : S.phase === 'done' ? 'done' : ['fork', 'event', 'story', 'duel', 'shop', 'fate', 'job'].includes(qs) ? (SPOT_N[qs] ? 'fork' : qs) : qs && qs !== 'answer' ? 'roll' : 'play';
   if (!S){ panel.innerHTML = `<p class="kicker">READY</p><h2 class="question">テーマを決めると、ここに問いが表示されます。</h2><div class="p-foot"><button class="btn primary" type="button" data-act="menu">ホームへ</button></div>`; syncScreen(); return; }
   if (building) panel.innerHTML = `<p class="kicker">MIND MAP</p><div class="rpg"><span class="rpg-name">王さま</span><p>よくぞたどり着いた！ そなたの旅の答えから、マインドマップを組み立てておるぞ…</p></div><p class="hint">枝が1本ずつ伸びていきます。</p>`;
   else if (S.phase === 'done') panel.innerHTML = doneHTML();
@@ -4189,6 +4527,7 @@ function renderPanel(){
   else if (S.mode === 'quest' && S.quest.qs === 'event') panel.innerHTML = eventHTML();
   else if (S.mode === 'quest' && S.quest.qs === 'duel' && S.quest.duel) panel.innerHTML = duelHTML();
   else if (S.mode === 'quest' && S.quest.qs === 'story') panel.innerHTML = storyHTML();
+  else if (S.mode === 'quest' && SPOT_N[S.quest.qs]) panel.innerHTML = spotHTML();
   else if (S.mode === 'quest' && S.quest.qs !== 'answer') panel.innerHTML = rollHTML();
   else panel.innerHTML = playHTML();
   const inp = $('#ans');
@@ -4318,7 +4657,7 @@ function playHTML(){
     ${S.timed && !locked ? `<div class="qtimer" id="timer" style="--c:${col}" role="timer" aria-live="off"><div class="qt-row"><svg class="qt-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13.5" r="8" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 13.5 V9 M9.5 3 h5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><b id="trTxt">${fmt(s.left)}</b><span>のこり時間<small>考える時間 ${fmtLimit(st.sec)}</small></span></div><div class="qt-bar"><i id="trFg" style="width:${(Math.min(1, s.left / st.sec) * 100).toFixed(1)}%"></i></div></div>` : ''}
     ${condHTML(st, list, s, col)}
     ${chain ? `<div class="path">${chain}</div>` : ''}
-    ${qBlock}
+    ${qBlock}${quest ? statBarHTML() + itemBarHTML('answer') + hintBoxHTML(p) : ''}
     ${hint}
     ${st.show === 'swot' ? swotRefHTML(S) : st.show === 'tm' ? tmLegendHTML() : ''}
     ${entry}
@@ -4335,31 +4674,34 @@ function playHTML(){
 }
 function rollHTML(){
   const q = S.quest, T = track(S), sq = T.sq, i = sqIndex(sq, q.pos), cur = sq[i] || sq[0];
-  const nx = sq.findIndex((s, k) => k > i && ((s.type === 'q' && !qDone(s.p.key)) || (s.type === 'fork' && !(S.routes || {})[s.fork])));
+  const nx = sq.findIndex((s, k) => k > i && ((s.type === 'q' && !qDone(s.p.key)) || (s.type === 'fork' && !(S.routes || {})[s.fork]) || (SPOT_N[s.type] && !rpgQ().vis[s.k])));
   const gate = nx >= 0 ? sq[nx] : null, moving = q.qs === 'moving';
   const P = prompts(S).filter(p => !p.fork), doneN = Object.keys(q.done).filter(k => !k.startsWith('fork')).length;
   const toGoal = sq[sq.length - 1].type === 'goal' ? `${sq.length - 1 - i}マス` : '？';
   const veh = vehOf(cur.seg);
   const gateHTML = !gate ? `<div class="gate-next">関所はすべて通過。<b>${W().names.castle}をめざそう！</b></div>`
     : gate.type === 'fork' ? `<div class="gate-next">次は：<span class="stage-pill" style="--c:#D98A0B"><i>分</i>分かれ道</span><b>あと${nx - i}マス</b></div>`
+    : SPOT_N[gate.type] ? `<div class="gate-next">次は：<span class="stage-pill" style="--c:#8C6CF2"><i>${{shop: '店', fate: '運', job: '転'}[gate.type]}</i>${SPOT_N[gate.type]}</span><b>あと${nx - i}マス</b></div>`
     : `<div class="gate-next">次の関所：<span class="stage-pill" style="--c:${colorOf(S, gate.p.s)}"><i>${gate.p.s + 1}</i>${esc(S.stages[gate.p.s].l)}</span><b>あと${nx - i}マス</b></div>`;
   return `
     <div class="p-head"><p class="kicker">QUEST</p><span class="p-count">関所 ${doneN} / ${P.length} 通過</span></div>
     <div class="qstats">
       <div><small>夢ポイント</small><b class="pts">${q.pts}</b></div>
-      <div><small>サイコロ</small><b>${q.rolls}回</b></div>
+      <div><small>ゴールド</small><b>${rpgQ().gold}G</b></div>
       <div><small>ゴールまで</small><b>${toGoal}</b></div>
     </div>
+    ${statBarHTML()}${itemBarHTML('roll')}
     <div class="dice-zone">
       <div class="dice" id="dice">${diceSVG(q.last || 1)}</div>
       <p class="hint" id="diceMsg" style="margin:0">${moving ? '進んでいます…' : 'サイコロをふって進もう'}</p>
-      <button class="btn primary lg" type="button" data-act="roll" ${moving ? 'disabled' : ''}>サイコロをふる</button>
+      ${rpgQ().fx.boots && !moving ? `<div class="pick-die">${[1, 2, 3, 4, 5, 6].map(n => `<button class="btn" type="button" data-rpg="die" data-v="${n}">${n}</button>`).join('')}</div><small>👟 ワープの靴：進みたい目をえらぼう</small>` : `<button class="btn primary lg" type="button" data-act="roll" ${moving ? 'disabled' : ''}>サイコロをふる</button>`}
       <p class="hint" style="margin:0"><kbd>Space</kbd> キーでもふれます</p>
     </div>
     ${heroCardHTML()}
     ${moving ? '' : aheadHTML(sq, i)}
     <div class="gate-next">いまいる場所：<b>${esc(segName(cur.seg))}</b>${veh ? `<span>3マス以上進むと${veh.n}に乗れる</span>` : ''}</div>
     ${gateHTML}
+    <div class="gate-next">運命の行き先：<b>${(GOALS.find(g => g.k === S.goal) || goalOf(S)).ic} ${(GOALS.find(g => g.k === S.goal) || goalOf(S)).n}</b><span>${S.goal ? '（決定）' : `運命の力：${tagLine(S)}`}</span></div>
     ${(q.rivals && q.rivals.length) || S.online ? raceHTML() : ''}
     ${q.log.length ? `<ul class="qlog">${q.log.slice(0, 3).map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : ''}`;
 }
@@ -4372,6 +4714,7 @@ function aheadHTML(sq, i){
     else if (t.type === 'q' && !qDone(t.p.key)){ cls = 'gate'; lbl = S.stages[t.p.s].monster ? 'バトル' : '関所'; }
     else if (t.type === 'fork' && !(S.routes || {})[t.fork]){ cls = 'gate'; lbl = '分かれ道'; }
     else if (t.type === 'goal'){ cls = 'goal'; lbl = 'ゴール'; }
+    else if (SPOT_N[t.type] && !rpgQ().vis[t.k]){ cls = 'gate'; lbl = {shop: 'お店', fate: '運命', job: '転職'}[t.type]; }
     else if (t.type === 'ev'){ cls = t.ev.tone; lbl = t.ev.s || t.ev.t; }
     h += `<li class="${cls}"><b>${k}</b><span>${esc(lbl)}</span></li>`;
   }
@@ -4491,9 +4834,9 @@ function chooseRoute(f, r){
   const name = S.forks[f].opts[r].n;
   sfx.good(); toast(`「${name}」へ進もう！`);
   if (S.mode === 'quest'){
-    const Q = S.quest; Q.done['fork:' + f] = true; Q.qs = 'roll'; qlog(`分かれ道で「${name}」を選んだ`);
+    const Q = S.quest; Q.done['fork:' + f] = true; Q.qs = 'roll'; qlog(`分かれ道で「${name}」を選んだ`); addTag(ROUTE_TAG[r], 1);
     const m = ROUTE_MEMBER[r]; Q.party = Q.party || [];
-    if (m && !Q.party.includes(m)){ Q.party.push(m); Q.beats = [{k: 'fate', m}]; Q.after = m === 'owl' ? 3 : 0; Q.qs = 'story'; qlog(`運命の出会い：${MEMBERS[m].n}が家来になった`); }
+    if (m && !Q.party.includes(m)){ Q.party.push(m); Q.beats = [{k: 'fate', m}]; Q.after = m === 'owl' ? 3 : 0; Q.qs = 'story'; qlog(`運命の出会い：${mem(m).n}が家来になった`); }
     refresh(); return;
   }
   const {i} = curIndex(S); refresh(); go(i + 1);
@@ -4794,6 +5137,8 @@ function boardHTML(x){
   const sw = SW_Q.map(([f]) => F('swot', f)), cr = ['so', 'wo', 'st', 'wt'].map(f => F('cross', f)), tm = TM_Q.map(([f]) => F('tm', f));
   const ti = x.stages.findIndex(s => s.o === 'thanks'), thanks = ti >= 0 ? x.ans.filter(a => a.s === ti) : [];
   const out = [], cmp = compareRows(x), ik = IK_Q.map(([f]) => F('ikigai', f)), hi = x.stages.findIndex(s => s.o === 'hypo'), hypo = hi >= 0 ? (x.ans.find(a => a.s === hi) || {}).t : '';
+  const gl = x.mode === 'quest' && x.goal ? GOALS.find(g => g.k === x.goal) : null;
+  if (gl) out.push(`<div class="bd goal"><h3>あなたのゴール</h3><p class="goal-big">${gl.ic} <b>${gl.n}</b></p><p>${gl.d}</p><small>運命の力：${esc(tagLine(x))}${x.cls && CLASSES[x.cls] ? `　職業：${CLASSES[x.cls].ic} ${CLASSES[x.cls].n}` : ''}</small></div>`);
   const rk = jobRanking(x);
   if (rk.length) out.push(`<div class="bd jrank"><h3>おすすめ職業ランキング</h3><ol>${rk.map((r, i) => `<li><i>${i + 1}</i><div><b>${esc(r.name)}</b><span class="rk-tag ${r.own ? 'own' : 'new'}">${r.own ? 'あなたの候補' : '新しい発見'}</span><small>${r.why.map(esc).join('／')}</small></div><em><b>${r.sc}</b>点<small>AIに強い ${aiStars(r.ai)}</small></em></li>`).join('')}</ol><p class="cmp-note">点数は、答えと点数から計算した目安です。「AIに強い」は、人の気持ちにふれる・現場で手を動かす・その場で判断する仕事ほど高くなります。「新しい発見」の仕事も、ぜひ調べてみよう。</p></div>`);
   if (ik.some(Boolean) || hypo) out.push(`<div class="bd ik"><h3>天職の4つの円</h3><div class="ikg">${IK_Q.map(([, n], k) => `<span class="k${k}"><em>${n}</em>${E(ik[k])}</span>`).join('')}</div>${hypo ? `<p class="ik-hypo"><small>天職の仮説</small>${esc(hypo)}</p>` : ''}</div>`);
@@ -5473,7 +5818,7 @@ function exportText(x){
     if (x.mode === 'quest' && x.quest.place) L.push(`- ライバルとのレース：${x.quest.place}着`);
     if (x.mode === 'quest') L.push(`- ${x.heroName ? `勇者${x.heroName}` : '勇者'}（${(WORLDS[x.world] || WORLDS.euro).n}）：Lv.${levelAt(clearedN(x) + (x.lvCarry || 0))} ${(WORLDS[x.world] || WORLDS.euro).lv[levelAt(clearedN(x) + (x.lvCarry || 0))]}`);
     if (x.mode === 'quest' && x.quest.duels) L.push(`- ライバル勝負：${x.quest.duels.w}勝${x.quest.duels.l}敗${x.quest.duels.d ? x.quest.duels.d + '分' : ''}`);
-    if (x.mode === 'quest' && (x.quest.party || []).length) L.push(`- 家来：${PARTY_ORDER.filter(m => x.quest.party.includes(m)).map(m => MEMBERS[m].n).join('・')}`);
+    if (x.mode === 'quest' && (x.quest.party || []).length) L.push(`- 家来：${PARTY_ORDER.filter(m => x.quest.party.includes(m)).map(m => mem(m).n).join('・')}`);
     if (r.advice){ L.push('', 'アドバイス'); r.advice.forEach((a, i) => L.push(`${i + 1}. ${a}`)); }
     { const T = timelineOf(x); if (T.length){ L.push('', `人生のタイムスケジュール${x.age ? `（いま${x.age}歳）` : ''}`); T.forEach(v => L.push(`- ${v.age != null ? v.age + '歳' : v.when}：${v.title}　${v.detail}`)); } }
     if ((x.sage || []).length){ L.push('', '専門家の賢者への質問'); x.sage.forEach(v => { if (v.a) L.push(`Q. ${v.q}`, `A. ${v.a}`); }); }
@@ -5529,6 +5874,7 @@ panel.addEventListener('click', e => {
   if (b.dataset.act === 'setf'){ if (saveFields()) refresh(); return; }
   if (b.dataset.route){ chooseRoute(b.dataset.fork, b.dataset.route); return; }
   if (b.dataset.duel){ duelPick(b.dataset.duel); return; }
+  if (b.dataset.rpg){ rpgAct(b.dataset.rpg, b.dataset.v); return; }
   if (b.dataset.act) onAct(b.dataset.act);
 });
 $('#resultSheet').addEventListener('click', e => { const t = e.target.closest('button[data-rtab]'); if (t){ resultTab = t.dataset.rtab; $('#resultSheet').dataset.rtab = resultTab; $('#resultSheet').querySelectorAll('button[data-rtab]').forEach(x => x.setAttribute('aria-selected', String(x === t))); $('#ovResult').scrollTop = 0; } });
@@ -5646,7 +5992,7 @@ setInterval(() => {
   const s = statOf(S, p.key); s.used += dt;
   if (S.timed && !s.to){
     s.left = Math.max(0, s.left - dt);
-    if (s.left <= 0){ s.to = true; sfx.timeup(); toast('時間切れ！ 次へ進みましょう'); save(); renderPanel(); return; }
+    if (s.left <= 0){ s.to = true; sfx.timeup(); toast('時間切れ！ 次へ進みましょう'); if (S.mode === 'quest' && hurt(10, '時間切れで心がゆれた…')) return; save(); renderPanel(); return; }
     updateTimerUI();
   }
   if ((saveAcc += dt) > 3){ saveAcc = 0; save(); }
@@ -5692,8 +6038,8 @@ function addWild(stages, course){
 function newSession(theme, stages, timed, mode, level, keep){
   stages = addWild(stages.filter(st => !st.wild), (keep && keep.course) || presetKey);
   keep = keep || {world: homeWorld, avatar: clone(homeAvatar), heroName: ($('#heroNameInput').value || '').trim().slice(0, 8), age: parseAge($('#ageInput').value)};
-  S = {v: 4, theme, stages: clone(stages), world: keep.world, avatar: cleanAvatar(keep.avatar), heroName: keep.heroName || '', age: keep.age, course: keep.course || presetKey, vseed: rnd(1e9), chapter: 1, lvCarry: 0, chapters: [], forks: clone((PRESETS[presetKey] || {}).forks || {}), routes: {}, timed, mode, level, ans: [], seq: 1, cur: '0:r', stat: {}, phase: 'play', result: null, aiopts: {},
-    quest: mode === 'quest' ? {pos: 'start', pts: 0, rolls: 0, done: {}, qs: 'roll', ev: null, timeMod: 0, log: [], last: 1, rivals: null, finN: 0, place: 0, free: false} : null};
+  S = {v: 4, theme, stages: clone(stages), world: keep.world, avatar: cleanAvatar(keep.avatar), heroName: keep.heroName || '', age: keep.age, course: keep.course || presetKey, cls: keep.cls || homeCls, tags: {[CLASSES[keep.cls || homeCls].tag]: 1}, goal: null, vseed: rnd(1e9), chapter: 1, lvCarry: 0, chapters: [], forks: clone((PRESETS[presetKey] || {}).forks || {}), routes: {}, timed, mode, level, ans: [], seq: 1, cur: '0:r', stat: {}, phase: 'play', result: null, aiopts: {},
+    quest: mode === 'quest' ? {mental: 100, gold: 0, items: {}, fx: {}, vis: {}, rest: 'start', magic: (keep.cls || homeCls) === 'mage' ? 3 : 0, pos: 'start', pts: 0, rolls: 0, done: {}, qs: 'roll', ev: null, timeMod: 0, log: [], last: 1, rivals: null, finN: 0, place: 0, free: false} : null};
   if (S.quest){ S.quest.rivals = newRivals(S).slice(0, homeCpu); S.quest.party = [];
     const code = ($('#raceCode').value || '').trim().slice(0, 12);
     S.online = $('#chkOnline').checked && code ? {code, nick: (S.heroName || 'プレイヤー').slice(0, 8), ci: rnd(OP_COLORS.length)} : null; if (bossStage(S) >= 0){ S.quest.beats = [{k: 'intro'}]; S.quest.qs = 'story'; } }
@@ -5721,7 +6067,9 @@ function setHomeStep(n){
 const homeGo = d => { const L = homeSteps(); setHomeStep(L[Math.max(0, Math.min(L.length - 1, L.indexOf(homeStep) + d))]); $('#ovHome').scrollTop = 0; };
 $('#hPrev').onclick = () => homeGo(-1);
 $('#hNext').onclick = () => homeGo(1);
-function renderMaker(){
+function renderMaker(){ clsOverride = homeCls; try { renderMaker0(); } finally { clsOverride = null; } }
+function renderMaker0(){
+  $('#clsCtl').innerHTML = Object.entries(CLASSES).map(([k, c]) => `<button type="button" role="radio" class="cls-card${k === homeCls ? ' on' : ''}" data-cls="${k}" aria-checked="${k === homeCls}"><b>${c.ic} ${c.n}</b><span>${c.d}</span></button>`).join('');
   const a = homeAvatar, opt = (key, list, cur, sw) => list.map(([v, label]) => `<button type="button" role="radio" class="${sw ? 'sw' : ''}" data-mk="${key}" data-v="${v}" aria-checked="${String(v) === String(cur)}" ${sw ? `style="background:${label}" aria-label="${key}${v}"` : ''}>${sw ? '' : label}</button>`).join('');
   $('#worldCtl').innerHTML = WORLD_KEYS.map(w => `<button type="button" role="radio" data-world="${w}" aria-checked="${w === homeWorld}">${worldCard(w)}${WORLDS[w].short}<small>${WORLDS[w].hero}</small></button>`).join('');
   $('#mkSex').innerHTML = opt('sex', [['m', '男性'], ['f', '女性']], a.sex);
@@ -5732,17 +6080,19 @@ function renderMaker(){
   $('#mkShirt').innerHTML = opt('shirt', SHIRTS.map((c, i) => [i, c]), a.shirt, true);
   renderPreview();
 }
-function renderPreview(){
+function renderPreview(){ const k0 = clsOverride; clsOverride = homeCls; try { renderPreview0(); } finally { clsOverride = k0; } }
+function renderPreview0(){
   renderQuestIcon();
   const nm = ($('#heroNameInput').value || '').trim();
   $('#heroPreview').innerHTML = `<g transform="translate(-30 4) scale(1.2)">${pxPerson(1, homeWorld, homeAvatar)}</g><g transform="translate(32 4) scale(1.2)">${pxPerson(5, homeWorld, homeAvatar)}</g><text x="-30" y="-94" text-anchor="middle" font-size="9" font-weight="800" fill="#646B8A" font-family="${FONT}">Lv.1</text><text x="32" y="-94" text-anchor="middle" font-size="9" font-weight="800" fill="#C8362F" font-family="${FONT}">Lv.5 ${esc(WORLDS[homeWorld].hero)}</text>${nm ? `<text x="0" y="-2" text-anchor="middle" font-size="10" font-weight="800" fill="#1B2140" font-family="${FONT}" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(nm)}</text>` : ''}`;
 }
-function saveHome(){ store.set('mindquest-hero', {world: homeWorld, avatar: homeAvatar, name: $('#heroNameInput').value || '', age: $('#ageInput').value || ''}); }
+$('#clsCtl').addEventListener('click', e => { const b = e.target.closest('[data-cls]'); if (!b) return; homeCls = b.dataset.cls; saveHome(); renderMaker(); });
+function saveHome(){ store.set('mindquest-hero', {cls: homeCls, world: homeWorld, avatar: homeAvatar, name: $('#heroNameInput').value || '', age: $('#ageInput').value || ''}); }
 $('#worldCtl').addEventListener('click', e => { const b = e.target.closest('[data-world]'); if (!b) return; homeWorld = b.dataset.world; saveHome(); renderMaker(); });
 document.querySelector('.maker-ctl').addEventListener('click', e => { const b = e.target.closest('[data-mk]'); if (!b) return; const k = b.dataset.mk, v = b.dataset.v; homeAvatar = cleanAvatar({...homeAvatar, [k]: ['skin', 'hc', 'shirt'].includes(k) ? +v : v}); if (k === 'sex' && homeAvatar.hair === 'short' && v === 'f') homeAvatar.hair = 'long'; saveHome(); renderMaker(); });
 $('#heroNameInput').addEventListener('input', () => { saveHome(); renderPreview(); });
 $('#ageInput').addEventListener('input', saveHome);
-(() => { const h = store.get('mindquest-hero', null); if (h){ if (WORLDS[h.world]) homeWorld = h.world; homeAvatar = cleanAvatar(h.avatar); $('#heroNameInput').value = String(h.name || '').slice(0, 8); $('#ageInput').value = parseAge(h.age) || ''; } })();
+(() => { const h = store.get('mindquest-hero', null); if (h){ if (CLASSES[h.cls]) homeCls = h.cls; if (WORLDS[h.world]) homeWorld = h.world; homeAvatar = cleanAvatar(h.avatar); $('#heroNameInput').value = String(h.name || '').slice(0, 8); $('#ageInput').value = parseAge(h.age) || ''; } })();
 function renderVs(){
   $('#vsBox').hidden = homeMode !== 'quest';
   if (homeMode === 'quest' && !$('#worldCtl').firstChild) renderMaker();
