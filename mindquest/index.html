@@ -522,6 +522,53 @@ details.own[open] summary{margin-bottom:8px}
 .first ul{margin:0;padding-left:1.2em;font-size:13.5px;font-weight:700}
 
 /* rival match */
+.battle{position:absolute;inset:0;z-index:6;overflow:hidden;display:grid;grid-template-rows:1fr auto auto;background:#1B1430;font-family:var(--jp);image-rendering:pixelated}
+.battle[hidden]{display:none}
+.battle.enter{animation:btIn .45s ease-out}
+@keyframes btIn{from{opacity:0;transform:scale(1.06)}to{opacity:1;transform:none}}
+.bt-sky{position:absolute;inset:0 0 34% 0;background:linear-gradient(180deg,#2A2050 0%,#4B3A7A 60%,#7A5AA8 100%)}
+.bt-sky.boss{background:linear-gradient(180deg,#2A0E14 0%,#5A1A20 55%,#A8402A 100%)}
+.bt-sky::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 4px,transparent 4px 12px)}
+.bt-floor{position:absolute;left:0;right:0;bottom:0;height:34%;background:repeating-linear-gradient(0deg,#3A5A3A 0 6px,#33522F 6px 12px);border-top:4px solid #5C8A4A}
+.bt-mon{position:absolute;right:6%;top:9%;width:min(46%,340px);display:grid;justify-items:center;gap:4px;z-index:2}
+.bt-mon svg{width:100%;height:auto;overflow:visible;filter:drop-shadow(0 10px 0 rgba(0,0,0,.25))}
+.bt-hero{position:absolute;left:6%;bottom:118px;width:min(30%,220px);display:grid;justify-items:center;gap:4px;z-index:2}
+.bt-hero svg{width:100%;height:auto;overflow:visible}
+.bt-hero .bt-tag{order:-1}
+.bt-tag{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:center;width:100%;min-width:180px;padding:6px 10px;border-radius:10px;background:rgba(10,8,24,.78);border:2px solid #fff;color:#fff;font-size:12.5px}
+.bt-tag b{grid-column:1 / -1;font-size:13px}
+.bt-tag small{font-family:var(--en);font-size:11px;color:#FFD66B;white-space:nowrap}
+.hpb{display:block;height:9px;border-radius:2px;background:#3A3350;overflow:hidden;border:1px solid #000}
+.hpb i{display:block;height:100%;background:linear-gradient(90deg,#F2554E,#FFAE45);transition:width .5s}
+.hpb.mental i{background:linear-gradient(90deg,#15A37C,#7ED3A8)}
+.hpb.mental.low i{background:linear-gradient(90deg,#D93A3F,#F2A33A)}
+.bt-msg{position:relative;z-index:3;align-self:end;margin:0 14px 8px;padding:8px 14px;border-radius:10px;background:rgba(10,8,24,.82);border:2px solid #fff;color:#fff;font-weight:800;font-size:14px;text-align:center}
+.bt-cmd{position:relative;z-index:3;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 14px 14px}
+.bt-cmd.one{grid-template-columns:1fr}
+.bt-cmd.panel{margin:0}
+.bt-cmd.panel button{background:var(--ink)}
+.bt-cmd button{display:grid;gap:1px;justify-items:center;padding:9px 6px;border-radius:12px;border:2px solid #fff;background:#2A2050;color:#fff;font-weight:800;font-size:15px}
+.bt-cmd button small{font-size:10.5px;font-weight:600;color:#C9D0E6}
+.bt-cmd button:not(:disabled):hover{background:#4B3A7A}
+.bt-cmd button:disabled{opacity:.45;cursor:default}
+.bt-fx{position:absolute;right:10%;top:12%;width:40%;height:44%;z-index:3;pointer-events:none;border-radius:50%;opacity:0}
+.bt-fx.fire{animation:btFire .7s ease-out}
+@keyframes btFire{0%{opacity:0;transform:scale(.3);background:radial-gradient(circle,#FFF3C4,#FFAE45 40%,#F2554E 65%,transparent 70%)}30%{opacity:1;transform:scale(1);background:radial-gradient(circle,#FFF3C4,#FFAE45 40%,#F2554E 65%,transparent 70%)}100%{opacity:0;transform:scale(1.3);background:radial-gradient(circle,#FFF3C4,#FFAE45 40%,#F2554E 65%,transparent 70%)}}
+.bt-hero.atk svg{animation:btAtk .45s ease-out}
+@keyframes btAtk{40%{transform:translate(30%,-12%)}}
+.bt-mon.matk svg{animation:btMatk .45s ease-out}
+@keyframes btMatk{40%{transform:translate(-22%,12%)}}
+.bt-mon.hit svg,.bt-hero.hit svg{animation:btHit .5s steps(2)}
+@keyframes btHit{0%,100%{transform:none;opacity:1}20%{transform:translateX(-6px);opacity:.3}40%{transform:translateX(6px);opacity:1}60%{transform:translateX(-4px);opacity:.3}80%{transform:translateX(4px)}}
+.bt-mon.appear svg{animation:btAppear .7s ease-out}
+@keyframes btAppear{from{transform:translateY(-30px);opacity:0}to{transform:none;opacity:1}}
+.bt-mon.dead svg{animation:btDead .8s ease-in forwards}
+@keyframes btDead{to{opacity:0;transform:translateY(10px) scaleY(.2)}}
+.dmg{position:absolute;left:50%;top:30%;z-index:4;font-family:var(--en);font-size:30px;font-weight:800;color:#FFD66B;-webkit-text-stroke:2px #1B1430;animation:dmgUp .9s ease-out forwards;pointer-events:none}
+.dmg.big{font-size:42px;color:#FF7A3D}
+.dmg.bad{color:#FF6B6B}
+@keyframes dmgUp{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-50px)}}
+.ibar.flash{animation:beat .3s 3}
 .mbar{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--muted)}
 .mbar i{display:block;height:10px;border-radius:999px;background:#EEF0F6;overflow:hidden}
 .mbar em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#15A37C,#7ED3A8);transition:width .4s}
@@ -1857,6 +1904,7 @@ function tplOf(x, st, par, p){
   if (pool){ const sib = p && st.p >= 0 ? Math.max(0, prompts(x).filter(q => q.s === p.s).findIndex(q => q.key === p.key)) : 0; base = pool[(hash(`${x.theme}|${x.vseed || 0}|${si}`) + sib) % pool.length]; }
   const npc = st.npc || 'モンスター', mn = (npc.match(/「[^」]+」/) || [npc])[0];
   base = base.replace(/\{MN\}/g, mn).replace(/\{M\}/g, npc);
+  if (curWorld() !== 'euro' && x.mode === 'quest') base = base.replace(/ドラゴン/g, (WMON[curWorld()] || WMON.euro).bossN);
   if (/\{@\w+\}/.test(base)){ let miss = false; base = base.replace(/\{@(\w+)\}/g, (_, o) => { const v = refAns(x, o); if (!v) miss = true; return v || ''; }); if (miss) base = st.qf || base.replace(/「」/g, ''); }
   if (st.alt && st.alt.length && p && !(tq && tq.q) && !pool){ const idx = st.p < 0 ? hash((x.theme || '') + p.s) : prompts(x).filter(q => q.s === p.s).findIndex(q => q.key === p.key); const pool = [base, ...st.alt]; base = pool[Math.max(0, idx) % pool.length]; }
   return base;
@@ -2294,7 +2342,7 @@ function segName(seg){
   const f = 'f' + seg.slice(1), fk = S && S.forks && S.forks[f];
   return fk && fk.opts[seg] ? fk.opts[seg].n : (seg[1] === '1' ? '森の道' : '星の道');
 }
-const GAP = 62, WEIGHT = {start: 1.2, fork: 1.3, q: 1.3, goal: 1.3, ev: 1, plain: .75, shop: 1.3, fate: 1.3, job: 1.3};
+const GAP = 62, WEIGHT = {foe: .75, start: 1.2, fork: 1.3, q: 1.3, goal: 1.3, ev: 1, plain: .75, shop: 1.3, fate: 1.3, job: 1.3};
 const filler = key => hash('f' + key) % 100 < 45 ? {k: 'e:' + key, type: 'ev', ev: evOf('e:' + key)} : {k: 'n:' + key, type: 'plain'};
 function track(x){
   setGeo(x.mode === 'quest' ? x.chapter || 1 : 1);
@@ -2314,7 +2362,7 @@ function track(x){
   });
   if (x.mode === 'quest' && x.quest){ /* three shops, three fate crossroads and the job hall */
     G.town.push({k: 'shop:1', type: 'shop'}); G.river.unshift({k: 'job:1', type: 'job'}); G.river.push({k: 'fate:1', type: 'fate'});
-    G.post.unshift({k: 'shop:2', type: 'shop'}); G.post.push({k: 'fate:2', type: 'fate'}); G.castle.unshift({k: 'fate:3', type: 'fate'}); G.castle.push({k: 'shop:3', type: 'shop'}); }
+    G.post.unshift({k: 'shop:2', type: 'shop'}); G.post.push({k: 'fate:2', type: 'fate'}); G.castle.unshift({k: 'fate:3', type: 'fate'}); }
   ['town', 'post'].forEach(seg => { const f = G[seg].filter(g => g.type === 'fork'); G[seg] = G[seg].filter(g => g.type !== 'fork').concat(f); });
   const all = [['town', 1], [r1 || 'A1', 1], ['river', 1], ['cave', 2], ['post', 3], [r2 || 'A2', 3], ['castle', 3]];
   const seq = stop === 'f1' ? all.slice(0, 1) : stop === 'f2' ? all.slice(0, 5) : all;
@@ -2341,7 +2389,8 @@ function track(x){
     L.forEach((q, j) => {
       if (j) acc += (w[j - 1] + w[j]) / 2;
       const d = off + (tot ? acc / tot : 0) * len, pt = P2.pt(d);
-      sq.push({...q, seg, part, d, x: pt.x, y: pt.y});
+      const foe = q.type === 'plain' && seg !== 'cave' && x.mode === 'quest' && hash('m' + q.k) % 100 < 16;
+      sq.push({...q, ...(foe ? {type: 'foe', k: 'm:' + q.k} : {}), seg, part, d, x: pt.x, y: pt.y});
     });
   });
   return {sq, parts, r1, r2};
@@ -2858,12 +2907,13 @@ const ITEMS = {
   crystal: {n: 'AIの水晶玉', ic: '🔮', g: 80, tier: 3, d: 'いまの問いのヒントを、有力なAIが教えてくれる'},
   boots: {n: 'ワープの靴', ic: '👟', g: 90, tier: 3, d: '次のサイコロの目を、自分で選べる'},
   mirror: {n: '鏡の盾', ic: '🪞', g: 100, tier: 3, d: 'ライバル勝負に負けても、ダメージを相手にはね返す（相手は1回休み）'},
-  book: {n: '魔法の書', ic: '📕', g: 120, tier: 3, d: '魔法「ファイア」を3回使えるようになる（モンスターの関所で、ごほうび2倍）'}
+  book: {n: '魔法の書', ic: '📕', g: 120, tier: 3, d: '魔法「ファイア」を3回使えるようになる（魔物に大ダメージ、ごほうび2倍）'}
 };
 const priceOf = it => Math.round(it.g * (curCls() === 'merchant' ? .9 : 1));
 function itemOk(id){
   const Q = rpgQ(), ans = Q.qs === 'answer', roll = Q.qs === 'roll', p = ans ? current() : null;
-  return !!({tea: ans || roll, friend: ans || roll, pen: ans || roll, charm: ans || roll, clover: roll, smoke: ans || roll, mirror: ans || roll, book: ans || roll, boots: roll && !Q.fx.boots, crystal: ans,
+  const fight = Q.qs === 'fight';
+  return !!({tea: ans || roll || fight, friend: ans || roll || fight, pen: ans || roll, charm: ans || roll || fight, clover: roll, smoke: ans || roll || fight, mirror: ans || roll, book: ans || roll, boots: roll && !Q.fx.boots, crystal: ans,
     sand: ans && S.timed && p && !statOf(S, p.key).to, megaphone: roll && (Q.rivals || []).some(r => !r.fin && !r.rest)})[id];
 }
 function useItem(id){
@@ -2910,7 +2960,7 @@ function itemBarHTML(ctx){
   const Q = rpgQ(), ids = Object.keys(Q.items).filter(id => Q.items[id] > 0 && ITEMS[id]), p = ctx === 'answer' ? current() : null;
   const fireOk = p && Q.magic > 0 && S.stages[p.s].monster && Q.fx.fire !== p.key;
   if (!ids.length && !Q.magic) return '';
-  return `<div class="ibar"><small>もちもの</small>${ids.map(id => `<button type="button" data-rpg="use" data-v="${id}" title="${esc(ITEMS[id].d)}" ${itemOk(id) ? '' : 'disabled'}>${ITEMS[id].ic}<span>${ITEMS[id].n}</span><em>×${Q.items[id]}</em></button>`).join('')}${Q.magic ? `<button type="button" class="magic" data-rpg="fire" title="モンスターの関所で使える魔法。この関所のごほうび2倍・メンタル+10" ${fireOk ? '' : 'disabled'}>🔥<span>ファイア</span><em>×${Q.magic}</em></button>` : ''}</div>`;
+  return `<div class="ibar"><small>もちもの</small>${ids.map(id => `<button type="button" data-rpg="use" data-v="${id}" title="${esc(ITEMS[id].d)}" ${itemOk(id) ? '' : 'disabled'}>${ITEMS[id].ic}<span>${ITEMS[id].n}</span><em>×${Q.items[id]}</em></button>`).join('')}${Q.magic ? `<button type="button" class="magic" data-rpg="fire" title="モンスターの関所で使える魔法。HP−50・ごほうび2倍・メンタル+10" ${fireOk ? '' : 'disabled'}>🔥<span>ファイア</span><em>×${Q.magic}</em></button>` : ''}</div>`;
 }
 function hintBoxHTML(p){
   const h = rpgQ().hint; if (!h || h.key !== p.key) return '';
@@ -2954,9 +3004,9 @@ const SPOT_N = {shop: 'お店', fate: '運命の分かれ道', job: '転職の�
 function spotHTML(){
   const Q = rpgQ(), n = +(Q.spot || '').split(':')[1] || 1;
   if (Q.qs === 'shop'){
-    const list = Object.entries(ITEMS).filter(([, it]) => it.tier <= n);
-    return `<div class="p-head"><p class="kicker">SHOP</p><span class="p-count">${['', '町の道具屋', '山の市場', '城下の名店'][n]}</span></div>
-      <div class="rpg"><span class="rpg-name">道具屋の主人</span><p>いらっしゃい！ ${n === 3 ? '城の近くだけあって、とっておきの品がそろってるよ。' : n === 2 ? '旅の後半に役立つ品を仕入れておいたよ。' : '旅のはじめに役立つ品はいかが？'}</p><p class="rpg-sub">持っているゴールド：<b>${Q.gold}G</b>${curCls() === 'merchant' ? '（商人は1割引）' : ''}　後半のお店ほど、強い品がならびます。</p></div>
+    const list = Object.entries(ITEMS).filter(([, it]) => it.tier <= (n >= 2 ? 3 : 1));
+    return `<div class="p-head"><p class="kicker">SHOP</p><span class="p-count">${['', '町の道具屋', '山の市場'][n] || 'お店'}</span></div>
+      <div class="rpg"><span class="rpg-name">道具屋の主人</span><p>いらっしゃい！ ${n >= 2 ? 'ここが最後のお店だよ。とっておきの品までそろってるから、しっかり準備していきな！' : '旅のはじめに役立つ品はいかが？ 強い品は、山の市場で売ってるよ。'}</p><p class="rpg-sub">持っているゴールド：<b>${Q.gold}G</b>${curCls() === 'merchant' ? '（商人は1割引）' : ''}　お店は2軒。山の市場には強い品もならびます。</p></div>
       ${statBarHTML()}
       <ul class="shop">${list.map(([id, it]) => { const pr = priceOf(it); return `<li><span class="si">${it.ic}</span><div><b>${it.n}</b><small>${it.d}</small></div><em>${Q.items[id] ? '×' + Q.items[id] : ''}</em><button class="btn sm primary" type="button" data-rpg="buy" data-v="${id}" ${Q.gold < pr ? 'disabled' : ''}>${pr}G</button></li>`; }).join('')}</ul>
       <div class="p-foot"><span class="grow"></span><button class="btn dark" type="button" data-rpg="leave">お店を出る →</button></div>`;
@@ -2993,7 +3043,7 @@ function rpgAct(a, v){
     else { qlog('転職の館を出た（いまのまま）'); sfx.next(); }
     save(); renderBoard(); refresh(); return;
   }
-  if (a === 'fire'){ const p = current(); if (!p || !Q.magic || Q.qs !== 'answer') return; Q.magic--; Q.fx.fire = p.key; heal(10, ''); sfx.good(); toast('🔥 魔法ファイア！ モンスターがひるんだ'); qlog('魔法「ファイア」をとなえた（この関所のごほうび2倍）'); save(); renderPanel(); return; }
+  if (a === 'fire'){ const p = current(); if (!p || !Q.magic || Q.qs !== 'answer' || battleHP(p) <= 0) return; Q.magic--; Q.fx.fire = p.key; const fs = statOf(S, p.key); fs.fire = (fs.fire || 0) + 50; heal(10, ''); sfx.good(); toast('🔥 魔法ファイア！ 大ダメージ！'); qlog('魔法「ファイア」をとなえた（HP−50・ごほうび2倍）'); save(); renderPanel(); return; }
   if (a === 'die'){ if (Q.qs !== 'roll') return; Q.pickDie = +v; Q.fx.boots = 0; roll(); }
 }
 
@@ -3040,6 +3090,121 @@ function goalSprite(P, R){
   if (PX_GOAL[g]) return PX_GOAL[g](P, R);
   return (PX_CASTLE[alt[g]] || PX_CASTLE[P.castle] || PX_CASTLE.euro)(P, R);
 }
+/* ---------- battle screen: at a monster gate the map turns into a battle. Each answer is an attack, the monster strikes back ---------- */
+const battleHP = p => { const st = S.stages[p.s], s = statOf(S, p.key); return Math.max(0, Math.round(100 - answersFor(S, p).length / Math.max(1, st.min) * 100) - (s.fire || 0)); };
+let btLast = {key: null, n: 0, fire: 0};
+function battleHTML(p, st, hp){
+  const Q = rpgQ(), m = Q.mental, lv = heroLevel(), fireOk = Q.magic > 0 && hp > 0;
+  return `<div class="bt-sky ${st.monster === 'boss' ? 'boss' : ''}"></div><div class="bt-floor"></div>
+    <div class="bt-mon${hp <= 0 ? ' dead' : ''}"><div class="bt-tag"><b>${st.monster === 'boss' ? `${(WMON[curWorld()] || WMON.euro).bossN}${esc((st.npc || '').replace(/^ボス/, ''))}` : esc(st.npc || 'モンスター')}</b><span class="hpb"><i style="width:${hp}%"></i></span><small>HP ${hp}</small></div>
+      <svg viewBox="-75 -100 150 108" aria-hidden="true"><g class="bt-body">${pxSprite(`<use href="#mon-${monKind(st)}" style="--mc:${st.mcol || '#7C4DDB'}"/>`)}</g></svg></div>
+    <div class="bt-hero"><svg viewBox="-55 -80 110 88" aria-hidden="true"><g class="bt-body" transform="scale(1.1)">${pxPerson(lv)}</g></svg>
+      <div class="bt-tag"><b>${esc(heroName() || 'あなた')} Lv.${lv}</b><span class="hpb mental${m <= 30 ? ' low' : ''}"><i style="width:${m}%"></i></span><small>メンタル ${m}</small></div></div>
+    <p class="bt-msg">${hp <= 0 ? `${esc(st.npc || 'モンスター')}をやっつけた！ 右の「進む」で関所を通ろう` : '答えを書くたびに攻撃！ 魔物のHPを0にしよう'}</p>
+    <div class="bt-cmd"><button type="button" data-bt="atk" ${hp <= 0 ? 'disabled' : ''}>⚔️ こうげき<small>答えを書く</small></button><button type="button" data-rpg="fire" ${fireOk ? '' : 'disabled'}>🔥 まほう<small>ファイア ×${Q.magic}</small></button><button type="button" data-bt="item">🎒 アイテム<small>もちものから使う</small></button></div>
+    <div class="bt-fx"></div>`;
+}
+function btPop(el, sel, txt, cls){ const host = el.querySelector(sel); if (!host) return; const d = document.createElement('b'); d.className = 'dmg ' + (cls || ''); d.textContent = txt; host.appendChild(d); setTimeout(() => d.remove(), 900); }
+function btAnim(el, sel, cls, ms){ const t = el.querySelector(sel); if (!t) return; t.classList.remove(cls); void t.offsetWidth; t.classList.add(cls); setTimeout(() => t.classList.remove(cls), ms || 500); }
+/* ---------- roaming monsters: stop on a red square and fight with attack / magic / items / run ---------- */
+function foeOf(k){
+  const W = WMON[curWorld()] || WMON.euro, [kind, n] = W.foes[hash(k) % W.foes.length], lv = heroLevel() + (S.chapter || 1) - 1;
+  const col = ['#7C4DDB', '#C8362F', '#FF6A2A', '#2E8FE0', '#15A37C'][hash(k + 'c') % 5];
+  return {k, kind, n, lv, col, hp: 30 + lv * 18, max: 30 + lv * 18, atk: 3 + lv * 2, msg: `${n}（Lv.${lv}）があらわれた！`};
+}
+const heroAtk = () => { const lv = heroLevel(); return Math.round((12 + lv * 6 + Math.random() * 8) * (curCls() === 'warrior' ? 1.3 : 1)); };
+const fireDmg = () => 40 + heroLevel() * 10 + (curCls() === 'mage' ? 15 : 0);
+function fightSceneHTML(F){
+  const Q = rpgQ(), m = Q.mental, lv = heroLevel(), hp = Math.max(0, Math.round(F.hp / F.max * 100)), over = F.won || F.ran;
+  return `<div class="bt-sky"></div><div class="bt-floor"></div>
+    <div class="bt-mon${F.won ? ' dead' : ''}"><div class="bt-tag"><b>${esc(F.n)} Lv.${F.lv}</b><span class="hpb"><i style="width:${hp}%"></i></span><small>HP ${Math.max(0, F.hp)}</small></div>
+      <svg viewBox="-75 -100 150 108" aria-hidden="true"><g class="bt-body" transform="translate(0 0) scale(1.4)">${pxSprite(`<use href="#mon-${F.kind}" style="--mc:${F.col}"/>`)}</g></svg></div>
+    <div class="bt-hero"><svg viewBox="-55 -80 110 88" aria-hidden="true"><g class="bt-body" transform="scale(1.1)">${pxPerson(lv)}</g></svg>
+      <div class="bt-tag"><b>${esc(heroName() || 'あなた')} Lv.${lv}</b><span class="hpb mental${m <= 30 ? ' low' : ''}"><i style="width:${m}%"></i></span><small>メンタル ${m}</small></div></div>
+    <p class="bt-msg">${esc(F.msg)}</p>
+    <div class="bt-cmd${over ? ' one' : ''}">${over ? `<button type="button" data-fight="end">先へ進む →<small>${F.won ? 'ごほうびを受け取った' : 'うまく逃げた'}</small></button>`
+      : `<button type="button" data-fight="atk" ${F.busy ? 'disabled' : ''}>⚔️ こうげき<small>約${heroAtk()}ダメージ</small></button><button type="button" data-fight="fire" ${F.busy || !Q.magic ? 'disabled' : ''}>🔥 まほう<small>ファイア ×${Q.magic}</small></button><button type="button" data-fight="run" ${F.busy ? 'disabled' : ''}>🏃 にげる<small>6割で成功</small></button>`}</div>
+    <div class="bt-fx"></div>`;
+}
+function fightPanelHTML(){
+  const Q = rpgQ(), F = Q.fight, hp = Math.max(0, Math.round(F.hp / F.max * 100));
+  return `<div class="p-head"><p class="kicker">BATTLE</p><span class="p-count">${esc(F.n)} Lv.${F.lv}</span></div>
+    <div class="rpg mon"><span class="rpg-name">${esc(F.n)}</span><svg class="mon-pic" viewBox="-66 -88 132 96" aria-hidden="true"><g class="mon-bob">${pxSprite(`<use href="#mon-${F.kind}" style="--mc:${F.col}"/>`)}</g></svg><p>${esc(F.msg)}</p><div class="hpbar"><span>HP</span><span class="hpt"><i style="width:${hp}%"></i></span><b>${Math.max(0, F.hp)}/${F.max}</b></div></div>
+    ${statBarHTML()}${itemBarHTML('fight')}
+    <div class="bt-cmd panel${F.won || F.ran ? ' one' : ''}">${F.won || F.ran ? `<button type="button" data-fight="end">先へ進む →</button>`
+      : `<button type="button" data-fight="atk" ${F.busy ? 'disabled' : ''}>⚔️ こうげき</button><button type="button" data-fight="fire" ${F.busy || !Q.magic ? 'disabled' : ''}>🔥 まほう ×${Q.magic}</button><button type="button" data-fight="run" ${F.busy ? 'disabled' : ''}>🏃 にげる</button>`}</div>
+    <p class="hint">レベルが上がるほど、魔物も強くなります。メンタルが0になると人生リタイヤ。アイテムは「もちもの」から使えます。</p>`;
+}
+function fightAct(a){
+  const Q = rpgQ(), F = Q.fight; if (!F || Q.qs !== 'fight') return;
+  const el = () => $('#battle');
+  if (a === 'end'){ Q.foes[F.k] = F.won ? 1 : 2; Q.fight = null; Q.qs = 'roll'; sfx.next(); save(); refresh(); return; }
+  if (F.busy || F.won || F.ran) return;
+  let dmg = 0;
+  if (a === 'atk'){ dmg = heroAtk(); F.msg = `${heroName() || 'あなた'}のこうげき！ ${F.n}に${dmg}のダメージ`; }
+  else if (a === 'fire'){ if (!Q.magic) return; Q.magic--; dmg = fireDmg(); F.msg = `魔法ファイア！ ${F.n}に${dmg}の大ダメージ`; }
+  else if (a === 'run'){
+    if (Math.random() < .6){ F.ran = 1; F.msg = 'うまく逃げきった！'; qlog(`${F.n}から逃げた`); sfx.next(); save(); renderPanel(); return; }
+    F.msg = '逃げられなかった！';
+  }
+  if (dmg){ F.hp -= dmg; F.busy = 1; renderPanel(); const e = el(); if (e){ btAnim(e, '.bt-hero', 'atk', 450); if (a === 'fire') btAnim(e, '.bt-fx', 'fire', 700); setTimeout(() => { btAnim(e, '.bt-mon', 'hit', 500); btPop(e, '.bt-mon', '-' + dmg, a === 'fire' ? 'big' : ''); }, 180); } sfx.good(); }
+  else { F.busy = 1; renderPanel(); }
+  if (F.hp <= 0){
+    setTimeout(() => {
+      const g = gainGold(20 + F.lv * 10, ''), pts = 10 + F.lv * 5; Q.pts += pts; F.won = 1; F.busy = 0;
+      F.msg = `${F.n}をやっつけた！ ${g}Gと夢ポイント+${pts}を手に入れた`; qlog(`${F.n}（Lv.${F.lv}）をたおした +${g}G +${pts}pt`); sfx.clear(); save(); renderPanel();
+    }, 650);
+    return;
+  }
+  setTimeout(() => {
+    if (!Q.fight || Q.qs !== 'fight') return;
+    const d = Math.max(1, Math.round(F.atk * (.8 + Math.random() * .4))), e = el();
+    if (e){ btAnim(e, '.bt-mon', 'matk', 450); setTimeout(() => { btAnim(e, '.bt-hero', 'hit', 500); btPop(e, '.bt-hero', '-' + d, 'bad'); }, 220); }
+    F.busy = 0; F.msg = `${F.n}のこうげき！`;
+    if (!hurt(d, `${F.n}のこうげき！`, true)) renderPanel();
+  }, 900);
+}
+function syncBattle(){
+  const el = $('#battle'); if (!el) return;
+  if (S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'fight' && S.quest.fight){ const fresh = btLast.key !== S.quest.fight.k; el.hidden = false; el.innerHTML = fightSceneHTML(S.quest.fight); if (fresh){ btAnim(el, '.bt-mon', 'appear', 700); el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter'); } btLast = {key: S.quest.fight.k, n: 0, fire: 0}; return; }
+  const p = S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'answer' && stageView === 'board' ? current() : null, st = p && !p.fork ? S.stages[p.s] : null;
+  if (!st || !st.monster){ el.hidden = true; btLast = {key: null, n: 0, fire: 0}; return; }
+  const n = answersFor(S, p).length, hp = battleHP(p), fire = statOf(S, p.key).fire || 0, fresh = btLast.key !== p.key;
+  el.hidden = false; el.innerHTML = battleHTML(p, st, hp);
+  if (fresh){
+    btAnim(el, '.bt-mon', 'appear', 700); el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter');
+    const sx = statOf(S, p.key), key = p.key;
+    if (!sx.ambush && hp > 0){ sx.ambush = 1; /* the monster strikes first */
+      setTimeout(() => {
+        if (!S || S.quest.qs !== 'answer' || !current() || current().key !== key) return;
+        const e2 = $('#battle'); btAnim(e2, '.bt-mon', 'matk', 450);
+        setTimeout(() => { btAnim(e2, '.bt-hero', 'hit', 500); const d = (st.monster === 'boss' ? 10 : 6) + heroLevel() - 1; btPop(e2, '.bt-hero', '-' + d, 'bad'); if (!hurt(d, `${st.npc}の先制こうげき！`, true)) renderPanel(); }, 220);
+      }, 1100);
+    }
+  }
+  else if (fire > btLast.fire){ btAnim(el, '.bt-fx', 'fire', 700); btAnim(el, '.bt-mon', 'hit', 500); btPop(el, '.bt-mon', '-50', 'big'); if (hp <= 0){ sfx.clear(); } }
+  else if (n > btLast.n){
+    const dmg = Math.round(100 / Math.max(1, st.min)) * (n - btLast.n);
+    btAnim(el, '.bt-hero', 'atk', 450); setTimeout(() => { btAnim(el, '.bt-mon', 'hit', 500); btPop(el, '.bt-mon', '-' + dmg); sfx.good(); }, 180);
+    if (hp > 0){
+      const key = p.key;
+      setTimeout(() => {
+        if (!S || S.quest.qs !== 'answer' || !current() || current().key !== key) return;
+        const e2 = $('#battle'); btAnim(e2, '.bt-mon', 'matk', 450);
+        setTimeout(() => { btAnim(e2, '.bt-hero', 'hit', 500); const d = (st.monster === 'boss' ? 8 : 5) + heroLevel() - 1; btPop(e2, '.bt-hero', '-' + d, 'bad'); if (!hurt(d, `${st.npc}の反撃！`, true)) renderPanel(); }, 220);
+      }, 950);
+    } else setTimeout(() => sfx.clear(), 400);
+  }
+  btLast = {key: p.key, n, fire};
+}
+document.getElementById('stage').insertAdjacentHTML('beforeend', '<div class="battle" id="battle" hidden></div>');
+$('#battle').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.rpg){ rpgAct(b.dataset.rpg, b.dataset.v); return; }
+  if (b.dataset.fight){ fightAct(b.dataset.fight); return; }
+  if (b.dataset.bt === 'atk'){ setScreen && setScreen('panel'); const i = $('#ans') || panel.querySelector('input[data-field]:not([value])') || panel.querySelector('input[data-field]') || panel.querySelector('.choice'); if (i) i.focus(); toast('答えを書くと攻撃できます'); }
+  if (b.dataset.bt === 'item'){ const ib = panel.querySelector('.ibar'); if (ib){ ib.scrollIntoView({block: 'center', behavior: 'smooth'}); ib.classList.add('flash'); setTimeout(() => ib.classList.remove('flash'), 900); } else toast('もちものがありません。お店で買えます'); }
+});
 const PX_WALK = ['.leg-l,.arm-r{transform:rotate(-24deg)}.leg-r,.arm-l{transform:rotate(24deg)}.person{transform:translateY(-2.5px)}', '.leg-l,.arm-r{transform:rotate(24deg)}.leg-r,.arm-l{transform:rotate(-24deg)}'];
 const PX_RIDE = ['.hl.a{transform:rotate(-20deg)}.hl.b{transform:rotate(20deg)}', '.hl.a{transform:rotate(20deg)}.hl.b{transform:rotate(-20deg)}.wh{transform:rotate(45deg)}.jf{transform:scale(.86,1.2)}.veh-sail,.veh-junk,.veh-ferry,.veh-cart,.veh-hover,.veh-aircar,.veh-board,.veh-pod{transform:translateY(-2.5px)}'];
 function heroFrames(){
@@ -3063,6 +3228,12 @@ const SPRITES = `<svg id="sprites" width="0" height="0" style="position:absolute
   <g id="pm-princess"><ellipse cx="0" cy="0" rx="10" ry="3" fill="#000" opacity=".15"/><g transform="matrix(.9 0 0 .62 0 0)"><path d="M-11 0 Q-9 -14 -5 -22 H5 Q9 -14 11 0 Z" fill="#FF8CC6"/><path d="M-11 0 Q0 -4 11 0" stroke="#fff" stroke-width="1.6" fill="none"/><rect x="-5.5" y="-30" width="11" height="10" rx="4" fill="#FF8CC6"/><path d="M-3 -26 Q0 -23 3 -26" stroke="#fff" stroke-width="1.2" fill="none"/></g><g transform="matrix(1.5 0 0 1.5 0 26.5)"><circle cx="0" cy="-36" r="7" fill="#F6C9A8"/><path d="M-7.5 -36 Q-9 -24 -5 -20 L-4 -34 Z M7.5 -36 Q9 -24 5 -20 L4 -34 Z" fill="#FFD27A"/><path d="M-7.5 -37 Q-7 -44.5 0 -44.5 Q7 -44.5 7.5 -37 Q3 -41 0 -41 Q-3 -41 -7.5 -37Z" fill="#FFD27A"/><path d="M-5 -43 L-5 -49 L-2.5 -46 L0 -50.5 L2.5 -46 L5 -49 L5 -43 Z" fill="#FFB547" stroke="#D98A0B" stroke-width=".7"/><circle cx="2.6" cy="-36" r="1.1" fill="#1B2140"/><circle cx="-2.2" cy="-36" r="1.1" fill="#1B2140"/><circle cx="4.5" cy="-33.5" r="1.3" fill="#FF8CC6" opacity=".6"/></g></g>
   <g id="pm-tool"><ellipse cx="0" cy="0" rx="8" ry="2.4" fill="#000" opacity=".15"/><rect x="-9" y="-14" width="18" height="10" rx="2" fill="#C89B6D" stroke="#7A5236" stroke-width="1.2"/><rect x="-5" y="-17" width="10" height="3" rx="1" fill="#9AA4B8" stroke="#5B6378" stroke-width=".8"/><circle cx="-3" cy="-9" r="1.3" fill="#1B2140"/><circle cx="3" cy="-9" r="1.3" fill="#1B2140"/><path d="M-2 -6.5 Q0 -5 2 -6.5" stroke="#1B2140" stroke-width=".9" fill="none"/><rect x="-7" y="-4" width="2.5" height="4" fill="#7A5236"/><rect x="4.5" y="-4" width="2.5" height="4" fill="#7A5236"/></g>
   <g id="pm-kodama"><g class="flit"><ellipse cx="0" cy="-8" rx="6" ry="8" fill="#F4F7EE" stroke="#B9C7A8" stroke-width=".8"/><circle cx="-2" cy="-10" r="1.2" fill="#3A4A30"/><circle cx="2" cy="-10" r="1.2" fill="#3A4A30"/><ellipse cx="0" cy="-6" rx="1" ry="1.4" fill="#3A4A30"/><path d="M-1 -16 Q0 -20 2 -18" stroke="#3FA564" stroke-width="1.4" fill="none"/></g></g>
+  <g id="mon-robot"><ellipse cx="0" cy="2" rx="16" ry="4" fill="#000" opacity=".3"/><rect x="-11" y="-12" width="6" height="12" rx="2" fill="#5B6378"/><rect x="5" y="-12" width="6" height="12" rx="2" fill="#5B6378"/><rect x="-20" y="-30" width="5" height="14" rx="2" fill="#5B6378"/><rect x="15" y="-30" width="5" height="14" rx="2" fill="#5B6378"/><rect x="-15" y="-34" width="30" height="24" rx="5" fill="var(--mc,#8FA3D8)" stroke="#3C4674" stroke-width="1.5"/><rect x="-9" y="-29" width="18" height="10" rx="2" fill="#1B2140"/><circle cx="-4" cy="-24" r="2.2" fill="#FF4D4D"/><circle cx="4" cy="-24" r="2.2" fill="#FF4D4D"/><rect x="-10" y="-46" width="20" height="12" rx="3" fill="var(--mc,#8FA3D8)" stroke="#3C4674" stroke-width="1.5"/><rect x="-6" y="-42" width="12" height="4" rx="1" fill="#39E1F0"/><path d="M0 -46 V-54" stroke="#3C4674" stroke-width="2"/><circle cx="0" cy="-55" r="2.4" fill="#FF5FD2"/></g>
+  <g id="mon-mecha"><ellipse cx="0" cy="3" rx="32" ry="6" fill="#000" opacity=".35"/><rect x="-22" y="-26" width="14" height="26" rx="3" fill="#4A5068"/><rect x="8" y="-26" width="14" height="26" rx="3" fill="#4A5068"/><rect x="-46" y="-62" width="14" height="34" rx="5" fill="#4A5068"/><rect x="32" y="-62" width="14" height="34" rx="5" fill="#4A5068"/><path d="M-46 -30 h14 v8 h-14z M32 -30 h14 v8 h-14z" fill="#FFB547"/><rect x="-30" y="-66" width="60" height="42" rx="8" fill="#6F7DB8" stroke="#2E3A66" stroke-width="2"/><circle cx="0" cy="-45" r="9" fill="#39E1F0" stroke="#fff" stroke-width="2"/><rect x="-18" y="-88" width="36" height="22" rx="5" fill="#6F7DB8" stroke="#2E3A66" stroke-width="2"/><rect x="-13" y="-82" width="26" height="8" rx="2" fill="#1B2140"/><rect x="-10" y="-80" width="8" height="4" fill="#FF4D4D"/><rect x="2" y="-80" width="8" height="4" fill="#FF4D4D"/><path d="M-14 -88 L-20 -98 M14 -88 L20 -98" stroke="#2E3A66" stroke-width="3"/></g>
+  <g id="mon-orochi"><ellipse cx="0" cy="3" rx="38" ry="6" fill="#000" opacity=".35"/><g fill="none" stroke="#3F7A4A" stroke-width="9" stroke-linecap="round"><path d="M-26 -16 Q-48 -38 -42 -62"/><path d="M-14 -22 Q-28 -54 -20 -78"/><path d="M0 -24 Q0 -58 2 -86"/><path d="M14 -22 Q28 -54 22 -78"/><path d="M26 -16 Q48 -38 44 -62"/></g><ellipse cx="0" cy="-14" rx="36" ry="16" fill="#3F7A4A"/><ellipse cx="0" cy="-9" rx="25" ry="8" fill="#C9D98A"/><g fill="#3F7A4A"><ellipse cx="-42" cy="-64" rx="9" ry="6"/><ellipse cx="-20" cy="-80" rx="9" ry="6"/><ellipse cx="2" cy="-88" rx="9" ry="6"/><ellipse cx="22" cy="-80" rx="9" ry="6"/><ellipse cx="44" cy="-64" rx="9" ry="6"/></g><g fill="#FF3030"><circle cx="-39" cy="-66" r="1.8"/><circle cx="-17" cy="-82" r="1.8"/><circle cx="5" cy="-90" r="1.8"/><circle cx="25" cy="-82" r="1.8"/><circle cx="47" cy="-66" r="1.8"/></g><path d="M-49 -62 l-5 2 M-27 -78 l-5 2 M-5 -86 l-5 2 M15 -78 l-5 2 M37 -62 l-5 2" stroke="#E0413A" stroke-width="1.6"/></g>
+  <g id="mon-shenlong"><ellipse cx="0" cy="3" rx="34" ry="5" fill="#000" opacity=".3"/><path d="M-42 -6 Q-20 -32 0 -10 Q20 10 34 -20 Q46 -48 20 -60 Q2 -68 -6 -84" fill="none" stroke="#2F9E6A" stroke-width="15" stroke-linecap="round"/><path d="M-42 -6 Q-20 -32 0 -10 Q20 10 34 -20 Q46 -48 20 -60 Q2 -68 -6 -84" fill="none" stroke="#FFD27A" stroke-width="4" stroke-dasharray="3 6"/><path d="M-30 -14 l-6 8 M8 -2 l4 9 M38 -30 l9 2" stroke="#2F9E6A" stroke-width="4" stroke-linecap="round"/><ellipse cx="-8" cy="-90" rx="15" ry="10" fill="#2F9E6A"/><path d="M-12 -98 L-20 -112 M-3 -99 L3 -112" stroke="#FFD27A" stroke-width="3" stroke-linecap="round"/><circle cx="-2" cy="-92" r="2.2" fill="#FF3030"/><path d="M-21 -86 Q-36 -84 -44 -94 M-20 -84 Q-32 -76 -42 -78" stroke="#FFD27A" stroke-width="1.6" fill="none"/><path d="M-22 -90 h8" stroke="#1B2140" stroke-width="1.6"/></g>
+  <g id="mon-naga"><ellipse cx="0" cy="3" rx="30" ry="5" fill="#000" opacity=".3"/><path d="M-30 -2 Q-10 -14 6 -4 Q22 6 28 -10" fill="none" stroke="#2E8F7A" stroke-width="12" stroke-linecap="round"/><path d="M0 -8 Q-6 -40 0 -58" fill="none" stroke="#2E8F7A" stroke-width="12" stroke-linecap="round"/><path d="M-22 -60 Q-24 -88 0 -92 Q24 -88 22 -60 Q12 -50 0 -54 Q-12 -50 -22 -60Z" fill="#2E8F7A"/><path d="M-12 -64 Q0 -80 12 -64 Q0 -58 -12 -64Z" fill="#FFD27A"/><circle cx="-5" cy="-76" r="2" fill="#FF3030"/><circle cx="5" cy="-76" r="2" fill="#FF3030"/><path d="M0 -68 v6 l-2 3 M0 -62 l2 3" stroke="#E0413A" stroke-width="1.4" fill="none"/><circle cx="0" cy="-96" r="4" fill="#FFD27A"/></g>
+  <g id="mon-scorpion"><ellipse cx="0" cy="3" rx="34" ry="5" fill="#000" opacity=".3"/><path d="M-30 -6 l-10 8 M-22 -4 l-6 10 M22 -4 l6 10 M30 -6 l10 8" stroke="#6B3A1E" stroke-width="3" stroke-linecap="round"/><ellipse cx="0" cy="-12" rx="30" ry="12" fill="#B8642E"/><path d="M-10 -14 h20 M-14 -9 h28" stroke="#6B3A1E" stroke-width="1.4"/><path d="M22 -16 Q46 -30 40 -58 Q36 -72 22 -66" fill="none" stroke="#B8642E" stroke-width="9" stroke-linecap="round"/><path d="M22 -66 l-8 -4 l4 8z" fill="#1B2140"/><path d="M-26 -16 Q-44 -22 -48 -34 M-48 -34 l-8 -6 M-48 -34 l-2 -9" stroke="#B8642E" stroke-width="6" stroke-linecap="round" fill="none"/><circle cx="-6" cy="-18" r="2" fill="#FF3030"/><circle cx="4" cy="-18" r="2" fill="#FF3030"/></g>
   <g id="cage"><rect x="-17" y="-52" width="34" height="54" rx="3" fill="none" stroke="#3A3350" stroke-width="2.6"/><path d="M-17 -52 Q0 -66 17 -52" fill="none" stroke="#3A3350" stroke-width="2.6"/><path d="M-9 -58 V2 M0 -60 V2 M9 -58 V2" stroke="#3A3350" stroke-width="2"/><rect x="-19" y="0" width="38" height="4" rx="2" fill="#3A3350"/></g>
 </defs></svg>`;
 document.body.insertAdjacentHTML('beforeend', SPRITES);
@@ -3116,7 +3287,16 @@ function titleSVG(){
 </svg>`;
 }
 
-const monKind = st => st.mk || (st.monster === 'boss' ? 'dragon' : hash(st.l || '') % 2 ? 'imp' : 'ghost');
+const WMON = {
+  euro: {boss: 'dragon', bossN: 'ドラゴン', foes: [['ghost', 'さまよう影'], ['imp', 'いたずら小鬼'], ['flame', '火の玉']]},
+  wa: {boss: 'orochi', bossN: 'ヤマタノオロチ', foes: [['flame', '鬼火'], ['imp', '小鬼'], ['ghost', 'ゆうれい']]},
+  china: {boss: 'shenlong', bossN: '神龍', foes: [['imp', '妖怪'], ['flame', '火の精'], ['ghost', '幽霊']]},
+  india: {boss: 'naga', bossN: 'ナーガ', foes: [['imp', 'ラークシャサ'], ['flame', '炎の精'], ['naga', '小さなナーガ']]},
+  usa: {boss: 'scorpion', bossN: '巨大サソリ', foes: [['scorpion', '荒野のサソリ'], ['imp', '荒野の小鬼'], ['ghost', '砂のおばけ']]},
+  future: {boss: 'mecha', bossN: '巨大ロボ', foes: [['robot', '警備ロボ'], ['robot', 'バグったお掃除ロボ'], ['ghost', 'コンピューターウイルス']]}
+};
+const bossKind = () => (WMON[curWorld()] || WMON.euro).boss;
+const monKind = st => { const k = st.mk || (st.monster === 'boss' ? 'dragon' : hash(st.l || '') % 2 ? 'imp' : 'ghost'); if (k === 'dragon') return bossKind(); return curWorld() === 'future' && (k === 'imp' || k === 'ghost') ? 'robot' : k; };
 const roadD = pts => 'M' + pts.filter((_, i) => i % 2 === 0 || i === pts.length - 1).map(q => `${q[0].toFixed(0)} ${q[1].toFixed(0)}`).join(' L');
 const OVER_SEGS = ['town', 'A1', 'B1', 'river', 'post', 'A2', 'B2', 'castle'];
 function rng(seed){ return () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -3743,6 +3923,7 @@ function padSVG(q){
   if (q.type === 'goal') return `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-30" y="-17" width="60" height="34" fill="#F2554E" stroke="#FFD84D" stroke-width="4"/><text y="7" text-anchor="middle" fill="#FFFFFF" font-size="17" ${F}>GOAL</text></g>`;
   if (q.type === 'fork') return `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-22" y="-22" width="44" height="44" fill="#FFF3C4" stroke="#D98A0B" stroke-width="4"/><path d="M-2 -2 H2 V14 H-2Z M-13 -13 H-1 V-6 H-13Z M1 -9 H13 V-2 H1Z" fill="#8A5A0B"/></g>`;
   if (q.type === 'plain'){ const pc = caveCol().plain, cave = q.part === 2; return `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-8" y="-8" width="16" height="16" fill="${cave ? pc[0] : '#FFFFFF'}" stroke="${cave ? pc[1] : '#9C7A48'}" stroke-width="4"/></g>`; }
+  if (q.type === 'foe'){ const gone = S.quest && (S.quest.foes || {})[q.k]; return gone ? `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-8" y="-8" width="16" height="16" fill="#FFFFFF" stroke="#9C7A48" stroke-width="4"/></g>` : `<g transform="translate(${X} ${Y})"><g shape-rendering="crispEdges"><rect x="-17" y="-17" width="34" height="34" fill="#FFE5E2" stroke="#D93A3F" stroke-width="4"/></g><text y="8" text-anchor="middle" font-size="20" fill="#D93A3F" ${F}>魔</text></g>`; }
   if (SPOT_N[q.type]){ const D = {shop: ['店', '#D98A0B', '#FFF3C4'], fate: ['運', '#8C6CF2', '#F1ECFF'], job: ['転', '#15A37C', '#E9F7EF']}[q.type], seen = S.quest && (S.quest.vis || {})[q.k];
     return `<g transform="translate(${X} ${Y})" opacity="${seen ? .55 : 1}"><g shape-rendering="crispEdges"><rect x="-24" y="-24" width="48" height="48" fill="${D[2]}" stroke="${D[1]}" stroke-width="5"/></g><text y="10" text-anchor="middle" font-size="28" fill="${D[1]}" ${F}>${D[0]}</text><text y="46" text-anchor="middle" font-size="15" fill="#1B2140" stroke="#FFFFFF" stroke-width="4" paint-order="stroke" ${F}>${SPOT_N[q.type]}</text></g>`; }
   if (q.type === 'ev') return `<g transform="translate(${X} ${Y})"><rect x="-17" y="-17" width="34" height="34" fill="#FFFFFF" stroke="${q.ev.tone === 'good' ? '#15A37C' : q.ev.tone === 'bad' ? '#D93A3F' : '#2E8FE0'}" stroke-width="4" shape-rendering="crispEdges"/><use href="#ic-${q.ev.ic}"/></g>`;
@@ -4124,6 +4305,7 @@ function land(T, i, trigger){
     if (!S.goal) S.goal = goalOf(S).k;
     Q.beats = [{k: 'ending'}]; Q.ending = 1; Q.qs = 'story'; save(); refresh(); return;
   }
+  if (s.type === 'foe' && trigger && !(rpgQ().foes = rpgQ().foes || {})[s.k]){ S.quest.fight = foeOf(s.k); S.quest.qs = 'fight'; qlog(S.quest.fight.msg); sfx.bad(); refresh(); return; }
   if (SPOT_N[s.type] && !(rpgQ().vis[s.k])){ S.quest.spot = s.k; S.quest.qs = s.type; sfx.next(); refresh(); return; }
   if (s.type === 'fork' && !(S.routes || {})[s.fork]){ S.cur = s.k; S.quest.qs = 'fork'; sfx.next(); refresh(); return; }
   if (s.type === 'q' && !qDone(s.p.key)){
@@ -4131,7 +4313,6 @@ function land(T, i, trigger){
     const fresh = !S.stat[s.p.key], st = statOf(S, s.p.key), stg = S.stages[s.p.s];
     if (fresh && S.quest.timeMod){ st.left = Math.max(15, st.left + S.quest.timeMod); S.quest.timeMod = 0; }
     qlog(stg.monster ? `${stg.npc}があらわれた！` : `${stg.npc || '旅人'}に出会った`);
-    if (fresh && stg.monster && hurt(stg.monster === 'boss' ? 20 : 10, `${stg.npc}のこうげき！`, true)) return;
     const rv = duelRival(s);
     if (rv){ S.quest.duel = {rv: rv.id, stage: 'pick'}; S.quest.qs = 'duel'; S.quest.duelN = clearedN(S); qlog(`関所の前で${rvInfo(rv.id).n}とばったり！ 勝負だ`); sfx.good(); refresh(); return; }
     stg.monster ? sfx.bad() : sfx.next(); lastTick = performance.now(); refresh(); return;
@@ -4199,7 +4380,7 @@ function storyHTML(){
     sub = `${g.d} 旅で集めた運命の力：${tagLine(S)}。職業：${CLASSES[curCls()].n}。`;
   } else if (b.k === 'intro'){
     title = 'ものがたりのはじまり';
-    pic = `<svg class="story-pic" viewBox="-110 -96 220 104" aria-hidden="true"><g transform="translate(-44 0) scale(1.3)">${pxSprite('<use href="#pm-princess"/><use href="#cage"/>')}</g><g transform="translate(46 2) scale(1.05)">${pxSprite(`<use href="#mon-dragon" style="--mc:#C8362F"/>`)}</g></svg>`;
+    pic = `<svg class="story-pic" viewBox="-110 -96 220 104" aria-hidden="true"><g transform="translate(-44 0) scale(1.3)">${pxSprite('<use href="#pm-princess"/><use href="#cage"/>')}</g><g transform="translate(46 2) scale(1.05)">${pxSprite(`<use href="#mon-${bossKind()}" style="--mc:#C8362F"/>`)}</g></svg>`;
     text = `${W().names.castle}のお姫さまが、${boss}にさらわれてしまった！`;
     sub = `${heroName() ? `勇者${heroName()}よ、` : ''}関所で問いに答えて力をつけ、${W().names.cave}の奥にいる${boss}をたおして姫を助け出そう。答えるたびにレベルが上がり、${gearList().map(g => g[0].replace(/「.*」/, '')).slice(0, 3).join('・')}…と装備がそろって「${lvName(5)}」になれる。道中では家来も増えるぞ。ライバルも城をめざしている…関所でライバルと出くわしたら、ミニゲームで勝負だ！`;
   } else if (b.k === 'lv'){
@@ -4212,7 +4393,7 @@ function storyHTML(){
     pic = memberPic(b.m); text = M.meet; sub = `家来の力：${M.d}`;
   } else if (b.k === 'finish'){
     tag = 'FINISH'; title = `${b.l || '必殺技'}「${b.move}」！`;
-    pic = `<svg class="story-pic" viewBox="-130 -110 260 118" aria-hidden="true"><g transform="translate(-60 0) scale(1.35)">${pxPerson(heroLevel())}</g><path d="M-44 -96 Q20 -92 34 -16" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".95"/><path d="M-44 -96 Q20 -92 34 -16" fill="none" stroke="#FFD84D" stroke-width="3" stroke-linecap="round"/><g transform="translate(62 2) scale(1.05) rotate(8)">${pxSprite(`<use href="#mon-dragon" style="--mc:#C8362F"/>`)}</g><g transform="translate(24 -48)"><path d="M0 -26 L7 -10 L24 -17 L13 -3 L28 7 L9 8 L12 25 L0 12 L-12 25 L-9 8 L-28 7 L-13 -3 L-24 -17 L-7 -10 Z" fill="#FFD84D" stroke="#FF7E4D" stroke-width="3" stroke-linejoin="round"/></g></svg>`;
+    pic = `<svg class="story-pic" viewBox="-130 -110 260 118" aria-hidden="true"><g transform="translate(-60 0) scale(1.35)">${pxPerson(heroLevel())}</g><path d="M-44 -96 Q20 -92 34 -16" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".95"/><path d="M-44 -96 Q20 -92 34 -16" fill="none" stroke="#FFD84D" stroke-width="3" stroke-linecap="round"/><g transform="translate(62 2) scale(1.05) rotate(8)">${pxSprite(`<use href="#mon-${bossKind()}" style="--mc:#C8362F"/>`)}</g><g transform="translate(24 -48)"><path d="M0 -26 L7 -10 L24 -17 L13 -3 L28 7 L9 8 L12 25 L0 12 L-12 25 L-9 8 L-28 7 L-13 -3 L-24 -17 L-7 -10 Z" fill="#FFD84D" stroke="#FF7E4D" stroke-width="3" stroke-linejoin="round"/></g></svg>`;
     text = (b.sub ? `${b.sub}──この${b.l || '必殺技'}で、${boss}をたおした！` : `${boss}をたおした！`) + (b.ch === 2 ? ' うばわれた「夢のかけら」を取り返した！' : b.ch === 3 ? ' 世界に夢の光がもどった！' : '');
     sub = b.ch === 3 ? '「最後の一手」と「かなった しるし」がそろった。あとは現実で、この究極奥義を放つだけだ。' : b.ch === 2 ? '行動・ペース・数字の目標。レベルアップした奥義は、必殺技よりもっと遠くまで届く。' : '何を・どのペースで・いつから。3つがそろった計画は、夢をかなえる本当の必殺技になる。';
   } else if (b.k === 'chapter'){
@@ -4220,7 +4401,7 @@ function storyHTML(){
     tag = `CHAPTER ${b.ch}`; title = C.n;
     const R = rng(b.ch * 7), bg = snow ? Array.from({length: 22}, () => `<circle cx="${(-108 + R() * 216).toFixed(0)}" cy="${(-98 + R() * 100).toFixed(0)}" r="${(1.2 + R() * 2).toFixed(1)}" fill="#fff" opacity=".9"/>`).join('')
       : `<circle cx="-86" cy="-78" r="13" fill="#FFF3C4"/>${Array.from({length: 18}, () => `<circle cx="${(-108 + R() * 216).toFixed(0)}" cy="${(-98 + R() * 60).toFixed(0)}" r="${(.6 + R() * 1.2).toFixed(1)}" fill="#FFF6D8"/>`).join('')}`;
-    pic = `<svg class="story-pic" viewBox="-110 -100 220 108" aria-hidden="true">${bg}<g transform="translate(-58 0) scale(1.25)">${pxPerson(heroLevel())}</g><g transform="translate(40 2) scale(1.05)">${pxSprite(`<use href="#mon-dragon" style="--mc:${b.ch === 3 ? '#6B2FA0' : '#2E6FD8'}"/>`)}</g><g transform="translate(92 -70)"><path d="M0 -12 L7 0 L0 12 L-7 0Z" fill="${b.ch === 3 ? '#FFD84D' : '#7FE7F2'}" stroke="#fff" stroke-width="1.5"/></g></svg>`;
+    pic = `<svg class="story-pic" viewBox="-110 -100 220 108" aria-hidden="true">${bg}<g transform="translate(-58 0) scale(1.25)">${pxPerson(heroLevel())}</g><g transform="translate(40 2) scale(1.05)">${pxSprite(`<use href="#mon-${bossKind()}" style="--mc:${b.ch === 3 ? '#6B2FA0' : '#2E6FD8'}"/>`)}</g><g transform="translate(92 -70)"><path d="M0 -12 L7 0 L0 12 L-7 0Z" fill="${b.ch === 3 ? '#FFD84D' : '#7FE7F2'}" stroke="#fff" stroke-width="1.5"/></g></svg>`;
     text = C.story.replace('{t}', S.theme);
     sub = `${B ? `舞台は「${B.n}」。${W().names.town}から${W().names.river}をこえ、${W().names.cave}へ──道のかたちも変わったぞ。` : ''}${heroName() ? `勇者${heroName()}よ、` : ''}前の章の答えをもとに、もっと深い問いが待っている。答えはマインドマップに書き足され、どんどん広がっていくぞ。`;
   } else if (b.k === 'princess'){
@@ -4252,7 +4433,8 @@ async function clearGate(){
   saveFields();
   const p = current(), st = S.stages[p.s], n = answersFor(S, p).length, bonus = answerPower(p);
   const garo = st.monster && hasMember('beast') ? 10 : 0, spec = n >= st.min ? specN(p) * 3 : 0;
-  const pts = (n >= st.min ? 10 + Math.min(3, n - st.min) * 5 + (st.monster === 'boss' ? 20 : st.monster ? 5 : 0) : n ? 5 : 0) + garo + spec;
+  const won = !!st.monster && battleHP(p) <= 0, met = n >= st.min || won;
+  const pts = (met ? 10 + Math.min(3, n - st.min) * 5 + (st.monster === 'boss' ? 20 : st.monster ? 5 : 0) : n ? 5 : 0) + garo + spec;
   S.coach = null;
   const lv0 = heroLevel();
   const Qr = rpgQ(), fire = Qr.fx.fire === p.key, extra = (fire ? pts : 0) + (curCls() === 'craft' ? 5 : 0);
@@ -4262,7 +4444,7 @@ async function clearGate(){
   if (curCls() === 'healer') heal(5, 'いやしの力');
   if (fire) qlog('魔法ファイアの力で、ごほうびが2倍！');
   qlog((st.monster ? `${st.npc}をたおした！ +${pts}pt${garo ? '（ガロの力 +10）' : ''}` : `関所「${st.l}」を通過 +${pts}pt`) + (spec ? `（具体的な答え +${spec}）` : ''));
-  if (n < st.min) toast('条件に届かないまま進みました'); else { sfx.clear(); if (st.monster) toast(`${st.npc}をたおした！`); }
+  if (!met) toast('条件に届かないまま進みました'); else { sfx.clear(); if (st.monster) toast(`${st.npc}をたおした！`); }
   const i = $('#ans'); if (i) i.value = '';
   const Q = S.quest, beats = [], lv1 = heroLevel();
   Q.party = Q.party || [];
@@ -4519,7 +4701,7 @@ function renderPanel(){
   if (duelStop){ duelStop(); duelStop = null; }
   const keep = $('#ans') ? $('#ans').value : '';
   const qs = S && S.mode === 'quest' ? S.quest.qs : '';
-  panel.dataset.st = !S ? 'ready' : building ? 'build' : S.phase === 'done' ? 'done' : ['fork', 'event', 'story', 'duel', 'shop', 'fate', 'job'].includes(qs) ? (SPOT_N[qs] ? 'fork' : qs) : qs && qs !== 'answer' ? 'roll' : 'play';
+  panel.dataset.st = !S ? 'ready' : building ? 'build' : S.phase === 'done' ? 'done' : ['fork', 'event', 'story', 'duel', 'shop', 'fate', 'job', 'fight'].includes(qs) ? (SPOT_N[qs] || qs === 'fight' ? 'fork' : qs) : qs && qs !== 'answer' ? 'roll' : 'play';
   if (!S){ panel.innerHTML = `<p class="kicker">READY</p><h2 class="question">テーマを決めると、ここに問いが表示されます。</h2><div class="p-foot"><button class="btn primary" type="button" data-act="menu">ホームへ</button></div>`; syncScreen(); return; }
   if (building) panel.innerHTML = `<p class="kicker">MIND MAP</p><div class="rpg"><span class="rpg-name">王さま</span><p>よくぞたどり着いた！ そなたの旅の答えから、マインドマップを組み立てておるぞ…</p></div><p class="hint">枝が1本ずつ伸びていきます。</p>`;
   else if (S.phase === 'done') panel.innerHTML = doneHTML();
@@ -4528,8 +4710,10 @@ function renderPanel(){
   else if (S.mode === 'quest' && S.quest.qs === 'duel' && S.quest.duel) panel.innerHTML = duelHTML();
   else if (S.mode === 'quest' && S.quest.qs === 'story') panel.innerHTML = storyHTML();
   else if (S.mode === 'quest' && SPOT_N[S.quest.qs]) panel.innerHTML = spotHTML();
+  else if (S.mode === 'quest' && S.quest.qs === 'fight' && S.quest.fight) panel.innerHTML = fightPanelHTML();
   else if (S.mode === 'quest' && S.quest.qs !== 'answer') panel.innerHTML = rollHTML();
   else panel.innerHTML = playHTML();
+  syncBattle();
   const inp = $('#ans');
   if (inp){ inp.value = keep; if (S.level !== 'beginner' && matchMedia('(pointer:fine)').matches) inp.focus({preventScroll: true}); }
   const pf = [...panel.querySelectorAll('input[data-field]')];
@@ -4616,7 +4800,7 @@ function playHTML(){
   }).join('');
   const chain = par ? chainOf(S, par.id).map(a => `<span class="crumb" style="--c:${colorOf(S, a.s)}"><em>${CIRC[a.s] || ''}</em>${esc(labelOf(a))}</span>`).join('<span class="sep">›</span>') : '';
   const qText = fillQ(S, st, par, p);
-  const hp = st.monster ? Math.max(0, Math.round(100 - list.length / Math.max(1, st.min) * 100)) : null;
+  const hp = st.monster ? battleHP(p) : null;
   const sub = plan ? `「${flds.map(f => f[2]).join('」「')}」を決めよう。` : '';
   const qBlock = quest
     ? `<div class="rpg${st.monster ? ' mon' : ''}" style="--c:${col}"><span class="rpg-name">${esc(st.npc || '旅人')}</span>${st.monster ? `<svg class="mon-pic${st.monster === 'boss' ? ' boss' : ''}" viewBox="-66 -88 132 96" aria-hidden="true"><g class="mon-bob">${pxSprite(`<use href="#mon-${monKind(st)}" style="--mc:${st.mcol || '#7C4DDB'}"/>`)}</g>${p.s === bossStage(S) && !hasMember('princess') ? '<g transform="translate(-52 4) scale(.8)">' + pxSprite('<use href="#pm-princess"/><use href="#cage"/>') + '</g>' : ''}</svg>` : ''}<p>${qText}</p>${sub ? `<p class="rpg-sub">${sub}</p>` : ''}${hp != null ? `<div class="hpbar"><span>HP</span><span class="hpt"><i style="width:${hp}%"></i></span><b>${hp ? hp + '/100' : 'たおした！'}</b></div>` : ''}</div>`
@@ -4714,6 +4898,7 @@ function aheadHTML(sq, i){
     else if (t.type === 'q' && !qDone(t.p.key)){ cls = 'gate'; lbl = S.stages[t.p.s].monster ? 'バトル' : '関所'; }
     else if (t.type === 'fork' && !(S.routes || {})[t.fork]){ cls = 'gate'; lbl = '分かれ道'; }
     else if (t.type === 'goal'){ cls = 'goal'; lbl = 'ゴール'; }
+    else if (t.type === 'foe' && !(rpgQ().foes || {})[t.k]){ cls = 'bad'; lbl = 'まもの'; }
     else if (SPOT_N[t.type] && !rpgQ().vis[t.k]){ cls = 'gate'; lbl = {shop: 'お店', fate: '運命', job: '転職'}[t.type]; }
     else if (t.type === 'ev'){ cls = t.ev.tone; lbl = t.ev.s || t.ev.t; }
     h += `<li class="${cls}"><b>${k}</b><span>${esc(lbl)}</span></li>`;
@@ -5875,6 +6060,7 @@ panel.addEventListener('click', e => {
   if (b.dataset.route){ chooseRoute(b.dataset.fork, b.dataset.route); return; }
   if (b.dataset.duel){ duelPick(b.dataset.duel); return; }
   if (b.dataset.rpg){ rpgAct(b.dataset.rpg, b.dataset.v); return; }
+  if (b.dataset.fight){ fightAct(b.dataset.fight); return; }
   if (b.dataset.act) onAct(b.dataset.act);
 });
 $('#resultSheet').addEventListener('click', e => { const t = e.target.closest('button[data-rtab]'); if (t){ resultTab = t.dataset.rtab; $('#resultSheet').dataset.rtab = resultTab; $('#resultSheet').querySelectorAll('button[data-rtab]').forEach(x => x.setAttribute('aria-selected', String(x === t))); $('#ovResult').scrollTop = 0; } });
@@ -6102,7 +6288,7 @@ function renderVs(){
 }
 $('#cpuCtl').addEventListener('click', e => { const b = e.target.closest('[data-cpu]'); if (b){ homeCpu = +b.dataset.cpu; renderVs(); } });
 $('#chkOnline').addEventListener('change', () => { renderVs(); if ($('#chkOnline').checked){ const c = $('#raceCode'); if (!c.value) c.focus(); } });
-function renderQuestIcon(){ const el = $('#questIcon'); if (el) el.innerHTML = `<ellipse cx="0" cy="4" rx="58" ry="6" fill="#000" opacity=".06"/><g transform="translate(-24 4) scale(1.15)">${pxPerson(5, homeWorld, homeAvatar)}</g><g transform="translate(34 4) scale(.62)">${pxSprite(`<use href="#mon-dragon" style="--mc:#C8362F"/>`)}</g><path d="M-6 -60 Q18 -58 22 -26" fill="none" stroke="#FFD84D" stroke-width="4" stroke-linecap="round"/>`; }
+function renderQuestIcon(){ const el = $('#questIcon'); if (el) el.innerHTML = `<ellipse cx="0" cy="4" rx="58" ry="6" fill="#000" opacity=".06"/><g transform="translate(-24 4) scale(1.15)">${pxPerson(5, homeWorld, homeAvatar)}</g><g transform="translate(34 4) scale(.62)">${pxSprite(`<use href="#mon-${bossKind()}" style="--mc:#C8362F"/>`)}</g><path d="M-6 -60 Q18 -58 22 -26" fill="none" stroke="#FFD84D" stroke-width="4" stroke-linecap="round"/>`; }
 function renderRadios(){
   renderVs(); renderQuestIcon();
   $('#btnBegin').textContent = homeMode === 'quest' ? '冒険に出る →' : 'スタート →';
