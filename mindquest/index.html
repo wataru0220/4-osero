@@ -429,6 +429,32 @@ kbd{font-family:var(--en);font-size:10.5px;border:1px solid var(--line2);border-
 .pick-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;font-weight:700}
 .pick-head span{color:var(--muted);font-weight:500;font-size:12px}
 .choices{display:flex;flex-wrap:wrap;gap:8px}
+.qsbox{display:flex;flex-direction:column;gap:8px}
+.qsty{display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-radius:12px;background:#FFF7E0;border:1.5px dashed #E8B84A;color:#6B4A0A}
+.qsty b{font-size:14px}.qsty span{font-size:12px;line-height:1.5}
+.qcards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.qcard{min-height:92px;border-radius:12px;border:2px solid var(--c);background:repeating-linear-gradient(45deg,var(--c) 0 6px,#fff0 6px 12px),#fff;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px;transition:transform .25s}
+.qcard span{font-size:30px;font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.25)}.qcard em{font-size:11px;font-style:normal;background:rgba(0,0,0,.35);border-radius:6px;padding:1px 6px}
+.qcard:hover{transform:translateY(-3px) rotate(-2deg)}
+.qcard.on{background:#fff;color:var(--ink);animation:qflip .35s}.qcard.on small{font-size:10px;color:var(--c);font-weight:800}.qcard.on b{font-size:13.5px;line-height:1.35;text-align:center}.qcard.on em{background:none;color:var(--ink2)}
+@keyframes qflip{from{transform:rotateY(90deg)}to{transform:none}}
+.qvs-t{margin:0;font-weight:800;font-size:14px}
+.qvs{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}.qvs i{font-style:normal;font-weight:900;color:#D2412F}
+.qvs-c{min-height:70px;border-radius:12px;border:2px solid var(--c);background:#fff;font-weight:800;font-size:14px;padding:8px;color:var(--ink)}.qvs-c:hover{background:var(--c);color:#fff;transform:scale(1.03)}
+.qwin{border:2px solid #E8B84A;background:linear-gradient(#FFF8E6,#fff);border-radius:14px;padding:12px;text-align:center;display:flex;flex-direction:column;gap:6px;animation:qflip .35s}
+.qwin small{font-weight:800;color:#B07A00}.qwin b{font-size:18px}.qwin-b{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.qchat{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto;padding:4px}
+.cb{max-width:85%;padding:8px 12px;border-radius:14px;font-size:14px;line-height:1.5;display:flex;gap:6px;align-items:flex-start}.cb:nth-last-child(-n+2){animation:qpop .25s}
+.cb.npc{align-self:flex-start;background:#fff;border:1.5px solid var(--line2);border-bottom-left-radius:4px;flex-direction:column;gap:0}.cb.npc i{font-style:normal;font-size:11px;font-weight:800;color:var(--c)}
+.cb.me{align-self:flex-end;background:var(--c);color:#fff;border-bottom-right-radius:4px}.cb.me button{background:none;border:0;color:#fff;opacity:.7;font-size:13px;padding:0 2px}
+@keyframes qpop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.qgo{align-self:center;font-size:17px;padding:12px 26px}
+.qquick{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:8px 12px;border-radius:12px;border:2px solid var(--c);background:#fff}.qquick b{font-size:32px;font-variant-numeric:tabular-nums;color:var(--c)}.qquick em{font-style:normal;font-weight:900;font-size:18px}.qquick .qt-bar{flex-basis:100%}
+.qquick.end{justify-content:center;background:linear-gradient(#FFF8E6,#fff);border-color:#E8B84A}
+.qangle{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;border:2px solid var(--c);background:#fff}.qangle p{margin:0;flex:1;display:flex;flex-direction:column}.qangle small{font-size:11px;color:var(--ink2);font-weight:800}.qangle b{font-size:16px;color:var(--c)}
+.qdie{font-size:30px;display:inline-block}.qdie.spin{animation:qspin .6s}
+@keyframes qspin{from{transform:rotate(-360deg) scale(.6)}to{transform:none}}
+@media (max-width:420px){.qcards{gap:5px}.qcard{min-height:80px}.qvs-c{font-size:13px}}
 .choice{border:1.5px solid var(--line2);background:#fff;border-radius:999px;padding:8px 15px;font-size:14px;font-weight:700;color:var(--ink2);transition:background .15s,border-color .15s,color .15s,box-shadow .15s}
 .choice:hover{border-color:var(--c);color:var(--ink)}
 .choice.on{background:var(--c);border-color:var(--c);color:#fff;box-shadow:0 6px 14px -8px var(--c)}
@@ -1066,6 +1092,7 @@ details.own[open] summary{margin-bottom:8px}
   .panel[data-st="play"] > .path{order:-18}
   .panel[data-st="play"] > .rpg,.panel[data-st="play"] > .question,.panel[data-st="play"] > .question + .hint,.panel[data-st="play"] > .mini{order:-17}
   .panel[data-st="play"] > .pform,.panel[data-st="play"] > .entry,.panel[data-st="play"] > .pick-head,.panel[data-st="play"] > .choices,.panel[data-st="play"] > .own,.panel[data-st="play"] > #btnAiOpts,.panel[data-st="play"] > .timeup,.panel[data-st="play"] > .routes{order:-16}
+  .panel[data-st="play"] > .qsbox{order:-16}
   .panel[data-st="play"] > .coach{order:-15}
   .panel[data-st="play"] > .answers{order:-14}
   .panel[data-st="play"] > .cond{order:-13}
@@ -1962,6 +1989,7 @@ function tplOf(x, st, par, p){
   const si = x.stages.indexOf(st), tq = x.tq && x.tq[si], cp = catPool(st, par), pool = cp || (!(tq && tq.q) ? variantPool(x, st) : null);
   let base = tq && tq.q && !cp ? tq.q : tplFor(st, par);
   if (pool){ const sib = p && st.p >= 0 ? Math.max(0, prompts(x).filter(q => q.s === p.s).findIndex(q => q.key === p.key)) : 0; base = pool[(hash(`${x.theme}|${x.vseed || 0}|${si}`) + sib) % pool.length]; }
+  if (!cp && !(tq && tq.q)) base = funAlt(x, st, si, base);
   const npc = st.npc || 'モンスター', mn = (npc.match(/「[^」]+」/) || [npc])[0];
   base = base.replace(/\{MN\}/g, mn).replace(/\{M\}/g, npc);
   if (curWorld() !== 'euro' && x.mode === 'quest') base = base.replace(/ドラゴン/g, (WMON[curWorld()] || WMON.euro).bossN);
@@ -5037,6 +5065,7 @@ function renderPanel(){
   const pf = [...panel.querySelectorAll('input[data-field]')];
   if (pf.length && S.level !== 'beginner' && matchMedia('(pointer:fine)').matches){ const e = pf.find(x => !x.value) || pf[0]; e.focus({preventScroll: true}); }
   if (S.mode === 'quest' && S.quest.qs === 'duel' && S.quest.duel && S.quest.duel.stage === 'play') mountDuel();
+  { const qc = $('.qchat'); if (qc) qc.scrollTop = qc.scrollHeight; }
   updateTimerUI(); syncScreen();
 }
 /* ---------- phone: one screen at a time. The board while the dice rolls, the questions when a gate is reached ---------- */
@@ -5103,6 +5132,164 @@ function forkHTML(f){
     <div class="routes">${cards}</div>
     ${chosen && !quest ? `<div class="p-foot"><button class="btn" type="button" data-act="prev">← 前へ</button><span class="grow"></span><button class="btn dark" type="button" data-act="next">この道で進む →</button></div>` : ''}`;
 }
+/* ---------- 答え方いろいろ：問いごとに答え方が変わる（毎回ちがう組み合わせ） ---------- */
+const QSTYLE = {
+  text:    {n: 'ふつうに書く', i: '✏️', d: '思いつくまま、短い言葉でどんどん書こう'},
+  cards:   {n: 'ひらめきカード', i: '🃏', d: '裏向きのカードをめくって、ヒントにしよう。めくったカードを押すと答えの欄に入る（書きかえてOK）'},
+  tourney: {n: '勝ち抜きバトル', i: '⚔️', d: '2つのうち、自分に近いほうを選ぼう。最後まで勝ち残ったものが、あなたの答えの候補！'},
+  chat:    {n: 'おしゃべり', i: '💬', d: '相手と話しながら答えよう。答えるたびに返事がかえってくるよ'},
+  quick:   {n: '30秒チャレンジ', i: '⏱️', d: '30秒でいくつ書ける？ 考えすぎずに書くと、思わぬ答えが出てくる'},
+  angle:   {n: 'お題サイコロ', i: '🎲', d: 'サイコロが出した「目線」で考えてみよう。答えるたびにサイコロがふり直される'}
+};
+const ANGLES = ['お金をかけずに', '1日でできるとしたら', '子どもに説明するつもりで', 'いちばん楽しいやり方で', '3年後の自分から見ると', '失敗してもいいとしたら', '体を動かすとしたら', '家の中でできることで', '誰かと一緒にやるなら', 'いちばん小さく始めるなら', 'まわりの人が喜ぶ形で', 'スマホ1台でできることで', '尊敬する人ならどうするか', '今日の帰り道にできることで', '苦手なことを逆に生かすと', '100倍の規模で考えると', 'ゲームのように楽しむなら', '五感（見る・聞く・さわる…）で考えると'];
+const CHAT_RE = {
+  person: ['「{t}」か！ その人に話を聞けたら心強いね', '人の力は大きいよ。「{t}」とは、どうやって会えそう？'],
+  money: ['お金の話は大事だね。「{t}」は、いくらくらい必要そう？', '「{t}」…現実的でいいね！'],
+  qual: ['「{t}」！ 目標がはっきりしてきたね', '「{t}」は、いつ受けられるのかな？'],
+  school: ['「{t}」か。どんなところか、見に行ってみたいね'],
+  health: ['体は全部の土台だよね。「{t}」、大事にしよう'],
+  time: ['時間はみんな同じだけ持ってる。「{t}」をどう作るかがカギだね'],
+  mind: ['気持ちって大事だよね。「{t}」があれば、くじけにくいよ'],
+  info: ['「{t}」を集めると、見えてくるものがありそう'],
+  skill: ['「{t}」を身につけたら、きっと武器になるね', '「{t}」！ どうやって練習する？'],
+  thing: ['「{t}」がそろうと、ぐっと進みそうだね'],
+  action: ['「{t}」…動きが見えるね！ それ、いつやる？', 'いいね、「{t}」！ 想像したらワクワクしてきた'],
+  spec: ['おお、具体的！ それなら明日から動けそうだね', '数字や行動が入ると、いっきに現実になるね！'],
+  gen: ['なるほど、「{t}」！ いいところに目をつけたね', 'へえ、「{t}」かあ。どうしてそう思ったの？', 'わかる気がする。「{t}」って大事だよね', '「{t}」…メモしておくね！', 'いいね！ 少しずつ形が見えてきた']
+};
+const CHAT_MORE = ['ほかにもある？', 'ちょっとちがう角度だと、どう？', 'もし友だちに聞いたら、なんて言うかな？', 'もっと小さなことでもいいよ。何かある？', '思いきって、ありえないことでもいいよ！'];
+const CHAT_ENOUGH = ['たくさん聞けてよかった！ まだあれば教えて。なければ先へ進もう', 'いい話が聞けたよ。ありがとう！ ほかにもあれば、どうぞ'];
+const qsSpec = t => /[0-9０-９]|[一二三四五六七八九十百千万]+(回|日|分|時間|円|人|冊|か月|ヶ月|年|週)|する$|やる$|行く$|書く$|読む$|始める$/.test(String(t));
+const qsPick = (list, n) => list[n % list.length];
+function shuffleR(a, R){ a = [...a]; for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+/* deal a style to every question. Plans keep their form, monsters use the battle-friendly styles */
+function assignStyles(x){
+  if (x.level === 'beginner') return {};
+  const R = rng((x.vseed || 7) + 11), out = {}; let bag = [], mbag = [], prev = '';
+  x.stages.forEach((st, k) => {
+    if (isPlan(st)) return;
+    const mon = !!st.monster;
+    if (mon){ if (!mbag.length) mbag = shuffleR(['quick', 'angle', 'text'], R); out[k] = mbag.pop(); return; }
+    if (!bag.length) bag = shuffleR(['cards', 'tourney', 'chat', 'quick', 'angle', 'cards', 'chat', 'text'], R);
+    let j = bag.findIndex(s => s !== prev); if (j < 0) j = 0;
+    prev = out[k] = bag.splice(j, 1)[0];
+  });
+  return out;
+}
+const qStyle = (x, k) => { if (!x || x.level === 'beginner') return 'text'; if (!x.qstyle) x.qstyle = assignStyles(x); return x.qstyle[k] || 'text'; };
+/* per-question play state (not saved: a reload starts the little game again) */
+let QS = null;
+const qsState = (p, kind, make) => { if (!QS || QS.key !== p.key || QS.kind !== kind) QS = Object.assign({key: p.key, kind}, make()); return QS; };
+function qsBank(p, list){
+  const have = new Set(list.map(a => a.t));
+  const pool = [...new Set([...kindBank(S, S.stages[p.s].o), ...bankFor(S, p)])].filter(o => o && !have.has(o));
+  return shuffleR(pool, rng(hash(p.key + '|' + (S.vseed || 0) + '|' + (QS && QS.key === p.key ? QS.n || 0 : 0))));
+}
+function qsHead(sty){ const d = QSTYLE[sty]; return `<div class="qsty"><b>${d.i} ${d.n}</b><span>${d.d}</span></div>`; }
+function chatLine(st, a, k){
+  const c = qsSpec(a.t) ? 'spec' : wordCat(a.t), pool = CHAT_RE[c] || CHAT_RE.gen;
+  return qsPick(pool, hash(a.t) + k).replace(/\{t\}/g, esc(a.t.slice(0, 20)));
+}
+function styleHTML(p, st, list, col, entry){
+  const sty = qStyle(S, p.s); if (sty === 'text') return entry;
+  let body = '';
+  if (sty === 'cards'){
+    const s = qsState(p, 'cards', () => ({n: 0, open: []}));
+    if (!s.deck) s.deck = qsBank(p, list).slice(0, 3);
+    body = `<div class="qcards" style="--c:${col}">${s.deck.length ? s.deck.map((t, i) => s.open.includes(i)
+      ? `<button type="button" class="qcard on" data-qs="use" data-v="${i}"><small>カード ${i + 1}</small><b>${esc(t)}</b><em>押すと答えの欄へ</em></button>`
+      : `<button type="button" class="qcard" data-qs="flip" data-v="${i}"><span>？</span><em>めくる</em></button>`).join('') : '<p class="hint">カードがなくなりました。自分の言葉で書こう！</p>'}</div>
+      <button class="btn sm" type="button" data-qs="redraw" style="align-self:flex-start">🔄 新しいカードを引く</button>`;
+  } else if (sty === 'tourney'){
+    const s = qsState(p, 'tourney', () => ({n: 0}));
+    if (!s.pool){ s.pool = qsBank(p, list).slice(0, 5); s.champ = s.pool.shift() || null; s.round = 1; s.win = false; }
+    if (!s.champ) body = `<p class="hint">候補がなくなりました。自分の言葉で書こう！</p>`;
+    else if (s.win || !s.pool.length) body = `<div class="qwin" style="--c:${col}"><small>🏆 優勝</small><b>${esc(s.champ)}</b>
+      <div class="qwin-b"><button class="btn primary sm" type="button" data-qs="champ">これを答えにする</button><button class="btn sm" type="button" data-qs="edit">自分の言葉に直す</button><button class="btn sm" type="button" data-qs="again">もう一回戦う</button></div></div>`;
+    else body = `<p class="qvs-t">第${s.round}回戦：どっちが自分に近い？</p><div class="qvs" style="--c:${col}"><button type="button" class="qvs-c" data-qs="pick" data-v="0">${esc(s.champ)}</button><i>VS</i><button type="button" class="qvs-c" data-qs="pick" data-v="1">${esc(s.pool[0])}</button></div>
+      <button class="btn link sm" type="button" data-qs="skip" style="align-self:flex-start">どっちもちがう →</button>`;
+  } else if (sty === 'chat'){
+    const who = esc(st.npc || '旅人'), more = list.length >= st.min ? qsPick(CHAT_ENOUGH, list.length) : list.length ? qsPick(CHAT_MORE, hash(p.key) + list.length) : 'さあ、聞かせて！';
+    body = `<div class="qchat" style="--c:${col}">${list.map((a, k) => `<div class="cb me"><span>${esc(a.t)}</span><button type="button" data-del="${a.id}" aria-label="「${esc(a.t)}」を消す">×</button></div><div class="cb npc"><i>${who}</i><span>${chatLine(st, a, k)}</span></div>`).join('')}<div class="cb npc"><i>${who}</i><span>${more}</span></div></div>`;
+    entry = entry.replace('placeholder="', 'placeholder="返事を書く… ').replace(/(data-act="add">)[^<]*/, '$1送る');
+  } else if (sty === 'quick'){
+    const s = qsState(p, 'quick', () => ({end: 0, n0: 0, done: false}));
+    const left = s.end ? Math.max(0, s.end - Date.now()) : 30000;
+    if (!s.end) body = `<button class="btn primary qgo" type="button" data-qs="go">⏱ スタート（30秒）</button><p class="hint">スタートを押すと30秒カウントダウン。${S.mode === 'quest' ? '書けた数×10Gのボーナス！' : 'いくつ書けるか挑戦！'}</p>`;
+    else if (!s.done) body = `<div class="qquick" style="--c:${col}"><b id="qkT">${Math.ceil(left / 1000)}</b><span>秒　<em id="qkN">${list.length - s.n0}</em>個</span><div class="qt-bar"><i id="qkF" style="width:${(left / 300).toFixed(1)}%"></i></div></div>`;
+    else body = `<div class="qquick end" style="--c:${col}"><b>${s.got}</b><span>個書けた！${s.gold ? `　+${s.gold}G` : ''}</span></div>`;
+  } else if (sty === 'angle'){
+    const s = qsState(p, 'angle', () => ({i: hash(p.key + (S.vseed || 0)) % ANGLES.length, spin: 0}));
+    body = `<div class="qangle" style="--c:${col}"><span class="qdie${s.spin ? ' spin' : ''}">🎲</span><p><small>お題</small><b>${esc(ANGLES[s.i])}</b></p><button class="btn sm" type="button" data-qs="reroll">ふり直す</button></div>`;
+  }
+  return `<div class="qsbox">${qsHead(sty)}${body}</div>` + entry;
+}
+let qkTimer = 0;
+function qsTick(){
+  const s = QS; if (!s || s.kind !== 'quick' || !s.end || s.done){ clearInterval(qkTimer); qkTimer = 0; return; }
+  const p = current(), left = Math.max(0, s.end - Date.now());
+  if (!p || p.key !== s.key){ s.done = true; clearInterval(qkTimer); qkTimer = 0; return; }
+  const n = answersFor(S, p).length - s.n0;
+  if (left <= 0){
+    s.done = true; s.got = n; clearInterval(qkTimer); qkTimer = 0;
+    s.gold = S.mode === 'quest' && n > 0 ? gainGold(n * 10, '30秒チャレンジ') : 0;
+    sfx.done(); toast(`30秒で${n}個！${s.gold ? ` +${s.gold}G` : ''}`); save(); refresh(); return;
+  }
+  const t = $('#qkT'), f = $('#qkF'), c = $('#qkN');
+  if (t) t.textContent = Math.ceil(left / 1000); if (f) f.style.width = (left / 300).toFixed(1) + '%'; if (c) c.textContent = n;
+}
+function qsAddText(t){
+  if (!canAnswer() || !t) return;
+  if (!addText(t)) return;
+  const p = current(), msg = coachOf(S, S.stages[p.s], t);
+  S.coach = msg ? {key: p.key, msg, id: S.seq - 1} : null;
+  qsAfterAdd(); refresh();
+}
+function qsToInput(t){ const inp = $('#ans'); if (!inp) return; inp.value = t; inp.focus(); try { inp.setSelectionRange(t.length, t.length); } catch (e){} }
+/* after any answer: the dice rolls again, the chat partner replies */
+function qsAfterAdd(){
+  const p = current(); if (!p || !QS || QS.key !== p.key) return;
+  if (QS.kind === 'angle'){ let j = QS.i; while (j === QS.i) j = rnd(ANGLES.length); QS.i = j; QS.spin = 1; setTimeout(() => { if (QS) QS.spin = 0; }, 600); }
+}
+function qsAct(a, v){
+  if (!canAnswer()) return;
+  const p = current(), s = QS && QS.key === p.key ? QS : null; if (!s) return;
+  if (a === 'flip'){ if (!s.open.includes(+v)){ s.open.push(+v); sfx.step(); } refresh(); return; }
+  if (a === 'use'){ qsToInput(s.deck[+v] || ''); return; }
+  if (a === 'redraw'){ s.n = (s.n || 0) + 1; s.deck = qsBank(p, answersFor(S, p)).slice(0, 3); s.open = []; sfx.dice(); refresh(); return; }
+  if (a === 'pick'){ if (+v === 1) s.champ = s.pool[0]; s.pool.shift(); s.round++; sfx.good(); if (!s.pool.length) s.win = true; refresh(); return; }
+  if (a === 'skip'){ s.pool.shift(); s.champ = s.pool.shift() || null; s.round++; if (s.champ && !s.pool.length) s.win = true; refresh(); return; }
+  if (a === 'champ'){ const t = s.champ; s.pool = null; s.n = (s.n || 0) + 1; qsAddText(t); return; }
+  if (a === 'edit'){ qsToInput(s.champ || ''); return; }
+  if (a === 'again'){ s.pool = null; s.n = (s.n || 0) + 1; refresh(); return; }
+  if (a === 'go'){ s.end = Date.now() + 30000; s.n0 = answersFor(S, p).length; sfx.dice(); clearInterval(qkTimer); qkTimer = setInterval(qsTick, 250); refresh(); const inp = $('#ans'); if (inp) inp.focus(); return; }
+  if (a === 'reroll'){ qsAfterAdd(); sfx.dice(); refresh(); return; }
+}
+/* playful alternatives: sometimes a core question comes in a different, fun costume */
+const FUN_ALT = {
+  need: ['「{t}」をかなえる冒険に、カバンへ3つだけ入れていくなら何を入れる？', 'RPGの装備画面だとしたら、「{t}」のために足りない装備は何？'],
+  expert: ['「{t}」の達人に弟子入りするなら、まず何を教わりたい？', '「{t}」のクイズ王になるなら、どんな知識が必要？'],
+  vision: ['「{t}」がかなった日、街の人からどんな「ありがとう」が聞こえる？', '「{t}」で、誰の1日をどう変えたい？'],
+  future: ['未来の自分から手紙が届いた。「{t}」について、何と書いてある？', 'タイムマシンで10年後へ。「{t}」をかなえた自分は、どんな顔をしている？'],
+  thanks: ['あなたの冒険の「仲間図鑑」を作るなら、最初にのせたい人は？', '「{t}」の映画のエンドロールに、名前をのせたい人は？'],
+  first: ['今日の寝る前の5分で、「{t}」のためにできることは？', '「{t}」のスタートボタンがあるとしたら、それを押した直後に何をする？'],
+  who: ['「{t}」を届けたい人を、1人だけ思い浮かべて。どんな人？', '「{t}」で笑顔にしたい人の口ぐせは？'],
+  idea: ['「{t}」に魔法を1つかけるなら、どんな魔法？', '「{t}」を、遊園地のアトラクションにするとしたら？'],
+  like: ['時間を忘れて夢中になれることは？ 気づいたら夜だった…という経験を思い出そう', '休みの日、誰にも頼まれていないのにやってしまうことは？'],
+  job: ['あなたが主人公のゲームなら、どの職業でプレイしたい？（現実の仕事で）', '「こんな仕事があったら毎日楽しそう」と思う仕事は？'],
+  praise: ['友だちがあなたを紹介するとき、「この人は〇〇がすごい」の〇〇には何が入る？', 'まわりから「どうしてそんなに上手なの？」と言われたことは？'],
+  value: ['あなたの「人生のルールブック」の1ページ目に書くことは？', '100万円もらっても手放したくないものは？（物でなくてもOK）'],
+  reflect: ['ここまでの旅を漢字1文字で表すと？ それはなぜ？', 'ここまでで、いちばん「へえ！」と思った自分の答えは？'],
+  hypo: ['「わたしの天職は〇〇かも」の〇〇に、今入れるなら？', 'もし占い師に天職を聞いたら、何と言われたらうれしい？'],
+  pick: ['候補の中で、考えるだけで顔がにやけるのはどれ？', 'コインを投げて「表は〇〇」と決めたとき、本当は表が出てほしいのは？']
+};
+function funAlt(x, st, si, base){
+  if (!st || st.p >= 0 || st.monster || isPlan(st)) return base;
+  const L = FUN_ALT[st.o]; if (!L) return base;
+  const h = hash(`${x.theme}|${x.vseed || 0}|fun|${si}`);
+  return h % 3 === 0 ? L[(h >> 3) % L.length] : base;
+}
+
 function playHTML(){
   const quest = S.mode === 'quest';
   const {P, i} = curIndex(S); const p = P[i]; S.cur = p.key;
@@ -5151,6 +5338,8 @@ function playHTML(){
     entry = `<div class="entry"><input id="ans" maxlength="60" placeholder="${st.monster ? '答えて攻撃！' : kex[0] ? `例：${esc(kex[0])}` : '答えを入力'}" aria-label="答え" autocomplete="off" enterkeyhint="enter"><button class="btn primary" type="button" data-act="add">${st.monster ? '攻撃' : '追加'}</button></div>
     <p class="hint">答えるたびに枝が伸びます。空欄のまま <kbd>Enter</kbd> で${quest ? '関所を通過' : '次の問いへ'}。</p>`;
   }
+  const sty = locked || plan || S.level === 'beginner' ? 'text' : qStyle(S, p.s);
+  if (sty !== 'text') entry = styleHTML(p, st, list, col, entry);
   const nextLbl = quest ? '答えを決めて進む →' : last ? '採点する →' : '次の問いへ →';
   const realCount = P.filter(q => !q.fork).length, realIdx = P.slice(0, i + 1).filter(q => !q.fork).length;
   return `
@@ -5164,8 +5353,8 @@ function playHTML(){
     ${st.show === 'swot' ? swotRefHTML(S) : st.show === 'tm' ? tmLegendHTML() : ''}
     ${entry}
     ${S.coach && S.coach.key === p.key && !locked ? `<div class="coach" role="note"><b>深掘りのひとこと</b><span>${esc(S.coach.msg)}</span>${S.coach.id != null && byId(S, S.coach.id) ? `<button class="btn sm" type="button" data-act="coach-fix">この答えを書き直す</button>` : ''}</div>` : ''}
-    ${!plan && list.length ? `<ul class="answers">${list.map(a => { const k = S.ans.filter(c => c.par === a.id).length; return `<li style="--c:${col}"><span>${esc(a.t)}</span>${k ? `<em>+${k}</em>` : ''}${locked ? '' : `<button type="button" data-del="${a.id}" aria-label="「${esc(a.t)}」を消す">×</button>`}</li>`; }).join('')}</ul>`
-      : (plan || (S.level === 'beginner' && !locked) ? '' : `<p class="empty">まだ答えがありません。短い言葉でどんどん書きましょう。</p>`)}
+    ${!plan && list.length && sty !== 'chat' ? `<ul class="answers">${list.map(a => { const k = S.ans.filter(c => c.par === a.id).length; return `<li style="--c:${col}"><span>${esc(a.t)}</span>${k ? `<em>+${k}</em>` : ''}${locked ? '' : `<button type="button" data-del="${a.id}" aria-label="「${esc(a.t)}」を消す">×</button>`}</li>`; }).join('')}</ul>`
+      : (plan || sty === 'chat' || (S.level === 'beginner' && !locked) ? '' : `<p class="empty">まだ答えがありません。短い言葉でどんどん書きましょう。</p>`)}
     ${quest ? `<p class="power">答えのパワー：<b>${answerPower(p) ? `+${answerPower(p)}マス` : '条件クリアで +1マス'}</b>${specN(p) ? `<b>具体的な答え +${specN(p) * 3}pt</b>` : ''}<span>条件より多く答える・時間を半分以上残すと先へ進める。数字や「〜する」が入った具体的な答えは1つ +3pt</span></p>` : ''}
     <div class="p-foot">
       ${quest ? '' : `<button class="btn" type="button" data-act="prev" ${i === 0 ? 'disabled' : ''}>← 前へ</button>`}
@@ -5316,7 +5505,7 @@ function addAnswer(){
   if (!addText(t)){ inp.select(); return; }
   const p = current(), msg = coachOf(S, S.stages[p.s], t);
   S.coach = msg ? {key: p.key, msg, id: S.seq - 1} : null;
-  inp.value = ''; refresh();
+  inp.value = ''; qsAfterAdd(); refresh();
 }
 function setField(p, f, t){
   const s = statOf(S, p.key); if (S.timed && s.to) return false;
@@ -6386,6 +6575,7 @@ panel.addEventListener('click', e => {
   if (b.dataset.rpg){ rpgAct(b.dataset.rpg, b.dataset.v); return; }
   if (b.dataset.fight){ fightAct(b.dataset.fight); return; }
   if (b.dataset.x){ extrasAct(b.dataset.x); return; }
+  if (b.dataset.qs){ qsAct(b.dataset.qs, b.dataset.v); return; }
   if (b.dataset.act) onAct(b.dataset.act);
 });
 $('#resultSheet').addEventListener('click', e => { const t = e.target.closest('button[data-rtab]'); if (t){ resultTab = t.dataset.rtab; $('#resultSheet').dataset.rtab = resultTab; $('#resultSheet').querySelectorAll('button[data-rtab]').forEach(x => x.setAttribute('aria-selected', String(x === t))); $('#ovResult').scrollTop = 0; } });
@@ -6530,6 +6720,14 @@ const WILD = [
   ['料理なら', '「{t}」を料理にたとえると、今どの段階？（材料集め・下ごしらえ・煮こみ中…）'], ['未来のニュース', '5年後のニュースに「{t}」が出るとしたら、どんな見出し？'],
   ['もしもの時', 'もし「{t}」が明日からできなくなったら、何がいちばんさびしい？'], ['寄り道', '「{t}」と関係ないけど、最近気になっていることは？ 意外とつながるかも！'],
   ['3分でできること', '3分だけ時間があるとき、「{t}」のためにできることは？'], ['先生になる', '「{t}」について、あなたが人に教えられることは何？'],
+  ['無人島', '無人島で「{t}」を目指すことになった！ 3つだけ持っていけるなら何を持っていく？'], ['100万円', '急に100万円もらった！ 「{t}」のためにどう使う？'],
+  ['動物にたとえる', '今のあなたを動物にたとえると？ 「{t}」をかなえた時は、どんな動物になっている？'], ['必殺技の名前', '「{t}」のためのあなたの必殺技に、かっこいい名前をつけるなら？'],
+  ['取扱説明書', '「わたしの取扱説明書」を作るなら、「{t}」のために書いておくべき注意書きは？'], ['15秒CM', '「{t}」を15秒のCMで宣伝するなら、どんなセリフにする？'],
+  ['透明人間', '1日だけ透明人間になれたら、「{t}」のために誰の何をこっそり見に行く？'], ['魔王の弱点', '「{t}」をじゃまする魔王がいるとしたら、その弱点は？'],
+  ['給食のメニュー', '「{t}」をかなえた記念の日の給食メニューを決めるなら？'], ['天気予報', '「{t}」の1年後の天気予報を出すなら？ 晴れ・くもり・嵐…理由も一緒に！'],
+  ['あだ名', '「{t}」をかなえたあなたに、まわりがつけそうなあだ名は？'], ['ゲームのレベル', '「{t}」をゲームにたとえると、今レベルいくつ？ 次のレベルに上がる条件は？'],
+  ['入れかわり', 'もし1週間だけ誰かと入れかわれるなら、「{t}」のために誰になる？'], ['宝の地図', '「{t}」の宝の地図に、ドクロマーク（危険）をつけるならどこ？'],
+  ['歌のタイトル', '「{t}」の応援ソングを作るなら、曲のタイトルは？'], ['サイン', 'あなたが有名になってサインを書くとき、「{t}」にちなんで添える一言は？'],
   ['いい失敗', '「{t}」で、してもいい失敗はどんな失敗？'], ['ドラゴンの本音', 'ドラゴンがこっそり言った。「本当はお前の〇〇がこわい」。あなたの何をこわがっていると思う？']
 ];
 const WILD_JOB = [
@@ -6538,12 +6736,15 @@ const WILD_JOB = [
   ['使ってみたい道具', '使ってみたい道具や機械は？ それを使う仕事は何だろう？'], ['困っている人', '最近見かけた「困っている人」は？ その人を助ける仕事には何がある？'],
   ['月曜の朝', '月曜日の朝、ワクワクしながら出かけるとしたら、どんな仕事に行く？'], ['身近な人の仕事', '家族や身近な人の仕事で、すごいと思ったことは？'],
   ['うれしいありがとう', '仕事でもらう「ありがとう」で、いちばんうれしいのはだれからの言葉？'], ['苦手の裏側', 'あなたの苦手なことが、逆に役立つ仕事はあるかな？（例：心配性→安全を守る仕事）'],
+  ['ロボットの同僚', 'となりの席の同僚がロボットになった！ あなたにしかできない仕事は何？'], ['仕事の効果音', 'あなたが仕事で大活躍した瞬間、どんな効果音が鳴る？ そのときしている仕事は？'],
+  ['給料の使い道', '初めてのお給料で、自分にどんなごほうびを買う？ その仕事は何？'], ['名刺', '未来のあなたの名刺には、どんな肩書きが書いてある？'],
+  ['ヒーローの職業', 'あなたが変身ヒーローなら、ふだんはどんな仕事をしている？'], ['職業ガチャ', '職業ガチャを回したら「〇〇」が出た！ うれしくて飛び上がる〇〇は？'],
   ['町の仕事さがし', '町を歩いて目に入る仕事を3つ挙げよう。その中でいちばん気になるのは？'], ['100人の村', '100人の村に「あなたの仕事」が1つだけあるとしたら、どんな仕事で村を助ける？']
 ];
 const WILD_NPC = ['旅の吟遊詩人', '迷子のネコ', '未来から来たロボット', 'いたずら好きの妖精', 'なぞの旅人', 'おしゃべりなフクロウ', '旅の絵かき', '星の案内人'];
 function addWild(stages, course){
   const R = rng(rnd(1e9)), take = (list, n) => { const a = [...list]; for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, n); };
-  const job = course === 'career' || course === 'calling', picks = job ? [...take(WILD_JOB, 2), ...take(WILD, 1)] : take(WILD, 3), segs = take(['town', 'river', 'post'], 3);
+  const job = course === 'career' || course === 'calling', picks = job ? [...take(WILD_JOB, 2), ...take(WILD, 2)] : take(WILD, 4), segs = [...take(['town', 'river', 'post'], 3), 'river'];
   return [...stages, ...picks.map(([l, q], k) => ({l: 'ひらめき：' + l, q, p: -1, min: 1, sec: 80, o: 'wild', wild: 1, npc: WILD_NPC[Math.floor(R() * WILD_NPC.length)], seg: segs[k], hint: '毎回ちがう「ひらめきの問い」。正解はありません。思いついたことをそのまま書くと、新しい発見があるかも！'}))];
 }
 function newSession(theme, stages, timed, mode, level, keep){
@@ -6554,6 +6755,7 @@ function newSession(theme, stages, timed, mode, level, keep){
   if (S.quest){ S.quest.rivals = newRivals(S).slice(0, homeCpu); S.quest.party = [];
     const code = ($('#raceCode').value || '').trim().slice(0, 12);
     S.online = $('#chkOnline').checked && code ? {code, nick: (S.heroName || 'プレイヤー').slice(0, 8), ci: rnd(OP_COLORS.length)} : null; if (bossStage(S) >= 0){ S.quest.beats = [{k: 'intro'}]; S.quest.qs = 'story'; } }
+  S.qstyle = assignStyles(S); QS = null;
   stageView = 'board';
   save();
 }
