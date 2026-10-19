@@ -429,6 +429,13 @@ kbd{font-family:var(--en);font-size:10.5px;border:1px solid var(--line2);border-
 .pick-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;font-weight:700}
 .pick-head span{color:var(--muted);font-weight:500;font-size:12px}
 .choices{display:flex;flex-wrap:wrap;gap:8px}
+.routes.three{grid-template-columns:repeat(3,1fr)}
+@media (max-width:520px){.routes.three{grid-template-columns:1fr}}
+.vsmoke{animation:vsmoke 4s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes vsmoke{0%{transform:translate(0,0) scale(.6);opacity:.55}100%{transform:translate(30px,-160px) scale(2.4);opacity:0}}
+.vfall{animation:vfall .6s linear infinite}
+@keyframes vfall{to{stroke-dashoffset:-30}}
+@media (prefers-reduced-motion:reduce){.vsmoke,.vfall{animation:none}}
 .qsbox{display:flex;flex-direction:column;gap:8px}
 .qsty{display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-radius:12px;background:#FFF7E0;border:1.5px dashed #E8B84A;color:#6B4A0A}
 .qsty b{font-size:14px}.qsty span{font-size:12px;line-height:1.5}
@@ -2361,9 +2368,14 @@ const qDone = key => !!(S.quest && S.quest.done[key]);
 function sqIndex(sq, key){ const i = sq.findIndex(s => s.k === key); return i < 0 ? 0 : i; }
 
 /* geometry: overworld (1000×2400, town at the bottom, castle at the top) + cave (1000×900) */
-const WW = 1000, OH = 2400, CH = 900;
+const WW = 1000, OH = 3400, CH = 900;
 const SEG_CP = {
-  town:  [[110,2330],[480,2350],[870,2310],[900,2190],[620,2130],[200,2110],[100,1990],[260,1900],[620,1890],[860,1850],[800,1760],[500,1720]],
+  town:  [[110,3330],[480,3350],[870,3310],[900,3190],[620,3130],[200,3110],[100,2990],[260,2900],[620,2890],[860,2850],[800,2760],[500,2720]],
+  sea:   [[500,2720],[330,2660],[250,2540],[270,2400],[360,2310],[500,2260]],
+  volc:  [[500,2720],[620,2660],[650,2530],[620,2400],[560,2310],[500,2260]],
+  fall:  [[500,2260],[330,2200],[220,2080],[230,1930],[330,1800],[500,1720]],
+  desert:[[500,2260],[470,2130],[520,1990],[480,1850],[500,1720]],
+  jungle:[[500,2260],[660,2220],[800,2140],[860,2010],[780,1900],[650,1810],[500,1720]],
   A1:    [[500,1720],[270,1650],[120,1500],[230,1340],[500,1270]],
   B1:    [[500,1720],[730,1650],[880,1500],[770,1340],[500,1270]],
   river: [[500,1270],[540,1190],[650,1120],[770,1060],[840,990]],
@@ -2396,7 +2408,7 @@ function ptOn(info, d){
 const MIRROR = cp => cp.map(([x, y]) => [WW - x, y]);
 const SEG_VAR = {
   2: {town: MIRROR(SEG_CP.town), cave: MIRROR(SEG_CP.cave), castle: [[500,470],[500,410],[640,370],[740,300],[620,250],[500,250]]},
-  3: {town: [[500,2345],[150,2330],[110,2235],[420,2185],[870,2160],[890,2050],[560,2005],[150,1975],[110,1870],[360,1830],[640,1830],[850,1790],[780,1735],[500,1720]],
+  3: {town: [[500,3345],[150,3330],[110,3235],[420,3185],[870,3160],[890,3050],[560,3005],[150,2975],[110,2870],[360,2830],[640,2830],[850,2790],[780,2735],[500,2720]],
       cave: [[70,810],[260,845],[500,790],[560,640],[330,575],[140,460],[300,335],[600,390],[850,320],[780,190],[930,132]],
       castle: [[500,470],[700,450],[760,380],[640,330],[360,340],[300,280],[420,250],[500,250]]}
 };
@@ -2422,22 +2434,129 @@ const VEH_SET = {
   usa:    {town: 'horse', A1: 'wagon', B1: 'wagon', river: 'sail', cave: 'cart', post: 'horse', A2: 'wagon', B2: 'wagon'},
   future: {town: 'board', A1: 'aircar', B1: 'aircar', river: 'hover', cave: 'pod', post: 'jet', A2: 'aircar', B2: 'aircar'}
 };
+Object.values(VEH_SET).forEach(v => { v.sea = v.river; v.volc = v.cave; v.fall = v.town; v.desert = v === VEH_SET.future ? 'hover' : 'camel'; v.jungle = v === VEH_SET.future ? 'aircar' : 'elephant'; });
 const VEH_N = {horse: '馬', coach: '馬車', gissha: '牛車', wagon: '幌馬車', elephant: '象', camel: 'ラクダ', sail: '帆船', junk: 'ジャンク船', ferry: '小舟', cart: 'トロッコ', board: 'ホバーボード', aircar: 'エアカー', hover: 'ホバークラフト', pod: 'リニアポッド', jet: 'ジェットパック'};
 const vehOf = seg => { const id = (VEH_SET[curWorld()] || VEH_SET.euro)[seg]; return id ? {id, n: VEH_N[id]} : null; };
 function segName(seg){
+  if (TERR[seg]) return TERR[seg].n;
   const base = W().names;
   if (base[seg]) return base[seg];
   const f = 'f' + seg.slice(1), fk = S && S.forks && S.forks[f];
   return fk && fk.opts[seg] ? fk.opts[seg].n : (seg[1] === '1' ? '森の道' : '星の道');
 }
-const GAP = 62, WEIGHT = {foe: .75, chest: .75, start: 1.2, fork: 1.3, q: 1.3, goal: 1.3, ev: 1, plain: .75, shop: 1.3, fate: 1.3, job: 1.3};
+const GAP = 62, WEIGHT = {tfork: 1.3, terr: .9, foe: .75, chest: .75, start: 1.2, fork: 1.3, q: 1.3, goal: 1.3, ev: 1, plain: .75, shop: 1.3, fate: 1.3, job: 1.3};
 const filler = key => hash('f' + key) % 100 < 45 ? {k: 'e:' + key, type: 'ev', ev: evOf('e:' + key)} : {k: 'n:' + key, type: 'plain'};
+/* ---------- terrain roads between the town and the forest: two more crossroads (sea / volcano, then waterfall / desert / jungle) ---------- */
+const TERR = {
+  sea:    {f: 1, n: '海辺の道', ic: '🌊', d: '波の音を聞きながら進む道。浜辺に宝箱が多い', foe: 10, chest: 30, sp: 30, tk: ['bottle', 'shell']},
+  volc:   {f: 1, n: '火山の道', ic: '🌋', d: '魔物が多くて危険。でも溶岩のそばに宝石が眠る', foe: 38, chest: 10, sp: 34, tk: ['lava', 'gem', 'lava']},
+  fall:   {f: 2, n: '滝の道', ic: '💧', d: '回復の泉がわく、やさしい道', foe: 12, chest: 14, sp: 40, tk: ['spring']},
+  desert: {f: 2, n: '砂漠の道', ic: '🏜️', d: 'いちばんの近道。ただし日差しがきびしい', foe: 16, chest: 12, sp: 45, tk: ['sun', 'oasis', 'sun']},
+  jungle: {f: 2, n: '密林の道', ic: '🌴', d: 'くねくね長い道。魔物も宝箱も多い', foe: 26, chest: 26, sp: 25, tk: ['fruit']}
+};
+const TFORK = {1: {t: '道が2つに分かれている！ 海と火山、どちらを通る？', o: ['sea', 'volc']}, 2: {t: 'こんどは3つの道！ 滝・砂漠・密林、どれを選ぶ？', o: ['fall', 'desert', 'jungle']}};
+const TSQ = {
+  bottle: {n: '流れついたびん', s: 'びん', c: '#2E8FE0', t: 'びんの中に古い地図の切れはし！', g: 20},
+  shell: {n: 'きれいな貝がら', s: '貝', c: '#E0529B', t: 'きれいな貝がらを売った', g: 15},
+  lava: {n: '溶岩', s: '熱', c: '#E2541E', t: '溶岩の熱で心がじりじり…', m: -10},
+  gem: {n: '火山の宝石', s: '宝', c: '#C0392B', t: '火山の宝石をほり当てた！', g: 40},
+  spring: {n: '回復の泉', s: '泉', c: '#15A3C8', t: '泉の水で心がすっきり', m: 20},
+  sun: {n: '灼熱の日差し', s: '陽', c: '#E89A0B', t: '日差しが強くてヘトヘト…', m: -8},
+  oasis: {n: 'オアシス', s: '水', c: '#15A37C', t: 'オアシスでひと休み', m: 15, g: 10},
+  fruit: {n: '南国の果物', s: '果', c: '#E06A1E', t: 'あまい果物で元気が出た', m: 12}
+};
+const hmix = str => { let h = hash(str); h ^= h >>> 16; h = Math.imul(h, 0x45d9f3b); h ^= h >>> 16; h = Math.imul(h, 0x45d9f3b); h ^= h >>> 16; return h >>> 0; };
+const terrRoutes = x => (x && x.quest && x.quest.tr) || {};
+function tforkHTML(){
+  const n = S.quest.tf || 1, F = TFORK[n];
+  const cards = F.o.map((id, k) => { const D = TERR[id], col = ['#2E8FE0', '#E2541E', '#15A37C'][k];
+    return `<button type="button" class="route-card" data-tf="${id}" style="--c:${col}"><small>${F.o.length === 3 ? ['左の道', 'まん中の道', '右の道'][k] : k ? '右の道' : '左の道'}</small><b>${D.ic} ${esc(D.n)}</b><span>${esc(D.d)}</span><em>${D.tk.filter((t, i, a) => a.indexOf(t) === i).map(t => `${TSQ[t].n}${TSQ[t].m ? `（メンタル${TSQ[t].m > 0 ? '+' : ''}${TSQ[t].m}）` : ''}${TSQ[t].g ? `（+${TSQ[t].g}G）` : ''}`).join('・')}</em></button>`; }).join('');
+  return `<div class="p-head"><p class="kicker">QUEST</p><span class="p-count">分かれ道</span></div>
+    <div class="rpg"><span class="rpg-name">道しるべ</span><p>${esc(F.t)}</p><p class="rpg-sub">道によって、出てくる魔物・宝箱・ふしぎなマスがちがいます。関所の問いは同じです。</p></div>
+    <div class="routes${F.o.length === 3 ? ' three' : ''}">${cards}</div>`;
+}
+function chooseTerr(id){
+  const Q = rpgQ(), D = TERR[id]; if (!D || Q.qs !== 'tfork') return;
+  Q.tr = Q.tr || {}; Q.tr['t' + D.f] = id; Q.qs = 'roll';
+  qlog(`分かれ道で「${D.n}」を選んだ`); toast(`${D.ic} ${D.n}へ進もう！`); sfx.good(); save(); renderBoard(); refresh();
+}
+function landTerr(s){
+  const Q = rpgQ(), E = TSQ[s.tk]; if (!E) return false;
+  Q.tused = Q.tused || {}; if (Q.tused[s.k]) return false; Q.tused[s.k] = 1;
+  if (E.m < 0){ if (hurt(-E.m, E.t)) return true; } else if (E.m > 0){ heal(E.m, E.t); toast(`${E.n}：メンタル +${E.m}`); sfx.good(); }
+  if (E.g){ const g = gainGold(E.g, E.t); if (!E.m) { toast(`${E.n}：+${g}G`); sfx.good(); } }
+  save(); return false;
+}
+/* ---- pixel painting for the new lands (coordinates in dots) ---- */
+const pxTone = (P, c) => P.night ? hexMix(c, '#10163F', .55) : P.snow ? hexMix(c, '#FFFFFF', .45) : c;
+function pxSea(V, P, R, TM, y0, y1, edge){
+  const {w} = V, W = P.water, sand = ['#EED9A4', '#D9BF86', '#F6E6BC'].map(c => pxTone(P, c));
+  for (let y = y0; y < y1; y++){
+    const t = (y - y0) / (y1 - y0), ex = Math.round(edge * (.3 + .7 * Math.sin(t * Math.PI)) + Math.sin(y * .09) * 3 + Math.sin(y * .23) * 2);
+    for (let x = 0; x < ex + 20 && x < w; x++){
+      TM[y * w + x] = 1; const fx = ex - x;
+      V.set(x, y, fx > 0 ? (fx < 2 ? W[2] : fx < 4 ? W[1] : R() < .015 ? W[1] : W[0]) : x - ex < 2 ? sand[2] : R() < .1 ? sand[1] : sand[0]);
+    }
+  }
+  for (let k = 0; k < 70; k++){ const y = y0 + 4 + R() * (y1 - y0 - 8) | 0, x = 2 + R() * edge * .8 | 0; for (let i = 0; i < 4 + R() * 4; i++) V.set(x + i, y, W[1]); }
+  for (let k = 0; k < 16; k++){ const y = y0 + R() * (y1 - y0) | 0, x = 3 + R() * edge * .7 | 0; V.set(x, y, W[2]); V.set(x + 1, y, W[2]); }
+}
+function pxVolcano(V, P, R, TM, cx, top, base, hw){
+  const {w} = V, rk = ['#7A5A48', '#5E4234', '#94705A', '#3E2A20'].map(c => pxTone(P, c)), lava = ['#FF5A1F', '#FFB547', '#C8361A'];
+  for (let y = top; y < base; y++){
+    const t = (y - top) / (base - top), half = Math.round(12 + t * hw + Math.sin(y * .31) * 1.5);
+    for (let x = cx - half; x <= cx + half; x++){
+      if (x < 0 || x >= w) continue; TM[y * w + x] = 1;
+      const side = (x - cx) / half, r = R();
+      V.set(x, y, y > base - 3 ? rk[3] : side < -.45 ? (r < .1 ? rk[0] : rk[2]) : side > .4 ? (r < .1 ? rk[0] : rk[1]) : r < .08 ? rk[1] : rk[0]);
+    }
+  }
+  for (let y = top - 3; y < top + 5; y++) for (let x = cx - 11; x <= cx + 11; x++){ const e = ((x - cx) / 11) ** 2 + ((y - top - 1) / 4) ** 2; if (e <= 1){ V.set(x, y, e > .7 ? rk[3] : e > .35 ? lava[0] : lava[1]); if (y >= 0) TM[y * w + x] = 1; } }
+  [-7, 1, 8].forEach((o, s) => { let x = cx + o; const L = (base - top) * (.45 + s * .12);
+    for (let y = top + 3; y < top + L; y++){ x += R() < .33 ? -1 : R() < .5 ? 1 : 0; if (o < 0 && R() < .2) x--; if (o > 4 && R() < .2) x++; V.set(x, y, lava[0]); V.set(x + 1, y, R() < .5 ? lava[1] : lava[0]); if (R() < .3) V.set(x - 1, y, lava[2]); } });
+  for (let k = 0; k < 160; k++){ const a = R() * Math.PI, r = hw * (1 + R() * .35), x = cx + Math.cos(a) * r * (R() < .5 ? -1 : 1), y = base - 2 + R() * 10; V.set(x, y, rk[R() < .5 ? 1 : 3]); }
+}
+function pxFall(V, P, R, TM, x0, x1, cTop, cBot, fx0, fx1, pcx, pcy, prx, pry){
+  const {w} = V, W = P.water, C = P.cliff;
+  for (let y = cTop - 14; y < cTop; y++) for (let x = 0; x < fx1 + 2; x++){ TM[y * w + x] = 1; V.set(x, y, y === cTop - 14 ? P.g[2] : y < cTop - 12 ? C[2] : (x + y) % 9 === 0 ? W[1] : W[0]); }
+  for (let y = cTop; y < cBot; y++) for (let x = x0; x < x1; x++){ TM[y * w + x] = 1; const r = y - cTop; V.set(x, y, r < 2 ? P.g[2] : y > cBot - 3 ? C[3] : (x * 7 + y * 3) % 23 === 0 ? C[1] : r < 6 ? pxLt(C[0], .14) : C[0]); }
+  for (let y = cTop - 2; y < pcy; y++) for (let x = fx0; x <= fx1; x++){ TM[y * w + x] = 1; V.set(x, y, (x + Math.floor(y / 3)) % 4 === 0 ? W[2] : (x + y) % 3 ? W[1] : W[0]); }
+  for (let y = pcy - pry; y <= pcy + pry; y++) for (let x = pcx - prx; x <= pcx + prx; x++){ const e = ((x - pcx) / prx) ** 2 + ((y - pcy) / pry) ** 2; if (e > 1 || x < 0) continue; TM[y * w + x] = 1; V.set(x, y, e > .82 ? C[2] : e > .7 ? W[2] : e < .25 && R() < .3 ? W[2] : R() < .05 ? W[1] : W[0]); }
+}
+function pxDesert(V, P, R, TM, cx, cy, rx, ry){
+  const {w} = V, s = ['#E8CF8F', '#D6B672', '#F3E2AE', '#BF9A58'].map(c => pxTone(P, c));
+  for (let y = cy - ry; y <= cy + ry; y++) for (let x = cx - rx; x <= cx + rx; x++){
+    const e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 + Math.sin(x * .2 + y * .07) * .05; if (e > 1 || x < 0 || x >= w) continue;
+    const dune = (y + Math.round(Math.sin(x * .12) * 4)) % 11;
+    V.set(x, y, e > .93 ? (R() < .5 ? s[0] : P.g[0]) : dune === 0 ? s[1] : dune === 1 ? s[2] : R() < .04 ? s[3] : s[0]);
+  }
+}
+function pxPyramid(V, P, cx, by, hw){
+  const a = pxTone(P, '#E2C27E'), b = pxTone(P, '#B8924E'), c = pxTone(P, '#F2DDA6');
+  for (let r = 0; r <= hw; r++){ const y = by - hw + r; for (let x = cx - r; x <= cx + r; x++) V.set(x, y, x < cx ? (x === cx - r ? c : a) : (r % 4 === 0 ? pxDk(b, .1) : b)); }
+  V.rect(cx - 3, by - 6, 6, 6, pxDk(b, .45));
+}
+function pxJungle(V, P, R, x0, x1, y0, y1){
+  const dk = pxTone(P, '#2E6B2A'), dk2 = pxTone(P, '#3F7F34');
+  for (let k = 0; k < (x1 - x0) * (y1 - y0) / 9; k++){ const x = x0 + R() * (x1 - x0) | 0, y = y0 + R() * (y1 - y0) | 0; V.set(x, y, R() < .6 ? dk : dk2); V.set(x + 1, y, dk2); }
+}
+/* animated extras drawn above the ground: smoke, falling water, labels and signposts */
+function terrSVG(){
+  const F = `font-family="${PXF}"`, tr = terrRoutes(S);
+  const lbl = (id, k) => { const g = SEG[id]; if (!g) return ''; const m = ptOn(g, g.len * (id === 'jungle' ? .4 : .5)), other = tr['t' + TERR[id].f] && tr['t' + TERR[id].f] !== id, left = m.x < 480;
+    return `<text x="${(m.x + (left ? -36 : 36)).toFixed(0)}" y="${(m.y + 5).toFixed(0)}" text-anchor="${left ? 'end' : 'start'}" font-size="19" fill="${other ? '#9CA2B9' : '#1B2140'}" stroke="#FFFFFF" stroke-width="5" paint-order="stroke" ${F}>${esc(TERR[id].n)}</text>`; };
+  const sign = (x, y, a, b) => `<g transform="translate(${x} ${y})" shape-rendering="crispEdges"><rect x="-3" y="-6" width="6" height="56" fill="#8A6A4A"/><path d="M-6 -4 H-96 L-108 8 L-96 20 H-6Z" fill="#F7E9C8" stroke="#6B4A2A" stroke-width="3"/><text x="-54" y="14" text-anchor="middle" font-size="14" fill="#1B2140" ${F}>${a}</text><path d="M6 -4 H96 L108 8 L96 20 H6Z" fill="#F7E9C8" stroke="#6B4A2A" stroke-width="3"/><text x="54" y="14" text-anchor="middle" font-size="14" fill="#1B2140" ${F}>${b}</text></g>`;
+  const smoke = [0, 1, 2].map(k => `<circle class="vsmoke" cx="850" cy="2320" r="${16 + k * 4}" fill="#8E8A92" opacity=".5" style="animation-delay:${k * 1.3}s"/>`).join('');
+  const fall = [0, 1, 2].map(k => `<path class="vfall" d="M${62 + k * 14} 1848 V2004" stroke="#FFFFFF" stroke-width="3" stroke-dasharray="12 18" opacity=".7" style="animation-delay:-${k * .3}s"/>`).join('');
+  return `${smoke}${fall}${Object.keys(TERR).map(lbl).join('')}${sign(500, 2790, '海辺の道', '火山の道')}<g transform="translate(500 2390)" shape-rendering="crispEdges"><rect x="-3" y="-6" width="6" height="56" fill="#8A6A4A"/><rect x="-62" y="-30" width="124" height="24" fill="#F7E9C8" stroke="#6B4A2A" stroke-width="3"/><text y="-12" text-anchor="middle" font-size="14" fill="#1B2140" ${F}>滝・砂漠・密林</text></g>`;
+}
+
 function track(x){
   setGeo(x.mode === 'quest' ? x.chapter || 1 : 1);
   const P = prompts(x), routes = x.routes || {}, forks = x.forks || {};
   const hasSeg = x.stages.some(st => st.seg);
   const r1 = routes.f1 || (forks.f1 ? null : 'A1'), r2 = routes.f2 || (forks.f2 ? null : 'A2');
-  const G = {town: [], A1: [], B1: [], river: [], cave: [], post: [], A2: [], B2: [], castle: []};
+  const G = {town: [], sea: [], volc: [], fall: [], desert: [], jungle: [], A1: [], B1: [], river: [], cave: [], post: [], A2: [], B2: [], castle: []};
   const qn = P.filter(p => !p.fork).length; let qi = 0, stop = null;
   const segOfStage = si => { for (let k = si; k >= 0; k--) if (x.stages[k].seg) return x.stages[k].seg; return 'town'; };
   const legacy = () => { const r = qi / Math.max(1, qn); return r < .36 ? 'town' : r < .46 ? 'A1' : r < .78 ? 'cave' : r < .9 ? 'A2' : 'castle'; };
@@ -2452,14 +2571,20 @@ function track(x){
     G.town.push({k: 'shop:1', type: 'shop'}); G.river.unshift({k: 'job:1', type: 'job'}); G.river.push({k: 'fate:1', type: 'fate'});
     G.post.unshift({k: 'shop:2', type: 'shop'}); G.post.push({k: 'fate:2', type: 'fate'}); G.castle.unshift({k: 'fate:3', type: 'fate'}); }
   ['town', 'post'].forEach(seg => { const f = G[seg].filter(g => g.type === 'fork'); G[seg] = G[seg].filter(g => g.type !== 'fork').concat(f); });
-  const all = [['town', 1], [r1 || 'A1', 1], ['river', 1], ['cave', 2], ['post', 3], [r2 || 'A2', 3], ['castle', 3]];
-  const seq = stop === 'f1' ? all.slice(0, 1) : stop === 'f2' ? all.slice(0, 5) : all;
+  const TQ = x.mode === 'quest' && !!x.quest, tr = terrRoutes(x), t1 = tr.t1 || 'sea', t2 = tr.t2 || 'fall';
+  if (TQ){ /* the later town gates move onto the sea / volcano road, the first crossroads of the story waits at the end of the third road */
+    const fk = G.town.filter(g => g.type === 'fork'), qs = G.town.filter(g => g.type === 'q'), mv = new Set(qs.slice(Math.ceil(qs.length * .55)));
+    G.town = G.town.filter(g => g.type !== 'fork' && !mv.has(g)).concat([{k: 'tf:1', type: 'tfork', tf: 1}]);
+    G[t1] = [...mv, {k: 'tf:2', type: 'tfork', tf: 2}]; G[t2] = fk;
+  }
+  const all = TQ ? [['town', 1], [t1, 1], [t2, 1], [r1 || 'A1', 1], ['river', 1], ['cave', 2], ['post', 3], [r2 || 'A2', 3], ['castle', 3]] : [['town', 1], [r1 || 'A1', 1], ['river', 1], ['cave', 2], ['post', 3], [r2 || 'A2', 3], ['castle', 3]];
+  const o = TQ ? 2 : 0, seq = TQ && !tr.t1 ? all.slice(0, 1) : TQ && !tr.t2 ? all.slice(0, 2) : stop === 'f1' ? all.slice(0, 1 + o) : stop === 'f2' ? all.slice(0, 5 + o) : all;
   if (!stop) G.castle.push({k: 'goal', type: 'goal'});
-  const parts = {1: makePart(['town', r1 || 'A1', 'river']), 2: makePart(['cave']), 3: makePart(['post', r2 || 'A2', 'castle'])};
+  const parts = {1: makePart(TQ ? ['town', t1, t2, r1 || 'A1', 'river'] : ['town', r1 || 'A1', 'river']), 2: makePart(['cave']), 3: makePart(['post', r2 || 'A2', 'castle'])};
   const sq = [];
   seq.forEach(([seg, part]) => {
     const gates = G[seg] || [], L = seg === 'town' ? [{k: 'start', type: 'start'}] : [], cap = Math.floor(SEG[seg].len / GAP);
-    if (!gates.length){ const m = Math.max(2, Math.min(4, cap - 3)); for (let j = 0; j < m; j++) L.push(filler(seg + ':' + j)); }
+    if (!gates.length || (TERR[seg] && gates.every(g => g.type === 'fork' || g.type === 'tfork'))){ const m = TERR[seg] ? Math.max(3, cap - 2) : Math.max(2, Math.min(4, cap - 3)); for (let j = 0; j < m; j++) L.push(TERR[seg] && hmix('f' + seg + j) % 100 >= 25 ? {k: 'n:' + seg + ':' + j, type: 'plain'} : filler(seg + ':' + j)); L.push(...gates); }
     else {
       const base = Math.max(1, Math.min(3, Math.floor(cap / gates.length) - 1));
       let prev = null;
@@ -2469,7 +2594,7 @@ function track(x){
         for (let j = 0; j < f; j++) L.push(filler(g.k + ':' + j)); L.push(g); prev = g;
       });
     }
-    const aS = seg === 'town', last = L[L.length - 1], aE = last.type === 'fork' || last.type === 'goal';
+    const aS = seg === 'town', last = L[L.length - 1], aE = last.type === 'fork' || last.type === 'tfork' || last.type === 'goal';
     const w = L.map(q => WEIGHT[q.type] || 1), lead = aS ? 0 : .7, tail = aE ? 0 : .7;
     let tot = lead + tail; for (let j = 1; j < L.length; j++) tot += (w[j - 1] + w[j]) / 2;
     const P2 = parts[part], len = SEG[seg].len, off = P2.off[seg] || 0;
@@ -2477,8 +2602,9 @@ function track(x){
     L.forEach((q, j) => {
       if (j) acc += (w[j - 1] + w[j]) / 2;
       const d = off + (tot ? acc / tot : 0) * len, pt = P2.pt(d);
-      const foe = q.type === 'plain' && seg !== 'cave' && x.mode === 'quest' && hash('m' + q.k) % 100 < 16, chest = !foe && q.type === 'plain' && x.mode === 'quest' && hash('t' + q.k) % 100 < 14;
-      sq.push({...q, ...(foe ? {type: 'foe', k: 'm:' + q.k} : chest ? {type: 'chest', k: 't:' + q.k} : {}), seg, part, d, x: pt.x, y: pt.y});
+      const TD = TERR[seg], hh = TD ? hmix : hash, foe = q.type === 'plain' && seg !== 'cave' && x.mode === 'quest' && hh('m' + q.k) % 100 < (TD ? TD.foe : 16), chest = !foe && q.type === 'plain' && x.mode === 'quest' && hh('t' + q.k) % 100 < (TD ? TD.chest : 14);
+      const ter = TD && !foe && !chest && (q.type === 'plain' || q.type === 'ev') && hmix('s' + q.k) % 100 < TD.sp + (q.type === 'ev' ? 20 : 0);
+      sq.push({...q, ...(foe ? {type: 'foe', k: 'm:' + q.k} : chest ? {type: 'chest', k: 't:' + q.k} : ter ? {type: 'terr', k: 'x:' + q.k, tk: TD.tk[hmix('k' + q.k) % TD.tk.length]} : {}), seg, part, d, x: pt.x, y: pt.y});
     });
   });
   return {sq, parts, r1, r2};
@@ -3636,7 +3762,7 @@ const WMON = {
 const bossKind = () => (WMON[curWorld()] || WMON.euro).boss;
 const monKind = st => { const k = st.mk || (st.monster === 'boss' ? 'dragon' : hash(st.l || '') % 2 ? 'imp' : 'ghost'); if (k === 'dragon') return bossKind(); return curWorld() === 'future' && (k === 'imp' || k === 'ghost') ? 'robot' : k; };
 const roadD = pts => 'M' + pts.filter((_, i) => i % 2 === 0 || i === pts.length - 1).map(q => `${q[0].toFixed(0)} ${q[1].toFixed(0)}`).join(' L');
-const OVER_SEGS = ['town', 'A1', 'B1', 'river', 'post', 'A2', 'B2', 'castle'];
+const OVER_SEGS = ['town', 'sea', 'volc', 'fall', 'desert', 'jungle', 'A1', 'B1', 'river', 'post', 'A2', 'B2', 'castle'];
 function rng(seed){ return () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function nearAny(segs, x, y, r){ for (const id of segs){ const P = SEG[id].pts; for (let i = 0; i < P.length; i += 2){ const dx = P[i][0] - x, dy = P[i][1] - y; if (dx * dx + dy * dy < r * r) return true; } } return false; }
 const SCN = {};
@@ -4171,7 +4297,7 @@ function pxOver(){
   pxGrass(V, P, R);
   /* the road, and the faded road of the path not taken at a fork */
   const routes = S.routes || {}, forks = S.forks || {};
-  const dim = id => (id[0] === 'A' || id[0] === 'B') && id.length === 2 && forks['f' + id[1]] && routes['f' + id[1]] && routes['f' + id[1]] !== id;
+  const tr = terrRoutes(S), dim = id => TERR[id] ? !!tr['t' + TERR[id].f] && tr['t' + TERR[id].f] !== id : (id[0] === 'A' || id[0] === 'B') && id.length === 2 && forks['f' + id[1]] && routes['f' + id[1]] && routes['f' + id[1]] !== id;
   const M = pxRoadMask(w, h, OVER_SEGS.map(id => [SEG[id].pts, dim(id) ? 2 : 1]), 10, R);
   /* terraces: the forest ledge, the highland above the river (the cave is in its wall), the castle hill */
   const F = new Uint8Array(w * h), faces = [], ry0 = 1150 / PXU, ry1 = 1198 / PXU;
@@ -4184,17 +4310,25 @@ function pxOver(){
   for (let y = 0; y < h; y++){ let row = 0; for (let x = 0; x < w; x++){ row += M[y * w + x] || F[y * w + x] ? 1 : 0; II[(y + 1) * W1 + x + 1] = II[y * W1 + x + 1] + row; } }
   const hit = (x0, y0, x1, y1) => { x0 = Math.max(0, Math.min(w, x0 | 0)); x1 = Math.max(0, Math.min(w, x1 | 0)); y0 = Math.max(0, Math.min(h, y0 | 0)); y1 = Math.max(0, Math.min(h, y1 | 0)); return II[y1 * W1 + x1] - II[y0 * W1 + x1] - II[y1 * W1 + x0] + II[y0 * W1 + x0]; };
   const mesas = [];
-  [[160, 340, 256, 336], [130, 370, 640, 810], [390, 495, 630, 830], [20, 480, 890, 1160]].forEach(([ax, bx, ay, by]) => {
+  [[160, 340, 256, 336], [130, 370, 640, 810], [390, 495, 630, 830], [20, 480, 1390, 1660]].forEach(([ax, bx, ay, by]) => {
     for (let t = 0; t < 60; t++){ const mw = 54 + (R() * 34 | 0), mh = 24 + (R() * 14 | 0), x0 = ax + R() * Math.max(1, bx - ax - mw) | 0, y0 = ay + R() * Math.max(1, by - ay - mh - 20) | 0;
       if (x0 + mw > w - 4 || y0 + mh + 20 > h || y0 < 4 || (y0 + mh + 20 > ry0 - 6 && y0 < ry1 + 6)) continue;
       if (hit(x0 - 8, y0 - 8, x0 + mw + 8, y0 + mh + 18 + 8)) continue;
       faces.push({top: pxMesa(V, P, R, x0, y0, mw, mh, 18, F, faces.length + 1), H: 18}); mesas.push([x0, y0, mw, mh]); break; }
   });
+  /* the new lands: a sea and a volcano by the first crossroads, a waterfall, a desert and a jungle by the second */
+  const TM = new Uint8Array(w * h);
+  pxSea(V, P, R, TM, 1140, 1352, 72);
+  pxVolcano(V, P, R, TM, 425, 1166, 1300, 66);
+  pxDesert(V, P, R, TM, 250, 995, 72, 118);
+  pxJungle(V, P, R, 325, 500, 880, 1125);
+  pxFall(V, P, R, TM, 0, 92, 930, 986, 27, 48, 46, 1014, 40, 16);
   pxRiver(V, P, R, ry0, ry1);
   pxPaint(V, P, R, M, F, faces, y => y >= ry0 - 1 && y <= ry1);
+  pxPyramid(V, P, 302, 950, 22);
   pxBridge(V, P, Math.round(riverCrossX() / PXU), ry0, ry1, 13);
   /* flowers, crop fields and the two cave openings are part of the ground */
-  for (let y = 0; y < h; y++){ let row = 0; for (let x = 0; x < w; x++){ row += M[y * w + x] || F[y * w + x] || (y >= ry0 - 2 && y <= ry1 + 1) ? 1 : 0; II[(y + 1) * W1 + x + 1] = II[y * W1 + x + 1] + row; } }
+  for (let y = 0; y < h; y++){ let row = 0; for (let x = 0; x < w; x++){ row += M[y * w + x] || F[y * w + x] || TM[y * w + x] || (y >= ry0 - 2 && y <= ry1 + 1) ? 1 : 0; II[(y + 1) * W1 + x + 1] = II[y * W1 + x + 1] + row; } }
   const avoid = (x, y) => Math.hypot(x - 840, y - 995) < 70 || Math.hypot(x - 170, y - 880) < 60 || (Math.abs(x - 500) < 150 && y < 275) || (x > 650 && y < 175);
   const busy = [], free = (x, y, r) => busy.every(([bx, by, br]) => Math.hypot(bx - x, by - y) > (br + r) * .8);
   const spot = (n, x0, x1, y0, y1, box, fn) => { // box = [half width, height above the base, radius]
@@ -4202,9 +4336,9 @@ function pxOver(){
     while (k < n && t < 1600){ t++; const x = x0 + R() * (x1 - x0), y = y0 + R() * (y1 - y0), dx = Math.round(x / PXU), dy = Math.round(y / PXU), [hw, ht, r] = box;
       if (avoid(x, y) || hit(dx - hw, dy - ht, dx + hw + 1, dy + 3) || !free(dx, dy, r)) continue;
       busy.push([dx, dy, r]); fn(dx, dy); k++; } };
-  if (!P.grid && !P.sand){ spot(2, 60, 940, 1780, 2380, [18, 12, 18], (x, y) => pxField(V, P, x - 14, y - 10, 28, 12)); spot(1, 60, 940, 480, 860, [16, 12, 16], (x, y) => pxField(V, P, x - 12, y - 10, 24, 11)); }
+  if (!P.grid && !P.sand){ spot(2, 60, 940, 2780, 3380, [18, 12, 18], (x, y) => pxField(V, P, x - 14, y - 10, 28, 12)); spot(1, 60, 940, 480, 860, [16, 12, 16], (x, y) => pxField(V, P, x - 12, y - 10, 24, 11)); }
   const flowers = (n, x0, x1, y0, y1) => spot(n, x0, x1, y0, y1, [4, 3, 2], (x, y) => { for (let k = 0; k < 3; k++) pxFlower(V, x + R() * 8 - 4, y - R() * 4, P.flower[R() * P.flower.length | 0]); });
-  flowers(26, 20, 980, 280, 470); flowers(18, 520, 980, 1240, 1700); flowers(34, 20, 980, 1760, 2395); flowers(10, 20, 980, 520, 860);
+  flowers(26, 20, 980, 280, 470); flowers(18, 520, 980, 1240, 1700); flowers(34, 20, 980, 2760, 3395); flowers(16, 300, 600, 2350, 2660); flowers(10, 20, 980, 520, 860);
   pxMouth(V, P, 420, high[420] + 24, curCh() === 3);
   pxHole(V, P, 85, 441);
   V.put();
@@ -4220,8 +4354,13 @@ function pxOver(){
   plant(44, TK, 10, 490, 1230, 1720); plant(10, TK, 510, 990, 1230, 1720); plant(10, 'bush', 510, 990, 1230, 1720); plant(6, 'rock', 510, 990, 1230, 1720);
   mesas.forEach(([x0, y0, mw, mh]) => { spot(2, (x0 + 10) * PXU, (x0 + mw - 10) * PXU, (y0 + 14) * PXU, (y0 + mh - 1) * PXU, [6, 4, 9], (x, y) => put(sp(TK, R() * 3 | 0, () => PX_SPR[TK](P, R)), x, y)); spot(2, (x0 + 6) * PXU, (x0 + mw - 6) * PXU, (y0 + 8) * PXU, (y0 + mh - 1) * PXU, [5, 3, 6], (x, y) => put(sp('bush', R() * 3 | 0, () => PX_SPR.bush(P, R)), x, y)); });
   const house = PX_HOUSE[P.house] || PX_HOUSE.euro;
-  spot(11, 40, 960, 1800, 2390, [27, 46, 27], (x, y) => { const roof = P.roof[R() * P.roof.length | 0]; put(sp('house', roof, () => house(P, roof, R)), x, y); });
-  plant(16, TK, 10, 990, 1760, 2395); plant(10, 'bush', 10, 990, 1760, 2395);
+  spot(11, 40, 960, 2800, 3390, [27, 46, 27], (x, y) => { const roof = P.roof[R() * P.roof.length | 0]; put(sp('house', roof, () => house(P, roof, R)), x, y); });
+  plant(16, TK, 10, 990, 2760, 3395); plant(10, 'bush', 10, 990, 2760, 3395);
+  const TK2 = TK === 'cactus' ? 'round' : TK;
+  plant(6, TK, 300, 600, 2350, 2660); plant(8, 'rock', 640, 990, 2250, 2720); plant(6, 'palm', 120, 300, 2280, 2700);
+  plant(10, 'cactus', 360, 640, 1760, 2230); plant(5, 'rock', 360, 640, 1760, 2230);
+  plant(30, 'palm', 640, 995, 1750, 2240); plant(24, TK2, 640, 995, 1750, 2240); plant(14, 'bush', 640, 995, 1750, 2240);
+  plant(8, TK2, 10, 200, 1740, 1850); plant(6, 'bush', 120, 330, 2080, 2250); plant(6, 'rock', 120, 330, 1850, 2100);
   const castle = goalSprite(P, R); put(castle, 250, 120);
   items.sort((u, v) => u[0] - v[0]).forEach(v => v[1]());
   return V.c;
@@ -4247,7 +4386,7 @@ function pxCave(){
 /* one picture per world, chapter and chosen route; kept as a blob URL once ready */
 const PXMAPS = {};
 function pxMap(kind){
-  const raw = kind === 'cave' ? `c|${curCh()}` : `o|${curWorld()}|${curCh()}|${JSON.stringify(S.routes || {})}|${Object.keys(S.forks || {}).join(',')}|${S.goal || ''}`, key = String(hash(raw));
+  const raw = kind === 'cave' ? `c|${curCh()}` : `o|${curWorld()}|${curCh()}|${JSON.stringify(S.routes || {})}|${JSON.stringify(terrRoutes(S))}|${Object.keys(S.forks || {}).join(',')}|${S.goal || ''}`, key = String(hash(raw));
   if (!PXMAPS[key]){
     const c = kind === 'cave' ? pxCave() : pxOver(), M = PXMAPS[key] = {url: c.toDataURL('image/png'), bg: kind === 'cave' ? caveCol().bg : pxPal().g[0]};
     try { c.toBlob(b => { if (!b) return; M.url = URL.createObjectURL(b); const w = $('#world'); if (w && w.dataset.px === key) w.style.backgroundImage = `url('${M.url}')`; }); } catch {}
@@ -4265,6 +4404,8 @@ function padSVG(q){
   if (q.type === 'foe'){ const gone = S.quest && (S.quest.foes || {})[q.k]; return gone ? `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-8" y="-8" width="16" height="16" fill="#FFFFFF" stroke="#9C7A48" stroke-width="4"/></g>` : `<g transform="translate(${X} ${Y})"><g shape-rendering="crispEdges"><rect x="-17" y="-17" width="34" height="34" fill="#FFE5E2" stroke="#D93A3F" stroke-width="4"/></g><text y="8" text-anchor="middle" font-size="20" fill="#D93A3F" ${F}>魔</text></g>`; }
   if (SPOT_N[q.type]){ const D = {shop: ['店', '#D98A0B', '#FFF3C4'], fate: ['運', '#8C6CF2', '#F1ECFF'], job: ['転', '#15A37C', '#E9F7EF']}[q.type], seen = S.quest && (S.quest.vis || {})[q.k];
     return `<g transform="translate(${X} ${Y})" opacity="${seen ? .55 : 1}"><g shape-rendering="crispEdges"><rect x="-24" y="-24" width="48" height="48" fill="${D[2]}" stroke="${D[1]}" stroke-width="5"/></g><text y="10" text-anchor="middle" font-size="28" fill="${D[1]}" ${F}>${D[0]}</text><text y="46" text-anchor="middle" font-size="15" fill="#1B2140" stroke="#FFFFFF" stroke-width="4" paint-order="stroke" ${F}>${SPOT_N[q.type]}</text></g>`; }
+  if (q.type === 'tfork') return `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-22" y="-22" width="44" height="44" fill="#FFF3C4" stroke="#D98A0B" stroke-width="4"/><path d="M-2 -2 H2 V14 H-2Z M-13 -13 H-1 V-6 H-13Z M1 -9 H13 V-2 H1Z" fill="#8A5A0B"/></g>`;
+  if (q.type === 'terr'){ const E = TSQ[q.tk] || TSQ.spring, used = S.quest && (S.quest.tused || {})[q.k]; return used ? `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-8" y="-8" width="16" height="16" fill="#FFFFFF" stroke="#9C7A48" stroke-width="4"/></g>` : `<g transform="translate(${X} ${Y})"><rect x="-17" y="-17" width="34" height="34" fill="#FFFFFF" stroke="${E.c}" stroke-width="4" shape-rendering="crispEdges"/><text y="8" text-anchor="middle" font-size="21" fill="${E.c}" ${F}>${E.s}</text></g>`; }
   if (q.type === 'ev') return `<g transform="translate(${X} ${Y})"><rect x="-17" y="-17" width="34" height="34" fill="#FFFFFF" stroke="${q.ev.tone === 'good' ? '#15A37C' : q.ev.tone === 'bad' ? '#D93A3F' : '#2E8FE0'}" stroke-width="4" shape-rendering="crispEdges"/><use href="#ic-${q.ev.ic}"/></g>`;
   const st = S.stages[q.p.s], col = colorOf(S, q.p.s), done = qDone(q.p.key);
   let h = `<g transform="translate(${X} ${Y})"><g shape-rendering="crispEdges"><rect x="-26" y="-26" width="52" height="52" fill="${done ? hexMix(col, '#FFFFFF', .75) : '#FFFFFF'}" stroke="${col}" stroke-width="5"/><rect x="-20" y="-20" width="40" height="40" fill="none" stroke="${col}" stroke-opacity=".35" stroke-width="2"/></g><text y="10" text-anchor="middle" font-size="28" fill="${col}" ${F}>${q.p.s + 1}</text>${done ? `<g transform="translate(20 -20)" shape-rendering="crispEdges"><rect x="-9" y="-9" width="18" height="18" fill="#128A5E"/><path d="M-5 0 L-2 3 L5 -4" stroke="#FFFFFF" stroke-width="3" fill="none"/></g>` : ''}<text y="48" text-anchor="middle" font-size="16" fill="#1B2140" stroke="#FFFFFF" stroke-width="5" paint-order="stroke" ${F}>${esc(st.l)}</text></g>`;
@@ -4297,7 +4438,7 @@ function overSVG(T){
   const banner = `<g transform="translate(790 140)" shape-rendering="crispEdges"><rect x="-124" y="-27" width="248" height="50" fill="#FFFFFF" stroke="#1B2140" stroke-width="4"/><rect x="-117" y="-20" width="234" height="36" fill="none" stroke="#F2554E" stroke-width="2"/><text y="8" text-anchor="middle" font-size="20" fill="#1B2140" ${F}>${esc([...S.theme].slice(0, 12).join(''))}</text></g>`;
   const caves = `<text x="840" y="934" text-anchor="middle" font-size="17" fill="#1B2140" stroke="#FFFFFF" stroke-width="5" paint-order="stroke" ${F}>${esc(segName('cave'))}</text><text x="170" y="816" text-anchor="middle" font-size="17" fill="#1B2140" stroke="#FFFFFF" stroke-width="5" paint-order="stroke" ${F}>出口</text>`;
   const tiles = T.sq.filter(q => q.part !== 2).map(padSVG).join('');
-  return `<svg id="world" ${pxWorldAttr(pxMap('over'))} viewBox="0 0 ${WW} ${OH}" role="img" aria-label="冒険マップ">${worldDefs()}${caves}${banner}${signs}${labels}${ghosts}${tiles}${rivalsSVG(false)}${onlineLayer(false)}<circle id="hereRing" r="38" fill="none" stroke="#F2554E" stroke-width="3.5" class="here-ring"/>${heroSVG()}</svg>`;
+  return `<svg id="world" ${pxWorldAttr(pxMap('over'))} viewBox="0 0 ${WW} ${OH}" role="img" aria-label="冒険マップ">${worldDefs()}${terrSVG()}${caves}${banner}${signs}${labels}${ghosts}${tiles}${rivalsSVG(false)}${onlineLayer(false)}<circle id="hereRing" r="38" fill="none" stroke="#F2554E" stroke-width="3.5" class="here-ring"/>${heroSVG()}</svg>`;
 }
 function caveSVG(T){
   const sc = sceneryCave(), C = caveCol(), a = SEG.cave.pts[0], z = SEG.cave.pts[SEG.cave.pts.length - 1];
@@ -4395,7 +4536,7 @@ async function roll(){
   const before = free || !S.quest.rivals ? 0 : myPlace();
   await walkForward(v, true, free ? null : rivalsPlan(), before);
 }
-const blocks = q => (q.type === 'q' && !qDone(q.p.key)) || (q.type === 'fork' && !(S.routes || {})[q.fork]) || q.type === 'goal' || (SPOT_N[q.type] && S.quest && !(S.quest.vis || {})[q.k]);
+const blocks = q => (q.type === 'tfork' && !terrRoutes(S)['t' + q.tf]) || (q.type === 'q' && !qDone(q.p.key)) || (q.type === 'fork' && !(S.routes || {})[q.fork]) || q.type === 'goal' || (SPOT_N[q.type] && S.quest && !(S.quest.vis || {})[q.k]);
 
 /* rivals: three runners race to the castle on the same board */
 const RIVALS = [
@@ -4650,6 +4791,8 @@ function land(T, i, trigger){
   if (s.type === 'foe' && trigger && !(rpgQ().foes = rpgQ().foes || {})[s.k]){ S.quest.fight = Math.random() < .07 ? goldFoe(foeOf(s.k)) : foeOf(s.k); S.quest.qs = 'fight'; qlog(S.quest.fight.msg); sfx.bad(); refresh(); return; }
   if (SPOT_N[s.type] && !(rpgQ().vis[s.k])){ S.quest.spot = s.k; S.quest.qs = s.type; sfx.next(); refresh(); return; }
   if (s.type === 'fork' && !(S.routes || {})[s.fork]){ S.cur = s.k; S.quest.qs = 'fork'; sfx.next(); refresh(); return; }
+  if (s.type === 'tfork' && !terrRoutes(S)['t' + s.tf]){ S.quest.tf = s.tf; S.quest.qs = 'tfork'; sfx.next(); refresh(); return; }
+  if (s.type === 'terr' && trigger && landTerr(s)) return;
   if (s.type === 'q' && !qDone(s.p.key)){
     S.cur = s.p.key; S.quest.qs = 'answer';
     const fresh = !S.stat[s.p.key], st = statOf(S, s.p.key), stg = S.stages[s.p.s];
@@ -5046,11 +5189,12 @@ function renderPanel(){
   if (duelStop){ duelStop(); duelStop = null; }
   const keep = $('#ans') ? $('#ans').value : '';
   const qs = S && S.mode === 'quest' ? S.quest.qs : '';
-  panel.dataset.st = !S ? 'ready' : building ? 'build' : S.phase === 'done' ? 'done' : ['fork', 'event', 'story', 'duel', 'shop', 'fate', 'job', 'fight', 'chest'].includes(qs) ? (SPOT_N[qs] || qs === 'fight' || qs === 'chest' ? 'fork' : qs) : qs && qs !== 'answer' ? 'roll' : 'play';
+  panel.dataset.st = !S ? 'ready' : building ? 'build' : S.phase === 'done' ? 'done' : ['fork', 'tfork', 'event', 'story', 'duel', 'shop', 'fate', 'job', 'fight', 'chest'].includes(qs) ? (SPOT_N[qs] || qs === 'fight' || qs === 'chest' || qs === 'tfork' ? 'fork' : qs) : qs && qs !== 'answer' ? 'roll' : 'play';
   if (!S){ panel.innerHTML = `<p class="kicker">READY</p><h2 class="question">テーマを決めると、ここに問いが表示されます。</h2><div class="p-foot"><button class="btn primary" type="button" data-act="menu">ホームへ</button></div>`; syncScreen(); return; }
   if (building) panel.innerHTML = `<p class="kicker">MIND MAP</p><div class="rpg"><span class="rpg-name">王さま</span><p>よくぞたどり着いた！ そなたの旅の答えから、マインドマップを組み立てておるぞ…</p></div><p class="hint">枝が1本ずつ伸びていきます。</p>`;
   else if (S.phase === 'done') panel.innerHTML = doneHTML();
   else if (S.mode === 'quest' && S.quest.qs === 'fork') panel.innerHTML = forkHTML(S.cur.replace('fork:', ''));
+  else if (S.mode === 'quest' && S.quest.qs === 'tfork') panel.innerHTML = tforkHTML();
   else if (S.mode === 'quest' && S.quest.qs === 'event') panel.innerHTML = eventHTML();
   else if (S.mode === 'quest' && S.quest.qs === 'duel' && S.quest.duel) panel.innerHTML = duelHTML();
   else if (S.mode === 'quest' && S.quest.qs === 'story') panel.innerHTML = storyHTML();
@@ -5365,13 +5509,13 @@ function playHTML(){
 }
 function rollHTML(){
   const q = S.quest, T = track(S), sq = T.sq, i = sqIndex(sq, q.pos), cur = sq[i] || sq[0];
-  const nx = sq.findIndex((s, k) => k > i && ((s.type === 'q' && !qDone(s.p.key)) || (s.type === 'fork' && !(S.routes || {})[s.fork]) || (SPOT_N[s.type] && !rpgQ().vis[s.k])));
+  const nx = sq.findIndex((s, k) => k > i && ((s.type === 'tfork' && !terrRoutes(S)['t' + s.tf]) || (s.type === 'q' && !qDone(s.p.key)) || (s.type === 'fork' && !(S.routes || {})[s.fork]) || (SPOT_N[s.type] && !rpgQ().vis[s.k])));
   const gate = nx >= 0 ? sq[nx] : null, moving = q.qs === 'moving';
   const P = prompts(S).filter(p => !p.fork), doneN = Object.keys(q.done).filter(k => !k.startsWith('fork')).length;
   const toGoal = sq[sq.length - 1].type === 'goal' ? `${sq.length - 1 - i}マス` : '？';
   const veh = vehOf(cur.seg);
   const gateHTML = !gate ? `<div class="gate-next">関所はすべて通過。<b>${W().names.castle}をめざそう！</b></div>`
-    : gate.type === 'fork' ? `<div class="gate-next">次は：<span class="stage-pill" style="--c:#D98A0B"><i>分</i>分かれ道</span><b>あと${nx - i}マス</b></div>`
+    : gate.type === 'fork' || gate.type === 'tfork' ? `<div class="gate-next">次は：<span class="stage-pill" style="--c:#D98A0B"><i>分</i>分かれ道</span><b>あと${nx - i}マス</b></div>`
     : SPOT_N[gate.type] ? `<div class="gate-next">次は：<span class="stage-pill" style="--c:#8C6CF2"><i>${{shop: '店', fate: '運', job: '転'}[gate.type]}</i>${SPOT_N[gate.type]}</span><b>あと${nx - i}マス</b></div>`
     : `<div class="gate-next">次の関所：<span class="stage-pill" style="--c:${colorOf(S, gate.p.s)}"><i>${gate.p.s + 1}</i>${esc(S.stages[gate.p.s].l)}</span><b>あと${nx - i}マス</b></div>`;
   return `
@@ -5403,7 +5547,8 @@ function aheadHTML(sq, i){
     const t = sq[j]; let cls = 'plain', lbl = 'ふつう';
     if (j === i){ cls = 'none'; lbl = '―'; }
     else if (t.type === 'q' && !qDone(t.p.key)){ cls = 'gate'; lbl = S.stages[t.p.s].monster ? 'バトル' : '関所'; }
-    else if (t.type === 'fork' && !(S.routes || {})[t.fork]){ cls = 'gate'; lbl = '分かれ道'; }
+    else if ((t.type === 'fork' && !(S.routes || {})[t.fork]) || (t.type === 'tfork' && !terrRoutes(S)['t' + t.tf])){ cls = 'gate'; lbl = '分かれ道'; }
+    else if (t.type === 'terr' && !(rpgQ().tused || {})[t.k]){ const E = TSQ[t.tk]; cls = (E.m || 0) < 0 ? 'bad' : 'good'; lbl = E.n; }
     else if (t.type === 'goal'){ cls = 'goal'; lbl = 'ゴール'; }
     else if (t.type === 'foe' && !(rpgQ().foes || {})[t.k]){ cls = 'bad'; lbl = 'まもの'; }
     else if (t.type === 'chest' && !(rpgQ().chests || {})[t.k]){ cls = 'good'; lbl = '宝箱'; }
@@ -6571,6 +6716,7 @@ panel.addEventListener('click', e => {
   if (b.dataset.choice != null) return toggleChoice(b.dataset.choice, b.dataset.field);
   if (b.dataset.act === 'setf'){ if (saveFields()) refresh(); return; }
   if (b.dataset.route){ chooseRoute(b.dataset.fork, b.dataset.route); return; }
+  if (b.dataset.tf){ chooseTerr(b.dataset.tf); return; }
   if (b.dataset.duel){ duelPick(b.dataset.duel); return; }
   if (b.dataset.rpg){ rpgAct(b.dataset.rpg, b.dataset.v); return; }
   if (b.dataset.fight){ fightAct(b.dataset.fight); return; }
