@@ -569,6 +569,65 @@ details.own[open] summary{margin-bottom:8px}
 .dmg.bad{color:#FF6B6B}
 @keyframes dmgUp{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-50px)}}
 .ibar.flash{animation:beat .3s 3}
+.bt-cmd.hide{display:none}
+.battle.shake{animation:btShake .35s}
+@keyframes btShake{25%{transform:translate(-6px,3px)}50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,2px)}}
+.bt-hero.awake svg{filter:drop-shadow(0 0 8px #FFD84D) drop-shadow(0 0 14px #FF7A3D)}
+.bt-mon.form2 svg{filter:hue-rotate(250deg) saturate(1.6) drop-shadow(0 0 12px #B04DFF);transform:scale(1.12)}
+.mg-pick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.mg-pick b{grid-column:1 / -1;font-size:13px}
+.mg-pick button{display:grid;gap:2px;justify-items:center;padding:8px 4px;border-radius:12px;border:2px solid var(--line);background:#fff;font-weight:800;font-size:13px;color:var(--ink)}
+.mg-pick button small{font-size:10.5px;font-weight:500;color:var(--muted);line-height:1.35;text-align:center}
+.mg-pick button:hover{border-color:var(--accent)}
+.mg-wrap{display:grid;gap:8px}
+.mg-hud{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-weight:800;font-size:14px}
+.mg-cv{width:100%;max-width:420px;justify-self:center;border-radius:14px;touch-action:none;image-rendering:pixelated}
+.kf{position:relative;height:200px;border-radius:14px;background:linear-gradient(180deg,#3A2A60,#7A4A8A 70%,#3A5A3A 70%);overflow:hidden}
+.kf-hero,.kf-mon{position:absolute;bottom:18px;width:110px;transition:transform .15s}
+.kf-hero{left:14%}.kf-mon{right:12%}
+.kf img{width:100%;image-rendering:pixelated}
+.kf-mon img{transform:scaleX(-1)}
+.kf-warn{position:absolute;right:20%;top:12px;font-size:44px;font-weight:900;color:#FFD84D;-webkit-text-stroke:2px #1B1430}
+.kf-hero.punch{animation:kfP .2s}.kf-hero.kick{animation:kfK .45s}.kf-hero.guard{filter:drop-shadow(0 0 10px #39E1F0)}.kf-hero.block{animation:kfB .3s}.kf-hero.hurt{animation:btHit .5s steps(2)}
+.kf-mon.hit{animation:btHit .5s steps(2)}.kf-mon.atk{animation:kfA .35s}
+@keyframes kfP{50%{transform:translateX(60px)}}@keyframes kfK{60%{transform:translateX(90px) rotate(-8deg)}}@keyframes kfB{50%{transform:translateX(-10px)}}@keyframes kfA{50%{transform:translateX(-90px)}}
+.kf-btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.kf-btns button{padding:12px 4px;border-radius:12px;border:2px solid var(--ink);background:#fff;font-weight:800;font-size:15px;touch-action:manipulation}
+.rh{position:relative;height:260px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;border-radius:14px;background:#1B1430;overflow:hidden;touch-action:none}
+.rh-lane{position:relative;border-left:1px solid rgba(255,255,255,.08)}
+.rh-lane.tap{background:rgba(255,214,107,.18)}
+.rh-line{position:absolute;left:0;right:0;bottom:40px;height:4px;background:#FFD66B;z-index:1}
+.rh-note{position:absolute;left:50%;top:0;width:44px;height:16px;margin-left:-22px;margin-top:-8px;border-radius:8px;background:linear-gradient(90deg,#FF5FD2,#39E1F0);box-shadow:0 0 10px #FF5FD2}
+.rh-pop{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);font-family:var(--en);font-weight:800;font-size:15px;color:#FFD66B;animation:dmgUp .5s forwards}
+.chest{display:grid;justify-items:center;gap:6px;text-align:center;padding:22px 16px;border-radius:20px;border:3px solid var(--c);background:#FFFBEA}
+.chest.legend{background:radial-gradient(circle,#FFF3C4,#FFE08A);box-shadow:0 0 30px #FFD84D}
+.chest.rare{background:#EEF6FF}
+.chest-box{font-size:64px;animation:chestOpen .8s ease-out}
+@keyframes chestOpen{0%{transform:scale(.6) rotate(-10deg)}40%{transform:scale(1.2) rotate(8deg)}70%{transform:scale(.95)}100%{transform:none}}
+.chest b{font-size:20px}.chest p{margin:0;font-size:16px;font-weight:800}
+.pets,.prac,.daily{display:grid;gap:4px;padding:8px 12px;border-radius:14px;border:1.5px solid var(--line);background:var(--soft);font-size:12.5px}
+.pets small{font-size:10px;color:var(--accent);margin-left:2px}
+.prac{grid-template-columns:auto 1fr auto;align-items:center;gap:6px 10px;background:#FFF4EC;border-color:#FFC9A8}
+.prac.ok{background:#E9F7EF;border-color:#A9E3CB}
+.prac em{font-style:normal;font-weight:800;color:var(--ok)}
+.daily ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.daily li{display:flex;justify-content:space-between;gap:8px}
+.daily li.ok{color:var(--ok);font-weight:700}
+.daily li span{font-family:var(--en);color:var(--muted)}
+.collect-row{display:flex;justify-content:flex-end}
+.collect h2{margin:0}
+.cl-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.cl-tabs button{border:1.5px solid var(--line2);background:#fff;border-radius:999px;padding:6px 14px;font-weight:700;font-size:13px}
+.cl-tabs button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.cl-n{margin:0;font-weight:800;color:var(--muted)}
+.cl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.cl{display:grid;gap:2px;justify-items:center;text-align:center;padding:10px 8px;border-radius:14px;border:1.5px solid var(--line);background:#F2F3F7;color:var(--dim)}
+.cl.ok{background:#fff;color:var(--ink)}
+.cl i{font-style:normal;font-size:34px}
+.cl svg{width:72px;height:60px}
+.cl b{font-size:13px}.cl small{font-size:11px;color:var(--muted);line-height:1.4}
+.cl-best{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0;font-size:14px}
+.cl-best dt{color:var(--muted);font-weight:700}.cl-best dd{margin:0;font-weight:800}
 .mbar{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--muted)}
 .mbar i{display:block;height:10px;border-radius:999px;background:#EEF0F6;overflow:hidden}
 .mbar em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#15A37C,#7ED3A8);transition:width .4s}
@@ -1170,6 +1229,7 @@ details.own[open] summary{margin-bottom:8px}
     <div class="title-art" data-hs="1" id="titleArt" role="img" aria-label="勇者と仲間たちがドラゴンとたたかい、夢の城をめざすタイトル画面"></div>
     <h1 class="sr-only">マインドクエスト</h1>
     <p class="title-sub" data-hs="1">問いに答えて、たたかって、夢をかなえろ！</p>
+    <div class="collect-row" data-hs="1"><button class="btn" type="button" id="btnCollect">📖 図鑑と記録・今日のクエスト</button></div>
     <div class="title-row" data-hs="1">
       <p class="title-tag">テーマを決めて、<b>問いに答えるたびに強くなる</b>。モンスター（不安・言いわけ・あきらめ）をたおして、夢の城をめざそう！</p>
       <div class="install" id="installBox"><button class="app-card" type="button" id="btnInstall"><span class="ac-qr" id="appMiniQR" aria-hidden="true">📱</span><span class="ac-t"><b id="installLabel">📱 アプリにする</b><small id="installNote">QRコードでスマホにも入れられます</small></span><span class="ac-go" aria-hidden="true">›</span></button></div>
@@ -2342,7 +2402,7 @@ function segName(seg){
   const f = 'f' + seg.slice(1), fk = S && S.forks && S.forks[f];
   return fk && fk.opts[seg] ? fk.opts[seg].n : (seg[1] === '1' ? '森の道' : '星の道');
 }
-const GAP = 62, WEIGHT = {foe: .75, start: 1.2, fork: 1.3, q: 1.3, goal: 1.3, ev: 1, plain: .75, shop: 1.3, fate: 1.3, job: 1.3};
+const GAP = 62, WEIGHT = {foe: .75, chest: .75, start: 1.2, fork: 1.3, q: 1.3, goal: 1.3, ev: 1, plain: .75, shop: 1.3, fate: 1.3, job: 1.3};
 const filler = key => hash('f' + key) % 100 < 45 ? {k: 'e:' + key, type: 'ev', ev: evOf('e:' + key)} : {k: 'n:' + key, type: 'plain'};
 function track(x){
   setGeo(x.mode === 'quest' ? x.chapter || 1 : 1);
@@ -2389,8 +2449,8 @@ function track(x){
     L.forEach((q, j) => {
       if (j) acc += (w[j - 1] + w[j]) / 2;
       const d = off + (tot ? acc / tot : 0) * len, pt = P2.pt(d);
-      const foe = q.type === 'plain' && seg !== 'cave' && x.mode === 'quest' && hash('m' + q.k) % 100 < 16;
-      sq.push({...q, ...(foe ? {type: 'foe', k: 'm:' + q.k} : {}), seg, part, d, x: pt.x, y: pt.y});
+      const foe = q.type === 'plain' && seg !== 'cave' && x.mode === 'quest' && hash('m' + q.k) % 100 < 16, chest = !foe && q.type === 'plain' && x.mode === 'quest' && hash('t' + q.k) % 100 < 14;
+      sq.push({...q, ...(foe ? {type: 'foe', k: 'm:' + q.k} : chest ? {type: 'chest', k: 't:' + q.k} : {}), seg, part, d, x: pt.x, y: pt.y});
     });
   });
   return {sq, parts, r1, r2};
@@ -2480,7 +2540,7 @@ const W = () => {
 };
 const gearList = () => CLASSES[curCls()].gear || W().gear;
 const lvName = lv => (CLASSES[curCls()].lv || W().lv)[lv] || '';
-const gearOf = lv => { const g = gearList()[lv - 2]; return g ? {n: g[0], d: `${g[1]}。Lv.${lv} ${lvName(lv)}になった！`} : {n: '', d: ''}; };
+const gearOf = lv => { const g = gearList()[lv - 2]; return g ? {n: gearName(lv, g[0]), d: `${g[1]}。Lv.${lv} ${lvName(lv)}になった！`} : {n: '', d: ''}; };
 /* scenery symbols per world (house / tree / pine / landmark) */
 const W_SYM = {
   euro: {
@@ -2877,7 +2937,7 @@ const memberUse = m => { const u = mem(m).use; return u ? u.replace('{RABBIT}', 
 
 /* ---------- the quest state: gold, mental, items ---------- */
 const rpgQ = () => { const Q = S.quest; if (Q.mental == null) Q.mental = 100; Q.gold = Q.gold || 0; Q.items = Q.items || {}; Q.fx = Q.fx || {}; Q.vis = Q.vis || {}; Q.magic = Q.magic || 0; return Q; };
-function gainGold(n, why){ const Q = rpgQ(), g = Math.round(n * (curCls() === 'merchant' ? 1.5 : 1)); if (g <= 0) return 0; Q.gold += g; if (why) qlog(`${why} +${g}G`); return g; }
+function gainGold(n, why){ const Q = rpgQ(), g = Math.round(n * (curCls() === 'merchant' ? 1.5 : 1) * petGold()); if (g <= 0) return 0; Q.gold += g; Q.earned = (Q.earned || 0) + g; dailyAdd('gold', g); if (why) qlog(`${why} +${g}G`); return g; }
 function heal(n, why){ const Q = rpgQ(), was = Q.mental; Q.mental = Math.min(100, Q.mental + n); if (why && Q.mental > was) qlog(`${why}（メンタル +${Q.mental - was}）`); }
 /* damage to the mental gauge; true when it reached 0 (人生リタイヤ) */
 function hurt(n, why, monster){
@@ -2907,6 +2967,7 @@ const ITEMS = {
   crystal: {n: 'AIの水晶玉', ic: '🔮', g: 80, tier: 3, d: 'いまの問いのヒントを、有力なAIが教えてくれる'},
   boots: {n: 'ワープの靴', ic: '👟', g: 90, tier: 3, d: '次のサイコロの目を、自分で選べる'},
   mirror: {n: '鏡の盾', ic: '🪞', g: 100, tier: 3, d: 'ライバル勝負に負けても、ダメージを相手にはね返す（相手は1回休み）'},
+  egg: {n: 'ふしぎなたまご', ic: '🥚', g: 100, tier: 2, d: '6マス歩くと、おともが生まれる（N・R・SR、何が出るかはお楽しみ）'},
   book: {n: '魔法の書', ic: '📕', g: 120, tier: 3, d: '魔法「ファイア」を3回使えるようになる（魔物に大ダメージ、ごほうび2倍）'}
 };
 const priceOf = it => Math.round(it.g * (curCls() === 'merchant' ? .9 : 1));
@@ -3028,7 +3089,7 @@ function rpgAct(a, v){
   if (!S || !S.quest) return;
   const Q = rpgQ();
   if (a === 'use') return useItem(v);
-  if (a === 'buy'){ const it = ITEMS[v]; if (!it || Q.qs !== 'shop') return; const pr = priceOf(it); if (Q.gold < pr) return; Q.gold -= pr; Q.items[v] = (Q.items[v] || 0) + 1; sfx.good(); toast(`${it.ic} ${it.n}を買った！`); qlog(`${it.n}を${pr}Gで買った`); save(); renderPanel(); return; }
+  if (a === 'buy'){ const it = ITEMS[v]; if (!it || Q.qs !== 'shop') return; const pr = priceOf(it); if (Q.gold < pr) return; Q.gold -= pr; if (v === 'egg'){ Q.eggs = Q.eggs || []; Q.eggs.push(6); } else Q.items[v] = (Q.items[v] || 0) + 1; sfx.good(); toast(`${it.ic} ${it.n}を買った！`); qlog(`${it.n}を${pr}Gで買った`); save(); renderPanel(); return; }
   if (a === 'leave'){ Q.vis[Q.spot] = 1; Q.rest = Q.spot; Q.qs = 'roll'; sfx.next(); save(); refresh(); return; }
   if (a === 'fate'){
     const n = +Q.spot.split(':')[1], o = (FATES[n] || FATES[1]).opts[+v]; if (!o || Q.qs !== 'fate') return;
@@ -3091,14 +3152,14 @@ function goalSprite(P, R){
   return (PX_CASTLE[alt[g]] || PX_CASTLE[P.castle] || PX_CASTLE.euro)(P, R);
 }
 /* ---------- battle screen: at a monster gate the map turns into a battle. Each answer is an attack, the monster strikes back ---------- */
-const battleHP = p => { const st = S.stages[p.s], s = statOf(S, p.key); return Math.max(0, Math.round(100 - answersFor(S, p).length / Math.max(1, st.min) * 100) - (s.fire || 0)); };
+const battleHP = p => { const st = S.stages[p.s], s = statOf(S, p.key); return Math.max(0, Math.min(100, Math.round(100 - answersFor(S, p).length / Math.max(1, st.min) * 100) - (s.fire || 0) - (s.crit || 0) + (s.extra || 0))); };
 let btLast = {key: null, n: 0, fire: 0};
 function battleHTML(p, st, hp){
   const Q = rpgQ(), m = Q.mental, lv = heroLevel(), fireOk = Q.magic > 0 && hp > 0;
   return `<div class="bt-sky ${st.monster === 'boss' ? 'boss' : ''}"></div><div class="bt-floor"></div>
-    <div class="bt-mon${hp <= 0 ? ' dead' : ''}"><div class="bt-tag"><b>${st.monster === 'boss' ? `${(WMON[curWorld()] || WMON.euro).bossN}${esc((st.npc || '').replace(/^ボス/, ''))}` : esc(st.npc || 'モンスター')}</b><span class="hpb"><i style="width:${hp}%"></i></span><small>HP ${hp}</small></div>
+    <div class="bt-mon${hp <= 0 ? ' dead' : ''}${statOf(S, p.key).form2 ? ' form2' : ''}"><div class="bt-tag"><b>${statOf(S, p.key).form2 ? '第2形態 ' : ''}${st.monster === 'boss' ? `${(WMON[curWorld()] || WMON.euro).bossN}${esc((st.npc || '').replace(/^ボス/, ''))}` : esc(st.npc || 'モンスター')}</b><span class="hpb"><i style="width:${hp}%"></i></span><small>HP ${hp}</small></div>
       <svg viewBox="-75 -100 150 108" aria-hidden="true"><g class="bt-body">${pxSprite(`<use href="#mon-${monKind(st)}" style="--mc:${st.mcol || '#7C4DDB'}"/>`)}</g></svg></div>
-    <div class="bt-hero"><svg viewBox="-55 -80 110 88" aria-hidden="true"><g class="bt-body" transform="scale(1.1)">${pxPerson(lv)}</g></svg>
+    <div class="bt-hero${awake() ? ' awake' : ''}"><svg viewBox="-55 -80 110 88" aria-hidden="true"><g class="bt-body" transform="scale(1.1)">${pxPerson(lv)}</g></svg>
       <div class="bt-tag"><b>${esc(heroName() || 'あなた')} Lv.${lv}</b><span class="hpb mental${m <= 30 ? ' low' : ''}"><i style="width:${m}%"></i></span><small>メンタル ${m}</small></div></div>
     <p class="bt-msg">${hp <= 0 ? `${esc(st.npc || 'モンスター')}をやっつけた！ 右の「進む」で関所を通ろう` : '答えを書くたびに攻撃！ 魔物のHPを0にしよう'}</p>
     <div class="bt-cmd"><button type="button" data-bt="atk" ${hp <= 0 ? 'disabled' : ''}>⚔️ こうげき<small>答えを書く</small></button><button type="button" data-rpg="fire" ${fireOk ? '' : 'disabled'}>🔥 まほう<small>ファイア ×${Q.magic}</small></button><button type="button" data-bt="item">🎒 アイテム<small>もちものから使う</small></button></div>
@@ -3108,18 +3169,18 @@ function btPop(el, sel, txt, cls){ const host = el.querySelector(sel); if (!host
 function btAnim(el, sel, cls, ms){ const t = el.querySelector(sel); if (!t) return; t.classList.remove(cls); void t.offsetWidth; t.classList.add(cls); setTimeout(() => t.classList.remove(cls), ms || 500); }
 /* ---------- roaming monsters: stop on a red square and fight with attack / magic / items / run ---------- */
 function foeOf(k){
-  const W = WMON[curWorld()] || WMON.euro, [kind, n] = W.foes[hash(k) % W.foes.length], lv = heroLevel() + (S.chapter || 1) - 1;
+  const W = WMON[curWorld()] || WMON.euro, [kind, n] = W.foes[hash(k) % W.foes.length], lv = heroLevel() + (S.chapter || 1) - 1 + (S.ng || 0) * 3;
   const col = ['#7C4DDB', '#C8362F', '#FF6A2A', '#2E8FE0', '#15A37C'][hash(k + 'c') % 5];
   return {k, kind, n, lv, col, hp: 30 + lv * 18, max: 30 + lv * 18, atk: 3 + lv * 2, msg: `${n}（Lv.${lv}）があらわれた！`};
 }
-const heroAtk = () => { const lv = heroLevel(); return Math.round((12 + lv * 6 + Math.random() * 8) * (curCls() === 'warrior' ? 1.3 : 1)); };
+const heroAtk = () => { const lv = heroLevel(); return Math.round((12 + lv * 6 + Math.random() * 8 + gearBonus() * 3 + petAtk()) * (curCls() === 'warrior' ? 1.3 : 1)); };
 const fireDmg = () => 40 + heroLevel() * 10 + (curCls() === 'mage' ? 15 : 0);
 function fightSceneHTML(F){
   const Q = rpgQ(), m = Q.mental, lv = heroLevel(), hp = Math.max(0, Math.round(F.hp / F.max * 100)), over = F.won || F.ran;
   return `<div class="bt-sky"></div><div class="bt-floor"></div>
     <div class="bt-mon${F.won ? ' dead' : ''}"><div class="bt-tag"><b>${esc(F.n)} Lv.${F.lv}</b><span class="hpb"><i style="width:${hp}%"></i></span><small>HP ${Math.max(0, F.hp)}</small></div>
       <svg viewBox="-75 -100 150 108" aria-hidden="true"><g class="bt-body" transform="translate(0 0) scale(1.4)">${pxSprite(`<use href="#mon-${F.kind}" style="--mc:${F.col}"/>`)}</g></svg></div>
-    <div class="bt-hero"><svg viewBox="-55 -80 110 88" aria-hidden="true"><g class="bt-body" transform="scale(1.1)">${pxPerson(lv)}</g></svg>
+    <div class="bt-hero${awake() ? ' awake' : ''}"><svg viewBox="-55 -80 110 88" aria-hidden="true"><g class="bt-body" transform="scale(1.1)">${pxPerson(lv)}</g></svg>
       <div class="bt-tag"><b>${esc(heroName() || 'あなた')} Lv.${lv}</b><span class="hpb mental${m <= 30 ? ' low' : ''}"><i style="width:${m}%"></i></span><small>メンタル ${m}</small></div></div>
     <p class="bt-msg">${esc(F.msg)}</p>
     <div class="bt-cmd${over ? ' one' : ''}">${over ? `<button type="button" data-fight="end">先へ進む →<small>${F.won ? 'ごほうびを受け取った' : 'うまく逃げた'}</small></button>`
@@ -3131,41 +3192,284 @@ function fightPanelHTML(){
   return `<div class="p-head"><p class="kicker">BATTLE</p><span class="p-count">${esc(F.n)} Lv.${F.lv}</span></div>
     <div class="rpg mon"><span class="rpg-name">${esc(F.n)}</span><svg class="mon-pic" viewBox="-66 -88 132 96" aria-hidden="true"><g class="mon-bob">${pxSprite(`<use href="#mon-${F.kind}" style="--mc:${F.col}"/>`)}</g></svg><p>${esc(F.msg)}</p><div class="hpbar"><span>HP</span><span class="hpt"><i style="width:${hp}%"></i></span><b>${Math.max(0, F.hp)}/${F.max}</b></div></div>
     ${statBarHTML()}${itemBarHTML('fight')}
-    <div class="bt-cmd panel${F.won || F.ran ? ' one' : ''}">${F.won || F.ran ? `<button type="button" data-fight="end">先へ進む →</button>`
+    ${F.mg ? '<div class="mg-wrap" id="mgArea"></div>' : ''}
+    <div class="bt-cmd panel${F.won || F.ran ? ' one' : ''}${F.mg ? ' hide' : ''}">${F.won || F.ran ? `<button type="button" data-fight="end">先へ進む →</button>`
       : `<button type="button" data-fight="atk" ${F.busy ? 'disabled' : ''}>⚔️ こうげき</button><button type="button" data-fight="fire" ${F.busy || !Q.magic ? 'disabled' : ''}>🔥 まほう ×${Q.magic}</button><button type="button" data-fight="run" ${F.busy ? 'disabled' : ''}>🏃 にげる</button>`}</div>
+    ${F.mg || F.won || F.ran ? '' : `<div class="mg-pick"><b>🎮 ミニゲームで戦う</b>${Object.entries(MG).map(([k, [ic, n, d]]) => `<button type="button" data-fight="${k}">${ic} ${n}<small>${d}</small></button>`).join('')}</div>`}
     <p class="hint">レベルが上がるほど、魔物も強くなります。メンタルが0になると人生リタイヤ。アイテムは「もちもの」から使えます。</p>`;
+}
+function fightWin(F){
+  const Q = rpgQ(), g = gainGold(F.gold ? 300 : 20 + F.lv * 10, ''), pts = F.gold ? 50 : 10 + F.lv * 5; Q.pts += pts; F.won = 1; F.busy = 0; F.mg = null;
+  F.msg = `${F.n}をやっつけた！ ${g}Gと夢ポイント+${pts}を手に入れた`; qlog(`${F.n}（Lv.${F.lv}）をたおした +${g}G +${pts}pt`);
+  tot('kills'); dailyAdd('kill'); dexAdd(F.gold ? 'any' : curWorld(), F.n); if (F.gold) badge('gold'); if (Q.mental <= 10) badge('clutch'); if (F.viaMg) badge('mg');
+  sfx.clear(); save(); renderPanel();
 }
 function fightAct(a){
   const Q = rpgQ(), F = Q.fight; if (!F || Q.qs !== 'fight') return;
   const el = () => $('#battle');
   if (a === 'end'){ Q.foes[F.k] = F.won ? 1 : 2; Q.fight = null; Q.qs = 'roll'; sfx.next(); save(); refresh(); return; }
-  if (F.busy || F.won || F.ran) return;
-  let dmg = 0;
-  if (a === 'atk'){ dmg = heroAtk(); F.msg = `${heroName() || 'あなた'}のこうげき！ ${F.n}に${dmg}のダメージ`; }
-  else if (a === 'fire'){ if (!Q.magic) return; Q.magic--; dmg = fireDmg(); F.msg = `魔法ファイア！ ${F.n}に${dmg}の大ダメージ`; }
+  if (F.busy || F.won || F.ran || F.mg) return;
+  if (MG[a]){ F.mg = a; F.mg0 = a; F.msg = `${MG[a][1]}で勝負！`; sfx.next(); renderPanel(); return; }
+  let dmg = 0, crit = false;
+  if (a === 'atk'){ dmg = heroAtk(); crit = critHit(false); }
+  else if (a === 'fire'){ if (!Q.magic) return; Q.magic--; dmg = fireDmg(); }
   else if (a === 'run'){
     if (Math.random() < .6){ F.ran = 1; F.msg = 'うまく逃げきった！'; qlog(`${F.n}から逃げた`); sfx.next(); save(); renderPanel(); return; }
     F.msg = '逃げられなかった！';
   }
-  if (dmg){ F.hp -= dmg; F.busy = 1; renderPanel(); const e = el(); if (e){ btAnim(e, '.bt-hero', 'atk', 450); if (a === 'fire') btAnim(e, '.bt-fx', 'fire', 700); setTimeout(() => { btAnim(e, '.bt-mon', 'hit', 500); btPop(e, '.bt-mon', '-' + dmg, a === 'fire' ? 'big' : ''); }, 180); } sfx.good(); }
-  else { F.busy = 1; renderPanel(); }
-  if (F.hp <= 0){
-    setTimeout(() => {
-      const g = gainGold(20 + F.lv * 10, ''), pts = 10 + F.lv * 5; Q.pts += pts; F.won = 1; F.busy = 0;
-      F.msg = `${F.n}をやっつけた！ ${g}Gと夢ポイント+${pts}を手に入れた`; qlog(`${F.n}（Lv.${F.lv}）をたおした +${g}G +${pts}pt`); sfx.clear(); save(); renderPanel();
-    }, 650);
-    return;
-  }
+  if (dmg){
+    if (crit) dmg *= 2; if (awake()) dmg *= 2; if (F.gold) dmg = Math.min(dmg, crit ? 16 : 8);
+    F.hp -= dmg; best('dmg', dmg); F.busy = 1;
+    F.msg = (crit ? 'かいしんのいちげき！ ' : '') + (a === 'fire' ? `魔法ファイア！ ${F.n}に${dmg}の大ダメージ` : `${heroName() || 'あなた'}のこうげき！ ${F.n}に${dmg}のダメージ`);
+    if (crit) critFx();
+    renderPanel(); const e = el(); if (e){ btAnim(e, '.bt-hero', 'atk', 450); if (a === 'fire') btAnim(e, '.bt-fx', 'fire', 700); setTimeout(() => { btAnim(e, '.bt-mon', 'hit', 500); btPop(e, '.bt-mon', '-' + dmg, a === 'fire' || crit ? 'big' : ''); }, 180); }
+    sfx.good();
+  } else { F.busy = 1; renderPanel(); }
+  if (F.hp <= 0){ setTimeout(() => fightWin(F), 650); return; }
   setTimeout(() => {
     if (!Q.fight || Q.qs !== 'fight') return;
-    const d = Math.max(1, Math.round(F.atk * (.8 + Math.random() * .4))), e = el();
+    if (F.gold && Math.random() < .45){ F.ran = 1; F.busy = 0; F.msg = 'ゴールドスライムはにげだした…'; qlog('ゴールドスライムににげられた'); save(); renderPanel(); return; }
+    const d = Math.max(1, Math.round(F.atk * (.8 + Math.random() * .4))) + (S.ng || 0) * 2, e = el();
     if (e){ btAnim(e, '.bt-mon', 'matk', 450); setTimeout(() => { btAnim(e, '.bt-hero', 'hit', 500); btPop(e, '.bt-hero', '-' + d, 'bad'); }, 220); }
     F.busy = 0; F.msg = `${F.n}のこうげき！`;
-    if (!hurt(d, `${F.n}のこうげき！`, true)) renderPanel();
+    if (!hurt(d, `${F.n}のこうげき！`, true)){ awakeCheck(); renderPanel(); }
   }, 900);
 }
+/* =========================================================
+   PLAY EXTRAS: things that make you come back. Collections (goals, monsters, partners), titles, daily quests,
+   best records, treasure chests, eggs, golden monsters, critical hits, a boss second form, awakening in a pinch,
+   rare gear, real-life training reports, "new game plus" and a result card. Kept on this device.
+   ========================================================= */
+const META_KEY = 'mindquest-meta';
+const META = (() => { const m = store.get(META_KEY, {}) || {}; return {goals: m.goals || {}, mons: m.mons || {}, pets: m.pets || {}, badges: m.badges || {}, tot: m.tot || {}, best: m.best || {}, daily: m.daily || null, pdays: m.pdays || []}; })();
+const metaSave = () => store.set(META_KEY, META);
+const dayKey = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+const tot = (k, n = 1) => { META.tot[k] = (META.tot[k] || 0) + n; metaSave(); return META.tot[k]; };
+const best = (k, v, low) => { const o = META.best[k]; if (o == null || (low ? v < o : v > o)){ META.best[k] = v; metaSave(); return true; } return false; };
+
+/* ---------- titles ---------- */
+const BADGES = {
+  boss1: ['👑', 'はじめてのボス撃破', 'ボスをはじめてたおした'], nodmg: ['✨', '無傷の勇者', 'メンタル100のままボスをたおした'], clutch: ['💪', 'ギリギリの勇者', 'メンタル10以下で魔物に勝った'],
+  ans100: ['📝', '答えの達人', '答えを合計100個書いた'], crit10: ['💥', '会心マスター', '会心の一撃を10回出した'], gold: ['🥇', '黄金ハンター', '金色の魔物をたおした'],
+  legend: ['🌟', '伝説の宝', '伝説の宝箱を開けた'], egg: ['🥚', 'たまごの親', 'おともが生まれた'], sr: ['🌈', '超レアの出会い', 'SRのおともが生まれた'],
+  goals3: ['🗺️', '運命の旅人', '3種類のゴールにたどり着いた'], goals10: ['🏆', '全ゴール制覇', '10種類のゴールをすべて見た'], dex50: ['📖', '魔物博士', '魔物図鑑を半分うめた'],
+  ng: ['🔁', '強くてニューゲーム', '2周目に挑戦した'], prac7: ['🔥', '7日修行', '現実の修行を7日報告した'], daily: ['📅', '毎日の冒険者', '今日のクエストを3つ達成した'],
+  awake: ['⚡', '覚醒', 'ピンチで覚醒した'], lgear: ['🗡️', '伝説の装備', '伝説の装備を手に入れた'], mg: ['🎮', 'ミニゲームの達人', 'ミニゲームで魔物をたおした']
+};
+function badge(id){ if (!BADGES[id] || META.badges[id]) return; META.badges[id] = Date.now(); metaSave(); const b = BADGES[id]; toast(`${b[0]} 称号「${b[1]}」を手に入れた！`); if (S && S.quest) qlog(`称号「${b[1]}」を手に入れた`); sfx.done(); }
+
+/* ---------- daily quests ---------- */
+const DAILY_POOL = [['kill', '魔物を{n}体たおす', [2, 3]], ['ans', '答えを{n}個書く', [5, 8]], ['chest', '宝箱を{n}個あける', [1, 2]], ['gate', '関所を{n}つ通る', [3, 5]], ['gold', 'ゴールドを{n}G集める', [100, 200]], ['crit', '会心の一撃を{n}回出す', [1, 2]]];
+function daily(){
+  const d = dayKey();
+  if (!META.daily || META.daily.date !== d){ const R = rng(hash(d)), pool = [...DAILY_POOL]; const tasks = []; while (tasks.length < 3){ const [id, t, ns] = pool.splice(Math.floor(R() * pool.length), 1)[0]; const n = ns[Math.floor(R() * ns.length)]; tasks.push({id, t: t.replace('{n}', n), n, c: 0, done: 0}); } META.daily = {date: d, tasks}; metaSave(); }
+  return META.daily;
+}
+function dailyAdd(id, k = 1){
+  const D = daily(); let changed = false;
+  D.tasks.forEach(t => { if (t.id !== id || t.done) return; t.c = Math.min(t.n, t.c + k); changed = true; if (t.c >= t.n){ t.done = 1; if (S && S.quest){ rpgQ().gold += 50; } toast(`📅 今日のクエスト達成！「${t.t}」 +50G`); sfx.good(); } });
+  if (changed){ metaSave(); if (D.tasks.every(t => t.done)) badge('daily'); }
+}
+const dailyHTML = () => { const D = daily(); return `<div class="daily"><b>📅 今日のクエスト</b><ul>${D.tasks.map(t => `<li class="${t.done ? 'ok' : ''}">${t.done ? '✅' : '⬜'} ${esc(t.t)}<span>${t.c}/${t.n}</span></li>`).join('')}</ul></div>`; };
+
+/* ---------- monster book and goal book ---------- */
+let DEXC = null;
+const DEXL = () => DEXC || (DEXC = (() => { const L = []; Object.entries(WMON).forEach(([w, W]) => { W.foes.forEach(([k, n]) => L.push([w, k, n])); L.push([w, W.boss, W.bossN]); }); L.push(['any', 'gold', 'ゴールドスライム']); return L.filter((v, i, a) => a.findIndex(u => u[0] === v[0] && u[2] === v[2]) === i); })());
+function dexAdd(w, n){ const key = `${w}|${n}`; if (META.mons[key]) return; META.mons[key] = 1; metaSave(); toast(`📖 魔物図鑑に「${n}」が登録された！`); if (Object.keys(META.mons).length >= Math.ceil(DEXL().length / 2)) badge('dex50'); }
+const dexKey = e => `${e[0]}|${e[2]}`;
+
+/* ---------- rare gear: each level-up rolls the quality of the new gear ---------- */
+const RAR = [['', 0], ['＋1', 1], ['＋2', 2], ['＋3', 3], ['伝説の', 5]];
+function rollGear(lv){ const Q = rpgQ(); Q.gearR = Q.gearR || {}; const r = Math.random(), i = r < .02 ? 4 : r < .1 ? 3 : r < .25 ? 2 : r < .5 ? 1 : 0; Q.gearR[lv] = i; if (i === 4) badge('lgear'); return i; }
+const gearName = (lv, n) => { const i = ((S && S.quest && S.quest.gearR) || {})[lv] || 0; return i === 4 ? '伝説の' + n : n + RAR[i][0]; };
+const gearBonus = () => Object.values((S && S.quest && S.quest.gearR) || {}).reduce((t, i) => t + RAR[i][1], 0);
+
+/* ---------- partners from eggs ---------- */
+const PETS = {N: [['🐣', 'ヒヨコのピヨ'], ['🐶', '子イヌのポチ'], ['🐱', '子ネコのタマ'], ['🐢', 'カメのノロ']], R: [['🐲', '子ドラゴンのリュウ'], ['🦉', '白フクロウのシロ'], ['🐰', 'うさぎ騎士ラビ']], SR: [['🔥', '不死鳥のホムラ'], ['🐉', '黄金の子竜キン'], ['⭐', '星の精霊王ステラ']]};
+const PET_FX = {N: '攻撃+2', R: '攻撃+5', SR: '攻撃+10・ゴールド+10%'};
+function hatch(){
+  const Q = rpgQ(), r = Math.random(), rank = r < .08 ? 'SR' : r < .35 ? 'R' : 'N', L = PETS[rank], [ic, n] = L[Math.floor(Math.random() * L.length)];
+  Q.pets = Q.pets || []; Q.pets.push({ic, n, r: rank}); META.pets[n] = rank; metaSave();
+  toast(`🥚 たまごがかえった！ ${ic} ${n}（${rank}）がおともになった！`); qlog(`たまごから${n}（${rank}）が生まれた（${PET_FX[rank]}）`); sfx.done(); badge('egg'); if (rank === 'SR') badge('sr');
+}
+const petAtk = () => ((S && S.quest && S.quest.pets) || []).reduce((t, p) => t + ({N: 2, R: 5, SR: 10})[p.r], 0);
+const petGold = () => ((S && S.quest && S.quest.pets) || []).some(p => p.r === 'SR') ? 1.1 : 1;
+
+/* ---------- awakening: at 20 mental or less you hit twice as hard ---------- */
+const awake = () => { const Q = S && S.quest; return !!Q && Q.mental > 0 && Q.mental <= 20; };
+function awakeCheck(){ if (!awake()) return; const Q = rpgQ(); if (!Q.awoke){ Q.awoke = 1; toast('⚡ ピンチで覚醒！ 攻撃力が2倍になった'); qlog('ピンチで覚醒した（攻撃2倍）'); badge('awake'); } }
+const critHit = (spec) => Math.random() < (spec ? .35 : .12);
+function critFx(){ tot('crit'); dailyAdd('crit'); if ((META.tot.crit || 0) >= 10) badge('crit10'); const b = $('#battle'); if (b){ b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); } toast('💥 かいしんのいちげき！'); }
+
+/* ---------- treasure chests ---------- */
+function rollChest(){
+  const Q = rpgQ(), r = Math.random(), lv = heroLevel(), pickItem = tier => { const L = Object.keys(ITEMS).filter(id => ITEMS[id].tier === tier); return L[Math.floor(Math.random() * L.length)]; };
+  if (r < .05){ if (lv >= 2 && Math.random() < .5) return {rank: 'legend', gear: 2 + Math.floor(Math.random() * (lv - 1)), t: '伝説の装備'}; return Math.random() < .5 ? {rank: 'legend', item: pickItem(3), t: ''} : {rank: 'legend', egg: 1, t: 'ふしぎなたまご'}; }
+  if (r < .3) return Math.random() < .35 ? {rank: 'rare', egg: 1, t: 'ふしぎなたまご'} : Math.random() < .5 ? {rank: 'rare', item: pickItem(2), t: ''} : {rank: 'rare', gold: 100 + lv * 20, t: ''};
+  return Math.random() < .5 ? {rank: 'normal', gold: 20 + Math.floor(Math.random() * 30) + lv * 5, t: ''} : {rank: 'normal', item: pickItem(1), t: ''};
+}
+function chestHTML(){
+  const Q = rpgQ(), C = Q.chest, R = {normal: ['ふつうの宝箱', '#B07A28'], rare: ['レアな宝箱', '#2E8FE0'], legend: ['伝説の宝箱', '#E0A100']}[C.rank];
+  const what = C.gold ? `💰 ${C.gold}G` : C.item ? `${ITEMS[C.item].ic} ${ITEMS[C.item].n}` : C.egg ? '🥚 ふしぎなたまご（6マス歩くと、おともが生まれる）' : `🗡️ ${gearName(C.gear, gearList()[C.gear - 2][0]).replace(/＋\d$/, '')}が伝説の装備に！`;
+  return `<div class="p-head"><p class="kicker">TREASURE</p><span class="p-count">${R[0]}</span></div>
+    <div class="chest ${C.rank}" style="--c:${R[1]}"><div class="chest-box">${C.rank === 'legend' ? '🌟' : '🎁'}</div><b>${R[0]}をあけた！</b><p>${what}</p></div>
+    <div class="p-foot"><span class="grow"></span><button class="btn primary" type="button" data-x="chest">受け取る →</button></div>`;
+}
+function takeChest(){
+  const Q = rpgQ(), C = Q.chest; if (!C) return;
+  if (C.gold) gainGold(C.gold, '宝箱から');
+  if (C.item){ Q.items[C.item] = (Q.items[C.item] || 0) + 1; qlog(`宝箱から${ITEMS[C.item].n}を手に入れた`); }
+  if (C.egg){ Q.eggs = Q.eggs || []; Q.eggs.push(6); qlog('宝箱からふしぎなたまごを手に入れた'); }
+  if (C.gear){ Q.gearR = Q.gearR || {}; Q.gearR[C.gear] = 4; badge('lgear'); qlog('宝箱の力で装備が伝説になった！'); }
+  if (C.rank === 'legend') badge('legend');
+  Q.chests = Q.chests || {}; Q.chests[C.k] = 1; Q.chest = null; Q.qs = 'roll'; tot('chest'); dailyAdd('chest'); sfx.good(); save(); renderBoard(); refresh();
+}
+
+/* ---------- real-life training: report the 必殺技 you actually did dayKey ---------- */
+function pracHTML(){
+  const what = refAns(S, 'what'), done = (S.prac || {})[dayKey()];
+  if (!what) return `<div class="prac"><b>🔥 今日の修行</b><span>必殺技（毎日やること）を決めると、ここで毎日の修行を報告できます。</span></div>`;
+  return `<div class="prac${done ? ' ok' : ''}"><b>🔥 今日の修行</b><span>必殺技「${esc(what)}」を、現実でやった？</span>${done ? '<em>今日の修行は報告ずみ！ また明日</em>' : `<button class="btn sm primary" type="button" data-x="prac">やった！（報告する）</button>`}</div>`;
+}
+function reportPractice(){
+  const d = dayKey(); S.prac = S.prac || {}; if (S.prac[d]) return;
+  S.prac[d] = 1; S.pracN = (S.pracN || 0) + 1; const Q = rpgQ(); gainGold(50, '修行のごほうび'); heal(20, '修行で自信がついた');
+  if (!META.pdays.includes(d)){ META.pdays.push(d); metaSave(); }
+  if (S.pracN % 3 === 0){ S.lvCarry = (S.lvCarry || 0) + 1; toast('🔥 修行の成果でレベルアップ！'); qlog('現実の修行を3回続けて、レベルが上がった'); } else toast('🔥 修行を報告した！ +50G・メンタル+20');
+  tot('practice'); if (META.pdays.length >= 7) badge('prac7'); sfx.done(); save(); renderBoard(); refresh();
+}
+
+/* ---------- golden monster (rare, runs away) ---------- */
+function goldFoe(F){ return {...F, kind: 'gold', n: 'ゴールドスライム', col: '#FFD84D', gold: 1, hp: 24 + F.lv * 4, max: 24 + F.lv * 4, atk: 2, msg: '✨ 金色の魔物、ゴールドスライムがあらわれた！ にげ足が速いぞ'}; }
+
+/* ---------- collection overlay ---------- */
+let collectTab = 'goal';
+function collectHTML(){
+  const tabs = [['goal', 'ゴール図鑑'], ['mon', '魔物図鑑'], ['pet', 'おとも'], ['badge', '称号'], ['best', '記録'], ['daily', '今日のクエスト']];
+  const nG = Object.keys(META.goals).length, nM = DEXL().filter(e => META.mons[dexKey(e)]).length, nB = Object.keys(META.badges).length;
+  let body = '';
+  if (collectTab === 'goal') body = `<p class="cl-n">${nG} / ${GOALS.length} 種類</p><div class="cl-grid">${GOALS.map(g => META.goals[g.k] ? `<div class="cl ok"><i>${g.ic}</i><b>${g.n}</b><small>${g.d}</small></div>` : `<div class="cl"><i>❓</i><b>？？？</b><small>まだ見ぬゴール</small></div>`).join('')}</div>`;
+  if (collectTab === 'mon') body = `<p class="cl-n">${nM} / ${DEXL().length} 体（${Math.round(nM / DEXL().length * 100)}%）</p><div class="cl-grid">${DEXL().map(e => { const ok = META.mons[dexKey(e)], wn = e[0] === 'any' ? 'どこかに' : WORLDS[e[0]].short; return ok ? `<div class="cl ok"><svg viewBox="-66 -100 132 108">${pxSprite(`<use href="#mon-${e[1]}" style="--mc:#7C4DDB"/>`)}</svg><b>${e[2]}</b><small>${wn}</small></div>` : `<div class="cl"><i>❓</i><b>？？？</b><small>${wn}</small></div>`; }).join('')}</div>`;
+  if (collectTab === 'pet'){ const all = Object.entries(PETS).flatMap(([r, L]) => L.map(([ic, n]) => [r, ic, n])); body = `<p class="cl-n">${all.filter(p => META.pets[p[2]]).length} / ${all.length}　たまごはお店（山の市場）や宝箱で手に入ります</p><div class="cl-grid">${all.map(([r, ic, n]) => META.pets[n] ? `<div class="cl ok"><i>${ic}</i><b>${n}</b><small>${r}・${PET_FX[r]}</small></div>` : `<div class="cl"><i>❓</i><b>？？？</b><small>${r}</small></div>`).join('')}</div>`; }
+  if (collectTab === 'badge') body = `<p class="cl-n">${nB} / ${Object.keys(BADGES).length}</p><div class="cl-grid">${Object.entries(BADGES).map(([id, b]) => META.badges[id] ? `<div class="cl ok"><i>${b[0]}</i><b>${b[1]}</b><small>${b[2]}</small></div>` : `<div class="cl"><i>🔒</i><b>？？？</b><small>${b[2]}</small></div>`).join('')}</div>`;
+  if (collectTab === 'best'){ const B = META.best, T = META.tot; body = `<dl class="cl-best"><dt>クリア回数</dt><dd>${T.clears || 0}回</dd><dt>最短クリア</dt><dd>${B.fast != null ? `サイコロ${B.fast}回` : '—'}</dd><dt>最高ダメージ</dt><dd>${B.dmg || 0}</dd><dt>1回の冒険で集めたゴールド</dt><dd>${B.gold || 0}G</dd><dt>たおした魔物</dt><dd>${T.kills || 0}体</dd><dt>会心の一撃</dt><dd>${T.crit || 0}回</dd><dt>あけた宝箱</dt><dd>${T.chest || 0}個</dd><dt>書いた答え</dt><dd>${T.ans || 0}個</dd><dt>現実の修行</dt><dd>${META.pdays.length}日</dd></dl>`; }
+  if (collectTab === 'daily') body = dailyHTML() + '<p class="hint">今日のクエストは毎日かわります。達成するたびに +50G（冒険中のとき）。3つ全部で称号も。</p>';
+  return `<button class="close" type="button" data-cl="close" aria-label="とじる">×</button><p class="kicker">COLLECTION</p><h2>図鑑と記録</h2>
+    <div class="cl-tabs">${tabs.map(([k, n]) => `<button type="button" data-cl="${k}" aria-pressed="${k === collectTab}">${n}</button>`).join('')}</div>${body}`;
+}
+function openCollect(t){ if (t) collectTab = t; let o = $('#ovCollect'); if (!o){ document.body.insertAdjacentHTML('beforeend', '<div class="overlay" id="ovCollect" hidden><div class="sheet collect"></div></div>'); o = $('#ovCollect'); o.addEventListener('click', e => { const b = e.target.closest('[data-cl]'); if (!b){ if (e.target === o) o.hidden = true; return; } if (b.dataset.cl === 'close'){ o.hidden = true; return; } collectTab = b.dataset.cl; o.querySelector('.sheet').innerHTML = collectHTML(); }); } o.querySelector('.sheet').innerHTML = collectHTML(); o.hidden = false; o.scrollTop = 0; }
+
+/* ---------- result card (an image to keep or share) ---------- */
+async function saveCard(){
+  const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), F = '"M PLUS 1","Hiragino Sans","Yu Gothic",sans-serif';
+  const gl = GOALS.find(v => v.k === S.goal) || goalOf(S), cls = CLASSES[S.cls || 'warrior'];
+  const grad = g.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, '#2A2050'); grad.addColorStop(1, '#7A3A6A'); g.fillStyle = grad; g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(255,255,255,.08)'; for (let i = 0; i < 60; i++) g.fillRect((i * 173) % W, (i * 97) % H, 4, 4);
+  g.textAlign = 'center'; g.fillStyle = '#FFD66B'; g.font = `800 56px ${F}`; g.fillText('マインドクエスト', W / 2, 120);
+  g.fillStyle = '#fff'; g.font = `700 40px ${F}`; g.fillText(`「${S.theme}」`, W / 2, 200);
+  g.font = `220px ${F}`; g.fillText(gl.ic, W / 2, 470);
+  g.fillStyle = '#FFD66B'; g.font = `800 72px ${F}`; g.fillText(gl.n, W / 2, 580);
+  g.fillStyle = '#E8E4F4'; g.font = `500 34px ${F}`; g.fillText(gl.d, W / 2, 640);
+  const rows = [['職業', `${cls.ic} ${cls.n}  Lv.${heroLevel()} ${lvName(heroLevel())}`], ['夢ポイント', `${S.quest ? S.quest.pts : 0}`], ['実現可能性', S.result ? `${S.result.feas}点（${S.result.rank.g}ランク）` : '—'], ['運命の力', tagLine(S)], ['称号', `${Object.keys(META.badges).length}こ`], ['ゴール図鑑', `${Object.keys(META.goals).length} / 10`]];
+  g.textAlign = 'left'; rows.forEach(([k, v], i) => { const y = 760 + i * 82; g.fillStyle = 'rgba(255,255,255,.1)'; g.fillRect(90, y - 52, W - 180, 68); g.fillStyle = '#C9C2E8'; g.font = `700 30px ${F}`; g.fillText(k, 120, y - 6); g.fillStyle = '#fff'; g.font = `800 34px ${F}`; g.fillText(v, 360, y - 6); });
+  g.textAlign = 'center'; g.fillStyle = '#C9C2E8'; g.font = `500 28px ${F}`; g.fillText(dayKey().replace(/-/g, '/'), W / 2, H - 50);
+  const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+  try { await saveFile(`マインドクエスト_${gl.n}.png`, blob); toast('結果カードを保存しました'); } catch (e){ toast('この画面では保存できませんでした'); }
+}
+
+/* ---------- strong new game: carry level, partners, items and gold into a harder second lap ---------- */
+function newGamePlus(){
+  const Q = rpgQ(), carry = {lvCarry: (S.lvCarry || 0) + clearedN(S), ng: (S.ng || 0) + 1, q: {gold: Q.gold, items: Q.items, magic: Q.magic, pets: Q.pets || [], gearR: Q.gearR || {}, party: Q.party || [], eggs: Q.eggs || []}};
+  $('#ovResult').hidden = true; if (aiCtl) aiCtl.abort(); clearMap(); const fk = S.forks;
+  newSession(S.theme, S.stages.filter(st => (st.ch || 1) === 1), S.timed, S.mode, S.level, {world: S.world, avatar: S.avatar, heroName: S.heroName, age: S.age, course: S.course, cls: S.cls});
+  S.forks = fk || {}; S.lvCarry = carry.lvCarry; S.ng = carry.ng; Object.assign(S.quest, carry.q);
+  badge('ng'); save(); refresh(); toast(`🔁 強くてニューゲーム！ ${S.ng + 1}周目。魔物も強くなっているぞ`);
+}
+
+/* ---------- monster mini-games: shooting, fighting and rhythm. Each returns the damage dealt and taken ---------- */
+const MG = {shoot: ['🚀', 'シューティング', '左右に動いて撃て！ 弾をよけよう'], kick: ['🥊', '格闘', '「！」が出たらガード。パンチとキックで攻めろ'], rhythm: ['🎵', 'リズム', '線に重なった音符をタップ！']};
+function spriteImg(inner){ const m = pxSprite(inner).match(/href="(data:[^"]+)"/); if (!m) return null; const im = new Image(); im.src = m[1]; return im; }
+function runMG(el, kind, F, end){
+  const atk = heroAtk(), mAtk = F.atk, monImg = spriteImg(`<use href="#mon-${F.kind}" style="--mc:${F.col}"/>`), heroImg = spriteImg(`<g class="lv${heroLevel()}">${heroPerson()}</g>`);
+  let dealt = 0, taken = 0, over = false, raf = 0, tm = 0; const stopAll = () => { over = true; cancelAnimationFrame(raf); clearTimeout(tm); document.removeEventListener('keydown', key); };
+  const finish = () => { if (over) return; stopAll(); setTimeout(() => end(Math.round(dealt), Math.round(taken)), 500); };
+  const hud = () => `<div class="mg-hud"><span>⚔️ ${Math.round(dealt)}</span><i class="dtime"><em id="mgBar"></em></i><span>💔 ${Math.round(taken)}</span></div>`;
+  let key = () => {};
+  if (kind === 'shoot'){
+    el.innerHTML = hud() + `<canvas class="mg-cv" width="360" height="320"></canvas><p class="duel-note">指でなぞるか ←→ キーで動く。弾は自動で撃つ</p>`;
+    const cv = el.querySelector('canvas'), g = cv.getContext('2d'), W = 360, H = 320; let px = W / 2, kx = 0, mx = W / 2, t0 = 0, last = 0, nextShot = 0, nextEnemy = 0; const shots = [], bul = [];
+    const aim = e => { const r = cv.getBoundingClientRect(); px = Math.max(16, Math.min(W - 16, (e.clientX - r.left) / r.width * W)); };
+    cv.addEventListener('pointerdown', e => { e.preventDefault(); aim(e); }); cv.addEventListener('pointermove', e => { if (e.buttons || e.pointerType === 'touch') aim(e); }); cv.style.touchAction = 'none';
+    key = e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight'){ e.preventDefault(); kx = e.type === 'keyup' ? 0 : e.key === 'ArrowLeft' ? -1 : 1; } }; document.addEventListener('keydown', key); document.addEventListener('keyup', key);
+    const frame = now => {
+      if (over) return; if (!t0) t0 = last = now; const t = now - t0, dt = Math.min(.05, (now - last) / 1000); last = now;
+      if (t > 12000 || dealt >= F.hp){ finish(); return; }
+      px = Math.max(16, Math.min(W - 16, px + kx * 260 * dt)); mx = W / 2 + Math.sin(t / 700) * (W / 2 - 50);
+      if (t > nextShot){ shots.push({x: px, y: H - 40}); nextShot = t + 220; }
+      if (t > nextEnemy){ const a = Math.atan2(H - 30 - 70, px - mx); bul.push({x: mx, y: 80, vx: Math.cos(a) * 150, vy: Math.sin(a) * 150}); nextEnemy = t + 700 - Math.min(300, F.lv * 20); }
+      g.fillStyle = '#120E24'; g.fillRect(0, 0, W, H); g.fillStyle = 'rgba(255,255,255,.5)'; for (let i = 0; i < 40; i++) g.fillRect((i * 97) % W, ((i * 53) + t / 8) % H, 2, 2);
+      if (monImg && monImg.complete) g.drawImage(monImg, mx - 50, 20, 100, 100 * monImg.height / monImg.width); else { g.fillStyle = F.col; g.beginPath(); g.arc(mx, 60, 30, 0, 7); g.fill(); }
+      g.fillStyle = '#FFD66B';
+      for (let i = shots.length - 1; i >= 0; i--){ const s = shots[i]; s.y -= 420 * dt; g.fillRect(s.x - 2, s.y - 8, 4, 12); if (Math.abs(s.x - mx) < 40 && s.y < 110 && s.y > 20){ dealt += Math.max(3, atk / 5); shots.splice(i, 1); } else if (s.y < 0) shots.splice(i, 1); }
+      g.fillStyle = '#FF6B6B';
+      for (let i = bul.length - 1; i >= 0; i--){ const b = bul[i]; b.x += b.vx * dt; b.y += b.vy * dt; g.beginPath(); g.arc(b.x, b.y, 5, 0, 7); g.fill(); if (Math.abs(b.x - px) < 14 && Math.abs(b.y - (H - 30)) < 14){ taken += Math.max(2, mAtk * .6); bul.splice(i, 1); } else if (b.y > H || b.x < 0 || b.x > W) bul.splice(i, 1); }
+      g.fillStyle = '#39E1F0'; g.beginPath(); g.moveTo(px, H - 46); g.lineTo(px - 14, H - 18); g.lineTo(px + 14, H - 18); g.fill();
+      el.querySelector('.mg-hud').outerHTML = hud(); el.querySelector('#mgBar').style.width = (100 - t / 120) + '%';
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+  } else if (kind === 'kick'){
+    el.innerHTML = hud() + `<div class="kf"><div class="kf-hero">${heroImg ? `<img src="${heroImg.src}" alt="">` : '🧑'}</div><div class="kf-warn" hidden>！</div><div class="kf-mon">${monImg ? `<img src="${monImg.src}" alt="">` : '👾'}</div></div>
+      <div class="kf-btns"><button type="button" data-k="p">👊 パンチ</button><button type="button" data-k="k">🦵 キック</button><button type="button" data-k="g">🛡️ ガード</button></div><p class="duel-note">「！」が出たらすぐガード。キックは強いけど少し遅い</p>`;
+    const H = el.querySelector('.kf-hero'), M = el.querySelector('.kf-mon'), Wn = el.querySelector('.kf-warn'); let guard = 0, busy = 0, t0 = performance.now(), next = 1500;
+    const anim = (n, c) => { n.classList.remove(c); void n.offsetWidth; n.classList.add(c); };
+    const act = k => { if (over || busy) return; if (k === 'g'){ guard = performance.now() + 700; anim(H, 'guard'); return; } busy = 1; anim(H, k === 'k' ? 'kick' : 'punch'); setTimeout(() => { if (over) return; dealt += k === 'k' ? atk * .9 : atk * .45; anim(M, 'hit'); busy = 0; el.querySelector('.mg-hud').outerHTML = hud(); if (dealt >= F.hp) finish(); }, k === 'k' ? 420 : 160); };
+    el.querySelector('.kf-btns').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (b) act(b.dataset.k); });
+    key = e => { const m = {z: 'p', x: 'k', c: 'g', ArrowLeft: 'p', ArrowRight: 'k', ArrowDown: 'g'}[e.key]; if (m){ e.preventDefault(); act(m); } }; document.addEventListener('keydown', key);
+    const loop = () => { if (over) return; const t = performance.now() - t0; el.querySelector('#mgBar').style.width = Math.max(0, 100 - t / 150) + '%'; if (t > 15000){ finish(); return; }
+      if (t > next){ next = t + 1600 + Math.random() * 1200; Wn.hidden = false; setTimeout(() => { if (over) return; Wn.hidden = true; anim(M, 'atk'); if (performance.now() < guard){ anim(H, 'block'); } else { taken += mAtk; anim(H, 'hurt'); } el.querySelector('.mg-hud').outerHTML = hud(); }, 650 - Math.min(250, F.lv * 15)); }
+      tm = setTimeout(loop, 100); };
+    loop();
+  } else {
+    el.innerHTML = hud() + `<div class="rh"><div class="rh-line"></div>${[0, 1, 2].map(i => `<div class="rh-lane" data-l="${i}"></div>`).join('')}</div><div class="kf-btns rh-btns">${['◀', '●', '▶'].map((s, i) => `<button type="button" data-l="${i}">${s}</button>`).join('')}</div><p class="duel-note">音符が線に重なったらタップ（キーは A S D でも）</p>`;
+    const lanes = [...el.querySelectorAll('.rh-lane')], notes = [], SP = 1800; let t0 = 0, spawned = 0, msg = null;
+    for (let i = 0; i < 18; i++) notes.push({l: Math.floor(Math.random() * 3), at: 900 + i * 600 + (Math.random() < .3 ? 300 : 0), done: 0, el: null});
+    const tap = l => { if (over) return; const t = performance.now() - t0; let best = null; notes.forEach(n => { if (!n.done && n.l === l){ const d = Math.abs(t - n.at); if (d < 220 && (!best || d < best.d)) best = {n, d}; } });
+      const lane = lanes[l]; lane.classList.remove('tap'); void lane.offsetWidth; lane.classList.add('tap');
+      if (best){ best.n.done = 1; best.n.el && best.n.el.remove(); const p = best.d < 90; dealt += atk * (p ? .45 : .25); pop(lane, p ? 'PERFECT' : 'GOOD'); if (dealt >= F.hp) finish(); } };
+    const pop = (lane, t) => { const b = document.createElement('b'); b.className = 'rh-pop'; b.textContent = t; lane.appendChild(b); setTimeout(() => b.remove(), 500); };
+    el.querySelector('.rh-btns').addEventListener('click', e => { const b = e.target.closest('[data-l]'); if (b) tap(+b.dataset.l); });
+    lanes.forEach(L => L.addEventListener('pointerdown', e => { e.preventDefault(); tap(+L.dataset.l); }));
+    key = e => { const m = {a: 0, s: 1, d: 2, j: 0, k: 1, l: 2}[e.key]; if (m != null){ e.preventDefault(); tap(m); } }; document.addEventListener('keydown', key);
+    const frame = now => { if (over) return; if (!t0) t0 = now; const t = now - t0, Hh = lanes[0].clientHeight || 260, lineY = Hh - 40;
+      notes.forEach(n => { if (n.done) return; if (!n.el && t > n.at - SP){ n.el = document.createElement('i'); n.el.className = 'rh-note'; lanes[n.l].appendChild(n.el); }
+        if (n.el){ const y = lineY - (n.at - t) / SP * lineY; n.el.style.transform = `translateY(${y}px)`; if (t - n.at > 220){ n.done = 1; n.el.remove(); taken += Math.max(2, mAtk * .5); pop(lanes[n.l], 'MISS'); } } });
+      el.querySelector('.mg-hud').outerHTML = hud(); el.querySelector('#mgBar').style.width = Math.max(0, 100 - t / ((notes[notes.length - 1].at + 600) / 100)) + '%';
+      if (notes.every(n => n.done)){ finish(); return; } raf = requestAnimationFrame(frame); };
+    raf = requestAnimationFrame(frame);
+  }
+  return stopAll;
+}
+let mgStop = null;
+function mountMG(){
+  const Q = rpgQ(), F = Q.fight, el = $('#mgArea'); if (!F || !F.mg || !el || el.dataset.on) return; el.dataset.on = 1;
+  mgStop = runMG(el, F.mg, F, (dealt, taken) => {
+    mgStop = null; if (!S || !Q.fight || Q.fight !== F) return;
+    if (awake()) dealt *= 2;
+    F.mg = null; F.hp -= dealt; best('dmg', dealt);
+    F.msg = `${MG[F.mg0][1]}の結果：${F.n}に${dealt}のダメージ！${taken ? ` こちらも${taken}のダメージを受けた` : ' ノーダメージ！'}`;
+    if (taken && hurt(taken, `${F.n}との戦いで`, true)) return;
+    if (F.hp <= 0){ F.viaMg = 1; fightWin(F); return; }
+    save(); renderPanel();
+  });
+}
+function metaGoal(){ const Q = rpgQ(); META.goals[S.goal] = 1; metaSave(); tot('clears'); best('fast', Q.rolls, true); best('gold', Q.earned || 0); const n = Object.keys(META.goals).length; if (n >= 3) badge('goals3'); if (n >= 10) badge('goals10'); }
+function petsHTML(){ const Q = rpgQ(), P = Q.pets || [], E = Q.eggs || []; if (!P.length && !E.length) return ''; return `<div class="pets">${P.length ? `<span>おとも：${P.map(p => `${p.ic}${esc(p.n)}<small>${p.r}</small>`).join('　')}</span>` : ''}${E.length ? `<span>🥚 たまご：あと${E.map(n => Math.max(1, n) + 'マス').join('・')}でかえる</span>` : ''}</div>`; }
+function extrasAct(a){ if (a === 'chest') takeChest(); else if (a === 'prac') reportPractice(); else if (a === 'collect') openCollect(); else if (a === 'card') saveCard(); else if (a === 'ng') newGamePlus(); }
+document.querySelector('#btnCollect') && document.querySelector('#btnCollect').addEventListener('click', () => openCollect());
 function syncBattle(){
   const el = $('#battle'); if (!el) return;
+  if (S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'fight' && S.quest.fight && S.quest.fight.mg) setTimeout(() => { if (mgStop && !$('#mgArea[data-on]')){ mgStop(); mgStop = null; } mountMG(); }, 0);
   if (S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'fight' && S.quest.fight){ const fresh = btLast.key !== S.quest.fight.k; el.hidden = false; el.innerHTML = fightSceneHTML(S.quest.fight); if (fresh){ btAnim(el, '.bt-mon', 'appear', 700); el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter'); } btLast = {key: S.quest.fight.k, n: 0, fire: 0}; return; }
   const p = S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'answer' && stageView === 'board' ? current() : null, st = p && !p.fork ? S.stages[p.s] : null;
   if (!st || !st.monster){ el.hidden = true; btLast = {key: null, n: 0, fire: 0}; return; }
@@ -3184,18 +3488,23 @@ function syncBattle(){
   }
   else if (fire > btLast.fire){ btAnim(el, '.bt-fx', 'fire', 700); btAnim(el, '.bt-mon', 'hit', 500); btPop(el, '.bt-mon', '-50', 'big'); if (hp <= 0){ sfx.clear(); } }
   else if (n > btLast.n){
-    const dmg = Math.round(100 / Math.max(1, st.min)) * (n - btLast.n);
+    const dmg = Math.round(100 / Math.max(1, st.min)) * (n - btLast.n), sx = statOf(S, p.key), la = answersFor(S, p).slice(-1)[0], spec = !!la && (SPEC_RE.test(la.t) || ACT_RE.test(la.t));
+    const cr = critHit(spec), extra = (cr ? dmg : 0) + (awake() ? dmg : 0);
+    if (extra){ sx.crit = (sx.crit || 0) + extra; if (cr) critFx(); setTimeout(() => renderPanel(), 350); }
+    best('dmg', dmg + extra);
     btAnim(el, '.bt-hero', 'atk', 450); setTimeout(() => { btAnim(el, '.bt-mon', 'hit', 500); btPop(el, '.bt-mon', '-' + dmg); sfx.good(); }, 180);
     if (hp > 0){
       const key = p.key;
       setTimeout(() => {
         if (!S || S.quest.qs !== 'answer' || !current() || current().key !== key) return;
         const e2 = $('#battle'); btAnim(e2, '.bt-mon', 'matk', 450);
-        setTimeout(() => { btAnim(e2, '.bt-hero', 'hit', 500); const d = (st.monster === 'boss' ? 8 : 5) + heroLevel() - 1; btPop(e2, '.bt-hero', '-' + d, 'bad'); if (!hurt(d, `${st.npc}の反撃！`, true)) renderPanel(); }, 220);
+        setTimeout(() => { btAnim(e2, '.bt-hero', 'hit', 500); const d = (st.monster === 'boss' ? 8 : 5) + heroLevel() - 1 + (statOf(S, key).form2 ? 3 : 0) + (S.ng || 0) * 2; btPop(e2, '.bt-hero', '-' + d, 'bad'); if (!hurt(d, `${st.npc}の反撃！`, true)){ awakeCheck(); renderPanel(); } }, 220);
       }, 950);
     } else setTimeout(() => sfx.clear(), 400);
   }
-  btLast = {key: p.key, n, fire};
+  const s2 = statOf(S, p.key), hp2 = battleHP(p);
+  if (st.monster === 'boss' && !s2.form2 && hp2 > 0 && hp2 <= 50){ s2.form2 = 1; s2.extra = (s2.extra || 0) + 30; toast('😈 ボスが変身した！ 第2形態！'); qlog(`${st.npc}が第2形態に変身した！`); sfx.bad(); setTimeout(() => renderPanel(), 700); }
+  btLast = {key: p.key, n: answersFor(S, p).length, fire: statOf(S, p.key).fire || 0};
 }
 document.getElementById('stage').insertAdjacentHTML('beforeend', '<div class="battle" id="battle" hidden></div>');
 $('#battle').addEventListener('click', e => {
@@ -3234,6 +3543,7 @@ const SPRITES = `<svg id="sprites" width="0" height="0" style="position:absolute
   <g id="mon-shenlong"><ellipse cx="0" cy="3" rx="34" ry="5" fill="#000" opacity=".3"/><path d="M-42 -6 Q-20 -32 0 -10 Q20 10 34 -20 Q46 -48 20 -60 Q2 -68 -6 -84" fill="none" stroke="#2F9E6A" stroke-width="15" stroke-linecap="round"/><path d="M-42 -6 Q-20 -32 0 -10 Q20 10 34 -20 Q46 -48 20 -60 Q2 -68 -6 -84" fill="none" stroke="#FFD27A" stroke-width="4" stroke-dasharray="3 6"/><path d="M-30 -14 l-6 8 M8 -2 l4 9 M38 -30 l9 2" stroke="#2F9E6A" stroke-width="4" stroke-linecap="round"/><ellipse cx="-8" cy="-90" rx="15" ry="10" fill="#2F9E6A"/><path d="M-12 -98 L-20 -112 M-3 -99 L3 -112" stroke="#FFD27A" stroke-width="3" stroke-linecap="round"/><circle cx="-2" cy="-92" r="2.2" fill="#FF3030"/><path d="M-21 -86 Q-36 -84 -44 -94 M-20 -84 Q-32 -76 -42 -78" stroke="#FFD27A" stroke-width="1.6" fill="none"/><path d="M-22 -90 h8" stroke="#1B2140" stroke-width="1.6"/></g>
   <g id="mon-naga"><ellipse cx="0" cy="3" rx="30" ry="5" fill="#000" opacity=".3"/><path d="M-30 -2 Q-10 -14 6 -4 Q22 6 28 -10" fill="none" stroke="#2E8F7A" stroke-width="12" stroke-linecap="round"/><path d="M0 -8 Q-6 -40 0 -58" fill="none" stroke="#2E8F7A" stroke-width="12" stroke-linecap="round"/><path d="M-22 -60 Q-24 -88 0 -92 Q24 -88 22 -60 Q12 -50 0 -54 Q-12 -50 -22 -60Z" fill="#2E8F7A"/><path d="M-12 -64 Q0 -80 12 -64 Q0 -58 -12 -64Z" fill="#FFD27A"/><circle cx="-5" cy="-76" r="2" fill="#FF3030"/><circle cx="5" cy="-76" r="2" fill="#FF3030"/><path d="M0 -68 v6 l-2 3 M0 -62 l2 3" stroke="#E0413A" stroke-width="1.4" fill="none"/><circle cx="0" cy="-96" r="4" fill="#FFD27A"/></g>
   <g id="mon-scorpion"><ellipse cx="0" cy="3" rx="34" ry="5" fill="#000" opacity=".3"/><path d="M-30 -6 l-10 8 M-22 -4 l-6 10 M22 -4 l6 10 M30 -6 l10 8" stroke="#6B3A1E" stroke-width="3" stroke-linecap="round"/><ellipse cx="0" cy="-12" rx="30" ry="12" fill="#B8642E"/><path d="M-10 -14 h20 M-14 -9 h28" stroke="#6B3A1E" stroke-width="1.4"/><path d="M22 -16 Q46 -30 40 -58 Q36 -72 22 -66" fill="none" stroke="#B8642E" stroke-width="9" stroke-linecap="round"/><path d="M22 -66 l-8 -4 l4 8z" fill="#1B2140"/><path d="M-26 -16 Q-44 -22 -48 -34 M-48 -34 l-8 -6 M-48 -34 l-2 -9" stroke="#B8642E" stroke-width="6" stroke-linecap="round" fill="none"/><circle cx="-6" cy="-18" r="2" fill="#FF3030"/><circle cx="4" cy="-18" r="2" fill="#FF3030"/></g>
+  <g id="mon-gold"><ellipse cx="0" cy="2" rx="18" ry="4" fill="#000" opacity=".3"/><path d="M-18 0 Q-20 -22 0 -30 Q20 -22 18 0 Z" fill="#FFD84D" stroke="#B07A00" stroke-width="1.6"/><path d="M-10 -20 Q-6 -26 0 -27" stroke="#FFF6C8" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="-6" cy="-12" r="2.2" fill="#1B2140"/><circle cx="6" cy="-12" r="2.2" fill="#1B2140"/><path d="M-5 -6 Q0 -2 5 -6" stroke="#1B2140" stroke-width="1.6" fill="none"/><path d="M-8 -30 L-8 -38 L-4 -34 L0 -40 L4 -34 L8 -38 L8 -30 Z" fill="#FFB547" stroke="#B07A00" stroke-width="1"/><circle cx="0" cy="-35" r="1.4" fill="#E0413A"/></g>
   <g id="cage"><rect x="-17" y="-52" width="34" height="54" rx="3" fill="none" stroke="#3A3350" stroke-width="2.6"/><path d="M-17 -52 Q0 -66 17 -52" fill="none" stroke="#3A3350" stroke-width="2.6"/><path d="M-9 -58 V2 M0 -60 V2 M9 -58 V2" stroke="#3A3350" stroke-width="2"/><rect x="-19" y="0" width="38" height="4" rx="2" fill="#3A3350"/></g>
 </defs></svg>`;
 document.body.insertAdjacentHTML('beforeend', SPRITES);
@@ -3923,6 +4233,7 @@ function padSVG(q){
   if (q.type === 'goal') return `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-30" y="-17" width="60" height="34" fill="#F2554E" stroke="#FFD84D" stroke-width="4"/><text y="7" text-anchor="middle" fill="#FFFFFF" font-size="17" ${F}>GOAL</text></g>`;
   if (q.type === 'fork') return `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-22" y="-22" width="44" height="44" fill="#FFF3C4" stroke="#D98A0B" stroke-width="4"/><path d="M-2 -2 H2 V14 H-2Z M-13 -13 H-1 V-6 H-13Z M1 -9 H13 V-2 H1Z" fill="#8A5A0B"/></g>`;
   if (q.type === 'plain'){ const pc = caveCol().plain, cave = q.part === 2; return `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-8" y="-8" width="16" height="16" fill="${cave ? pc[0] : '#FFFFFF'}" stroke="${cave ? pc[1] : '#9C7A48'}" stroke-width="4"/></g>`; }
+  if (q.type === 'chest'){ const gone = S.quest && (S.quest.chests || {})[q.k]; return gone ? `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-8" y="-8" width="16" height="16" fill="#FFFFFF" stroke="#9C7A48" stroke-width="4"/></g>` : `<g transform="translate(${X} ${Y})"><g shape-rendering="crispEdges"><rect x="-17" y="-17" width="34" height="34" fill="#FFF3C4" stroke="#E0A100" stroke-width="4"/></g><text y="8" text-anchor="middle" font-size="20" fill="#B07A00" ${F}>宝</text></g>`; }
   if (q.type === 'foe'){ const gone = S.quest && (S.quest.foes || {})[q.k]; return gone ? `<g transform="translate(${X} ${Y})" shape-rendering="crispEdges"><rect x="-8" y="-8" width="16" height="16" fill="#FFFFFF" stroke="#9C7A48" stroke-width="4"/></g>` : `<g transform="translate(${X} ${Y})"><g shape-rendering="crispEdges"><rect x="-17" y="-17" width="34" height="34" fill="#FFE5E2" stroke="#D93A3F" stroke-width="4"/></g><text y="8" text-anchor="middle" font-size="20" fill="#D93A3F" ${F}>魔</text></g>`; }
   if (SPOT_N[q.type]){ const D = {shop: ['店', '#D98A0B', '#FFF3C4'], fate: ['運', '#8C6CF2', '#F1ECFF'], job: ['転', '#15A37C', '#E9F7EF']}[q.type], seen = S.quest && (S.quest.vis || {})[q.k];
     return `<g transform="translate(${X} ${Y})" opacity="${seen ? .55 : 1}"><g shape-rendering="crispEdges"><rect x="-24" y="-24" width="48" height="48" fill="${D[2]}" stroke="${D[1]}" stroke-width="5"/></g><text y="10" text-anchor="middle" font-size="28" fill="${D[1]}" ${F}>${D[0]}</text><text y="46" text-anchor="middle" font-size="15" fill="#1B2140" stroke="#FFFFFF" stroke-width="4" paint-order="stroke" ${F}>${SPOT_N[q.type]}</text></g>`; }
@@ -4047,6 +4358,7 @@ async function roll(){
   if (ds.length){ ds.forEach(d => d.classList.add('rolling')); for (let k = 0; k < 9; k++){ v = 1 + Math.floor(Math.random() * 6); ds.forEach(d => { d.innerHTML = diceSVG(v); }); sfx.dice(); await sleep(70); } ds.forEach(d => d.classList.remove('rolling')); }
   v = 1 + Math.floor(Math.random() * 6);
   if (S.quest.pickDie){ v = S.quest.pickDie; S.quest.pickDie = 0; }
+  { const Q = rpgQ(); if (Q.eggs && Q.eggs.length){ Q.eggs = Q.eggs.map(e => e - v); const h = Q.eggs.filter(e => e <= 0).length; Q.eggs = Q.eggs.filter(e => e > 0); for (let i = 0; i < h; i++) hatch(); } }
   S.quest.last = v; ds.forEach(d => { d.innerHTML = diceSVG(v); });
   const lbl = $('#diceMsg'); if (lbl) lbl.textContent = `${v} が出た！`;
   if (dm) dm.textContent = `${v} が出た！ 進んでいます…`;
@@ -4303,9 +4615,11 @@ function land(T, i, trigger){
     if (hasMember('fairy')){ Q.pts += 20; qlog('星の妖精ピピの祝福 +20pt'); }
     if (racers) toast(place === 1 ? 'ライバルに勝って1着でゴール！' : `${place}着でゴール！`);
     if (!S.goal) S.goal = goalOf(S).k;
+    metaGoal();
     Q.beats = [{k: 'ending'}]; Q.ending = 1; Q.qs = 'story'; save(); refresh(); return;
   }
-  if (s.type === 'foe' && trigger && !(rpgQ().foes = rpgQ().foes || {})[s.k]){ S.quest.fight = foeOf(s.k); S.quest.qs = 'fight'; qlog(S.quest.fight.msg); sfx.bad(); refresh(); return; }
+  if (s.type === 'chest' && trigger && !((rpgQ().chests || {})[s.k])){ S.quest.chest = {...rollChest(), k: s.k}; S.quest.qs = 'chest'; sfx.good(); qlog('宝箱を見つけた！'); refresh(); return; }
+  if (s.type === 'foe' && trigger && !(rpgQ().foes = rpgQ().foes || {})[s.k]){ S.quest.fight = Math.random() < .07 ? goldFoe(foeOf(s.k)) : foeOf(s.k); S.quest.qs = 'fight'; qlog(S.quest.fight.msg); sfx.bad(); refresh(); return; }
   if (SPOT_N[s.type] && !(rpgQ().vis[s.k])){ S.quest.spot = s.k; S.quest.qs = s.type; sfx.next(); refresh(); return; }
   if (s.type === 'fork' && !(S.routes || {})[s.fork]){ S.cur = s.k; S.quest.qs = 'fork'; sfx.next(); refresh(); return; }
   if (s.type === 'q' && !qDone(s.p.key)){
@@ -4416,7 +4730,7 @@ function storyHTML(){
 }
 function heroCardHTML(){
   const lv = heroLevel(), party = (S.quest.party || []), next = LV_STEP[lv + 1];
-  const gear = gearList().slice(0, lv - 1).map(g => g[0].replace(/(とマント|と旗|と戦袍|とバンダナ|とジェットパック)$/, ''));
+  const gear = gearList().slice(0, lv - 1).map((g, i) => gearName(i + 2, g[0].replace(/(とマント|と旗|と戦袍|とバンダナ|とジェットパック)$/, '')));
   return `<div class="herocard"><svg viewBox="-24 -78 48 82" aria-hidden="true"><g>${pxPerson(lv)}</g></svg><div><b>${heroName() ? esc(heroName()) + ' ' : ''}Lv.${lv} ${lvName(lv)}</b><span>${gear.length ? '装備：' + gear.join('・') : '装備：なし'}${next ? `（あと${next - clearedN(S) - (S.lvCarry || 0)}関所でレベルアップ）` : ''}</span><span>${party.length ? '家来：' + PARTY_ORDER.filter(m => party.includes(m)).map(m => mem(m).short).join('・') : '家来：まだいない'}</span></div>${party.length ? `<div class="hc-party">${PARTY_ORDER.filter(m => party.includes(m)).map(m => `<svg viewBox="-16 -${m === 'wizard' || m === 'princess' ? 52 : 30} 32 ${m === 'wizard' || m === 'princess' ? 56 : 34}" aria-label="${mem(m).n}">${pxSprite(memberUse(m))}</svg>`).join('')}</div>` : ''}</div>`;
 }
 function answerPower(p){
@@ -4442,6 +4756,9 @@ async function clearGate(){
   S.quest.done[p.key] = true; S.quest.pts += pts + extra; S.quest.qs = bonus ? 'moving' : 'roll'; Qr.rest = 'q:' + p.key;
   gainGold((n * 10 + (st.monster === 'boss' ? 100 : st.monster ? 50 : 0)) * (fire ? 2 : 1), st.monster ? `${st.npc}をたおしてゴールドを手に入れた` : '答えのごほうび');
   if (curCls() === 'healer') heal(5, 'いやしの力');
+  if (tot('ans', n) >= 100) badge('ans100'); dailyAdd('ans', n); dailyAdd('gate');
+  if (st.monster){ tot('kills'); dailyAdd('kill'); if (Qr.mental <= 10) badge('clutch'); }
+  if (st.monster === 'boss'){ badge('boss1'); if (Qr.mental >= 100) badge('nodmg'); dexAdd(curWorld(), (WMON[curWorld()] || WMON.euro).bossN); }
   if (fire) qlog('魔法ファイアの力で、ごほうびが2倍！');
   qlog((st.monster ? `${st.npc}をたおした！ +${pts}pt${garo ? '（ガロの力 +10）' : ''}` : `関所「${st.l}」を通過 +${pts}pt`) + (spec ? `（具体的な答え +${spec}）` : ''));
   if (!met) toast('条件に届かないまま進みました'); else { sfx.clear(); if (st.monster) toast(`${st.npc}をたおした！`); }
@@ -4454,7 +4771,7 @@ async function clearGate(){
     if (move){ const sub = isPlan(st) ? fieldsOf(st).slice(1).map(f => av(f[0])).filter(Boolean).join('・') : ''; beats.push({k: 'finish', move, sub, l: st.l, ch: S.chapter || 1}); qlog(`${st.l}「${move}」がさくれつ！`); }
   }
   if (p.s === bossStage(S) && !Q.party.includes('princess')){ Q.party.push('princess'); beats.push({k: 'princess'}); qlog('とらわれていた姫を助け出した！'); }
-  if (lv1 > lv0){ beats.push({k: 'lv', lv: lv1}); qlog(`レベルアップ！ Lv.${lv1} ${lvName(lv1)}（${gearOf(lv1).n}）`); }
+  if (lv1 > lv0){ rollGear(lv1); beats.push({k: 'lv', lv: lv1}); qlog(`レベルアップ！ Lv.${lv1} ${lvName(lv1)}（${gearOf(lv1).n}）`); }
   if (!Q.party.includes('cat') && clearedN(S) >= 1){ Q.party.push('cat'); beats.push({k: 'join', m: 'cat'}); qlog('ネコのミケが家来になった'); }
   if (beats.length){ Q.beats = beats; Q.after = bonus; Q.qs = 'story'; sfx.good(); refresh(); return; }
   refresh();
@@ -4701,7 +5018,7 @@ function renderPanel(){
   if (duelStop){ duelStop(); duelStop = null; }
   const keep = $('#ans') ? $('#ans').value : '';
   const qs = S && S.mode === 'quest' ? S.quest.qs : '';
-  panel.dataset.st = !S ? 'ready' : building ? 'build' : S.phase === 'done' ? 'done' : ['fork', 'event', 'story', 'duel', 'shop', 'fate', 'job', 'fight'].includes(qs) ? (SPOT_N[qs] || qs === 'fight' ? 'fork' : qs) : qs && qs !== 'answer' ? 'roll' : 'play';
+  panel.dataset.st = !S ? 'ready' : building ? 'build' : S.phase === 'done' ? 'done' : ['fork', 'event', 'story', 'duel', 'shop', 'fate', 'job', 'fight', 'chest'].includes(qs) ? (SPOT_N[qs] || qs === 'fight' || qs === 'chest' ? 'fork' : qs) : qs && qs !== 'answer' ? 'roll' : 'play';
   if (!S){ panel.innerHTML = `<p class="kicker">READY</p><h2 class="question">テーマを決めると、ここに問いが表示されます。</h2><div class="p-foot"><button class="btn primary" type="button" data-act="menu">ホームへ</button></div>`; syncScreen(); return; }
   if (building) panel.innerHTML = `<p class="kicker">MIND MAP</p><div class="rpg"><span class="rpg-name">王さま</span><p>よくぞたどり着いた！ そなたの旅の答えから、マインドマップを組み立てておるぞ…</p></div><p class="hint">枝が1本ずつ伸びていきます。</p>`;
   else if (S.phase === 'done') panel.innerHTML = doneHTML();
@@ -4711,6 +5028,7 @@ function renderPanel(){
   else if (S.mode === 'quest' && S.quest.qs === 'story') panel.innerHTML = storyHTML();
   else if (S.mode === 'quest' && SPOT_N[S.quest.qs]) panel.innerHTML = spotHTML();
   else if (S.mode === 'quest' && S.quest.qs === 'fight' && S.quest.fight) panel.innerHTML = fightPanelHTML();
+  else if (S.mode === 'quest' && S.quest.qs === 'chest' && S.quest.chest) panel.innerHTML = chestHTML();
   else if (S.mode === 'quest' && S.quest.qs !== 'answer') panel.innerHTML = rollHTML();
   else panel.innerHTML = playHTML();
   syncBattle();
@@ -4868,7 +5186,7 @@ function rollHTML(){
     : SPOT_N[gate.type] ? `<div class="gate-next">次は：<span class="stage-pill" style="--c:#8C6CF2"><i>${{shop: '店', fate: '運', job: '転'}[gate.type]}</i>${SPOT_N[gate.type]}</span><b>あと${nx - i}マス</b></div>`
     : `<div class="gate-next">次の関所：<span class="stage-pill" style="--c:${colorOf(S, gate.p.s)}"><i>${gate.p.s + 1}</i>${esc(S.stages[gate.p.s].l)}</span><b>あと${nx - i}マス</b></div>`;
   return `
-    <div class="p-head"><p class="kicker">QUEST</p><span class="p-count">関所 ${doneN} / ${P.length} 通過</span></div>
+    <div class="p-head"><p class="kicker">QUEST${S.ng ? ` ・ ${S.ng + 1}周目` : ''}</p><span class="p-count">関所 ${doneN} / ${P.length} 通過</span></div>
     <div class="qstats">
       <div><small>夢ポイント</small><b class="pts">${q.pts}</b></div>
       <div><small>ゴールド</small><b>${rpgQ().gold}G</b></div>
@@ -4881,7 +5199,7 @@ function rollHTML(){
       ${rpgQ().fx.boots && !moving ? `<div class="pick-die">${[1, 2, 3, 4, 5, 6].map(n => `<button class="btn" type="button" data-rpg="die" data-v="${n}">${n}</button>`).join('')}</div><small>👟 ワープの靴：進みたい目をえらぼう</small>` : `<button class="btn primary lg" type="button" data-act="roll" ${moving ? 'disabled' : ''}>サイコロをふる</button>`}
       <p class="hint" style="margin:0"><kbd>Space</kbd> キーでもふれます</p>
     </div>
-    ${heroCardHTML()}
+    ${heroCardHTML()}${petsHTML()}${pracHTML()}${dailyHTML()}
     ${moving ? '' : aheadHTML(sq, i)}
     <div class="gate-next">いまいる場所：<b>${esc(segName(cur.seg))}</b>${veh ? `<span>3マス以上進むと${veh.n}に乗れる</span>` : ''}</div>
     ${gateHTML}
@@ -4899,6 +5217,7 @@ function aheadHTML(sq, i){
     else if (t.type === 'fork' && !(S.routes || {})[t.fork]){ cls = 'gate'; lbl = '分かれ道'; }
     else if (t.type === 'goal'){ cls = 'goal'; lbl = 'ゴール'; }
     else if (t.type === 'foe' && !(rpgQ().foes || {})[t.k]){ cls = 'bad'; lbl = 'まもの'; }
+    else if (t.type === 'chest' && !(rpgQ().chests || {})[t.k]){ cls = 'good'; lbl = '宝箱'; }
     else if (SPOT_N[t.type] && !rpgQ().vis[t.k]){ cls = 'gate'; lbl = {shop: 'お店', fate: '運命', job: '転職'}[t.type]; }
     else if (t.type === 'ev'){ cls = t.ev.tone; lbl = t.ev.s || t.ev.t; }
     h += `<li class="${cls}"><b>${k}</b><span>${esc(lbl)}</span></li>`;
@@ -4929,6 +5248,8 @@ function doneHTML(){
     ${r ? (() => { const E = expertOf(S); return E.advice.length ? `<div class="advice expert"><h3>${S.mode === 'quest' ? '王さまと専門家からのアドバイス' : '専門家からのアドバイス'}${E.field ? `（${esc(E.field)}）` : ''}</h3><ol>${E.advice.map(a => `<li>${esc(a)}</li>`).join('')}</ol></div>` : ''; })() : ''}
     <div class="btn-col">
       <button class="btn primary" type="button" data-act="result">採点結果を見る</button>
+      ${S.mode === 'quest' ? `<button class="btn dark" type="button" data-act="ng">🔁 強くてニューゲーム（レベル・装備・おともを引きついで${(S.ng || 0) + 2}周目へ）</button><button class="btn" type="button" data-act="card">🖼️ 結果カードを画像で保存</button>` : ''}
+      <button class="btn" type="button" data-act="collect">📖 図鑑と記録</button>
       ${nextChBtn()}
       ${CHAPTERS[(S.chapter || 1) + 1] ? '' : `<p class="hint" style="margin:0">全3章クリア！ 夢のマインドマップが完成しました。</p>`}
       ${sageBtn('専門家の賢者にもっと質問する')}
@@ -6033,6 +6354,9 @@ function onAct(a){
   else if (a === 'close') $('#ovResult').hidden = true;
   else if (a === 'revisit'){ $('#ovResult').hidden = true; S.phase = 'play'; S.cur = prompts(S)[0].key; refresh(); }
   else if (a === 'retry'){ $('#ovResult').hidden = true; if (aiCtl) aiCtl.abort(); clearMap(); const fk = S.forks; newSession(S.theme, S.stages.filter(st => (st.ch || 1) === 1), S.timed, S.mode, S.level, {world: S.world, avatar: S.avatar, heroName: S.heroName, age: S.age, course: S.course}); S.forks = fk || {}; refresh(); toast('もう一度挑戦！ 前回より高い点を目指しましょう'); }
+  else if (a === 'ng') newGamePlus();
+  else if (a === 'collect') openCollect();
+  else if (a === 'card') saveCard();
   else if (a === 'menu'){ $('#ovResult').hidden = true; openHome(); }
   else if (a === 'ai-stop'){ if (aiCtl) aiCtl.abort(); }
   else if (a === 'ai-retry') runAI();
@@ -6061,6 +6385,7 @@ panel.addEventListener('click', e => {
   if (b.dataset.duel){ duelPick(b.dataset.duel); return; }
   if (b.dataset.rpg){ rpgAct(b.dataset.rpg, b.dataset.v); return; }
   if (b.dataset.fight){ fightAct(b.dataset.fight); return; }
+  if (b.dataset.x){ extrasAct(b.dataset.x); return; }
   if (b.dataset.act) onAct(b.dataset.act);
 });
 $('#resultSheet').addEventListener('click', e => { const t = e.target.closest('button[data-rtab]'); if (t){ resultTab = t.dataset.rtab; $('#resultSheet').dataset.rtab = resultTab; $('#resultSheet').querySelectorAll('button[data-rtab]').forEach(x => x.setAttribute('aria-selected', String(x === t))); $('#ovResult').scrollTop = 0; } });
