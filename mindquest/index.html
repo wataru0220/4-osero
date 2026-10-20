@@ -635,6 +635,12 @@ details.own[open] summary{margin-bottom:8px}
 .mg-cv{width:100%;max-width:420px;justify-self:center;border-radius:14px;touch-action:none;image-rendering:pixelated}
 .mg-cv.tall{max-width:360px}
 body.mg-lock{overflow:hidden}
+#duelArea,.mg-box{position:relative}
+.cd3{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:rgba(11,8,32,.55);border-radius:14px;pointer-events:none;min-height:180px}
+.mg-box .cd3{background:none}
+.cd3 b{font-family:var(--en),var(--jp);font-size:110px;font-weight:900;line-height:1;color:#FFE27A;-webkit-text-stroke:4px #1B1430;text-shadow:0 7px 0 #8A5A0B;animation:cdPop .8s ease-out both}
+.cd3 b.go{font-size:56px;color:#FF6B6B;text-shadow:0 6px 0 #7A1A1E;animation-duration:.65s}
+@keyframes cdPop{0%{transform:scale(1.9);opacity:1}25%{transform:scale(1);opacity:1}80%{transform:scale(.95);opacity:1}100%{transform:scale(.7);opacity:0}}
 .mg-ov,.mg-ov *{box-sizing:border-box}
 .mg-ov{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;background:radial-gradient(circle at 50% 30%,#2A1A4A,#0B0820 70%);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 6px) 10px calc(env(safe-area-inset-bottom,0px) + 10px);touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none;font-family:var(--jp)}
 .mg-top{display:flex;align-items:center;gap:10px;padding:2px 2px 8px}.mg-top b{font-size:16px;white-space:nowrap}.mg-top span{flex:1;min-width:0;font-size:12px;color:#C9D0E6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -3978,8 +3984,7 @@ function mountMG(){
   ov.querySelector('.mg-x').onclick = () => { if (mgStop){ mgStop(); mgStop = null; } close(); if (rpgQ().fight === F){ F.mg = null; F.msg = 'ミニゲームをやめた'; save(); renderPanel(); } };
   box.innerHTML = `<div class="mg-intro"><h3>${title}</h3><p class="mg-goal">ゴール：時間内に <b>${esc(F.n)}</b> のHP <b>${Math.max(0, F.hp)}</b> をけずりきれ！</p><ol>${how.map(h => `<li>${h}</li>`).join('')}</ol><button type="button" class="mg-go">▶ スタート</button></div>`;
   box.querySelector('.mg-go').onclick = () => {
-    let n = 3; box.innerHTML = '<div class="mg-count">3</div>'; sfx.step();
-    const cd = setInterval(() => { n--; if (!mgOn){ clearInterval(cd); return; } if (n > 0){ box.firstChild.textContent = n; sfx.step(); } else { clearInterval(cd); box.innerHTML = ''; sfx.good(); start(); } }, 700);
+    box.innerHTML = ''; countdown(box, () => { if (mgOn) start(); });
   };
   const start = () => { mgStop = runMG(box, F.mg, F, (dealt, taken) => {
     mgStop = null; if (!S || !Q.fight || Q.fight !== F){ close(); return; }
@@ -5392,8 +5397,19 @@ function duelPick(k){
   d.game = DUEL_GAMES[k] ? k : keys[rnd(keys.length)];
   d.stage = 'play'; sfx.next(); save(); renderPanel();
 }
+/* 3, 2, 1, START! over a game area: big numbers and a beep each, a higher one at the start */
+function countdown(el, done){
+  const c = document.createElement('div'); c.className = 'cd3'; el.appendChild(c);
+  const steps = ['3', '2', '1', 'スタート！']; let i = 0, alive = true;
+  const show = () => { if (!alive) return; if (!c.isConnected){ alive = false; return; }
+    if (i >= steps.length){ c.remove(); done(); return; }
+    c.innerHTML = `<b class="${i === 3 ? 'go' : ''}">${steps[i]}</b>`; i === 3 ? (tone(1319, .35, .07), tone(1760, .4, .05, .08)) : tone(880, .16, .07, 0, 'square');
+    i++; setTimeout(show, i === 4 ? 650 : 800); };
+  show(); return () => { alive = false; c.remove(); };
+}
 function mountDuel(){
   const Q = S.quest, d = Q.duel, el = $('#duelArea'); if (!el || !d) return;
+  if (!d.cd){ duelStop = countdown(el, () => { d.cd = 1; if ($('#duelArea') === el) mountDuel(); }); return; }
   const rv = (Q.rivals || []).find(r => r.id === d.rv), R = rvInfo(d.rv), lv = rv ? rvLevel(rv) : 1;
   let over = false;
   duelStop = DUEL_GAMES[d.game].run(el, {R, lv, end: (res, detail) => {
