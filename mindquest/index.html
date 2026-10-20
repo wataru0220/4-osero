@@ -952,6 +952,9 @@ body.mg-lock{overflow:hidden}
 .theme-input::placeholder{color:#B4B9CC;font-weight:700}
 .examples{display:flex;flex-wrap:wrap;gap:8px}
 .purpose,.job-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.course-pick{display:grid;gap:6px}
+.purpose.course-ctl{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.purpose.course-ctl button{padding:10px 14px;border-radius:14px}.purpose.course-ctl button b{font-size:15px}
 .purpose button,.job-menu button{display:grid;gap:3px;align-content:start;text-align:left;border:2px solid var(--line);background:#fff;border-radius:18px;padding:12px 16px;color:var(--ink)}
 .purpose button b,.job-menu button b{font-size:16px;font-weight:800}
 .purpose button small,.job-menu button small{font-size:12px;color:var(--muted);line-height:1.5}
@@ -1343,6 +1346,7 @@ body.mg-lock{overflow:hidden}
       <button type="button" role="radio" data-job="career" aria-checked="false"><b>職業をえらぶ</b><small>気になる仕事がいくつかあって、どれにするか決めたい人。候補を調べて点数でくらべる</small></button>
       <p>どちらも最後に「おすすめ職業ランキング」が出ます（AIにとられにくい仕事かどうかも）</p>
     </div>
+    <div class="course-pick" data-hs="1" id="coursePick"><small class="tb-l">コースをえらぶ</small><div class="purpose course-ctl" id="presetCtl" role="radiogroup" aria-label="問いのコース"></div></div>
     <div class="theme-block" data-hs="1" id="themeBlock">
       <small class="tb-l">真ん中のテーマ</small>
       <input id="themeInput" class="theme-input" maxlength="24" placeholder="例：科学者になりたい" aria-label="真ん中のテーマ" autocomplete="off">
@@ -1399,8 +1403,7 @@ body.mg-lock{overflow:hidden}
       <button type="button" role="radio" data-level="beginner" aria-checked="false">初心者<small>選択肢から選ぶ</small></button>
     </div>
 
-    <div class="step" data-hs="4"><i>STEP 4</i>問いのコース</div>
-    <div class="seg-ctl" data-hs="4" id="presetCtl" role="radiogroup" aria-label="問いのコース"></div>
+    <div class="step" data-hs="4"><i>STEP 4</i>問いの中身<small class="step-note" id="courseNote"></small></div>
     <div class="qbox" data-hs="4" id="qBox">
       <div class="qbox-head">
         <small id="qCount">7 QUESTIONS</small>
@@ -7490,7 +7493,7 @@ setInterval(() => {
    HOME
    ========================================================= */
 const JOB_COURSES = {calling: '天職を見つける', career: '自分に合う職業をえらぶ'};
-let homePurpose = 'dream', homeJob = 'calling';
+let homePurpose = 'dream', homeJob = 'calling', homeDreamK = 'dream';
 let presetKey = 'dream', draft = clone(PRESETS.dream.st), editing = false, homeMode = store.get('mindquest-mode', 'quest') === 'map' ? 'map' : 'quest', homeLevel = 'normal', homeCpu = 3;
 /* surprise questions: three of them join every game at random, so each journey brings something new */
 const WILD = [
@@ -7619,7 +7622,7 @@ function renderPurpose(){
 }
 function setPurpose(pp, course){
   homePurpose = pp;
-  const k = pp === 'job' ? (course || homeJob) : (JOB_COURSES[presetKey] ? 'dream' : presetKey);
+  const k = pp === 'job' ? (course || homeJob) : (JOB_COURSES[presetKey] ? (PRESETS[homeDreamK] ? homeDreamK : 'dream') : presetKey);
   if (pp === 'job') homeJob = k;
   if (k !== presetKey || course){ presetKey = k; draft = clone(PRESETS[k].st); editing = false; }
   renderPurpose(); renderPresets(); renderExamples(); renderQList();
@@ -7627,17 +7630,20 @@ function setPurpose(pp, course){
 $('#purposeCtl').addEventListener('click', e => { const b = e.target.closest('[data-purpose]'); if (b) setPurpose(b.dataset.purpose); });
 $('#jobMenu').addEventListener('click', e => { const b = e.target.closest('[data-job]'); if (b) setPurpose('job', b.dataset.job); });
 const homeTheme = () => homePurpose === 'job' ? JOB_COURSES[presetKey] || '' : $('#themeInput').value.trim();
+const COURSE_D = {dream: '夢や目標をかなえる作戦を立てる', work: '仕事の目標を達成する作戦を立てる', plan: '企画やアイデアを形にする', life: '結婚・家族・家づくり・老後など、人生の大切なできごと', lifeup: '出会い→結婚→家族→家づくり→老後を、1本の旅でたどる'};
 function renderPresets(){
-  const c = $('#presetCtl'); c.innerHTML = '';
+  const c = $('#presetCtl'); c.innerHTML = ''; $('#coursePick').hidden = homePurpose === 'job';
+  const cn = $('#courseNote'); if (cn) cn.textContent = `コース：${PRESETS[presetKey].name}（STEP1で変えられます）`;
   Object.entries(PRESETS).filter(([k]) => !!JOB_COURSES[k] === (homePurpose === 'job')).forEach(([k, p]) => {
     const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'radio');
-    b.setAttribute('aria-checked', String(k === presetKey)); b.textContent = p.name;
-    b.onclick = () => { presetKey = k; if (JOB_COURSES[k]) homeJob = k; draft = clone(p.st); editing = false; renderPurpose(); renderPresets(); renderExamples(); renderQList(); };
+    b.setAttribute('aria-checked', String(k === presetKey)); b.innerHTML = `<b>${esc(p.name)}</b>${COURSE_D[k] ? `<small>${COURSE_D[k]}</small>` : ''}`;
+    b.onclick = () => { presetKey = k; if (JOB_COURSES[k]) homeJob = k; else homeDreamK = k; draft = clone(p.st); editing = false; renderPurpose(); renderPresets(); renderExamples(); renderQList(); };
     c.append(b);
   });
 }
 function renderExamples(){
   const c = $('#examples'); c.innerHTML = '';
+  if (PRESETS[presetKey].ex[0]) $('#themeInput').placeholder = '例：' + PRESETS[presetKey].ex[0];
   PRESETS[presetKey].ex.forEach(t => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'ex'; b.textContent = t;
     b.onclick = () => { $('#themeInput').value = t; checkBegin(); };
