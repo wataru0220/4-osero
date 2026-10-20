@@ -634,6 +634,35 @@ details.own[open] summary{margin-bottom:8px}
 .mg-hud{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-weight:800;font-size:14px}
 .mg-cv{width:100%;max-width:420px;justify-self:center;border-radius:14px;touch-action:none;image-rendering:pixelated}
 .mg-cv.tall{max-width:360px}
+body.mg-lock{overflow:hidden}
+.mg-ov,.mg-ov *{box-sizing:border-box}
+.mg-ov{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;background:radial-gradient(circle at 50% 30%,#2A1A4A,#0B0820 70%);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 6px) 10px calc(env(safe-area-inset-bottom,0px) + 10px);touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none;font-family:var(--jp)}
+.mg-top{display:flex;align-items:center;gap:10px;padding:2px 2px 8px}.mg-top b{font-size:16px;white-space:nowrap}.mg-top span{flex:1;min-width:0;font-size:12px;color:#C9D0E6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mg-x{flex:none;width:38px;height:38px;border-radius:50%;border:2px solid #fff;background:rgba(255,255,255,.1);color:#fff;font-size:16px;font-weight:900}
+.mg-box{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.mg-ov .duel-note{display:none}
+.mg-ov .mg-cv{border-radius:12px;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+.mg-ov .mg-cv.tall{width:min(100%,calc((100dvh - 150px) * .75));max-width:none}
+.mg-ov .mg-cv.wide{width:min(100%,640px,calc((100dvh - 270px) * 1.286));max-width:none}
+.mg-intro,.mg-res{width:min(100%,440px);display:grid;gap:10px;padding:18px;border-radius:18px;background:#1B1430;border:3px solid #fff;animation:qpop .3s}
+.mg-intro h3{margin:0;font-size:22px;text-align:center}.mg-goal{margin:0;padding:8px 10px;border-radius:10px;background:#3A2A10;color:#FFE27A;font-size:14px;font-weight:700}
+.mg-intro ol{margin:0;padding-left:1.3em;display:grid;gap:6px;font-size:14.5px;line-height:1.5}
+.mg-go{padding:14px;border-radius:14px;border:3px solid #fff;background:#D93A3F;color:#fff;font-size:19px;font-weight:900;box-shadow:0 5px 0 #7A1A1E}
+.mg-go:active{transform:translateY(4px);box-shadow:0 1px 0 #7A1A1E}
+.mg-count{font-family:var(--en);font-size:120px;font-weight:900;color:#FFE27A;text-shadow:0 6px 0 #8A5A0B;animation:qpop .45s}
+.mg-res{text-align:center}.mg-res small{font-weight:800;letter-spacing:.2em;color:#C9D0E6}.mg-res > b{font-family:var(--en);font-size:84px;line-height:1;color:#FFE27A;text-shadow:0 5px 0 #8A5A0B}
+.mg-res.rC > b{color:#9FA6C8;text-shadow:0 5px 0 #3A3350}.mg-res.rS > b{color:#FF9A4D;text-shadow:0 5px 0 #7A2A0B}
+.mg-res p{margin:0;font-weight:800;font-size:16px}.mg-res ul{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:14.5px}.mg-res li b{color:#FFE27A}
+.ft-pad{width:min(100%,640px);display:flex;justify-content:space-between;align-items:flex-end;gap:12px;touch-action:none}
+.ft-l{display:grid;grid-template-columns:repeat(2,64px);gap:8px}.ft-r{display:grid;grid-template-columns:repeat(3,64px);gap:8px}
+.ft-pad button{height:64px;display:grid;place-items:center;align-content:center;gap:0;border-radius:16px;border:2px solid #fff;background:#2A2050;color:#fff;font-size:24px;font-weight:900;box-shadow:0 5px 0 #120E24;-webkit-touch-callout:none;touch-action:none}
+.ft-pad button small{font-size:9.5px;font-weight:700;color:#C9D0E6;white-space:nowrap}
+.ft-pad button:active{transform:translateY(4px);box-shadow:0 1px 0 #120E24;background:#4B3A7A}
+.ft-pad [data-k="P"]{background:#B4322F}.ft-pad [data-k="K"]{background:#C8601E}.ft-pad [data-k="G"]{background:#2E6BB4}
+.ft-pad button.sp{background:#4A3A1A}.ft-pad button.sp.full{background:#E89A0B;animation:chgBlink .6s infinite}.ft-pad button:disabled{opacity:.45}
+@media (max-width:380px){.ft-l{grid-template-columns:repeat(2,54px)}.ft-r{grid-template-columns:repeat(3,54px)}.ft-pad button{height:56px;font-size:21px}}
+.mg-ov .mg-row{margin-top:2px}.mg-ov .mg-bomb{padding:12px 30px;font-size:17px}
+.mg-ov .rh{width:min(100%,420px)}.mg-ov .mg-hud{width:min(100%,420px)}.mg-ov .kf-btns{width:min(100%,420px)}
 .mg-row{display:flex;justify-content:center}
 .mg-bomb{padding:10px 22px;border-radius:999px;border:2px solid #1B1430;background:#FF6B6B;color:#fff;font-weight:900;font-size:15px;box-shadow:0 4px 0 #9A2A2A}
 .mg-bomb:disabled{opacity:.4;box-shadow:none}
@@ -3484,7 +3513,7 @@ function fightPanelHTML(){
     <div class="rpg mon"><span class="rpg-name">${esc(F.n)}</span><svg class="mon-pic" viewBox="-66 -88 132 96" aria-hidden="true"><g class="mon-bob">${pxSprite(`<use href="#mon-${F.kind}" style="--mc:${F.col}"/>`)}</g></svg><p>${esc([...(F.log || [])].reverse().find(t => t !== BT_RULE) || F.msg)}</p><div class="hpbar"><span>HP</span><span class="hpt"><i style="width:${hp}%"></i></span><b>${Math.max(0, F.hp)}/${F.max}</b></div></div>
     <p class="bt-rule">⚔️ ${BT_RULE}</p>
     ${statBarHTML()}${itemBarHTML('fight')}
-    ${F.mg ? '<div class="mg-wrap" id="mgArea"></div>' : ''}
+    ${F.mg ? '<p class="hint" style="text-align:center">🎮 ミニゲーム中…（画面いっぱいで遊べます）</p>' : ''}
     <div class="bt-cmd panel${over ? ' one' : ' four'}${F.mg ? ' hide' : ''}">${over ? `<button type="button" data-fight="end">${F.won ? 'ごほうびを受け取って進む →' : '先へ進む →'}</button>` : fightCmds(F, Q, true)}</div>
     ${F.mg || over ? '' : `<div class="mg-pick"><b>🎮 ミニゲームで戦う</b>${Object.entries(MG).map(([k, [ic, n, d]]) => `<button type="button" data-fight="${k}">${ic} ${n}<small>${d}</small></button>`).join('')}</div>`}
     <p class="hint">ぼうぎょ：その間に受けるダメージが半分。魔物が「力をためている」ときは次のこうげきが2倍なので、ぼうぎょがおすすめ。レベルが上がるほど魔物も強くなります。</p>`;
@@ -3731,9 +3760,10 @@ function runMG(el, kind, F, end){
     const unit = Math.max(.8, F.max / 130) * Math.sqrt(Math.max(10, atk) / 30), bossLeft = () => Math.max(0, F.hp - dealt);
     const hitBoss = (d, x, y) => { dealt += d; B.flash = .07; combo++; comboT = 1.1; hits++; if (hits % 6 === 0) sfx.hit(); if (combo % 15 === 0) fl(B.x, B.y + 70, `${combo} HIT!`, '#FF9A4D', true); burst(x, y, '#FFE27A', 2, 90); };
     const pos = e => { const r = cv.getBoundingClientRect(); return {x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H}; };
-    cv.addEventListener('pointerdown', e => { e.preventDefault(); const p = pos(e); drag = {sx: p.x, sy: p.y, px: P.x, py: P.y}; try { cv.setPointerCapture(e.pointerId); } catch {} });
-    cv.addEventListener('pointermove', e => { if (!drag) return; const p = pos(e); P.x = cl(drag.px + (p.x - drag.sx) * 1.25, 12, W - 12); P.y = cl(drag.py + (p.y - drag.sy) * 1.25, 170, H - 18); });
-    ['pointerup', 'pointercancel'].forEach(n => cv.addEventListener(n, () => { drag = null; }));
+    const aimAt = e => { const p = pos(e); drag = {tx: cl(p.x, 12, W - 12), ty: cl(p.y - (e.pointerType === 'mouse' ? 0 : 52), 170, H - 18)}; };
+    cv.addEventListener('pointerdown', e => { e.preventDefault(); aimAt(e); try { cv.setPointerCapture(e.pointerId); } catch {} });
+    cv.addEventListener('pointermove', e => { if (drag || e.pointerType === 'mouse') aimAt(e); });
+    ['pointerup', 'pointercancel'].forEach(n => cv.addEventListener(n, e => { if (e.pointerType !== 'mouse') drag = null; }));
     const bomb = () => { if (over || endAt || !P.bomb) return; P.bomb--; el.querySelector('.mg-bomb b').textContent = '×' + P.bomb; el.querySelector('.mg-bomb').disabled = true;
       eb.forEach(b => burst(b.x, b.y, '#FFAE45', 2)); eb.length = 0; mins.forEach(m => { m.hp = 0; }); shake = .55; hitBoss(F.max * .12, B.x, B.y); fl(W / 2, H / 2, 'BOMB!!', '#FF6B6B', true); sfx.fire(); P.inv = 1; };
     el.querySelector('.mg-bomb').addEventListener('click', bomb);
@@ -3750,7 +3780,7 @@ function runMG(el, kind, F, end){
       }
       if (endAt && t - endAt > 1100){ finish(); return; }
       const mx = (held.has('R') ? 1 : 0) - (held.has('L') ? 1 : 0), my = (held.has('D') ? 1 : 0) - (held.has('U') ? 1 : 0);
-      P.x = cl(P.x + mx * 270 * dt, 12, W - 12); P.y = cl(P.y + my * 270 * dt, 170, H - 18); P.inv -= dt; B.flash -= dt; comboT -= dt; if (comboT <= 0) combo = 0; shake = Math.max(0, shake - dt);
+      P.x = cl(P.x + mx * 270 * dt, 12, W - 12); P.y = cl(P.y + my * 270 * dt, 170, H - 18); if (drag){ const k = Math.min(1, dt * 16); P.x += (drag.tx - P.x) * k; P.y += (drag.ty - P.y) * k; } P.inv -= dt; B.flash -= dt; comboT -= dt; if (comboT <= 0) combo = 0; shake = Math.max(0, shake - dt);
       if (!endAt || bossLeft() > 0){ B.x = W / 2 + Math.sin(t / 950) * (W / 2 - 70); B.y = 92 + Math.sin(t / 610) * 14; }
       if (!endAt && t > nextShot){ nextShot = t + 120; const sp = P.pw >= 3 ? [-.22, 0, .22] : P.pw === 2 ? [-.06, .06] : [0]; sp.forEach(a => shots.push({x: P.x + a * 40, y: P.y - 16, vx: Math.sin(a) * 560, vy: -Math.cos(a) * 560})); }
       if (!endAt && t > B.patT){ B.pat++; B.patT = t + 4200; fl(B.x, B.y + 78, ['ねらい撃ち！', 'おうぎ撃ち！', 'うずまき弾！', '流星雨！'][B.pat % 4], '#FFFFFF'); sfx.charge(); nextFire = t + 500; }
@@ -3801,15 +3831,16 @@ function runMG(el, kind, F, end){
     /* ===== fighting game seen from the side: walk, jump, punch, kick, hold guard. The monster shows "!" before it strikes
        (guard it, or hit it first for a counter) and throws fireballs (jump over them). Chains of hits are combos;
        a full gauge unleashes the special move. 25 seconds, KO to win. ===== */
-    el.innerHTML = `<canvas class="mg-cv" width="360" height="250"></canvas>
-      <div class="ft-btns">${[['L', '◀', ''], ['R', '▶', ''], ['U', '⬆', 'ジャンプ'], ['G', '🛡️', 'ガード'], ['P', '👊', 'パンチ'], ['K', '🦵', 'キック'], ['S', '⚡', '必殺']].map(([k, ic, n]) => `<button type="button" data-k="${k}"${k === 'S' ? ' class="sp" disabled' : ''}>${ic}${n ? `<small>${n}</small>` : ''}</button>`).join('')}</div>
+    const fb = ([k, ic, n]) => `<button type="button" data-k="${k}"${k === 'S' ? ' class="sp" disabled' : ''}>${ic}${n ? `<small>${n}</small>` : ''}</button>`;
+    el.innerHTML = `<canvas class="mg-cv wide" width="360" height="280"></canvas>
+      <div class="ft-pad"><div class="ft-l">${[['L', '◀', ''], ['R', '▶', '']].map(fb).join('')}</div><div class="ft-r">${[['U', '⬆', 'ジャンプ'], ['G', '🛡️', 'ガード'], ['S', '⚡', '必殺'], ['P', '👊', 'パンチ'], ['K', '🦵', 'キック']].map(fb).join('')}</div></div>
       <p class="duel-note">「！」が出たら🛡️ガード（押している間ふせぐ）か、先に殴ってカウンター。🔥火の玉はジャンプでよける。👊→👊→🦵でコンボ、ゲージがたまったら⚡必殺！（キー：←→ ↑ Z=パンチ X=キック C=ガード V=必殺）</p>`;
-    const cv = el.querySelector('canvas'), g = cv.getContext('2d'), W = 360, H = 250, GY = 214; g.imageSmoothingEnabled = false;
+    const cv = el.querySelector('canvas'), g = cv.getContext('2d'), W = 360, H = 280, GY = 240; g.imageSmoothingEnabled = false;
     const me = {x: 92, y: 0, vy: 0, face: 1, st: 'idle', tt: 0, hp: 100, sp: 0, hit: false}, mo = {x: 268, face: -1, st: 'idle', tt: 0, next: 1100, flash: 0, ox: 0};
     const balls = []; let t0 = 0, last = 0, stop = 0, shake = 0, combo = 0, comboT = 0, endMsg = '', endC = '', endAt = 0, scr = 0;
     const unit = F.max * Math.sqrt(Math.max(10, atk) / 30), monLeft = () => Math.max(0, F.hp - dealt), lvS = Math.min(1, F.lv / 10);
     const set = (o, s) => { o.st = s; o.tt = 0; };
-    const spBtn = el.querySelector('[data-k="S"]');
+    const spBtn = el.querySelector('.ft-pad [data-k="S"]');
     const press = k => { if (over || endAt) return;
       if (k === 'L' || k === 'R' || k === 'G'){ held.add(k); return; }
       if (k === 'U'){ if (me.y === 0 && me.st !== 'hurt'){ me.vy = 560; sfx.step(); } return; }
@@ -3817,7 +3848,7 @@ function runMG(el, kind, F, end){
       if (k === 'P'){ set(me, 'punch'); me.hit = false; sfx.slash(); }
       else if (k === 'K'){ set(me, 'kick'); me.hit = false; sfx.miss(); }
       else if (k === 'S' && me.sp >= 100){ me.sp = 0; set(me, 'super'); me.hit = false; scr = .35; sfx.charge(); fl(W / 2, 70, '必殺！', '#FFE27A', true); } };
-    el.querySelectorAll('[data-k]').forEach(b => { const k = b.dataset.k;
+    el.querySelectorAll('.ft-pad [data-k]').forEach(b => { const k = b.dataset.k;
       b.addEventListener('pointerdown', e => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch {} press(k); });
       ['pointerup', 'pointercancel', 'pointerleave'].forEach(n => b.addEventListener(n, () => held.delete(k))); });
     key = e => { const m = {ArrowLeft: 'L', ArrowRight: 'R', ArrowUp: 'U', ' ': 'U', z: 'P', Z: 'P', x: 'K', X: 'K', c: 'G', C: 'G', ArrowDown: 'G', v: 'S', V: 'S'}[e.key]; if (!m) return; e.preventDefault();
@@ -3825,7 +3856,7 @@ function runMG(el, kind, F, end){
     document.addEventListener('keydown', key); document.addEventListener('keyup', key);
     const hitMe = (pow, from) => { me.hp -= pow; taken += mAtk * pow / 25; set(me, 'hurt'); me.x = cl(me.x + from * 34, 20, W - 20); shake = .3; stop = .07; burst(me.x, GY - 50 - me.y, '#FF6B6B', 14); fl(me.x, GY - 100, 'ダメージ！', '#FF6B6B'); sfx.hurt(); combo = 0; };
     const blocked = () => { me.sp = Math.min(100, me.sp + 15); burst(me.x + me.face * 22, GY - 55, '#9FD3F2', 10); fl(me.x, GY - 104, 'ガード！', '#9FD3F2'); sfx.guard(); stop = .05; };
-    const ATK = {punch: {a: .06, b: .14, end: .24, r: 60, d: .075}, kick: {a: .17, b: .28, end: .44, r: 82, d: .13}, super: {a: .32, b: .62, end: .85, r: 150, d: .38}};
+    const ATK = {punch: {a: .05, b: .15, end: .24, r: 72, d: .09}, kick: {a: .15, b: .28, end: .42, r: 96, d: .15}, super: {a: .32, b: .62, end: .85, r: 170, d: .4}};
     const frame = now => {
       if (over) return; if (!t0) t0 = last = now; const t = now - t0; let dt = Math.min(.04, (now - last) / 1000); last = now;
       if (!endAt){
@@ -3849,7 +3880,7 @@ function runMG(el, kind, F, end){
           if (!me.hit && me.tt >= A.a && me.tt <= A.b && Math.abs(mo.x - me.x) <= A.r){
             me.hit = true; let d = unit * A.d; const counter = mo.st === 'wind' || mo.st === 'windF';
             combo = comboT > 0 ? combo + 1 : 1; comboT = .85; d *= (1 + Math.min(1, (combo - 1) * .2)) * (counter ? 1.6 : 1) * (awake() ? 2 : 1);
-            dealt += d; me.sp = Math.min(100, me.sp + (me.st === 'super' ? 0 : 13)); mo.flash = .12; mo.x = cl(mo.x + me.face * (me.st === 'super' ? 70 : me.st === 'kick' ? 26 : 12), 30, W - 30);
+            dealt += d; me.sp = Math.min(100, me.sp + (me.st === 'super' ? 0 : 13)); mo.flash = .12; mo.x = cl(mo.x + me.face * (me.st === 'super' ? 60 : me.st === 'kick' ? 16 : 4), 30, W - 30);
             stop = me.st === 'punch' ? .05 : .1; shake = me.st === 'super' ? .55 : me.st === 'kick' ? .2 : .1;
             burst(mo.x - me.face * 14, GY - 56, me.st === 'super' ? '#FFE27A' : '#FFFFFF', me.st === 'super' ? 34 : 9, me.st === 'super' ? 280 : 150);
             fl(mo.x, GY - 104, String(Math.round(d)), me.st === 'super' ? '#FF6B6B' : '#FFE27A', me.st !== 'punch');
@@ -3929,19 +3960,44 @@ function runMG(el, kind, F, end){
   }
   return stopAll;
 }
-let mgStop = null;
+let mgStop = null, mgOn = false;
+const MG_HOW = {
+  shoot: ['🚀 シューティング', ['画面をなぞると、自機が指の少し上についてくる', '弾は自動で発射。魔物の弾幕をよけながら撃ちまくれ', 'ザコの編隊をたおすと「P」でパワーアップ、「♥」で残機回復', '💥ボム（1回）で弾を全部消して大ダメージ', '30秒以内に魔物のHPを0にすれば勝ち！']],
+  kick: ['🥊 格闘', ['◀ ▶ で歩く、⬆ でジャンプ', '👊パンチ（はやい）・🦵キック（強い）を続けて当てるとコンボ', '魔物の頭に「！」が出たら 🛡️ガードを押しっぱなし（先に殴るとカウンター）', '「🔥」のあとは火の玉。⬆ジャンプでよける', 'ゲージがたまったら ⚡必殺！ 25秒以内にK.O.で勝ち']],
+  rhythm: ['🎵 リズム', ['上から音符が落ちてくる', '音符が線に重なった瞬間に、そのレーンをタップ', 'ぴったりなら PERFECT、少しずれても GOOD', '見のがすと魔物のこうげきを受ける']]
+};
+/* the mini-games run full screen on top of everything: how to play → 3, 2, 1 → the game → the result */
 function mountMG(){
-  const Q = rpgQ(), F = Q.fight, el = $('#mgArea'); if (!F || !F.mg || !el || el.dataset.on) return; el.dataset.on = 1;
-  mgStop = runMG(el, F.mg, F, (dealt, taken) => {
-    mgStop = null; if (!S || !Q.fight || Q.fight !== F) return;
+  const Q = rpgQ(), F = Q.fight; if (!F || !F.mg || mgOn) return; mgOn = true;
+  const [title, how] = MG_HOW[F.mg] || MG_HOW.shoot;
+  const ov = document.createElement('div'); ov.className = 'mg-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', title);
+  ov.innerHTML = `<div class="mg-top"><b>${title}</b><span>VS ${esc(F.n)} Lv.${F.lv}　HP ${Math.max(0, F.hp)}/${F.max}</span><button type="button" class="mg-x" aria-label="やめる">✕</button></div><div class="mg-box"></div>`;
+  document.body.appendChild(ov); document.body.classList.add('mg-lock');
+  const box = ov.querySelector('.mg-box');
+  const close = () => { ov.remove(); document.body.classList.remove('mg-lock'); mgOn = false; };
+  ov.querySelector('.mg-x').onclick = () => { if (mgStop){ mgStop(); mgStop = null; } close(); if (rpgQ().fight === F){ F.mg = null; F.msg = 'ミニゲームをやめた'; save(); renderPanel(); } };
+  box.innerHTML = `<div class="mg-intro"><h3>${title}</h3><p class="mg-goal">ゴール：時間内に <b>${esc(F.n)}</b> のHP <b>${Math.max(0, F.hp)}</b> をけずりきれ！</p><ol>${how.map(h => `<li>${h}</li>`).join('')}</ol><button type="button" class="mg-go">▶ スタート</button></div>`;
+  box.querySelector('.mg-go').onclick = () => {
+    let n = 3; box.innerHTML = '<div class="mg-count">3</div>'; sfx.step();
+    const cd = setInterval(() => { n--; if (!mgOn){ clearInterval(cd); return; } if (n > 0){ box.firstChild.textContent = n; sfx.step(); } else { clearInterval(cd); box.innerHTML = ''; sfx.good(); start(); } }, 700);
+  };
+  const start = () => { mgStop = runMG(box, F.mg, F, (dealt, taken) => {
+    mgStop = null; if (!S || !Q.fight || Q.fight !== F){ close(); return; }
     if (awake()) dealt *= 2;
-    F.mg = null; F.hp -= dealt; best('dmg', dealt);
-    F.msg = `${MG[F.mg0][1]}の結果：${F.n}に${dealt}のダメージ！${taken ? ` こちらも${taken}のダメージを受けた` : ' ノーダメージ！'}`;
-    F.log = F.log || []; blogAdd(F.log, F.msg); F.turn = (F.turn || 1) + 1;
-    if (taken && hurt(taken, `${F.n}との戦いで`, true)) return;
-    if (F.hp <= 0){ F.viaMg = 1; fightWin(F); return; }
-    save(); renderPanel();
-  });
+    const ko = dealt >= F.hp, rank = ko ? (taken ? 'A' : 'S') : dealt >= F.hp * .5 ? 'B' : 'C', bonus = {S: 30, A: 15, B: 5, C: 0}[rank];
+    box.innerHTML = `<div class="mg-res r${rank}"><small>RANK</small><b>${rank}</b><p>${ko ? `${esc(F.n)}をたおした！` : '時間内にたおせなかった…'}</p><ul><li>⚔️ あたえたダメージ <b>${dealt}</b></li><li>💔 受けたダメージ <b>${taken}</b></li>${bonus ? `<li>💰 ランクボーナス <b>+${bonus}G</b></li>` : ''}</ul><button type="button" class="mg-go">バトルにもどる →</button></div>`;
+    rank === 'C' ? sfx.bad() : sfx.fanfare();
+    box.querySelector('.mg-go').onclick = () => {
+      close(); if (!S || Q.fight !== F) return;
+      if (bonus) gainGold(bonus, `ミニゲーム ランク${rank}`);
+      F.mg = null; F.hp -= dealt; best('dmg', dealt);
+      F.msg = `${MG[F.mg0][1]}の結果（ランク${rank}）：${F.n}に${dealt}のダメージ！${taken ? ` こちらも${taken}のダメージを受けた` : ' ノーダメージ！'}`;
+      F.log = F.log || []; blogAdd(F.log, F.msg); F.turn = (F.turn || 1) + 1;
+      if (taken && hurt(taken, `${F.n}との戦いで`, true)) return;
+      if (F.hp <= 0){ F.viaMg = 1; fightWin(F); return; }
+      save(); renderPanel();
+    };
+  }); };
 }
 function metaGoal(){ const Q = rpgQ(); META.goals[S.goal] = 1; metaSave(); tot('clears'); best('fast', Q.rolls, true); best('gold', Q.earned || 0); const n = Object.keys(META.goals).length; if (n >= 3) badge('goals3'); if (n >= 10) badge('goals10'); }
 function petsHTML(){ const Q = rpgQ(), P = Q.pets || [], E = Q.eggs || []; if (!P.length && !E.length) return ''; return `<div class="pets">${P.length ? `<span>おとも：${P.map(p => `${p.ic}${esc(p.n)}<small>${p.r}</small>`).join('　')}</span>` : ''}${E.length ? `<span>🥚 たまご：あと${E.map(n => Math.max(1, n) + 'マス').join('・')}でかえる</span>` : ''}</div>`; }
@@ -3949,7 +4005,7 @@ function extrasAct(a){ if (a === 'chest') takeChest(); else if (a === 'prac') re
 document.querySelector('#btnCollect') && document.querySelector('#btnCollect').addEventListener('click', () => openCollect());
 function syncBattle(){
   const el = $('#battle'); if (!el) return;
-  if (S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'fight' && S.quest.fight && S.quest.fight.mg) setTimeout(() => { if (mgStop && !$('#mgArea[data-on]')){ mgStop(); mgStop = null; } mountMG(); }, 0);
+  if (S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'fight' && S.quest.fight && S.quest.fight.mg) setTimeout(mountMG, 0);
   if (S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'fight' && S.quest.fight){ const fresh = btLast.key !== S.quest.fight.k; el.hidden = false; el.innerHTML = fightSceneHTML(S.quest.fight); if (fresh){ btAnim(el, '.bt-mon', 'appear', 700); el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter'); sfx.appear(); } btLast = {key: S.quest.fight.k, n: 0, fire: 0}; bgmUpdate(); return; }
   const p = S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'answer' && stageView === 'board' ? current() : null, st = p && !p.fork ? S.stages[p.s] : null;
   if (!st || !st.monster){ const was = btLast.key; el.hidden = true; btLast = {key: null, n: 0, fire: 0}; if (was) bgmUpdate(); return; }
