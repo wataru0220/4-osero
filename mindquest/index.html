@@ -958,6 +958,11 @@ body.mg-lock{overflow:hidden}
 .purpose button,.job-menu button{display:grid;gap:3px;align-content:start;text-align:left;border:2px solid var(--line);background:#fff;border-radius:18px;padding:12px 16px;color:var(--ink)}
 .purpose button b,.job-menu button b{font-size:16px;font-weight:800}
 .purpose button small,.job-menu button small{font-size:12px;color:var(--muted);line-height:1.5}
+.purpose button,.job-menu button{grid-template-columns:52px 1fr;column-gap:12px;align-items:center}
+.purpose button > b,.purpose button > small,.job-menu button > b,.job-menu button > small{grid-column:2}
+.ci{grid-row:1 / span 2;grid-column:1;width:52px;height:52px;display:grid;place-items:center;border-radius:16px;background:var(--ic,#EEF0F6);font-style:normal;font-size:30px;line-height:1;box-shadow:inset 0 -3px 0 rgba(0,0,0,.08);transition:transform .15s}
+.purpose button:hover .ci,.job-menu button:hover .ci{transform:scale(1.08) rotate(-4deg)}
+.purpose button[aria-checked="true"] .ci,.job-menu button[aria-checked="true"] .ci{transform:scale(1.06);box-shadow:0 0 0 3px #fff,0 0 0 5px var(--accent)}
 .purpose button[aria-checked="true"],.job-menu button[aria-checked="true"]{border-color:var(--accent);box-shadow:0 0 0 4px rgba(242,85,78,.12);background:#FFF7F4}
 .job-menu p{grid-column:1 / -1;margin:0;font-size:12.5px;font-weight:700;color:#128A5E}
 .theme-block{display:grid;gap:8px}
@@ -1338,12 +1343,12 @@ body.mg-lock{overflow:hidden}
 
     <div class="step" data-hs="1"><i>STEP 1</i>なにを冒険する？</div>
     <div class="purpose" data-hs="1" id="purposeCtl" role="radiogroup" aria-label="冒険の目的">
-      <button type="button" role="radio" data-purpose="dream" aria-checked="true"><b>夢・目標をかなえる</b><small>テーマを自分で決めて冒険する</small></button>
-      <button type="button" role="radio" data-purpose="job" aria-checked="false"><b>仕事・天職をさがす</b><small>テーマが決まっていなくてもOK</small></button>
+      <button type="button" role="radio" data-purpose="dream" aria-checked="true"><i class="ci" style="--ic:#FFE7A8">🌟</i><b>夢・目標をかなえる</b><small>テーマを自分で決めて冒険する</small></button>
+      <button type="button" role="radio" data-purpose="job" aria-checked="false"><i class="ci" style="--ic:#D6ECFF">💼</i><b>仕事・天職をさがす</b><small>テーマが決まっていなくてもOK</small></button>
     </div>
     <div class="job-menu" data-hs="1" id="jobMenu" role="radiogroup" aria-label="仕事さがしのコース" hidden>
-      <button type="button" role="radio" data-job="calling" aria-checked="true"><b>天職探しの旅</b><small>やりたいことがまだわからない・迷っている人。好き・得意・大切なことから、仕事のたまごを見つける</small></button>
-      <button type="button" role="radio" data-job="career" aria-checked="false"><b>職業をえらぶ</b><small>気になる仕事がいくつかあって、どれにするか決めたい人。候補を調べて点数でくらべる</small></button>
+      <button type="button" role="radio" data-job="calling" aria-checked="true"><i class="ci" style="--ic:#E3F6D8">🔍</i><b>天職探しの旅</b><small>やりたいことがまだわからない・迷っている人。好き・得意・大切なことから、仕事のたまごを見つける</small></button>
+      <button type="button" role="radio" data-job="career" aria-checked="false"><i class="ci" style="--ic:#FFE0D6">🧭</i><b>職業をえらぶ</b><small>気になる仕事がいくつかあって、どれにするか決めたい人。候補を調べて点数でくらべる</small></button>
       <p>どちらも最後に「おすすめ職業ランキング」が出ます（AIにとられにくい仕事かどうかも）</p>
     </div>
     <div class="course-pick" data-hs="1" id="coursePick"><small class="tb-l">コースをえらぶ</small><div class="purpose course-ctl" id="presetCtl" role="radiogroup" aria-label="問いのコース"></div></div>
@@ -7630,13 +7635,14 @@ function setPurpose(pp, course){
 $('#purposeCtl').addEventListener('click', e => { const b = e.target.closest('[data-purpose]'); if (b) setPurpose(b.dataset.purpose); });
 $('#jobMenu').addEventListener('click', e => { const b = e.target.closest('[data-job]'); if (b) setPurpose('job', b.dataset.job); });
 const homeTheme = () => homePurpose === 'job' ? JOB_COURSES[presetKey] || '' : $('#themeInput').value.trim();
+const COURSE_IC = {dream: ['🏆', '#FFE7A8'], work: ['📈', '#D6ECFF'], plan: ['💡', '#FFF3B8'], life: ['💍', '#FFE0EC'], lifeup: ['🏡', '#DDF3E4']};
 const COURSE_D = {dream: '夢や目標をかなえる作戦を立てる', work: '仕事の目標を達成する作戦を立てる', plan: '企画やアイデアを形にする', life: '結婚・家族・家づくり・老後など、人生の大切なできごと', lifeup: '出会い→結婚→家族→家づくり→老後を、1本の旅でたどる'};
 function renderPresets(){
   const c = $('#presetCtl'); c.innerHTML = ''; $('#coursePick').hidden = homePurpose === 'job';
   const cn = $('#courseNote'); if (cn) cn.textContent = `コース：${PRESETS[presetKey].name}（STEP1で変えられます）`;
   Object.entries(PRESETS).filter(([k]) => !!JOB_COURSES[k] === (homePurpose === 'job')).forEach(([k, p]) => {
     const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'radio');
-    b.setAttribute('aria-checked', String(k === presetKey)); b.innerHTML = `<b>${esc(p.name)}</b>${COURSE_D[k] ? `<small>${COURSE_D[k]}</small>` : ''}`;
+    b.setAttribute('aria-checked', String(k === presetKey)); const ic = COURSE_IC[k] || ['📝', '#EEF0F6']; b.innerHTML = `<i class="ci" style="--ic:${ic[1]}">${ic[0]}</i><b>${esc(p.name)}</b>${COURSE_D[k] ? `<small>${COURSE_D[k]}</small>` : ''}`;
     b.onclick = () => { presetKey = k; if (JOB_COURSES[k]) homeJob = k; else homeDreamK = k; draft = clone(p.st); editing = false; renderPurpose(); renderPresets(); renderExamples(); renderQList(); };
     c.append(b);
   });
