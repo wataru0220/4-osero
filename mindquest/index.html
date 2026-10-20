@@ -575,6 +575,24 @@ details.own[open] summary{margin-bottom:8px}
 .hpb i{display:block;height:100%;background:linear-gradient(90deg,#F2554E,#FFAE45);transition:width .5s}
 .hpb.mental i{background:linear-gradient(90deg,#15A37C,#7ED3A8)}
 .hpb.mental.low i{background:linear-gradient(90deg,#D93A3F,#F2A33A)}
+.battle .bt-tag{grid-template-columns:1fr auto}
+.bt-mon .bt-tag{min-width:0;width:100%}
+.battle .bt-hero{bottom:178px}
+@media (max-width:620px){.battle .bt-hero{bottom:auto;top:36%}.battle .bt-mon{top:8%}}
+.bt-turn{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:4;padding:2px 12px;border-radius:999px;background:rgba(10,8,24,.8);border:2px solid #fff;color:#FFD84D;font-weight:800;font-size:12.5px;white-space:nowrap}
+.bt-log{position:relative;z-index:3;align-self:end;margin:0 14px 8px;padding:8px 12px;border-radius:10px;background:rgba(10,8,24,.9);border:2px solid #fff;color:#fff;font-size:13px;line-height:1.5;min-height:4.6em;display:flex;flex-direction:column;justify-content:flex-end}
+.bt-log p{margin:0;opacity:.62}.bt-log p.new{opacity:1;font-weight:800}.bt-log p.new::before{content:'▶ ';color:#FFD84D}
+.bt-win{position:relative;z-index:5;align-self:end;margin:0 14px 14px;padding:12px 16px;border-radius:14px;background:rgba(10,8,24,.93);border:3px solid #FFD84D;color:#fff;text-align:center;display:grid;gap:6px;animation:qpop .4s}
+.bt-win > b{font-family:var(--en);font-size:30px;color:#FFD84D;letter-spacing:.08em;text-shadow:0 3px 0 #8A5A0B}.bt-win.esc{border-color:#9FD3F2}.bt-win.esc > b{color:#9FD3F2;text-shadow:0 3px 0 #2D6BB4}
+.bt-win > span{font-weight:800}.bt-win ul{list-style:none;margin:0;padding:0;font-size:13.5px;display:grid;gap:2px;color:#FFF3C4}
+.bt-win button{padding:11px 14px;border-radius:12px;border:2px solid #fff;background:#D93A3F;color:#fff;font-weight:800;font-size:15px}
+.bt-cmd.five{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.bt-cmd.five button{font-size:13.5px;padding:8px 2px}
+.bt-cmd.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:620px){.bt-cmd.five{grid-template-columns:repeat(3,minmax(0,1fr))}.bt-cmd.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bt-stat{grid-column:1 / -1;font-style:normal;font-size:10.5px;color:#C9D0E6}.bt-stat b{color:#FFD84D}
+.chg{grid-column:1 / -1;font-style:normal;color:#FF9A4D;font-size:11.5px;font-weight:800;animation:chgBlink .8s infinite}
+@keyframes chgBlink{50%{opacity:.35}}
+.bt-rule{margin:0;padding:6px 10px;border-radius:10px;background:#FFF3C4;border:1.5px solid #E8B84A;font-size:12.5px;font-weight:700;color:#6B4A0A}
 .bt-msg{position:relative;z-index:3;align-self:end;margin:0 14px 8px;padding:8px 14px;border-radius:10px;background:rgba(10,8,24,.82);border:2px solid #fff;color:#fff;font-weight:800;font-size:14px;text-align:center}
 .bt-cmd{position:relative;z-index:3;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 14px 14px}
 .bt-cmd.one{grid-template-columns:1fr}
@@ -3305,89 +3323,138 @@ function goalSprite(P, R){
   if (PX_GOAL[g]) return PX_GOAL[g](P, R);
   return (PX_CASTLE[alt[g]] || PX_CASTLE[P.castle] || PX_CASTLE.euro)(P, R);
 }
-/* ---------- battle screen: at a monster gate the map turns into a battle. Each answer is an attack, the monster strikes back ---------- */
+/* ---------- battle screen: at a monster gate the map turns into a battle. Each answer is an attack, the monster strikes back ----------
+   Win: bring the monster's HP to 0. Lose: your HP (= mental) reaches 0. Turns alternate; the message window tells what happened. */
 const battleHP = p => { const st = S.stages[p.s], s = statOf(S, p.key); return Math.max(0, Math.min(100, Math.round(100 - answersFor(S, p).length / Math.max(1, st.min) * 100) - (s.fire || 0) - (s.crit || 0) + (s.extra || 0))); };
 let btLast = {key: null, n: 0, fire: 0};
+const BT_RULE = '勝ち：魔物のHPを0にする ／ 負け：あなたのHP（メンタル）が0になる';
+const heroDef = () => heroLevel() + gearBonus() + (curCls() === 'warrior' ? 2 : 0);
+const blogAdd = (L, t) => { L.push(t); while (L.length > 4) L.shift(); };
+const monName = st => st.monster === 'boss' ? `${(WMON[curWorld()] || WMON.euro).bossN}${(st.npc || '').replace(/^ボス/, '')}` : (st.npc || 'モンスター');
+function logHTML(L){ const a = L && L.length ? L.slice(-3) : [BT_RULE]; return `<div class="bt-log" aria-live="polite">${a.map((t, i) => `<p${i === a.length - 1 ? ' class="new"' : ''}>${esc(t)}</p>`).join('')}</div>`; }
+function heroTagHTML(atkTxt){
+  const Q = rpgQ(), m = Q.mental, lv = heroLevel();
+  return `<div class="bt-tag"><b>${esc(heroName() || 'あなた')} Lv.${lv}</b><span class="hpb mental${m <= 30 ? ' low' : ''}"><i style="width:${m}%"></i></span><small>HP ${m}/100</small><em class="bt-stat">こうげき ${atkTxt}・ぼうぎょ ${heroDef()}${awake() ? '・<b>覚醒中×2</b>' : ''}</em></div>`;
+}
+function winHTML(cls, title, sub, rew, btn){ return `<div class="bt-win ${cls}"><b>${title}</b><span>${sub}</span>${rew.length ? `<ul>${rew.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}${btn}</div>`; }
 function battleHTML(p, st, hp){
-  const Q = rpgQ(), m = Q.mental, lv = heroLevel(), fireOk = Q.magic > 0 && hp > 0;
+  const Q = rpgQ(), lv = heroLevel(), sx = statOf(S, p.key), fireOk = Q.magic > 0 && hp > 0, won = hp <= 0, nm = monName(st), per = Math.round(100 / Math.max(1, st.min));
   return `<div class="bt-sky ${st.monster === 'boss' ? 'boss' : ''}"></div><div class="bt-floor"></div>
-    <div class="bt-mon${hp <= 0 ? ' dead' : ''}${statOf(S, p.key).form2 ? ' form2' : ''}"><div class="bt-tag"><b>${statOf(S, p.key).form2 ? '第2形態 ' : ''}${st.monster === 'boss' ? `${(WMON[curWorld()] || WMON.euro).bossN}${esc((st.npc || '').replace(/^ボス/, ''))}` : esc(st.npc || 'モンスター')}</b><span class="hpb"><i style="width:${hp}%"></i></span><small>HP ${hp}</small></div>
+    <div class="bt-turn">${won ? '勝利！' : `ターン ${(sx.turn || 0) + 1}`}</div>
+    <div class="bt-mon${won ? ' dead' : ''}${sx.form2 ? ' form2' : ''}"><div class="bt-tag"><b>${sx.form2 ? '第2形態 ' : ''}${esc(nm)}</b><span class="hpb"><i style="width:${hp}%"></i></span><small>HP ${hp}/100</small>${sx.charge && !won ? '<em class="chg">⚡ 力をためている！</em>' : ''}</div>
       <svg viewBox="-75 -100 150 108" aria-hidden="true"><g class="bt-body">${pxSprite(`<use href="#mon-${monKind(st)}" style="--mc:${st.mcol || '#7C4DDB'}"/>`)}</g></svg></div>
-    <div class="bt-hero${awake() ? ' awake' : ''}"><svg viewBox="-55 -80 110 88" aria-hidden="true"><g class="bt-body" transform="scale(1.1)">${pxPerson(lv)}</g></svg>
-      <div class="bt-tag"><b>${esc(heroName() || 'あなた')} Lv.${lv}</b><span class="hpb mental${m <= 30 ? ' low' : ''}"><i style="width:${m}%"></i></span><small>メンタル ${m}</small></div></div>
-    <p class="bt-msg">${hp <= 0 ? `${esc(st.npc || 'モンスター')}をやっつけた！ 右の「進む」で関所を通ろう` : '答えを書くたびに攻撃！ 魔物のHPを0にしよう'}</p>
-    <div class="bt-cmd"><button type="button" data-bt="atk" ${hp <= 0 ? 'disabled' : ''}>⚔️ こうげき<small>答えを書く</small></button><button type="button" data-rpg="fire" ${fireOk ? '' : 'disabled'}>🔥 まほう<small>ファイア ×${Q.magic}</small></button><button type="button" data-bt="item">🎒 アイテム<small>もちものから使う</small></button></div>
+    <div class="bt-hero${awake() ? ' awake' : ''}"><svg viewBox="-55 -80 110 88" aria-hidden="true"><g class="bt-body" transform="scale(1.1)">${pxPerson(lv)}</g></svg>${heroTagHTML(`答え1つで${per}`)}</div>
+    ${won ? winHTML('', 'VICTORY!', `${esc(nm)}をたおした！`, [`💰 ${st.monster === 'boss' ? 100 : 50}G ＋ 答え1つにつき10G`, '⭐ 夢ポイント', '🚪 関所を通れる'], '<button type="button" data-act="next">🎉 関所を通る →</button>')
+      : logHTML(sx.blog) + `<div class="bt-cmd five"><button type="button" data-bt="atk">⚔️ こうげき<small>答えを書く</small></button><button type="button" data-rpg="fire" ${fireOk ? '' : 'disabled'}>🔥 まほう<small>ファイア ×${Q.magic}</small></button><button type="button" data-bt="guard">🛡️ ぼうぎょ<small>ダメージ半分</small></button><button type="button" data-bt="item">🎒 どうぐ<small>もちもの</small></button><button type="button" data-bt="run">🏃 にげる<small>${sx.flee ? 'もう一度で逃げる' : 'ごほうびなし'}</small></button></div>`}
     <div class="bt-fx"></div>`;
 }
+/* the monster's turn at a gate: sometimes it charges up (the next hit is double, so guard!), sometimes it misses */
+function gateEnemy(key, st, delay, first){
+  setTimeout(() => {
+    if (!S || S.quest.qs !== 'answer' || !current() || current().key !== key) return;
+    const p = current(), sx = statOf(S, key); if (battleHP(p) <= 0) return;
+    sx.blog = sx.blog || []; sx.turn = (sx.turn || 0) + 1;
+    const nm = monName(st);
+    if (!first && !sx.charge && sx.turn % 3 === 0){ sx.charge = 1; blogAdd(sx.blog, `${nm}は力をためている…！ 次のこうげきは2倍（ぼうぎょで半分にできる）`); sfx.bad(); save(); renderPanel(); return; }
+    if (!first && !sx.charge && Math.random() < .12){ sx.guard = 0; blogAdd(sx.blog, `${nm}のこうげき！ …ミス！ ダメージを受けなかった`); save(); renderPanel(); return; }
+    let d = (st.monster === 'boss' ? 8 : 5) + heroLevel() - 1 + (sx.form2 ? 3 : 0) + (S.ng || 0) * 2 + (first ? 1 : 0);
+    const big = !!sx.charge; if (big){ d *= 2; sx.charge = 0; }
+    const g = !!sx.guard; if (g){ d = Math.ceil(d / 2); sx.guard = 0; }
+    d = Math.max(1, d - Math.floor(heroDef() / 3));
+    blogAdd(sx.blog, `${first ? '先制こうげき！ ' : ''}${nm}の${big ? 'つよいこうげき' : 'こうげき'}！${g ? ' ぼうぎょして' : ''} あなたに${d}のダメージ`);
+    if (hurt(d, `${nm}のこうげき！`, true)) return;
+    awakeCheck(); save(); renderPanel();
+    const e = $('#battle'); if (e){ btAnim(e, '.bt-mon', 'matk', 450); setTimeout(() => { const e2 = $('#battle'); if (e2){ btAnim(e2, '.bt-hero', 'hit', 500); btPop(e2, '.bt-hero', '-' + d, 'bad'); } }, 220); }
+  }, delay);
+}
 function btPop(el, sel, txt, cls){ const host = el.querySelector(sel); if (!host) return; const d = document.createElement('b'); d.className = 'dmg ' + (cls || ''); d.textContent = txt; host.appendChild(d); setTimeout(() => d.remove(), 900); }
-function btAnim(el, sel, cls, ms){ const t = el.querySelector(sel); if (!t) return; t.classList.remove(cls); void t.offsetWidth; t.classList.add(cls); setTimeout(() => t.classList.remove(cls), ms || 500); }
-/* ---------- roaming monsters: stop on a red square and fight with attack / magic / items / run ---------- */
+function btAnim(el, sel, cls, ms){ const t = el && el.querySelector(sel); if (!t) return; t.classList.remove(cls); void t.offsetWidth; t.classList.add(cls); setTimeout(() => t.classList.remove(cls), ms || 500); }
+/* ---------- roaming monsters: stop on a red square and fight with attack / magic / guard / items / run ---------- */
 function foeOf(k){
   const W = WMON[curWorld()] || WMON.euro, [kind, n] = W.foes[hash(k) % W.foes.length], lv = heroLevel() + (S.chapter || 1) - 1 + (S.ng || 0) * 3;
   const col = ['#7C4DDB', '#C8362F', '#FF6A2A', '#2E8FE0', '#15A37C'][hash(k + 'c') % 5];
-  return {k, kind, n, lv, col, hp: 30 + lv * 18, max: 30 + lv * 18, atk: 3 + lv * 2, msg: `${n}（Lv.${lv}）があらわれた！`};
+  return {k, kind, n, lv, col, hp: 30 + lv * 18, max: 30 + lv * 18, atk: 3 + lv * 2, msg: `${n}（Lv.${lv}）があらわれた！`, log: [`${n}（Lv.${lv}）があらわれた！`, BT_RULE], turn: 1};
 }
 const heroAtk = () => { const lv = heroLevel(); return Math.round((12 + lv * 6 + Math.random() * 8 + gearBonus() * 3 + petAtk()) * (curCls() === 'warrior' ? 1.3 : 1)); };
 const fireDmg = () => 40 + heroLevel() * 10 + (curCls() === 'mage' ? 15 : 0);
+const fightCmds = (F, Q, panelMode) => `<button type="button" data-fight="atk" ${F.busy ? 'disabled' : ''}>⚔️ こうげき<small>約${heroAtk()}</small></button><button type="button" data-fight="fire" ${F.busy || !Q.magic ? 'disabled' : ''}>🔥 まほう<small>ファイア ×${Q.magic}</small></button><button type="button" data-fight="guard" ${F.busy ? 'disabled' : ''}>🛡️ ぼうぎょ<small>ダメージ半分</small></button>${panelMode ? '' : `<button type="button" data-bt="item">🎒 どうぐ<small>もちもの</small></button>`}<button type="button" data-fight="run" ${F.busy ? 'disabled' : ''}>🏃 にげる<small>${F.gold ? '9割で成功' : '6割で成功'}</small></button>`;
+function fightOverHTML(F){
+  if (F.won) return winHTML('', 'VICTORY!', `${esc(F.n)}をたおした！`, F.rew || [], '<button type="button" data-fight="end">ごほうびを受け取って進む →</button>');
+  return winHTML('esc', F.fled ? 'にげられた…' : 'ESCAPE', esc(F.runMsg || 'うまく逃げきった！'), F.fled ? [] : ['ごほうびはなし'], '<button type="button" data-fight="end">先へ進む →</button>');
+}
 function fightSceneHTML(F){
-  const Q = rpgQ(), m = Q.mental, lv = heroLevel(), hp = Math.max(0, Math.round(F.hp / F.max * 100)), over = F.won || F.ran;
+  const Q = rpgQ(), lv = heroLevel(), hp = Math.max(0, Math.round(F.hp / F.max * 100)), over = F.won || F.ran;
   return `<div class="bt-sky"></div><div class="bt-floor"></div>
-    <div class="bt-mon${F.won ? ' dead' : ''}"><div class="bt-tag"><b>${esc(F.n)} Lv.${F.lv}</b><span class="hpb"><i style="width:${hp}%"></i></span><small>HP ${Math.max(0, F.hp)}</small></div>
+    <div class="bt-turn">${F.won ? '勝利！' : `ターン ${F.turn || 1}`}</div>
+    <div class="bt-mon${F.won ? ' dead' : ''}"><div class="bt-tag"><b>${esc(F.n)} Lv.${F.lv}</b><span class="hpb"><i style="width:${hp}%"></i></span><small>HP ${Math.max(0, F.hp)}/${F.max}</small>${F.charge && !over ? '<em class="chg">⚡ 力をためている！</em>' : ''}</div>
       <svg viewBox="-75 -100 150 108" aria-hidden="true"><g class="bt-body" transform="translate(0 0) scale(1.4)">${pxSprite(`<use href="#mon-${F.kind}" style="--mc:${F.col}"/>`)}</g></svg></div>
-    <div class="bt-hero${awake() ? ' awake' : ''}"><svg viewBox="-55 -80 110 88" aria-hidden="true"><g class="bt-body" transform="scale(1.1)">${pxPerson(lv)}</g></svg>
-      <div class="bt-tag"><b>${esc(heroName() || 'あなた')} Lv.${lv}</b><span class="hpb mental${m <= 30 ? ' low' : ''}"><i style="width:${m}%"></i></span><small>メンタル ${m}</small></div></div>
-    <p class="bt-msg">${esc(F.msg)}</p>
-    <div class="bt-cmd${over ? ' one' : ''}">${over ? `<button type="button" data-fight="end">先へ進む →<small>${F.won ? 'ごほうびを受け取った' : 'うまく逃げた'}</small></button>`
-      : `<button type="button" data-fight="atk" ${F.busy ? 'disabled' : ''}>⚔️ こうげき<small>約${heroAtk()}ダメージ</small></button><button type="button" data-fight="fire" ${F.busy || !Q.magic ? 'disabled' : ''}>🔥 まほう<small>ファイア ×${Q.magic}</small></button><button type="button" data-fight="run" ${F.busy ? 'disabled' : ''}>🏃 にげる<small>6割で成功</small></button>`}</div>
+    <div class="bt-hero${awake() ? ' awake' : ''}"><svg viewBox="-55 -80 110 88" aria-hidden="true"><g class="bt-body" transform="scale(1.1)">${pxPerson(lv)}</g></svg>${heroTagHTML('約' + heroAtk())}</div>
+    ${over ? fightOverHTML(F) : logHTML(F.log) + `<div class="bt-cmd five">${fightCmds(F, Q, false)}</div>`}
     <div class="bt-fx"></div>`;
 }
 function fightPanelHTML(){
-  const Q = rpgQ(), F = Q.fight, hp = Math.max(0, Math.round(F.hp / F.max * 100));
-  return `<div class="p-head"><p class="kicker">BATTLE</p><span class="p-count">${esc(F.n)} Lv.${F.lv}</span></div>
-    <div class="rpg mon"><span class="rpg-name">${esc(F.n)}</span><svg class="mon-pic" viewBox="-66 -88 132 96" aria-hidden="true"><g class="mon-bob">${pxSprite(`<use href="#mon-${F.kind}" style="--mc:${F.col}"/>`)}</g></svg><p>${esc(F.msg)}</p><div class="hpbar"><span>HP</span><span class="hpt"><i style="width:${hp}%"></i></span><b>${Math.max(0, F.hp)}/${F.max}</b></div></div>
+  const Q = rpgQ(), F = Q.fight, hp = Math.max(0, Math.round(F.hp / F.max * 100)), over = F.won || F.ran;
+  return `<div class="p-head"><p class="kicker">BATTLE</p><span class="p-count">${esc(F.n)} Lv.${F.lv} ・ ${F.won ? '勝利！' : `ターン ${F.turn || 1}`}</span></div>
+    <div class="rpg mon"><span class="rpg-name">${esc(F.n)}</span><svg class="mon-pic" viewBox="-66 -88 132 96" aria-hidden="true"><g class="mon-bob">${pxSprite(`<use href="#mon-${F.kind}" style="--mc:${F.col}"/>`)}</g></svg><p>${esc((F.log || []).slice(-1)[0] || F.msg)}</p><div class="hpbar"><span>HP</span><span class="hpt"><i style="width:${hp}%"></i></span><b>${Math.max(0, F.hp)}/${F.max}</b></div></div>
+    <p class="bt-rule">⚔️ ${BT_RULE}</p>
     ${statBarHTML()}${itemBarHTML('fight')}
     ${F.mg ? '<div class="mg-wrap" id="mgArea"></div>' : ''}
-    <div class="bt-cmd panel${F.won || F.ran ? ' one' : ''}${F.mg ? ' hide' : ''}">${F.won || F.ran ? `<button type="button" data-fight="end">先へ進む →</button>`
-      : `<button type="button" data-fight="atk" ${F.busy ? 'disabled' : ''}>⚔️ こうげき</button><button type="button" data-fight="fire" ${F.busy || !Q.magic ? 'disabled' : ''}>🔥 まほう ×${Q.magic}</button><button type="button" data-fight="run" ${F.busy ? 'disabled' : ''}>🏃 にげる</button>`}</div>
-    ${F.mg || F.won || F.ran ? '' : `<div class="mg-pick"><b>🎮 ミニゲームで戦う</b>${Object.entries(MG).map(([k, [ic, n, d]]) => `<button type="button" data-fight="${k}">${ic} ${n}<small>${d}</small></button>`).join('')}</div>`}
-    <p class="hint">レベルが上がるほど、魔物も強くなります。メンタルが0になると人生リタイヤ。アイテムは「もちもの」から使えます。</p>`;
+    <div class="bt-cmd panel${over ? ' one' : ' four'}${F.mg ? ' hide' : ''}">${over ? `<button type="button" data-fight="end">${F.won ? 'ごほうびを受け取って進む →' : '先へ進む →'}</button>` : fightCmds(F, Q, true)}</div>
+    ${F.mg || over ? '' : `<div class="mg-pick"><b>🎮 ミニゲームで戦う</b>${Object.entries(MG).map(([k, [ic, n, d]]) => `<button type="button" data-fight="${k}">${ic} ${n}<small>${d}</small></button>`).join('')}</div>`}
+    <p class="hint">ぼうぎょ：その間に受けるダメージが半分。魔物が「力をためている」ときは次のこうげきが2倍なので、ぼうぎょがおすすめ。レベルが上がるほど魔物も強くなります。</p>`;
 }
 function fightWin(F){
   const Q = rpgQ(), g = gainGold(F.gold ? 300 : 20 + F.lv * 10, ''), pts = F.gold ? 50 : 10 + F.lv * 5; Q.pts += pts; F.won = 1; F.busy = 0; F.mg = null;
+  const drop = !F.gold && Math.random() < .2 ? ['tea', 'friend', 'charm', 'clover', 'smoke'][rnd(5)] : null;
+  if (drop){ Q.items[drop] = (Q.items[drop] || 0) + 1; qlog(`${F.n}が${ITEMS[drop].n}を落とした`); }
+  F.rew = [`💰 ${g}G`, `⭐ 夢ポイント +${pts}`].concat(drop ? [`🎁 ${ITEMS[drop].ic} ${ITEMS[drop].n}`] : []);
+  F.log = F.log || []; blogAdd(F.log, `${F.n}をやっつけた！`);
   F.msg = `${F.n}をやっつけた！ ${g}Gと夢ポイント+${pts}を手に入れた`; qlog(`${F.n}（Lv.${F.lv}）をたおした +${g}G +${pts}pt`);
   tot('kills'); dailyAdd('kill'); dexAdd(F.gold ? 'any' : curWorld(), F.n); if (F.gold) badge('gold'); if (Q.mental <= 10) badge('clutch'); if (F.viaMg) badge('mg');
   sfx.clear(); save(); renderPanel();
 }
 function fightAct(a){
   const Q = rpgQ(), F = Q.fight; if (!F || Q.qs !== 'fight') return;
-  const el = () => $('#battle');
+  const el = () => $('#battle'), me = heroName() || 'あなた'; F.log = F.log || [];
   if (a === 'end'){ Q.foes[F.k] = F.won ? 1 : 2; Q.fight = null; Q.qs = 'roll'; sfx.next(); save(); refresh(); return; }
   if (F.busy || F.won || F.ran || F.mg) return;
-  if (MG[a]){ F.mg = a; F.mg0 = a; F.msg = `${MG[a][1]}で勝負！`; sfx.next(); renderPanel(); return; }
+  if (MG[a]){ F.mg = a; F.mg0 = a; F.msg = `${MG[a][1]}で勝負！`; blogAdd(F.log, F.msg); sfx.next(); renderPanel(); return; }
   let dmg = 0, crit = false;
-  if (a === 'atk'){ dmg = heroAtk(); crit = critHit(false); }
+  if (a === 'atk'){ if (Math.random() < .08) blogAdd(F.log, `${me}のこうげき！ …ミス！ ${F.n}はひらりとかわした`); else { dmg = heroAtk(); crit = critHit(false); } }
   else if (a === 'fire'){ if (!Q.magic) return; Q.magic--; dmg = fireDmg(); }
+  else if (a === 'guard'){ F.guard = 1; heal(3, ''); blogAdd(F.log, `${me}はみをまもっている（このターンのダメージ半分）`); sfx.step(); }
   else if (a === 'run'){
-    if (Math.random() < .6){ F.ran = 1; F.msg = 'うまく逃げきった！'; qlog(`${F.n}から逃げた`); sfx.next(); save(); renderPanel(); return; }
-    F.msg = '逃げられなかった！';
+    if (Math.random() < (F.gold ? .9 : .6)){ F.ran = 1; F.runMsg = 'うまく逃げきった！'; blogAdd(F.log, F.runMsg); qlog(`${F.n}から逃げた`); sfx.next(); save(); renderPanel(); return; }
+    blogAdd(F.log, `${me}はにげだした！ …しかし まわりこまれてしまった`);
   }
   if (dmg){
     if (crit) dmg *= 2; if (awake()) dmg *= 2; if (F.gold) dmg = Math.min(dmg, crit ? 16 : 8);
-    F.hp -= dmg; best('dmg', dmg); F.busy = 1;
-    F.msg = (crit ? 'かいしんのいちげき！ ' : '') + (a === 'fire' ? `魔法ファイア！ ${F.n}に${dmg}の大ダメージ` : `${heroName() || 'あなた'}のこうげき！ ${F.n}に${dmg}のダメージ`);
+    F.hp -= dmg; best('dmg', dmg);
+    blogAdd(F.log, (crit ? 'かいしんのいちげき！ ' : '') + (a === 'fire' ? `魔法ファイア！ ${F.n}に${dmg}の大ダメージ` : `${me}のこうげき！ ${F.n}に${dmg}のダメージ`));
     if (crit) critFx();
-    renderPanel(); const e = el(); if (e){ btAnim(e, '.bt-hero', 'atk', 450); if (a === 'fire') btAnim(e, '.bt-fx', 'fire', 700); setTimeout(() => { btAnim(e, '.bt-mon', 'hit', 500); btPop(e, '.bt-mon', '-' + dmg, a === 'fire' || crit ? 'big' : ''); }, 180); }
     sfx.good();
-  } else { F.busy = 1; renderPanel(); }
+  }
+  F.msg = F.log[F.log.length - 1]; F.busy = 1; renderPanel();
+  const e = el(); if (e && dmg){ btAnim(e, '.bt-hero', 'atk', 450); if (a === 'fire') btAnim(e, '.bt-fx', 'fire', 700); setTimeout(() => { btAnim(e, '.bt-mon', 'hit', 500); btPop(e, '.bt-mon', '-' + dmg, a === 'fire' || crit ? 'big' : ''); }, 180); }
   if (F.hp <= 0){ setTimeout(() => fightWin(F), 650); return; }
-  setTimeout(() => {
-    if (!Q.fight || Q.qs !== 'fight') return;
-    if (F.gold && Math.random() < .45){ F.ran = 1; F.busy = 0; F.msg = 'ゴールドスライムはにげだした…'; qlog('ゴールドスライムににげられた'); save(); renderPanel(); return; }
-    const d = Math.max(1, Math.round(F.atk * (.8 + Math.random() * .4))) + (S.ng || 0) * 2, e = el();
-    if (e){ btAnim(e, '.bt-mon', 'matk', 450); setTimeout(() => { btAnim(e, '.bt-hero', 'hit', 500); btPop(e, '.bt-hero', '-' + d, 'bad'); }, 220); }
-    F.busy = 0; F.msg = `${F.n}のこうげき！`;
-    if (!hurt(d, `${F.n}のこうげき！`, true)){ awakeCheck(); renderPanel(); }
-  }, 900);
+  setTimeout(() => fightEnemy(F), 950);
+}
+/* the roaming monster's turn: attack, miss, or charge up for a double hit */
+function fightEnemy(F){
+  const Q = rpgQ(); if (!Q.fight || Q.qs !== 'fight' || Q.fight !== F) return;
+  F.turn = (F.turn || 1) + 1; F.busy = 0;
+  if (F.gold && Math.random() < .45){ F.ran = 1; F.fled = 1; F.runMsg = 'ゴールドスライムはにげだした…'; blogAdd(F.log, F.runMsg); qlog('ゴールドスライムににげられた'); save(); renderPanel(); return; }
+  const r = Math.random();
+  if (!F.charge && !F.gold && r < .22){ F.charge = 1; F.guard = 0; blogAdd(F.log, `${F.n}は力をためている…！ 次のこうげきは2倍（ぼうぎょで半分にできる）`); F.msg = F.log[F.log.length - 1]; sfx.bad(); save(); renderPanel(); return; }
+  if (!F.charge && r < .32){ F.guard = 0; blogAdd(F.log, `${F.n}のこうげき！ …ミス！ ダメージを受けなかった`); F.msg = F.log[F.log.length - 1]; save(); renderPanel(); return; }
+  let d = Math.max(1, Math.round(F.atk * (.8 + Math.random() * .4))) + (S.ng || 0) * 2;
+  const big = !!F.charge; if (big){ d *= 2; F.charge = 0; }
+  const g = !!F.guard; if (g){ d = Math.ceil(d / 2); F.guard = 0; }
+  d = Math.max(1, d - Math.floor(heroDef() / 3));
+  blogAdd(F.log, `${F.n}の${big ? 'つよいこうげき' : 'こうげき'}！${g ? ' ぼうぎょして' : ''} あなたに${d}のダメージ`); F.msg = F.log[F.log.length - 1];
+  if (hurt(d, `${F.n}のこうげき！`, true)) return;
+  awakeCheck(); save(); renderPanel();
+  const e = $('#battle'); if (e){ btAnim(e, '.bt-mon', 'matk', 450); setTimeout(() => { const e2 = $('#battle'); if (e2){ btAnim(e2, '.bt-hero', 'hit', 500); btPop(e2, '.bt-hero', '-' + d, 'bad'); } }, 220); }
 }
 /* =========================================================
    PLAY EXTRAS: things that make you come back. Collections (goals, monsters, partners), titles, daily quests,
@@ -3612,6 +3679,7 @@ function mountMG(){
     if (awake()) dealt *= 2;
     F.mg = null; F.hp -= dealt; best('dmg', dealt);
     F.msg = `${MG[F.mg0][1]}の結果：${F.n}に${dealt}のダメージ！${taken ? ` こちらも${taken}のダメージを受けた` : ' ノーダメージ！'}`;
+    F.log = F.log || []; blogAdd(F.log, F.msg); F.turn = (F.turn || 1) + 1;
     if (taken && hurt(taken, `${F.n}との戦いで`, true)) return;
     if (F.hp <= 0){ F.viaMg = 1; fightWin(F); return; }
     save(); renderPanel();
@@ -3627,38 +3695,34 @@ function syncBattle(){
   if (S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'fight' && S.quest.fight){ const fresh = btLast.key !== S.quest.fight.k; el.hidden = false; el.innerHTML = fightSceneHTML(S.quest.fight); if (fresh){ btAnim(el, '.bt-mon', 'appear', 700); el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter'); } btLast = {key: S.quest.fight.k, n: 0, fire: 0}; return; }
   const p = S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'answer' && stageView === 'board' ? current() : null, st = p && !p.fork ? S.stages[p.s] : null;
   if (!st || !st.monster){ el.hidden = true; btLast = {key: null, n: 0, fire: 0}; return; }
-  const n = answersFor(S, p).length, hp = battleHP(p), fire = statOf(S, p.key).fire || 0, fresh = btLast.key !== p.key;
+  const n = answersFor(S, p).length, fire = statOf(S, p.key).fire || 0, fresh = btLast.key !== p.key, sx = statOf(S, p.key), nm = monName(st);
+  sx.blog = sx.blog || [];
+  if (fresh && !sx.blog.length) sx.blog.push(`${nm}があらわれた！`, BT_RULE);
+  const ev = fresh ? 'fresh' : fire > btLast.fire ? 'fire' : n > btLast.n ? 'hit' : '';
+  let dmg = 0, cr = false;
+  if (ev === 'fire') blogAdd(sx.blog, `魔法ファイア！ ${nm}に50の大ダメージ`);
+  if (ev === 'hit'){
+    dmg = Math.round(100 / Math.max(1, st.min)) * (n - btLast.n);
+    const la = answersFor(S, p).slice(-1)[0], spec = !!la && (SPEC_RE.test(la.t) || ACT_RE.test(la.t));
+    cr = critHit(spec); const extra = (cr ? dmg : 0) + (awake() ? dmg : 0);
+    if (extra){ sx.crit = (sx.crit || 0) + extra; if (cr) critFx(); }
+    dmg += extra; best('dmg', dmg);
+    const t = la ? [...la.t].slice(0, 14).join('') + (la.t.length > 14 ? '…' : '') : '';
+    blogAdd(sx.blog, `${cr ? 'かいしんのいちげき！ ' : ''}あなたのこうげき！ 答え「${t}」で ${nm}に${dmg}のダメージ`);
+  }
+  if (st.monster === 'boss' && !sx.form2){ const h = battleHP(p); if (h > 0 && h <= 50){ sx.form2 = 1; sx.extra = (sx.extra || 0) + 30; toast('😈 ボスが変身した！ 第2形態！'); qlog(`${st.npc}が第2形態に変身した！`); blogAdd(sx.blog, `${nm}は第2形態に変身した！ HPが30回復した`); sfx.bad(); } }
+  const hp = battleHP(p);
+  if ((ev === 'hit' || ev === 'fire') && hp <= 0) blogAdd(sx.blog, `${nm}をやっつけた！`);
   el.hidden = false; el.innerHTML = battleHTML(p, st, hp);
-  if (fresh){
+  if (ev === 'fresh'){
     btAnim(el, '.bt-mon', 'appear', 700); el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter');
-    const sx = statOf(S, p.key), key = p.key;
-    if (!sx.ambush && hp > 0){ sx.ambush = 1; /* the monster strikes first */
-      setTimeout(() => {
-        if (!S || S.quest.qs !== 'answer' || !current() || current().key !== key) return;
-        const e2 = $('#battle'); btAnim(e2, '.bt-mon', 'matk', 450);
-        setTimeout(() => { btAnim(e2, '.bt-hero', 'hit', 500); const d = (st.monster === 'boss' ? 10 : 6) + heroLevel() - 1; btPop(e2, '.bt-hero', '-' + d, 'bad'); if (!hurt(d, `${st.npc}の先制こうげき！`, true)) renderPanel(); }, 220);
-      }, 1100);
-    }
+    if (!sx.ambush && hp > 0){ sx.ambush = 1; gateEnemy(p.key, st, 1100, true); }
+  } else if (ev === 'fire' || ev === 'hit'){
+    if (ev === 'fire') btAnim(el, '.bt-fx', 'fire', 700); else btAnim(el, '.bt-hero', 'atk', 450);
+    setTimeout(() => { const e = $('#battle'); if (!e) return; btAnim(e, '.bt-mon', 'hit', 500); btPop(e, '.bt-mon', '-' + (ev === 'fire' ? 50 : dmg), ev === 'fire' || cr ? 'big' : ''); sfx.good(); }, 180);
+    if (hp > 0) gateEnemy(p.key, st, 950); else setTimeout(() => sfx.clear(), 400);
   }
-  else if (fire > btLast.fire){ btAnim(el, '.bt-fx', 'fire', 700); btAnim(el, '.bt-mon', 'hit', 500); btPop(el, '.bt-mon', '-50', 'big'); if (hp <= 0){ sfx.clear(); } }
-  else if (n > btLast.n){
-    const dmg = Math.round(100 / Math.max(1, st.min)) * (n - btLast.n), sx = statOf(S, p.key), la = answersFor(S, p).slice(-1)[0], spec = !!la && (SPEC_RE.test(la.t) || ACT_RE.test(la.t));
-    const cr = critHit(spec), extra = (cr ? dmg : 0) + (awake() ? dmg : 0);
-    if (extra){ sx.crit = (sx.crit || 0) + extra; if (cr) critFx(); setTimeout(() => renderPanel(), 350); }
-    best('dmg', dmg + extra);
-    btAnim(el, '.bt-hero', 'atk', 450); setTimeout(() => { btAnim(el, '.bt-mon', 'hit', 500); btPop(el, '.bt-mon', '-' + dmg); sfx.good(); }, 180);
-    if (hp > 0){
-      const key = p.key;
-      setTimeout(() => {
-        if (!S || S.quest.qs !== 'answer' || !current() || current().key !== key) return;
-        const e2 = $('#battle'); btAnim(e2, '.bt-mon', 'matk', 450);
-        setTimeout(() => { btAnim(e2, '.bt-hero', 'hit', 500); const d = (st.monster === 'boss' ? 8 : 5) + heroLevel() - 1 + (statOf(S, key).form2 ? 3 : 0) + (S.ng || 0) * 2; btPop(e2, '.bt-hero', '-' + d, 'bad'); if (!hurt(d, `${st.npc}の反撃！`, true)){ awakeCheck(); renderPanel(); } }, 220);
-      }, 950);
-    } else setTimeout(() => sfx.clear(), 400);
-  }
-  const s2 = statOf(S, p.key), hp2 = battleHP(p);
-  if (st.monster === 'boss' && !s2.form2 && hp2 > 0 && hp2 <= 50){ s2.form2 = 1; s2.extra = (s2.extra || 0) + 30; toast('😈 ボスが変身した！ 第2形態！'); qlog(`${st.npc}が第2形態に変身した！`); sfx.bad(); setTimeout(() => renderPanel(), 700); }
-  btLast = {key: p.key, n: answersFor(S, p).length, fire: statOf(S, p.key).fire || 0};
+  btLast = {key: p.key, n, fire};
 }
 document.getElementById('stage').insertAdjacentHTML('beforeend', '<div class="battle" id="battle" hidden></div>');
 $('#battle').addEventListener('click', e => {
@@ -3666,6 +3730,12 @@ $('#battle').addEventListener('click', e => {
   if (b.dataset.rpg){ rpgAct(b.dataset.rpg, b.dataset.v); return; }
   if (b.dataset.fight){ fightAct(b.dataset.fight); return; }
   if (b.dataset.bt === 'atk'){ setScreen && setScreen('panel'); const i = $('#ans') || panel.querySelector('input[data-field]:not([value])') || panel.querySelector('input[data-field]') || panel.querySelector('.choice'); if (i) i.focus(); toast('答えを書くと攻撃できます'); }
+  if (b.dataset.act === 'next'){ next(); return; }
+  if (b.dataset.bt === 'guard' || b.dataset.bt === 'run'){
+    const p = current(); if (!p || !S || S.quest.qs !== 'answer') return; const st = S.stages[p.s], sx = statOf(S, p.key); sx.blog = sx.blog || [];
+    if (b.dataset.bt === 'run'){ if (sx.flee){ next(); return; } sx.flee = 1; blogAdd(sx.blog, 'にげると ごほうびなし・HP−10。もう一度「にげる」を押すと関所を通りぬける'); renderPanel(); return; }
+    if (sx.guard) return; sx.guard = 1; heal(3, ''); blogAdd(sx.blog, 'あなたはみをまもっている（次のダメージ半分）'); sfx.step(); save(); renderPanel(); gateEnemy(p.key, st, 700); return;
+  }
   if (b.dataset.bt === 'item'){ const ib = panel.querySelector('.ibar'); if (ib){ ib.scrollIntoView({block: 'center', behavior: 'smooth'}); ib.classList.add('flash'); setTimeout(() => ib.classList.remove('flash'), 900); } else toast('もちものがありません。お店で買えます'); }
 });
 const PX_WALK = ['.leg-l,.arm-r{transform:rotate(-24deg)}.leg-r,.arm-l{transform:rotate(24deg)}.person{transform:translateY(-2.5px)}', '.leg-l,.arm-r{transform:rotate(24deg)}.leg-r,.arm-l{transform:rotate(-24deg)}'];
@@ -4918,21 +4988,22 @@ async function clearGate(){
   saveFields();
   const p = current(), st = S.stages[p.s], n = answersFor(S, p).length, bonus = answerPower(p);
   const garo = st.monster && hasMember('beast') ? 10 : 0, spec = n >= st.min ? specN(p) * 3 : 0;
-  const won = !!st.monster && battleHP(p) <= 0, met = n >= st.min || won;
+  const won = !!st.monster && battleHP(p) <= 0, fled = !!st.monster && !won, met = n >= st.min || won;
   const pts = (met ? 10 + Math.min(3, n - st.min) * 5 + (st.monster === 'boss' ? 20 : st.monster ? 5 : 0) : n ? 5 : 0) + garo + spec;
   S.coach = null;
   const lv0 = heroLevel();
   const Qr = rpgQ(), fire = Qr.fx.fire === p.key, extra = (fire ? pts : 0) + (curCls() === 'craft' ? 5 : 0);
   if (fire) Qr.fx.fire = 0; if (Qr.fx.pen && bonus) Qr.fx.pen = 0;
   S.quest.done[p.key] = true; S.quest.pts += pts + extra; S.quest.qs = bonus ? 'moving' : 'roll'; Qr.rest = 'q:' + p.key;
-  gainGold((n * 10 + (st.monster === 'boss' ? 100 : st.monster ? 50 : 0)) * (fire ? 2 : 1), st.monster ? `${st.npc}をたおしてゴールドを手に入れた` : '答えのごほうび');
+  gainGold((n * 10 + (won ? (st.monster === 'boss' ? 100 : 50) : 0)) * (fire ? 2 : 1), won ? `${st.npc}をたおしてゴールドを手に入れた` : '答えのごほうび');
   if (curCls() === 'healer') heal(5, 'いやしの力');
   if (tot('ans', n) >= 100) badge('ans100'); dailyAdd('ans', n); dailyAdd('gate');
-  if (st.monster){ tot('kills'); dailyAdd('kill'); if (Qr.mental <= 10) badge('clutch'); }
-  if (st.monster === 'boss'){ badge('boss1'); if (Qr.mental >= 100) badge('nodmg'); dexAdd(curWorld(), (WMON[curWorld()] || WMON.euro).bossN); }
+  if (won){ tot('kills'); dailyAdd('kill'); if (Qr.mental <= 10) badge('clutch'); }
+  if (won && st.monster === 'boss'){ badge('boss1'); if (Qr.mental >= 100) badge('nodmg'); dexAdd(curWorld(), (WMON[curWorld()] || WMON.euro).bossN); }
   if (fire) qlog('魔法ファイアの力で、ごほうびが2倍！');
-  qlog((st.monster ? `${st.npc}をたおした！ +${pts}pt${garo ? '（ガロの力 +10）' : ''}` : `関所「${st.l}」を通過 +${pts}pt`) + (spec ? `（具体的な答え +${spec}）` : ''));
-  if (!met) toast('条件に届かないまま進みました'); else { sfx.clear(); if (st.monster) toast(`${st.npc}をたおした！`); }
+  qlog((fled ? `${st.npc}から逃げて関所を通った（ごほうびなし） +${pts}pt` : st.monster ? `${st.npc}をたおした！ +${pts}pt${garo ? '（ガロの力 +10）' : ''}` : `関所「${st.l}」を通過 +${pts}pt`) + (spec ? `（具体的な答え +${spec}）` : ''));
+  if (fled){ if (hurt(10, `${st.npc}から逃げだした…`)) return; toast('魔物から逃げて進んだ（ごほうびなし・HP−10）'); }
+  else if (!met) toast('条件に届かないまま進みました'); else { sfx.clear(); if (st.monster) toast(`${st.npc}をたおした！`); }
   const i = $('#ans'); if (i) i.value = '';
   const Q = S.quest, beats = [], lv1 = heroLevel();
   Q.party = Q.party || [];
@@ -5484,7 +5555,7 @@ function playHTML(){
   }
   const sty = locked || plan || S.level === 'beginner' ? 'text' : qStyle(S, p.s);
   if (sty !== 'text') entry = styleHTML(p, st, list, col, entry);
-  const nextLbl = quest ? '答えを決めて進む →' : last ? '採点する →' : '次の問いへ →';
+  const nextLbl = quest ? (st.monster ? (battleHP(p) > 0 ? '🏃 にげて進む（ごほうびなし・HP−10）' : '🎉 魔物をたおした！ 関所を通る →') : '答えを決めて進む →') : last ? '採点する →' : '次の問いへ →';
   const realCount = P.filter(q => !q.fork).length, realIdx = P.slice(0, i + 1).filter(q => !q.fork).length;
   return `
     <div class="p-head"><span class="stage-pill" style="--c:${col}"><i>${p.s + 1}</i>${esc(st.l)}</span><span class="p-count">${quest ? `関所 ${Object.keys(S.quest.done).filter(k => !k.startsWith('fork')).length + 1} / ${realCount}` : `問い ${realIdx} / ${realCount}`}</span></div>
