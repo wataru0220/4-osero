@@ -3457,7 +3457,19 @@ function goalOf(x){
   L.forEach(g => { const dot = Object.entries(g.v).reduce((s, [k, w]) => s + (t[k] || 0) * w, 0), sc = dot / Math.hypot(...Object.values(g.v)) + (hash((x.theme || '') + g.k) % 9) / 1000; if (sc > bv){ bv = sc; best = g; } });
   return best;
 }
-const tagLine = x => Object.entries(x.tags || {}).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${TAGS[k]}${v}`).join('・') || 'まだなし';
+/* the life courses: the same three crossroads, about where and how you want to live. They decide the home (HOME_GOALS) */
+const LIFE_TAGS = {pow: 'たくましさ', wis: 'かしこさ', heart: '家族の絆', rich: 'ゆたかさ', free: 'のびのび', make: 'こだわり'};
+const tagN = k => (isLifeC(S) ? LIFE_TAGS : TAGS)[k];
+const LIFE_FATES = {
+  1: {npc: '縁結びの神さま', t: '暮らしの旅に、お守りをひとつだけ持っていきなさい。それが、あなたの住まいを決める。', opts: [
+    {ic: '🧰', n: '丈夫な道具箱', d: '自分の手で暮らしを作っていくたくましさ', tags: ['pow']}, {ic: '📚', n: '暮らしの知恵袋', d: 'お金や制度をかしこく使う力', tags: ['wis']}, {ic: '🐷', n: 'ずっしり貯金箱', d: 'ゆたかな暮らしを支えるお金の力', tags: ['rich']}]},
+  2: {npc: '見晴らし台のおばあちゃん', t: '丘の上から、町が見わたせる。あなたがいちばん暮らしたい場所は？', opts: [
+    {ic: '🏘️', n: '家族や親せきの近く', d: 'みんなで支え合って暮らしたい', tags: ['heart']}, {ic: '🏙️', n: 'にぎやかな都会', d: '便利でかっこいい毎日を送りたい', tags: ['rich']}, {ic: '🌊', n: '海や山のそば', d: '自然の中でのびのび暮らしたい', tags: ['free']}, {ic: '🎨', n: 'こだわりの街並み', d: '自分らしいデザインに囲まれたい', tags: ['make']}]},
+  3: {npc: 'しあわせの門番', t: '住まいはもうすぐ。新しい家で、いちばん大切にしたい時間は？', opts: [
+    {ic: '💪', n: '家族を守る', d: 'たくましく、家族の安心を守りたい', tags: ['pow']}, {ic: '💡', n: 'かしこく暮らす', d: '新しい技術や知恵で、快適に暮らしたい', tags: ['wis']}, {ic: '🛠️', n: '手づくりを楽しむ', d: '家や庭を、自分たちで育てていきたい', tags: ['make']}, {ic: '🍵', n: 'ゆったり過ごす', d: '大切な人と、おだやかに笑い合いたい', tags: ['heart', 'free']}]}
+};
+const fateOf = n => { const L = isLifeC(S) ? LIFE_FATES : FATES; return L[n] || L[1]; };
+const tagLine = x => Object.entries(x.tags || {}).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${tagN(k)}${v}`).join('・') || 'まだなし';
 const ROUTE_TAG = {A1: 'heart', B1: 'pow', A2: 'make', B2: 'free'};
 const addTag = (k, n) => { if (!TAGS[k]) return; S.tags = S.tags || {}; S.tags[k] = (S.tags[k] || 0) + n; };
 
@@ -3474,11 +3486,11 @@ function spotHTML(){
       <div class="p-foot"><span class="grow"></span><button class="btn dark" type="button" data-rpg="leave">お店を出る →</button></div>`;
   }
   if (Q.qs === 'fate'){
-    const F = FATES[n] || FATES[1], g = goalOf(S);
+    const F = fateOf(n), g = goalOf(S), life = isLifeC(S);
     return `<div class="p-head"><p class="kicker">FATE</p><span class="p-count">運命の分かれ道 ${n} / 3</span></div>
-      <div class="rpg"><span class="rpg-name">${F.npc}</span><p>${F.t}</p><p class="rpg-sub">選んだものが「運命の力」になります。旅の終わりに、運命の力に合ったゴール（全10種類）へたどり着きます。</p></div>
-      <div class="routes">${F.opts.map((o, i) => `<button type="button" class="route-card" data-rpg="fate" data-v="${i}" style="--c:${PAL[i % PAL.length]}"><small>${o.tags.map(t => TAGS[t]).join('・')}の力</small><b>${o.ic} ${o.n}</b><span>${o.d}</span></button>`).join('')}</div>
-      <p class="fate-now">いまの運命の行き先：<b>${g.ic} ${g.n}</b><span>運命の力：${tagLine(S)}</span></p>`;
+      <div class="rpg"><span class="rpg-name">${F.npc}</span><p>${F.t}</p><p class="rpg-sub">${life ? '選んだものが「暮らしの力」になります。旅の終わりに、暮らしの力に合った住まい（一戸建て・タワーマンション・大豪邸など全10種類）が決まります。' : '選んだものが「運命の力」になります。旅の終わりに、運命の力に合ったゴール（全10種類）へたどり着きます。'}</p></div>
+      <div class="routes">${F.opts.map((o, i) => `<button type="button" class="route-card" data-rpg="fate" data-v="${i}" style="--c:${PAL[i % PAL.length]}"><small>${o.tags.map(tagN).join('・')}${life ? '' : 'の力'}</small><b>${o.ic} ${o.n}</b><span>${o.d}</span></button>`).join('')}</div>
+      <p class="fate-now">${life ? 'いまの住まいの候補' : 'いまの運命の行き先'}：<b>${g.ic} ${g.n}</b><span>${life ? '暮らしの力' : '運命の力'}：${tagLine(S)}</span></p>`;
   }
   const cur = curCls();
   return `<div class="p-head"><p class="kicker">JOB HALL</p><span class="p-count">転職の館</span></div>
@@ -3493,9 +3505,9 @@ function rpgAct(a, v){
   if (a === 'buy'){ const it = ITEMS[v]; if (!it || Q.qs !== 'shop') return; const pr = priceOf(it); if (Q.gold < pr) return; Q.gold -= pr; if (v === 'egg'){ Q.eggs = Q.eggs || []; Q.eggs.push(6); } else Q.items[v] = (Q.items[v] || 0) + 1; sfx.good(); toast(`${it.ic} ${it.n}を買った！`); qlog(`${it.n}を${pr}Gで買った`); save(); renderPanel(); return; }
   if (a === 'leave'){ Q.vis[Q.spot] = 1; Q.rest = Q.spot; Q.qs = 'roll'; sfx.next(); save(); refresh(); return; }
   if (a === 'fate'){
-    const n = +Q.spot.split(':')[1], o = (FATES[n] || FATES[1]).opts[+v]; if (!o || Q.qs !== 'fate') return;
+    const n = +Q.spot.split(':')[1], o = fateOf(n).opts[+v]; if (!o || Q.qs !== 'fate') return;
     o.tags.forEach(t => addTag(t, o.tags.length > 1 ? 1 : 2)); Q.vis[Q.spot] = 1; Q.qs = 'roll'; qlog(`運命の分かれ道で「${o.n}」を選んだ`);
-    if (n === 3){ const g = goalOf(S); S.goal = g.k; toast(`運命が決まった！ ゴールは「${g.ic} ${g.n}」`); qlog(`運命のゴールは「${g.n}」に決まった`); } else toast(`「${o.n}」を選んだ！`);
+    if (n === 3){ const g = goalOf(S); S.goal = g.k; toast(isLifeC(S) ? `住まいが決まった！「${g.ic} ${g.n}」` : `運命が決まった！ ゴールは「${g.ic} ${g.n}」`); qlog(isLifeC(S) ? `しあわせの住まいは「${g.n}」に決まった` : `運命のゴールは「${g.n}」に決まった`); } else toast(`「${o.n}」を選んだ！`);
     sfx.good(); save(); renderBoard(); refresh(); return;
   }
   if (a === 'cls'){
@@ -6165,7 +6177,7 @@ function rollHTML(){
     ${moving ? '' : aheadHTML(sq, i)}
     <div class="gate-next">いまいる場所：<b>${esc(segName(cur.seg))}</b>${veh ? `<span>3マス以上進むと${veh.n}に乗れる</span>` : ''}</div>
     ${gateHTML}
-    <div class="gate-next">運命の行き先：<b>${(goalBy(S.goal) || goalOf(S)).ic} ${(goalBy(S.goal) || goalOf(S)).n}</b><span>${S.goal ? '（決定）' : `運命の力：${tagLine(S)}`}</span></div>
+    <div class="gate-next">${isLifeC(S) ? 'しあわせの住まい' : '運命の行き先'}：<b>${(goalBy(S.goal) || goalOf(S)).ic} ${(goalBy(S.goal) || goalOf(S)).n}</b><span>${S.goal ? '（決定）' : `${isLifeC(S) ? '暮らしの力' : '運命の力'}：${tagLine(S)}`}</span></div>
     ${(q.rivals && q.rivals.length) || S.online ? raceHTML() : ''}
     ${q.log.length ? `<ul class="qlog">${q.log.slice(0, 3).map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : ''}`;
 }
