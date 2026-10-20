@@ -1351,7 +1351,22 @@ body.mg-lock{overflow:hidden}
       <button type="button" role="radio" data-job="career" aria-checked="false"><i class="ci" style="--ic:#FFE0D6">🧭</i><b>職業をえらぶ</b><small>気になる仕事がいくつかあって、どれにするか決めたい人。候補を調べて点数でくらべる</small></button>
       <p>どちらも最後に「おすすめ職業ランキング」が出ます（AIにとられにくい仕事かどうかも）</p>
     </div>
-    <div class="course-pick" data-hs="1" id="coursePick"><small class="tb-l">コースをえらぶ</small><div class="purpose course-ctl" id="presetCtl" role="radiogroup" aria-label="問いのコース"></div></div>
+    <div class="course-pick" data-hs="1" id="coursePick"><small class="tb-l">問いのコース</small><div class="purpose course-ctl" id="presetCtl" role="radiogroup" aria-label="問いのコース"></div></div>
+    <div class="qbox" data-hs="1" id="qBox">
+      <div class="qbox-head">
+        <small id="qCount">7 QUESTIONS</small>
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+          <label class="switch" id="timedSw"><input type="checkbox" id="chkTimed"> 制限時間あり（クエスト）</label>
+          <small class="untimed" id="untimedNote" hidden>マインドマップは時間制限なし。じっくり考えよう</small>
+          <button class="btn sm" type="button" id="btnEditQs">問いと条件を編集</button>
+        </div>
+      </div>
+      <ol class="qlist" id="qList"></ol>
+      <div class="qbox-foot" id="qFoot" hidden>
+        <small>問いの中の {t} はテーマに、{a} は前の問いの答えに、{P} は「その前の答え」のために、に置きかわります。</small>
+        <button class="btn sm" type="button" id="btnAddQ">＋ 問いを追加</button>
+      </div>
+    </div>
     <div class="theme-block" data-hs="1" id="themeBlock">
       <small class="tb-l">真ん中のテーマ</small>
       <input id="themeInput" class="theme-input" maxlength="24" placeholder="例：科学者になりたい" aria-label="真ん中のテーマ" autocomplete="off">
@@ -1408,22 +1423,6 @@ body.mg-lock{overflow:hidden}
       <button type="button" role="radio" data-level="beginner" aria-checked="false">初心者<small>選択肢から選ぶ</small></button>
     </div>
 
-    <div class="step" data-hs="4"><i>STEP 4</i>問いの中身<small class="step-note" id="courseNote"></small></div>
-    <div class="qbox" data-hs="4" id="qBox">
-      <div class="qbox-head">
-        <small id="qCount">7 QUESTIONS</small>
-        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
-          <label class="switch" id="timedSw"><input type="checkbox" id="chkTimed"> 制限時間あり（クエスト）</label>
-          <small class="untimed" id="untimedNote" hidden>マインドマップは時間制限なし。じっくり考えよう</small>
-          <button class="btn sm" type="button" id="btnEditQs">問いと条件を編集</button>
-        </div>
-      </div>
-      <ol class="qlist" id="qList"></ol>
-      <div class="qbox-foot" id="qFoot" hidden>
-        <small>問いの中の {t} はテーマに、{a} は前の問いの答えに、{P} は「その前の答え」のために、に置きかわります。</small>
-        <button class="btn sm" type="button" id="btnAddQ">＋ 問いを追加</button>
-      </div>
-    </div>
 
     <div class="start-foot">
       <button class="btn" type="button" id="btnSheet">記入用シートを印刷</button>
@@ -7639,7 +7638,6 @@ const COURSE_IC = {dream: ['🏆', '#FFE7A8'], work: ['📈', '#D6ECFF'], plan: 
 const COURSE_D = {dream: '夢や目標をかなえる作戦を立てる', work: '仕事の目標を達成する作戦を立てる', plan: '企画やアイデアを形にする', life: '結婚・家族・家づくり・老後など、人生の大切なできごと', lifeup: '出会い→結婚→家族→家づくり→老後を、1本の旅でたどる'};
 function renderPresets(){
   const c = $('#presetCtl'); c.innerHTML = ''; $('#coursePick').hidden = homePurpose === 'job';
-  const cn = $('#courseNote'); if (cn) cn.textContent = `コース：${PRESETS[presetKey].name}（STEP1で変えられます）`;
   Object.entries(PRESETS).filter(([k]) => !!JOB_COURSES[k] === (homePurpose === 'job')).forEach(([k, p]) => {
     const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'radio');
     b.setAttribute('aria-checked', String(k === presetKey)); const ic = COURSE_IC[k] || ['📝', '#EEF0F6']; b.innerHTML = `<i class="ci" style="--ic:${ic[1]}">${ic[0]}</i><b>${esc(p.name)}</b>${COURSE_D[k] ? `<small>${COURSE_D[k]}</small>` : ''}`;
