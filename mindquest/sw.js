@@ -1,5 +1,5 @@
 // ===== マインドクエスト Service Worker =====
-// SW_VERSION: 2026-09-26a
+// SW_VERSION: 2026-10-20a
 // PWA「アプリにする（ホーム画面に追加）」を可能にし、オフラインでも遊べるようにする。
 // 方針：ネット優先（常に最新を取得）＋失敗時はキャッシュへ退避。
 const CACHE = 'mindquest-v1';
@@ -14,7 +14,7 @@ self.addEventListener('install', function (e) {
 self.addEventListener('activate', function (e) {
   e.waitUntil((async function () {
     const keys = await caches.keys();
-    await Promise.all(keys.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); }));
+    await Promise.all(keys.filter(function (k) { return k !== CACHE && k.indexOf('mindquest-') === 0; }).map(function (k) { return caches.delete(k); }));
     await self.clients.claim();
   })());
 });

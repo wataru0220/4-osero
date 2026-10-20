@@ -3,7 +3,7 @@
   "short_name": "マインドクエスト",
   "description": "問いに答えて、たたかって、夢をかなえるゲーム",
   "lang": "ja",
-  "id": "./",
+  "id": "/4-osero/mindquest/index.html",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
