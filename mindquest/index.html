@@ -2676,12 +2676,31 @@ function track(x){
     L.forEach((q, j) => {
       if (j) acc += (w[j - 1] + w[j]) / 2;
       const d = off + (tot ? acc / tot : 0) * len, pt = P2.pt(d);
-      const TD = TERR[seg], hh = TD ? hmix : hash, foe = q.type === 'plain' && seg !== 'cave' && x.mode === 'quest' && hh('m' + q.k) % 100 < (TD ? TD.foe : 16), chest = !foe && q.type === 'plain' && x.mode === 'quest' && hh('t' + q.k) % 100 < (TD ? TD.chest : 14);
-      const ter = TD && !foe && !chest && (q.type === 'plain' || q.type === 'ev') && hmix('s' + q.k) % 100 < TD.sp + (q.type === 'ev' ? 20 : 0);
-      sq.push({...q, ...(foe ? {type: 'foe', k: 'm:' + q.k} : chest ? {type: 'chest', k: 't:' + q.k} : ter ? {type: 'terr', k: 'x:' + q.k, tk: TD.tk[hmix('k' + q.k) % TD.tk.length]} : {}), seg, part, d, x: pt.x, y: pt.y});
+      sq.push({...q, seg, part, d, x: pt.x, y: pt.y});
     });
   });
+  if (x.mode === 'quest') spreadFoes(x, sq);
   return {sq, parts, r1, r2};
+}
+/* monsters and treasure chests on the road, spread out evenly: never side by side, never right at the start
+   or next to a monster gate, a few squares between them (the volcano and the jungle are busier) */
+function spreadFoes(x, sq){
+  let fd = .35 + (hash((x.theme || '') + 'f') % 40) / 100, cd = .2, lastF = -9, lastC = -9;
+  const monGate = j => { const q = sq[j]; return q && q.type === 'q' && x.stages[q.p.s] && x.stages[q.p.s].monster; };
+  sq.forEach((q, i) => {
+    if (q.type !== 'plain' && q.type !== 'ev') return;
+    const TD = TERR[q.seg], jit = .75 + (hmix('j' + q.k) % 50) / 100;
+    if (q.seg !== 'cave'){
+      fd = Math.min(1.4, fd + (TD ? TD.foe : 16) / 100 * jit);
+      const gapF = TD && TD.foe >= 25 ? 2 : 3;
+      if (fd >= 1 && i >= 3 && i - lastF >= gapF && !monGate(i - 1) && !monGate(i + 1)){ fd -= 1; lastF = i; Object.assign(q, {type: 'foe', k: 'm:' + q.k}); return; }
+    }
+    if (q.type === 'plain'){
+      cd = Math.min(1.4, cd + (TD ? TD.chest : 18) / 100 * jit);
+      if (cd >= 1 && i - lastC >= 3 && i - lastF >= 2){ cd -= 1; lastC = i; Object.assign(q, {type: 'chest', k: 't:' + q.k}); return; }
+    }
+    if (TD && hmix('s' + q.k) % 100 < TD.sp + (q.type === 'ev' ? 20 : 0)) Object.assign(q, {type: 'terr', k: 'x:' + q.k, tk: TD.tk[hmix('k' + q.k) % TD.tk.length]});
+  });
 }
 
 /* ---------- worlds: map style + hero gear per world ---------- */
