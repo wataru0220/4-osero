@@ -2060,8 +2060,47 @@ const sfx = {
   dice: () => tone(300 + Math.random() * 200, .04, .025, 0, 'square'),
   good: () => [784, 988, 1319].forEach((f, i) => tone(f, .18, .045, i * .07)),
   timeup: () => { tone(440, .18, .05, 0, 'triangle'); tone(330, .26, .05, .16, 'triangle'); },
-  done: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, .35, .05, i * .09))
+  done: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, .35, .05, i * .09)),
+  /* battle */
+  slash: () => { nz(.16, .16, 'highpass', 5200, 1400); sweep(1400, 380, .12, .03, 'sawtooth'); },
+  hit: () => { sweep(190, 55, .2, .22, 'sine'); nz(.1, .14, 'bandpass', 1300, 500, .01); },
+  crit: () => { sfx.hit(); nz(.22, .2, 'bandpass', 2400, 700, .04); [1568, 2093, 2637].forEach((f, i) => tone(f, .22, .035, .06 + i * .05, 'square')); },
+  fire: () => { nz(.75, .22, 'lowpass', 300, 3800); nz(.7, .14, 'lowpass', 2600, 200, .35); sweep(90, 40, .9, .2, 'sawtooth', .25); },
+  enemy: () => { sweep(140, 70, .3, .09, 'sawtooth'); nz(.12, .1, 'lowpass', 900, 200, .12); },
+  hurt: () => { sweep(520, 140, .18, .06, 'square'); sweep(150, 50, .18, .16, 'sine', .02); },
+  guard: () => { [1760, 1865, 2637].forEach(f => tone(f, .32, .03, 0, 'square')); nz(.06, .1, 'highpass', 6000, 6000); },
+  miss: () => { nz(.18, .1, 'bandpass', 900, 3200); sweep(600, 1300, .12, .03, 'triangle', .04); },
+  charge: () => { sweep(180, 900, .9, .05, 'sawtooth'); sweep(185, 905, .9, .04, 'square', .02); },
+  appear: () => { [311, 330, 349].forEach((f, i) => tone(f, .5, .045, i * .02, 'sawtooth')); sweep(120, 45, .6, .2, 'sine', .05); },
+  roar: () => { sweep(220, 40, 1.1, .12, 'sawtooth'); sweep(110, 30, 1.2, .2, 'sine'); nz(1, .16, 'lowpass', 1200, 120); },
+  run: () => [0, 1, 2, 3].forEach(i => { tone(260 + i * 60, .05, .05, i * .08, 'square'); }),
+  fanfare: () => { const N = [[67, 0, .14], [67, .15, .14], [67, .3, .14], [72, .45, .55], [70, 1.05, .2], [72, 1.27, .2], [74, 1.5, .2], [76, 1.72, .9]];
+    N.forEach(([m, d, l]) => { tone(mtof(m), l, .055, d, 'square'); tone(mtof(m - 12), l, .035, d, 'triangle'); });
+    [[48, 0, .45], [53, .45, .6], [55, 1.05, .45], [48, 1.5, 1.1]].forEach(([m, d, l]) => tone(mtof(m), l, .09, d, 'triangle'));
+    [0, .45, 1.72].forEach(d => nz(.25, .08, 'highpass', 7000, 7000, d)); },
+  lose: () => [[64, 0], [63, .32], [62, .64], [61, .96]].forEach(([m, d], i) => { tone(mtof(m), i === 3 ? 1.3 : .3, .05, d, 'square'); tone(mtof(m - 24), i === 3 ? 1.3 : .3, .07, d, 'triangle'); })
 };
+/* a burst of noise through a sweeping filter (whoosh, slash, flame) and a pitch slide (thump, growl) */
+function nz(d, vol, type, f0, f1, delay = 0){
+  if (!soundOn) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const t = ac.currentTime + delay, src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    src.buffer = bgmNoise(ac); f.type = type; f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t + d); f.Q.value = type === 'bandpass' ? 1.6 : .7;
+    g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(vol, t + .012); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    src.connect(f).connect(g).connect(ac.destination); src.start(t); src.stop(t + d + .05);
+  } catch {}
+}
+function sweep(f0, f1, d, vol, type = 'sine', delay = 0){
+  if (!soundOn) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + d);
+    g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + d + .03);
+  } catch {}
+}
 /* ---------- BGM: a small WebAudio sequencer with one theme per world (no audio files) ---------- */
 const BGM_T = {
   euro:   {bpm: 116, root: 72, scale: [0, 2, 4, 5, 7, 9, 11], lead: 'square', lv: .03, dec: .22, bs: [0, 0, 3, 3, 4, 4, 0, 4], drum: 'march',
@@ -2078,8 +2117,19 @@ const BGM_T = {
     mel: [0, 2, 4, 7, 4, 2, 0, 2, 5, 7, 9, 12, 9, 7, 5, 7, 6, 8, 10, 13, 10, 8, 6, 8, 0, 2, 4, 7, 9, 7, 4, 2]},
   cave:   {bpm: 64, root: 57, scale: [0, 1, 3, 5, 6, 8, 10], lead: 'triangle', lv: .06, dec: .95, drone: [0, 6], drum: 'none', vol: .5,
     mel: [0, null, null, null, 1, null, null, null, 0, null, null, null, 4, null, 3, null, 0, null, null, null, 1, null, null, null, 6, null, 5, null, 4, null, null, null]},
-  boss:   {bpm: 148, root: 64, scale: [0, 2, 3, 5, 7, 8, 11], lead: 'square', lv: .03, dec: .12, bs: [0, 0, 0, 0, 5, 5, 4, 4], bassW: 'sawtooth', bv: .045, drum: 'four',
-    mel: [0, 0, 2, 0, 3, 0, 4, 3, 0, 0, 2, 0, 6, 5, 4, 3, 0, 0, 2, 0, 3, 0, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1]}
+  /* battle themes: driving octave bass, an arpeggio under the tune, a busy drum kit. 64 steps = 8 bars */
+  battle: {bpm: 160, root: 64, scale: [0, 2, 3, 5, 7, 8, 11], lead: 'square', lv: .032, dec: .16, bass8: 1, bassW: 'sawtooth', bv: .05, arp: .012, drum: 'battle', vol: .5,
+    bs: [0, 0, 5, 4, 0, 3, 5, 4],
+    mel: [0, null, 0, 2, 3, null, 2, 0, 4, null, 4, 3, 2, 3, 4, null, 5, null, 5, 4, 3, null, 4, 5, 6, 5, 4, 3, 2, null, null, null,
+          7, null, 7, 6, 5, null, 4, null, 5, 4, 3, 2, 3, null, 4, null, 2, null, 3, 4, 5, 6, 7, null, 6, null, 4, null, 7, null, null, null]},
+  boss:   {bpm: 170, root: 62, scale: [0, 2, 3, 5, 7, 8, 11], lead: 'sawtooth', lp: 2600, lv: .036, dec: .14, bass8: 1, bassW: 'sawtooth', bv: .055, arp: .013, drum: 'boss', timp: 1, vol: .52,
+    bs: [0, 0, 5, 4, 3, 3, 5, 4],
+    mel: [0, 0, 7, 0, 6, 0, 5, 0, 4, 0, 5, 0, 3, null, 2, null, 0, 0, 7, 0, 6, 0, 5, 0, 8, null, 7, null, 6, 5, 4, 6,
+          7, null, null, 4, 5, null, null, 2, 3, null, 4, 5, 6, null, 4, null, 7, null, 8, 9, 10, null, 9, 8, 7, 6, 5, 4, 6, null, 7, null]},
+  boss2:  {bpm: 186, root: 63, scale: [0, 1, 3, 5, 7, 8, 11], lead: 'square', lv: .03, dec: .12, dbl: 1, bass8: 1, bassW: 'sawtooth', bv: .06, arp: .014, drum: 'boss', timp: 1, vol: .54,
+    bs: [0, 0, 1, 0, 5, 5, 4, 4],
+    mel: [0, 0, 7, 0, 6, 0, 5, 0, 4, 0, 5, 0, 3, null, 1, null, 0, 0, 7, 0, 6, 0, 5, 0, 8, null, 7, null, 6, 5, 4, 6,
+          7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, null, 0, null, 7, null, 8, 9, 10, null, 9, 8, 11, null, 10, null, 7, null, null, null]}
 };
 const DRUMS = {
   march: [['kick'], ['hat'], ['snare'], ['hat'], ['kick'], ['hat'], ['snare'], ['hat', 'snare']],
@@ -2088,6 +2138,8 @@ const DRUMS = {
   tabla: [['tabla'], [], ['tabla2'], ['tabla2'], ['tabla'], [], ['tabla2'], []],
   shuffle: [['kick'], ['hat'], ['snare'], ['hat'], ['kick'], ['kick'], ['snare'], ['hat']],
   four: [['kick'], ['hat'], ['kick', 'clap'], ['hat'], ['kick'], ['hat'], ['kick', 'clap'], ['hat']],
+  battle: [['kick', 'hat'], ['hat'], ['snare', 'hat'], ['hat'], ['kick', 'hat'], ['kick', 'hat'], ['snare', 'hat'], ['hat', 'snare']],
+  boss: [['kick', 'hat'], ['kick'], ['snare', 'hat'], ['kick'], ['kick', 'hat'], ['kick'], ['snare', 'clap'], ['snare']],
   none: []
 };
 let bgmOn = store.get('mindquest-bgm', true);
@@ -2134,8 +2186,11 @@ function bgmTick(){
   const sd = 60 / T.bpm / 2;
   while (bgmS.t < c.currentTime + .3){
     const k = bgmS.step, t = bgmS.t, m = T.mel[k % T.mel.length];
-    if (m != null){ bNote(c, bgmS.out, mtof(T.root + bdeg(T, m)), t, T.dec, T.lead, T.lv, {vib: T.vib, lp: T.lp, att: T.att}); if (T.bell && k % 2 === 0) bNote(c, bgmS.out, mtof(T.root + 12 + bdeg(T, m)), t, .9, 'sine', .025); }
-    if (k % 4 === 0 && T.bs){ const b = T.bs[(k / 4) % T.bs.length]; if (b != null) bNote(c, bgmS.out, mtof(T.root - 24 + bdeg(T, b)), t, sd * 3.6, T.bassW || 'triangle', T.bv || .09, {lp: 900}); }
+    if (m != null){ bNote(c, bgmS.out, mtof(T.root + bdeg(T, m)), t, T.dec, T.lead, T.lv, {vib: T.vib, lp: T.lp, att: T.att}); if (T.bell && k % 2 === 0) bNote(c, bgmS.out, mtof(T.root + 12 + bdeg(T, m)), t, .9, 'sine', .025); if (T.dbl) bNote(c, bgmS.out, mtof(T.root - 12 + bdeg(T, m)), t, T.dec, 'triangle', T.lv * 1.4); }
+    if (T.bass8){ const b = T.bs[Math.floor(k / 8) % T.bs.length]; bNote(c, bgmS.out, mtof(T.root - 24 + bdeg(T, b) + (k % 2 ? 12 : 0)), t, sd * .9, T.bassW || 'sawtooth', T.bv || .05, {lp: 760}); }
+    if (T.arp){ const b = T.bs[Math.floor(k / 8) % T.bs.length]; bNote(c, bgmS.out, mtof(T.root + bdeg(T, b + [0, 2, 4, 2][k % 4])), t, sd * .8, 'square', T.arp, {lp: 2400}); }
+    if (T.timp && k % 16 === 0) bHit(c, bgmS.out, 'taiko', t);
+    if (!T.bass8 && k % 4 === 0 && T.bs){ const b = T.bs[(k / 4) % T.bs.length]; if (b != null) bNote(c, bgmS.out, mtof(T.root - 24 + bdeg(T, b)), t, sd * 3.6, T.bassW || 'triangle', T.bv || .09, {lp: 900}); }
     ((DRUMS[T.drum] || [])[k % 8] || []).forEach(h => bHit(c, bgmS.out, h, t));
     if (T.drum === 'gong' && k % 32 === 0) bHit(c, bgmS.out, 'gong', t);
     bgmS.step++; bgmS.t += sd;
@@ -2160,9 +2215,10 @@ function bgmPlay(id){
 function bgmUpdate(){
   let id = null;
   if (bgmOn && S && S.mode === 'quest' && S.phase === 'play' && !building && $('#ovHome').hidden && !document.hidden){
-    const p = S.quest.qs === 'answer' ? current() : null, boss = p && !p.fork && S.stages[p.s] && S.stages[p.s].monster === 'boss';
-    id = boss ? 'boss' : $('#boardView').classList.contains('cave') ? 'cave' : curWorld();
-    if (curCh() > 1) id += '@' + curCh();
+    const Q = S.quest, p = Q.qs === 'answer' ? current() : null, st = p && !p.fork ? S.stages[p.s] : null, F = Q.qs === 'fight' ? Q.fight : null;
+    if (F) id = F.won || F.ran ? null : 'battle';
+    else if (st && st.monster) id = battleHP(p) <= 0 ? null : st.monster === 'boss' ? (statOf(S, p.key).form2 ? 'boss2' : 'boss') : 'battle';
+    else { id = $('#boardView').classList.contains('cave') ? 'cave' : curWorld(); if (curCh() > 1) id += '@' + curCh(); }
   }
   bgmPlay(id); weatherUpdate();
 }
@@ -3117,8 +3173,9 @@ function hurt(n, why, monster){
   if (monster && Q.fx.block){ Q.fx.block = 0; qlog(`${why}…でも、ふあん消しの煙玉でふせいだ！`); toast('💨 煙玉でこうげきをふせいだ！'); return false; }
   if (monster && curCls() === 'warrior') n = Math.ceil(n / 2);
   if (Q.fx.halve){ Q.fx.halve = 0; n = Math.ceil(n / 2); qlog('お守りがダメージを半分にした'); }
-  Q.mental = Math.max(0, Q.mental - n); qlog(`${why} メンタル −${n}`); toast(`メンタル −${n}（のこり ${Q.mental}）`); sfx.bad();
+  Q.mental = Math.max(0, Q.mental - n); qlog(`${why} メンタル −${n}`); toast(`メンタル −${n}（のこり ${Q.mental}）`); monster ? sfx.hurt() : sfx.bad();
   if (Q.mental > 0) return false;
+  sfx.lose();
   Q.beats = [{k: 'retire'}]; Q.retire = 1; Q.qs = 'story'; Q.duel = null; save(); refresh(); return true;
 }
 function respawn(){
@@ -3355,14 +3412,14 @@ function gateEnemy(key, st, delay, first){
     const p = current(), sx = statOf(S, key); if (battleHP(p) <= 0) return;
     sx.blog = sx.blog || []; sx.turn = (sx.turn || 0) + 1;
     const nm = monName(st);
-    if (!first && !sx.charge && sx.turn % 3 === 0){ sx.charge = 1; blogAdd(sx.blog, `${nm}は力をためている…！ 次のこうげきは2倍（ぼうぎょで半分にできる）`); sfx.bad(); save(); renderPanel(); return; }
-    if (!first && !sx.charge && Math.random() < .12){ sx.guard = 0; blogAdd(sx.blog, `${nm}のこうげき！ …ミス！ ダメージを受けなかった`); save(); renderPanel(); return; }
+    if (!first && !sx.charge && sx.turn % 3 === 0){ sx.charge = 1; blogAdd(sx.blog, `${nm}は力をためている…！ 次のこうげきは2倍（ぼうぎょで半分にできる）`); sfx.charge(); save(); renderPanel(); return; }
+    if (!first && !sx.charge && Math.random() < .12){ sx.guard = 0; sfx.miss(); blogAdd(sx.blog, `${nm}のこうげき！ …ミス！ ダメージを受けなかった`); save(); renderPanel(); return; }
     let d = (st.monster === 'boss' ? 8 : 5) + heroLevel() - 1 + (sx.form2 ? 3 : 0) + (S.ng || 0) * 2 + (first ? 1 : 0);
     const big = !!sx.charge; if (big){ d *= 2; sx.charge = 0; }
     const g = !!sx.guard; if (g){ d = Math.ceil(d / 2); sx.guard = 0; }
     d = Math.max(1, d - Math.floor(heroDef() / 3));
     blogAdd(sx.blog, `${first ? '先制こうげき！ ' : ''}${nm}の${big ? 'つよいこうげき' : 'こうげき'}！${g ? ' ぼうぎょして' : ''} あなたに${d}のダメージ`);
-    if (hurt(d, `${nm}のこうげき！`, true)) return;
+    sfx.enemy(); if (hurt(d, `${nm}のこうげき！`, true)) return;
     awakeCheck(); save(); renderPanel();
     const e = $('#battle'); if (e){ btAnim(e, '.bt-mon', 'matk', 450); setTimeout(() => { const e2 = $('#battle'); if (e2){ btAnim(e2, '.bt-hero', 'hit', 500); btPop(e2, '.bt-hero', '-' + d, 'bad'); } }, 220); }
   }, delay);
@@ -3411,7 +3468,7 @@ function fightWin(F){
   F.log = F.log || []; blogAdd(F.log, `${F.n}をやっつけた！`);
   F.msg = `${F.n}をやっつけた！ ${g}Gと夢ポイント+${pts}を手に入れた`; qlog(`${F.n}（Lv.${F.lv}）をたおした +${g}G +${pts}pt`);
   tot('kills'); dailyAdd('kill'); dexAdd(F.gold ? 'any' : curWorld(), F.n); if (F.gold) badge('gold'); if (Q.mental <= 10) badge('clutch'); if (F.viaMg) badge('mg');
-  sfx.clear(); save(); renderPanel();
+  bgmStop(); sfx.fanfare(); save(); renderPanel();
 }
 function fightAct(a){
   const Q = rpgQ(), F = Q.fight; if (!F || Q.qs !== 'fight') return;
@@ -3420,22 +3477,23 @@ function fightAct(a){
   if (F.busy || F.won || F.ran || F.mg) return;
   if (MG[a]){ F.mg = a; F.mg0 = a; F.msg = `${MG[a][1]}で勝負！`; blogAdd(F.log, F.msg); sfx.next(); renderPanel(); return; }
   let dmg = 0, crit = false;
-  if (a === 'atk'){ if (Math.random() < .08) blogAdd(F.log, `${me}のこうげき！ …ミス！ ${F.n}はひらりとかわした`); else { dmg = heroAtk(); crit = critHit(false); } }
+  if (a === 'atk'){ if (Math.random() < .08 && (sfx.miss(), 1)) blogAdd(F.log, `${me}のこうげき！ …ミス！ ${F.n}はひらりとかわした`); else { dmg = heroAtk(); crit = critHit(false); } }
   else if (a === 'fire'){ if (!Q.magic) return; Q.magic--; dmg = fireDmg(); }
-  else if (a === 'guard'){ F.guard = 1; heal(3, ''); blogAdd(F.log, `${me}はみをまもっている（このターンのダメージ半分）`); sfx.step(); }
+  else if (a === 'guard'){ F.guard = 1; heal(3, ''); blogAdd(F.log, `${me}はみをまもっている（このターンのダメージ半分）`); sfx.guard(); }
   else if (a === 'run'){
-    if (Math.random() < (F.gold ? .9 : .6)){ F.ran = 1; F.runMsg = 'うまく逃げきった！'; blogAdd(F.log, F.runMsg); qlog(`${F.n}から逃げた`); sfx.next(); save(); renderPanel(); return; }
-    blogAdd(F.log, `${me}はにげだした！ …しかし まわりこまれてしまった`);
+    if (Math.random() < (F.gold ? .9 : .6)){ F.ran = 1; F.runMsg = 'うまく逃げきった！'; blogAdd(F.log, F.runMsg); qlog(`${F.n}から逃げた`); sfx.run(); save(); renderPanel(); return; }
+    blogAdd(F.log, `${me}はにげだした！ …しかし まわりこまれてしまった`); sfx.bad();
   }
   if (dmg){
     if (crit) dmg *= 2; if (awake()) dmg *= 2; if (F.gold) dmg = Math.min(dmg, crit ? 16 : 8);
     F.hp -= dmg; best('dmg', dmg);
     blogAdd(F.log, (crit ? 'かいしんのいちげき！ ' : '') + (a === 'fire' ? `魔法ファイア！ ${F.n}に${dmg}の大ダメージ` : `${me}のこうげき！ ${F.n}に${dmg}のダメージ`));
     if (crit) critFx();
-    sfx.good();
+    a === 'fire' ? sfx.fire() : sfx.slash();
   }
   F.msg = F.log[F.log.length - 1]; F.busy = 1; renderPanel();
   const e = el(); if (e && dmg){ btAnim(e, '.bt-hero', 'atk', 450); if (a === 'fire') btAnim(e, '.bt-fx', 'fire', 700); setTimeout(() => { btAnim(e, '.bt-mon', 'hit', 500); btPop(e, '.bt-mon', '-' + dmg, a === 'fire' || crit ? 'big' : ''); }, 180); }
+  if (dmg) setTimeout(() => (crit || a === 'fire' ? sfx.crit() : sfx.hit()), a === 'fire' ? 420 : 170);
   if (F.hp <= 0){ setTimeout(() => fightWin(F), 650); return; }
   setTimeout(() => fightEnemy(F), 950);
 }
@@ -3443,16 +3501,16 @@ function fightAct(a){
 function fightEnemy(F){
   const Q = rpgQ(); if (!Q.fight || Q.qs !== 'fight' || Q.fight !== F) return;
   F.turn = (F.turn || 1) + 1; F.busy = 0;
-  if (F.gold && Math.random() < .45){ F.ran = 1; F.fled = 1; F.runMsg = 'ゴールドスライムはにげだした…'; blogAdd(F.log, F.runMsg); qlog('ゴールドスライムににげられた'); save(); renderPanel(); return; }
+  if (F.gold && Math.random() < .45){ sfx.run(); F.ran = 1; F.fled = 1; F.runMsg = 'ゴールドスライムはにげだした…'; blogAdd(F.log, F.runMsg); qlog('ゴールドスライムににげられた'); save(); renderPanel(); return; }
   const r = Math.random();
-  if (!F.charge && !F.gold && r < .22){ F.charge = 1; F.guard = 0; blogAdd(F.log, `${F.n}は力をためている…！ 次のこうげきは2倍（ぼうぎょで半分にできる）`); F.msg = F.log[F.log.length - 1]; sfx.bad(); save(); renderPanel(); return; }
-  if (!F.charge && r < .32){ F.guard = 0; blogAdd(F.log, `${F.n}のこうげき！ …ミス！ ダメージを受けなかった`); F.msg = F.log[F.log.length - 1]; save(); renderPanel(); return; }
+  if (!F.charge && !F.gold && r < .22){ F.charge = 1; F.guard = 0; blogAdd(F.log, `${F.n}は力をためている…！ 次のこうげきは2倍（ぼうぎょで半分にできる）`); F.msg = F.log[F.log.length - 1]; sfx.charge(); save(); renderPanel(); return; }
+  if (!F.charge && r < .32){ F.guard = 0; sfx.miss(); blogAdd(F.log, `${F.n}のこうげき！ …ミス！ ダメージを受けなかった`); F.msg = F.log[F.log.length - 1]; save(); renderPanel(); return; }
   let d = Math.max(1, Math.round(F.atk * (.8 + Math.random() * .4))) + (S.ng || 0) * 2;
   const big = !!F.charge; if (big){ d *= 2; F.charge = 0; }
   const g = !!F.guard; if (g){ d = Math.ceil(d / 2); F.guard = 0; }
   d = Math.max(1, d - Math.floor(heroDef() / 3));
   blogAdd(F.log, `${F.n}の${big ? 'つよいこうげき' : 'こうげき'}！${g ? ' ぼうぎょして' : ''} あなたに${d}のダメージ`); F.msg = F.log[F.log.length - 1];
-  if (hurt(d, `${F.n}のこうげき！`, true)) return;
+  sfx.enemy(); if (hurt(d, `${F.n}のこうげき！`, true)) return;
   awakeCheck(); save(); renderPanel();
   const e = $('#battle'); if (e){ btAnim(e, '.bt-mon', 'matk', 450); setTimeout(() => { const e2 = $('#battle'); if (e2){ btAnim(e2, '.bt-hero', 'hit', 500); btPop(e2, '.bt-hero', '-' + d, 'bad'); } }, 220); }
 }
@@ -3692,9 +3750,9 @@ document.querySelector('#btnCollect') && document.querySelector('#btnCollect').a
 function syncBattle(){
   const el = $('#battle'); if (!el) return;
   if (S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'fight' && S.quest.fight && S.quest.fight.mg) setTimeout(() => { if (mgStop && !$('#mgArea[data-on]')){ mgStop(); mgStop = null; } mountMG(); }, 0);
-  if (S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'fight' && S.quest.fight){ const fresh = btLast.key !== S.quest.fight.k; el.hidden = false; el.innerHTML = fightSceneHTML(S.quest.fight); if (fresh){ btAnim(el, '.bt-mon', 'appear', 700); el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter'); } btLast = {key: S.quest.fight.k, n: 0, fire: 0}; return; }
+  if (S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'fight' && S.quest.fight){ const fresh = btLast.key !== S.quest.fight.k; el.hidden = false; el.innerHTML = fightSceneHTML(S.quest.fight); if (fresh){ btAnim(el, '.bt-mon', 'appear', 700); el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter'); sfx.appear(); } btLast = {key: S.quest.fight.k, n: 0, fire: 0}; bgmUpdate(); return; }
   const p = S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'answer' && stageView === 'board' ? current() : null, st = p && !p.fork ? S.stages[p.s] : null;
-  if (!st || !st.monster){ el.hidden = true; btLast = {key: null, n: 0, fire: 0}; return; }
+  if (!st || !st.monster){ const was = btLast.key; el.hidden = true; btLast = {key: null, n: 0, fire: 0}; if (was) bgmUpdate(); return; }
   const n = answersFor(S, p).length, fire = statOf(S, p.key).fire || 0, fresh = btLast.key !== p.key, sx = statOf(S, p.key), nm = monName(st);
   sx.blog = sx.blog || [];
   if (fresh && !sx.blog.length) sx.blog.push(`${nm}があらわれた！`, BT_RULE);
@@ -3710,19 +3768,21 @@ function syncBattle(){
     const t = la ? [...la.t].slice(0, 14).join('') + (la.t.length > 14 ? '…' : '') : '';
     blogAdd(sx.blog, `${cr ? 'かいしんのいちげき！ ' : ''}あなたのこうげき！ 答え「${t}」で ${nm}に${dmg}のダメージ`);
   }
-  if (st.monster === 'boss' && !sx.form2){ const h = battleHP(p); if (h > 0 && h <= 50){ sx.form2 = 1; sx.extra = (sx.extra || 0) + 30; toast('😈 ボスが変身した！ 第2形態！'); qlog(`${st.npc}が第2形態に変身した！`); blogAdd(sx.blog, `${nm}は第2形態に変身した！ HPが30回復した`); sfx.bad(); } }
+  if (st.monster === 'boss' && !sx.form2){ const h = battleHP(p); if (h > 0 && h <= 50){ sx.form2 = 1; sx.extra = (sx.extra || 0) + 30; toast('😈 ボスが変身した！ 第2形態！'); qlog(`${st.npc}が第2形態に変身した！`); blogAdd(sx.blog, `${nm}は第2形態に変身した！ HPが30回復した`); sfx.roar(); } }
   const hp = battleHP(p);
   if ((ev === 'hit' || ev === 'fire') && hp <= 0) blogAdd(sx.blog, `${nm}をやっつけた！`);
   el.hidden = false; el.innerHTML = battleHTML(p, st, hp);
   if (ev === 'fresh'){
     btAnim(el, '.bt-mon', 'appear', 700); el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter');
+    if (!sx.ambush && hp > 0){ st.monster === 'boss' ? sfx.roar() : sfx.appear(); }
     if (!sx.ambush && hp > 0){ sx.ambush = 1; gateEnemy(p.key, st, 1100, true); }
   } else if (ev === 'fire' || ev === 'hit'){
-    if (ev === 'fire') btAnim(el, '.bt-fx', 'fire', 700); else btAnim(el, '.bt-hero', 'atk', 450);
-    setTimeout(() => { const e = $('#battle'); if (!e) return; btAnim(e, '.bt-mon', 'hit', 500); btPop(e, '.bt-mon', '-' + (ev === 'fire' ? 50 : dmg), ev === 'fire' || cr ? 'big' : ''); sfx.good(); }, 180);
-    if (hp > 0) gateEnemy(p.key, st, 950); else setTimeout(() => sfx.clear(), 400);
+    if (ev === 'fire'){ btAnim(el, '.bt-fx', 'fire', 700); sfx.fire(); } else { btAnim(el, '.bt-hero', 'atk', 450); sfx.slash(); }
+    setTimeout(() => { ev === 'fire' || cr ? sfx.crit() : sfx.hit(); const e = $('#battle'); if (!e) return; btAnim(e, '.bt-mon', 'hit', 500); btPop(e, '.bt-mon', '-' + (ev === 'fire' ? 50 : dmg), ev === 'fire' || cr ? 'big' : ''); }, ev === 'fire' ? 420 : 170);
+    if (hp > 0) gateEnemy(p.key, st, 950); else { bgmStop(); setTimeout(() => sfx.fanfare(), 450); }
   }
   btLast = {key: p.key, n, fire};
+  bgmUpdate();
 }
 document.getElementById('stage').insertAdjacentHTML('beforeend', '<div class="battle" id="battle" hidden></div>');
 $('#battle').addEventListener('click', e => {
@@ -3734,7 +3794,7 @@ $('#battle').addEventListener('click', e => {
   if (b.dataset.bt === 'guard' || b.dataset.bt === 'run'){
     const p = current(); if (!p || !S || S.quest.qs !== 'answer') return; const st = S.stages[p.s], sx = statOf(S, p.key); sx.blog = sx.blog || [];
     if (b.dataset.bt === 'run'){ if (sx.flee){ next(); return; } sx.flee = 1; blogAdd(sx.blog, 'にげると ごほうびなし・HP−10。もう一度「にげる」を押すと関所を通りぬける'); renderPanel(); return; }
-    if (sx.guard) return; sx.guard = 1; heal(3, ''); blogAdd(sx.blog, 'あなたはみをまもっている（次のダメージ半分）'); sfx.step(); save(); renderPanel(); gateEnemy(p.key, st, 700); return;
+    if (sx.guard) return; sx.guard = 1; heal(3, ''); blogAdd(sx.blog, 'あなたはみをまもっている（次のダメージ半分）'); sfx.guard(); save(); renderPanel(); gateEnemy(p.key, st, 700); return;
   }
   if (b.dataset.bt === 'item'){ const ib = panel.querySelector('.ibar'); if (ib){ ib.scrollIntoView({block: 'center', behavior: 'smooth'}); ib.classList.add('flash'); setTimeout(() => ib.classList.remove('flash'), 900); } else toast('もちものがありません。お店で買えます'); }
 });
