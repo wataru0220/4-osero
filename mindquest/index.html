@@ -1733,7 +1733,7 @@ PRESETS.life = (() => {
   cs.fields = [['so', '強み×機会：いいところを生かして、チャンスをどうつかむ？', '強み×機会', '例：聞き上手を生かして交流会で話しかける', 'cso'], ['wo', '弱み×機会：チャンスを使って、苦手をどう補う？', '弱み×機会', '例：少人数の集まりから参加してみる', 'cwo'], ['st', '強み×脅威：いいところを生かして、向かい風をどうかわす？', '強み×脅威', '例：短い時間でも連絡をまめに取る', 'cst'], ['wt', '弱み×脅威：最悪の事態を、どうさける？', '弱み×脅威', '例：無理をせず、信頼できる人に相談する', 'cwt']];
   tm.fields = [['q1', '第1領域（重要・緊急）：今すぐやることは？', '第1領域', '例：健康診断の予約', 'tm1'], ['q2', '第2領域（重要・緊急でない）：理想の暮らしのために時間を作ってやることは？', '第2領域', '例：週末に大切な人とゆっくり過ごす', 'tm2'], ['q3', '第3領域（重要でない・緊急）：減らす・人に任せることは？', '第3領域', '例：気の進まない付き合い', 'tm3'], ['q4', '第4領域（重要でない・緊急でない）：やめることは？', '第4領域', '例：なんとなくのスマホ', 'tm4']];
   return {name: 'ライフイベント',
-    ex: ['結婚したい', '家族をつくりたい', '理想のパートナーに出会いたい', '幸せな老後を送りたい', '子どもをのびのび育てたい', 'マイホームを持ちたい', '親を大切にしたい'],
+    ex: ['結婚したい', '家族をつくりたい', '理想のパートナーに出会いたい', '理想の家を建てたい', '幸せな老後を送りたい', '子どもをのびのび育てたい', 'マイホームを持ちたい', '親を大切にしたい'],
     forks: {
       f1: {t: '分かれ道だ！ どちらの道を進む？', opts: {A1: {n: 'ささえの森', d: '人の力を借りる道。支えてくれる人と、その人へのお願いを考える'}, B1: {n: 'ひとりの丘', d: '自分を見つめる道。あなたの魅力と、その生かし方を考える'}}},
       f2: {t: '洞窟をぬけると、また分かれ道！', opts: {A2: {n: 'ひだまりの道', d: 'かなった日の「理想の1日」を思い描く'}, B2: {n: '未来の道', d: '年を重ねた未来の自分と話してみる'}}}
@@ -1757,9 +1757,46 @@ PRESETS.life = (() => {
       {l: '未来の自分', route: 'B2', q: '未来の道で、年を重ねた自分に会った！ 「{t}」をかなえたあなたは、今のあなたに何と言う？', p: -1, min: 1, sec: 70, v: 1, o: 'future', npc: '未来のあなた', seg: 'B2', hint: '未来の自分になりきって、ひとこと。'},
       {l: '感謝したい人', q: '城の大臣が問う。ここまで来られたのは、誰のおかげかな？ あなたを育て、支えてくれた人は？', vq: ['城の大臣が問う。ここまで来られたのは、誰のおかげかな？ あなたを育て、支えてくれた人は？', '城の広間に、思い出の写真が飾られている。あなたを支えてくれた人は誰？', '大臣が言う。「幸せは、ひとりでは作れぬもの」。これまでお世話になった人は？'], p: -1, min: 1, sec: 70, o: 'thanks', npc: '城の大臣', seg: 'castle', hint: '親・きょうだい・友だち・恩師。顔を思い浮かべて、名前や関係で書こう。'},
       {l: '恩返し', q: '「{a}」に、どんな形で感謝や恩返しをする？', vq: ['「{a}」に、どんな形で感謝や恩返しをする？', '「{a}」に「ありがとう」を伝えるなら、いつ・どうやって？', '「{t}」がかなったら、「{a}」とどんな時間を過ごしたい？'], p: 15, min: 1, sec: 60, o: 'repay', npc: '城の大臣', seg: 'castle', hint: '今できる感謝と、かなったあとの恩返し。両方考えてもOK。'},
+      {l: '理想の住まい', type: 'plan', fields: [['hwhere', 'どこに住みたい？', '場所', '例：海が見える町', 'hwhere'], ['htype', 'どんな家？（一戸建て・マンション・平屋など）', '家のかたち', '例：庭のある平屋', 'htype'], ['hmust', 'ゆずれないこだわりは？', 'こだわり', '例：家族が集まる広いリビング', 'hmust'], ['hbudget', '予算や資金の計画は？', '予算', '例：3000万円・住宅ローン30年', 'hbudget']],
+        q: '大工の棟梁が図面を広げた。「{t}」がかなう暮らしには、どんな住まいがいい？ どこに、どんな家を、何にこだわって、どれくらいの予算で？', p: -1, min: 4, sec: 150, o: 'home', npc: '大工の棟梁', seg: 'castle', hint: '予算は「わからない」でもOK。こだわりは暮らし方から考えよう。'},
       {l: '最初の一歩', q: '城の門をひらく合言葉は「最初の一歩」。必殺技「{@what}」のために、今日・明日やることは？', qf: '城の門をひらく合言葉は「最初の一歩」。今日・明日から何をする？', p: -1, min: 1, sec: 70, h: 1, o: 'first', npc: '王さま', seg: 'castle', hint: '5分でできるくらい小さな一歩がベスト。'}
     ]};
 })();
+/* life growth: one journey through a whole life. The town is meeting a partner, the river is marriage, the cave is raising
+   a family, the mountain road is building a home and the end of the road is old age */
+PRESETS.lifeup = {name: 'ライフ成長コース',
+  ex: ['理想の人生を歩みたい', '幸せな家庭を築きたい', '大切な人と一生笑って暮らしたい', '家族みんなが安心できる家をつくりたい'],
+  forks: {
+    f1: {t: '結婚の川の手前で、分かれ道だ！', opts: {A1: {n: 'ささえの森', d: '人の力を借りる道。支えてくれる人と、その人へのお願いを考える'}, B1: {n: 'ひとりの丘', d: '自分を見つめる道。あなたの魅力と、その生かし方を考える'}}},
+    f2: {t: '家づくりの山道をぬけると、また分かれ道！', opts: {A2: {n: 'ひだまりの道', d: '新しい家での「理想の1日」を思い描く'}, B2: {n: '未来の道', d: '年を重ねた未来の自分と話してみる'}}}
+  },
+  st: [
+    {l: '理想のパートナー', type: 'plan', fields: [['pkind', 'どんな人柄の人？', '人柄', '例：思いやりがあって、よく笑う人', 'pkind'], ['pvalue', 'いっしょに大切にしたい価値観は？', '価値観', '例：家族の時間を大切にする', 'pvalue'], ['pdo', 'その人とどんなことをしたい？', 'したいこと', '例：休日にいっしょに料理をする', 'pdo'], ['pgive', 'あなたは相手に何をしてあげたい？', 'してあげたいこと', '例：疲れているときに話を聞く', 'pgive']],
+      q: '出会いの町の長老が聞く。あなたの「理想のパートナー」はどんな人？ いっしょに何を大切にして、何をしたい？ あなたは相手に何をしてあげたい？', p: -1, min: 4, sec: 150, v: 1, o: 'partner', npc: '出会いの町の長老', seg: 'town', hint: '「してもらいたいこと」だけでなく「してあげたいこと」も書くと、理想の関係が見えてきます。'},
+    {l: '出会い方', q: '町の案内人が聞く。理想のパートナーとは、どこで・どうやって出会えそう？', p: -1, min: 2, sec: 100, o: 'meet', npc: '町の案内人', seg: 'town', hint: '趣味の集まり・友だちの紹介・地域の行事・結婚相談所など。思いつくだけ書こう。'},
+    {l: 'やること', q: '「{a}」で出会うために、具体的に何をする？', alt: ['「{a}」に、今月まず何から動く？', '「{a}」で出会いのチャンスを増やすには？'], p: 1, min: 1, sec: 70, o: 'act', npc: '恋の師匠', seg: 'town', hint: '「月1回〇〇に参加する」のように、動きと回数がわかる言葉で。'},
+    {l: '支えてくれる人', type: 'plan', route: 'A1', fields: [['who', '誰に支えてもらう？', '支えてくれる人', '例：仲のいい先輩夫婦', 'ally'], ['ask', 'その人に何をお願いする？', 'お願い', '例：出会いや結婚生活の話を聞かせてもらう', 'ask']], q: '森の奥は、ひとりでは進めない。これからの人生の旅で、誰に支えてもらう？', p: -1, min: 2, sec: 90, o: 'ally', npc: '森の案内人', seg: 'A1', hint: '家族・友だち・先輩・専門家（相談窓口など）。お願いは具体的に。'},
+    {l: 'あなたの魅力', type: 'plan', route: 'B1', fields: [['str', 'あなたの魅力（いいところ）は？', '魅力', '例：まわりを笑顔にできる', 'str'], ['use', 'それをどう生かす？', '生かし方', '例：初めて会う人にも自分から笑顔であいさつする', 'use']], q: '丘の上から、自分を見つめてみよう。パートナーや家族を幸せにできる、あなたの魅力は？', p: -1, min: 2, sec: 90, o: 'str', npc: '丘の羊飼い', seg: 'B1', hint: '人から「ありがとう」と言われたことを思い出してみよう。'},
+    {l: '理想の結婚', type: 'plan', fields: [['wwhen', 'いつごろ結婚したい？', '時期', '例：30歳までに', 'wwhen'], ['wstyle', 'どんな形で？（式・写真だけ・家族だけ など）', '形', '例：家族だけの小さな式', 'wstyle'], ['wrule', 'ふたりのルールは？', 'ルール', '例：けんかしたらその日のうちに仲直り', 'wrule'], ['wpromise', 'いちばん大切にしたい約束は？', '約束', '例：ありがとうを毎日言う', 'wpromise']],
+      q: '結婚の川のほとりで、川の精が聞く。あなたの「理想の結婚」は？ いつごろ、どんな形で、どんなルールと約束を大切にする？', p: -1, min: 4, sec: 150, o: 'wed', npc: '結婚の川の精', seg: 'river', hint: '形にこだわらずOK。「どんな夫婦でいたいか」を思い浮かべて。'},
+    {l: '話し合うこと', q: 'パートナーと、結婚する前に話し合っておきたいことは？（お金・仕事・家事・家族・住む場所…）', p: -1, min: 2, sec: 100, o: 'talk', npc: '川の渡し守', seg: 'river', hint: '先に話しておくと、あとのすれちがいが減ります。'},
+    {l: '理想の家族', type: 'plan', fields: [['fnum', '何人家族になりたい？', '人数', '例：子ども2人の4人家族', 'fnum'], ['fkind', 'どんな家族になりたい？', 'どんな家族', '例：何でも話せる家族', 'fkind'], ['fhabit', '大切にしたい家族の習慣は？', '習慣', '例：日曜の夜はみんなで夕ごはん', 'fhabit'], ['fpass', '子どもや次の世代に伝えたいことは？', '伝えたいこと', '例：人にやさしくする大切さ', 'fpass']],
+      q: '子育ての洞窟の入口で、家族の守り神が聞く。あなたの「理想の家族」は？ 何人で、どんな家族で、どんな習慣を大切にする？', p: -1, min: 4, sec: 150, o: 'fam', npc: '家族の守り神', seg: 'cave', hint: '人数は決まっていなくてもOK。「こんな家族だったらうれしい」を書こう。'},
+    {l: '不安', q: 'モンスター「ふあん」が耳もとでささやく…「どうせ無理だよ」。家族をもつうえで、いちばん心配なことは何？', alt: ['モンスター「ふあん」が道をふさいだ！ 子育てや家族のことで、いちばん怖いことは？', 'モンスター「ふあん」が笑う…「うまくいくはずがない」。うまくいかないとしたら、原因は何？'], p: -1, min: 1, sec: 70, o: 'wall', npc: 'モンスター「ふあん」', monster: 'normal', mk: 'ghost', mcol: '#7C4DDB', seg: 'cave', hint: '弱音をはき出してOK。不安は正体がわかると小さくなる。'},
+    {l: '作戦', q: '「{a}」が本当に起きてしまった！ 家族でどう乗りこえる？', alt: ['「{a}」で心が折れそう。誰に助けを求めて、どう動く？', '「{a}」が起きる前に、今から打てる手は？'], p: 8, min: 1, sec: 70, o: 'over', npc: '洞窟の賢者', seg: 'cave', hint: '「もし〇〇になったら、△△する」と決めておくと強い。'},
+    {l: 'やめること', q: 'モンスター「いいわけ」が「いつか、そのうちでいいよ」とささやく…。理想の人生のじゃまをしている習慣や、つい言ってしまう言い訳は？', p: -1, min: 1, sec: 60, o: 'stop', npc: 'モンスター「いいわけ」', monster: 'normal', mk: 'imp', mcol: '#C8362F', seg: 'cave', hint: '正直に書くほど強くなれる。書いたものが「やめること」になります。'},
+    {l: '必殺技', type: 'plan', fields: [['what', '必殺技：何をする？', '何を', '例：毎月の家計を夫婦で見直す', 'what'], ['pace', 'どのペースで？', 'ペース', '例：月1回', 'pace'], ['start', 'いつから？', 'いつから', '例：今月の最後の日曜から', 'start']], q: 'ボスドラゴン「あきらめ」がほえる！「理想の人生なんて、どうせ手に入らないさ」──必殺技でたおせ！ 何を・どのペースで・いつからやる？', p: -1, min: 3, sec: 120, o: 'what', npc: 'ボス「あきらめ」', monster: 'boss', mk: 'dragon', mcol: '#C8362F', seg: 'cave', hint: '3つそろうと必殺技が完成！ 数字や日付が入るほど威力が上がる。'},
+    {l: '理想の家づくり', type: 'plan', fields: [['hwhere', 'どこに住みたい？', '場所', '例：海が見える町', 'hwhere'], ['htype', 'どんな家？（一戸建て・マンション・平屋など）', '家のかたち', '例：庭のある平屋', 'htype'], ['hmust', 'ゆずれないこだわりは？', 'こだわり', '例：家族が集まる広いリビング', 'hmust'], ['hbudget', '予算や資金の計画は？', '予算', '例：3000万円・住宅ローン30年', 'hbudget']],
+      q: '家づくりの山道で、大工の棟梁が図面を広げた。あなたの「理想の家」は？ どこに、どんな家を、何にこだわって、どれくらいの予算で建てる？', p: -1, min: 4, sec: 150, o: 'home', npc: '大工の棟梁', seg: 'post', hint: '予算は「わからない」でもOK。こだわりは家族の暮らし方から考えよう。'},
+    {l: '家づくりの準備', q: '理想の家のために、今から準備することは？（貯金・情報集め・土地さがし・住宅展示場…）', p: -1, min: 2, sec: 100, o: 'prep', npc: '山道の測量士', seg: 'post', hint: '「頭金のために毎月〇万円」「住宅展示場に行く」など、動きがわかる言葉で。'},
+    {l: '理想の1日', route: 'A2', q: 'ひだまりの道へようこそ。新しい家で過ごす、朝から夜までの「理想の1日」は？', p: -1, min: 1, sec: 70, v: 1, o: 'vision', npc: 'ひだまりの子ども', seg: 'A2', hint: '朝ごはん・会話・休日の過ごし方。場面を思い浮かべて書こう。'},
+    {l: '未来の自分', route: 'B2', q: '未来の道で、年を重ねた自分に会った！ 理想の人生を歩んだあなたは、今のあなたに何と言う？', p: -1, min: 1, sec: 70, v: 1, o: 'future', npc: '未来のあなた', seg: 'B2', hint: '未来の自分になりきって、ひとこと。'},
+    {l: '理想の老後', type: 'plan', fields: [['owhere', 'どこで暮らしている？', '場所', '例：孫が遊びに来やすい家', 'owhere'], ['owith', '誰と過ごしている？', '誰と', '例：パートナーと、近くに住む子ども家族', 'owith'], ['odo', '毎日どんなことをしている？', '毎日', '例：畑仕事と、週1回の趣味の教室', 'odo'], ['ohealth', '元気でいるために続けていることは？', '健康', '例：毎朝の散歩', 'ohealth']],
+      q: 'しあわせの住まいの門番が聞く。あなたの「理想の老後」は？ どこで、誰と、毎日どんなことをして過ごしている？', p: -1, min: 4, sec: 150, o: 'old', npc: 'しあわせの門番', seg: 'castle', hint: '30年後・40年後の自分を想像して。健康とお金の準備も大切。'},
+    {l: '今から続けること', q: '理想の老後のために、今から続けることは？（貯金・運動・健康診断・人とのつながり…）', p: -1, min: 2, sec: 90, o: 'keep', npc: '長生きの仙人', seg: 'castle', hint: '小さなことでも、長く続けると大きな力になります。'},
+    {l: '最初の一歩', q: '門をひらく合言葉は「最初の一歩」。必殺技「{@what}」のために、今日・明日やることは？', qf: '門をひらく合言葉は「最初の一歩」。理想の人生のために、今日・明日から何をする？', p: -1, min: 1, sec: 70, h: 1, o: 'first', npc: '王さま', seg: 'castle', hint: '5分でできるくらい小さな一歩がベスト。'}
+  ]};
+
 const CHAPTERS = {
   2: {n: '第2章 深掘りの章', boss: 'ゆだん', story: '夢の城に平和がもどった…と思ったのもつかの間。ドラゴン「ゆだん」が復活し、世界を雪と氷でとざしてしまった！ 城の宝「夢のかけら」も、氷の洞窟の奥へ消えた…',
     st: [
@@ -1800,6 +1837,23 @@ function chapterStages(x, ch){
 }
 
 const BANKS = {
+  pkind: ['思いやりがある人', 'よく笑う人', '誠実な人', '話をよく聞いてくれる人', '努力家の人', 'おだやかな人'],
+  pvalue: ['家族の時間', 'お金の使い方', '健康', '仕事への向き合い方', '趣味を大切にすること', '感謝を伝えること'],
+  pdo: ['いっしょに料理をする', '旅行に行く', '散歩をする', '趣味を楽しむ', 'ゆっくり話す', '季節の行事を楽しむ'],
+  pgive: ['話を聞く', '体を気づかう', 'ありがとうを伝える', '家事を分け合う', '夢を応援する', '笑わせる'],
+  meet: ['趣味の集まり', '友だちの紹介', '地域の行事', '職場や仕事関係', '結婚相談所', '習いごと'],
+  wwhen: ['1年以内に', '3年以内に', '30歳までに', 'いい人に出会えたら'], wstyle: ['家族だけの小さな式', '友だちを呼ぶ式', '写真だけ', '式はしない'],
+  wrule: ['けんかはその日のうちに仲直り', '家事は分け合う', 'お金のことは相談して決める', '記念日を大切にする'], wpromise: ['ありがとうを毎日言う', 'うそをつかない', 'おたがいの夢を応援する', 'いつも味方でいる'],
+  talk: ['お金の管理', '仕事の続け方', '家事の分担', '子どものこと', '住む場所', 'おたがいの家族との付き合い'],
+  fnum: ['夫婦ふたり', '子ども1人の3人家族', '子ども2人の4人家族', 'にぎやかな大家族'], fkind: ['何でも話せる家族', 'よく笑う家族', '助け合う家族', 'チャレンジを応援する家族'],
+  fhabit: ['みんなで夕ごはん', '週末のおでかけ', '寝る前の読み聞かせ', '誕生日のお祝い'], fpass: ['人にやさしくする大切さ', 'あきらめない心', '感謝の気持ち', '好きなことを大切にすること'],
+  hwhere: ['海が見える町', '自然の多い郊外', '駅に近い街なか', '実家の近く', '田舎'], htype: ['庭のある一戸建て', '平屋', 'マンション', '二世帯住宅', 'ログハウス'],
+  hmust: ['広いリビング', '家事がしやすい間取り', '暖かくて涼しい家', '大きな窓', '収納の多さ', '庭と家庭菜園'], hbudget: ['2000万円台', '3000万円台', '4000万円以上', 'これから調べる'],
+  home: ['広いリビング', '家事がしやすい間取り', '暖かい家', '庭のある家', '駅に近い場所', '自然の多い場所'],
+  prep: ['毎月頭金を貯める', '住宅展示場に行く', '土地情報を集める', '住宅ローンを調べる', '家族で希望を話し合う', '完成見学会に行く'],
+  owhere: ['今の家', '孫が遊びに来やすい家', '田舎の家', '便利な街なか', '海の近く'], owith: ['パートナーと', '子ども家族の近くで', '友だちと', '地域の仲間と'],
+  odo: ['畑仕事', '趣味の教室', '旅行', 'ボランティア', '孫と遊ぶ', '読書'], ohealth: ['毎朝の散歩', '健康診断', 'バランスのいい食事', '仲間との会話', '体操'],
+  keep: ['毎月の貯金', '毎日の散歩', '毎年の健康診断', '人とのつながり', '趣味を続ける', '家族との時間'],
   score: ['1点','2点','3点','4点','5点','6点','7点','8点'],
   ask: ['練習を見てもらう','アドバイスをもらう','一緒に続けてもらう','応援してもらう','人を紹介してもらう','道具を貸してもらう','進み具合をチェックしてもらう','相談にのってもらう'],
   str: ['コツコツ続けられる','人と話すのが好き','手先が器用','体力がある','アイデアを出せる','調べものが得意','明るい','責任感が強い'],
@@ -1866,7 +1920,13 @@ const BANKS = {
 const BANK_NAMES = [['expert','専門知識'],['why','理由'],['ally','味方'],['str','強み'],['stop','やめること'],['rise','立ち直り'],['future','未来'],['need','必要なもの'],['act','やること'],['what','具体的な行動'],['pace','ペース'],['start','いつから'],['when','いつ・期限'],['wall','壁・障害'],['over','乗り越え方'],['vision','志・貢献'],['first','最初の一歩'],['who','誰のため'],['trouble','困りごと'],['idea','アイデア'],['thanks','お世話になった人'],['repay','恩返し'],['like','好きなこと'],['job','仕事の候補'],['jobday','仕事の中身'],['askjob','働く人に聞くこと'],['praise','ほめられたこと'],['value','大切にしたいこと'],['trial','小さなお試し']];
 /* ---------- theme kinds: tune hints, examples and choices to what the dream is about ---------- */
 const KINDS = [
-  {k: 'life', n: 'ライフイベント', re: /(結婚|婚活|夫婦|パートナー|恋人|恋愛|出会い|家族を|家庭|子ども|子育て|出産|妊活|老後|年金|定年|マイホーム|親を|親孝行|介護|孫)/, b: {
+  {k: 'house', n: '家づくり', re: /(家を建て|家づくり|家作り|注文住宅|新築|マイホーム|一戸建て|マンションを|リフォーム|リノベ|住まい|間取り|平屋|二世帯)/, b: {
+    need: ['頭金と資金計画', '土地', '理想の間取り', '信頼できる工務店・住宅会社', '住宅ローンの知識', '家族の希望のすり合わせ'],
+    expert: ['住宅ローンと金利', '土地の選び方', '耐震・断熱の性能', '間取りと家事動線', '補助金・減税制度', '工務店・ハウスメーカーの選び方'],
+    act: ['住宅展示場に行く', '毎月頭金を貯める', '家族で理想の間取りを書く', '土地情報を週1回チェックする', '完成見学会に参加する', '住宅ローンの相談に行く'],
+    wall: ['予算が足りない', '土地が見つからない', '家族の意見が合わない', 'ローンが不安', '工務店の選び方がわからない', '建てたあとの後悔が心配'],
+    first: ['理想の家のイメージを書き出す', '住宅展示場を調べる', '貯金額を確認する', '家族に希望を聞く']}},
+  {k: 'life', n: 'ライフイベント', re: /(結婚|婚活|夫婦|パートナー|恋人|恋愛|出会い|家族を|家庭|子ども|子育て|出産|妊活|老後|年金|定年|親を|親孝行|介護|孫|人生)/, b: {
     need: ['出会いの場', '心のゆとり', '貯金と家計の計画', '健康な体', '住まい', '家族との話し合い'],
     expert: ['結婚・子育てにかかるお金', '住まいの選び方', '年金と老後のお金', 'パートナーとの話し合い方', '家事・育児の分担', '国や自治体の支援制度'],
     act: ['月1回出会いの場に行く', '毎月決まった額を貯金する', '家族と週1回ゆっくり話す', '毎年健康診断を受ける', '趣味のサークルに入る', 'ライフプランを書き出す'],
@@ -2863,8 +2923,16 @@ const ARCH1 = {rock: '#A99880', hole: '#231E33', rim: '#8C7C66'};
 const curCh = () => (S && S.mode === 'quest' && BIOME[S.chapter]) ? S.chapter : 1;
 const biome = () => BIOME[curCh()] || null;
 const caveCol = () => (biome() || {}).cave || CAVE1;
-const W_MIX = {};
-const W = () => {
+const LIFE_C = new Set(['life', 'lifeup']);
+const isLifeC = x => !!x && LIFE_C.has(x.course);
+/* segment names for the life courses (the road of a life: meeting, marriage, family, building a home, old age) */
+const LIFE_NAMES = {
+  life: {castle: 'しあわせの住まい'},
+  lifeup: {town: '出会いの町', river: '結婚の川', cave: '子育ての洞窟', post: '家づくりの山道', castle: 'しあわせの住まい'}
+};
+const W_MIX = {}, W_LIFE = {};
+const W = () => { const b = W0(), L = S && LIFE_NAMES[S.course]; if (!L) return b; const k = curWorld() + curCh() + S.course; return W_LIFE[k] || (W_LIFE[k] = {...b, names: {...b.names, ...L}}); };
+const W0 = () => {
   const w = curWorld(), ch = curCh(); if (ch === 1) return WORLDS[w];
   const k = w + ch; if (W_MIX[k]) return W_MIX[k];
   const X = WORLDS[w], B = BIOME[ch];
@@ -3385,8 +3453,8 @@ const GOALS = [
   {k: 'teacher', n: 'みちびきの先生', ic: '🏫', v: {heart: 2, wis: 1, make: 1}, d: '人の可能性を信じ、成長をささえる人。'}
 ];
 function goalOf(x){
-  const t = x.tags || {}; let best = GOALS[0], bv = -1;
-  GOALS.forEach(g => { const dot = Object.entries(g.v).reduce((s, [k, w]) => s + (t[k] || 0) * w, 0), sc = dot / Math.hypot(...Object.values(g.v)) + (hash((x.theme || '') + g.k) % 9) / 1000; if (sc > bv){ bv = sc; best = g; } });
+  const t = x.tags || {}, L = isLifeC(x) ? HOME_GOALS : GOALS; let best = L[0], bv = -1;
+  L.forEach(g => { const dot = Object.entries(g.v).reduce((s, [k, w]) => s + (t[k] || 0) * w, 0), sc = dot / Math.hypot(...Object.values(g.v)) + (hash((x.theme || '') + g.k) % 9) / 1000; if (sc > bv){ bv = sc; best = g; } });
   return best;
 }
 const tagLine = x => Object.entries(x.tags || {}).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${TAGS[k]}${v}`).join('・') || 'まだなし';
@@ -3479,8 +3547,126 @@ const PX_GOAL = {
     return {c: V.put(), ax: cx, ay: yb};
   }
 };
+/* ---------- life courses: the goal is a home, not a castle. Ten homes, chosen by the same fate crossroads ---------- */
+const HOME_GOALS = [
+  {k: 'h_house', n: 'あたたかい一戸建て', ic: '🏠', v: {heart: 2, free: 1}, d: '家族の笑い声がひびく、庭つきの一戸建て。'},
+  {k: 'h_tower', n: 'タワーマンション', ic: '🏙️', v: {rich: 2, wis: 1}, d: '街を見わたす高層階で、便利でかっこいい暮らし。'},
+  {k: 'h_gotei', n: '大豪邸', ic: '🏛️', v: {rich: 3, pow: 1}, d: '噴水のある庭と大広間。あこがれの大豪邸。'},
+  {k: 'h_kominka', n: '田舎の古民家', ic: '🛖', v: {free: 2, heart: 1}, d: '縁側でお茶を飲む、ゆったりとした田舎暮らし。'},
+  {k: 'h_sea', n: '海辺の家', ic: '🏖️', v: {free: 3}, d: '波の音で目ざめる、海の見える白い家。'},
+  {k: 'h_nisetai', n: '二世帯住宅', ic: '👪', v: {heart: 3}, d: '親も子も孫も、みんなで支え合う家。'},
+  {k: 'h_smart', n: '未来のスマートハウス', ic: '🔆', v: {wis: 2, make: 1}, d: '太陽の力で電気をつくる、かしこい家。'},
+  {k: 'h_design', n: 'デザイナーズハウス', ic: '🎨', v: {make: 3}, d: '自分らしさがつまった、こだわりの家。'},
+  {k: 'h_log', n: '森のログハウス', ic: '🌲', v: {free: 2, make: 1, pow: 1}, d: '木のぬくもりと暖炉のある、森の家。'},
+  {k: 'h_farm', n: '畑のある家', ic: '🌾', v: {heart: 1, pow: 2}, d: '野菜を育てて、季節とともに暮らす家。'}
+];
+const goalBy = k => GOALS.find(g => g.k === k) || HOME_GOALS.find(g => g.k === k);
+/* pixel art for the homes */
+const pxGable = (V, cx, top, hw, h, col) => { const lt = pxLt(col, .2), dk = pxDk(col, .2), dk2 = pxDk(col, .4); for (let r = 0; r < h; r++){ const w = Math.round(hw * (r + 1) / h); for (let i = -w; i <= w; i++) V.set(cx + i, top + r, i === -w || i === w ? dk2 : r === h - 1 ? dk2 : i < 0 ? (r % 3 ? lt : col) : (r % 3 ? col : dk)); } };
+const pxTree = (V, x, yb, P) => { V.rect(x - 1, yb - 12, 3, 12, P.trunk ? P.trunk[0] : '#7A5236'); for (let y = -11; y <= 11; y++) for (let i = -11; i <= 11; i++) if (i * i + y * y <= 121) V.set(x + i, yb - 24 + y, i * i + y * y > 90 ? P.leaf[0] : (i + y) < -6 ? P.leaf[2] : P.leaf[1]); };
+const pxGround = (V, w, yb, P) => { V.rect(4, yb, w - 8, 2, P.g[3]); };
+Object.assign(PX_GOAL, {
+  h_house(P, R){
+    const V = pxSurf(150, 112), cx = 74, yb = 108, wall = '#FFF6E8', roof = '#D2553F'; pxGround(V, 150, yb, P);
+    pxTree(V, 128, yb, P);
+    V.rect(40, 54, 68, 54, wall); V.rect(100, 54, 8, 54, pxDk(wall, .12)); pxGable(V, cx, 22, 44, 34, roof);
+    V.rect(92, 18, 8, 18, '#9A8F86'); V.rect(92, 18, 8, 2, '#BDB4AA');
+    pxWin(V, 50, 64, 12, 10, '#FFFFFF', P.win); pxWin(V, 86, 64, 12, 10, '#FFFFFF', P.win); pxWin(V, 68, 34, 12, 9, '#FFFFFF', P.win);
+    V.rect(66, 84, 16, 24, '#8A5A3C'); V.rect(73, 84, 1, 24, '#5B3A22'); V.set(79, 96, '#FFD84D'); V.rect(62, 82, 24, 2, '#B4532E');
+    for (let x = 8; x < 142; x += 6) if (x < 60 || x > 88) { V.rect(x, 96, 2, 12, '#FFFFFF'); } V.rect(8, 99, 52, 2, '#FFFFFF'); V.rect(90, 99, 52, 2, '#FFFFFF');
+    V.rect(20, 88, 2, 20, '#5B3A22'); V.rect(16, 84, 10, 6, '#D93A3F');
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  h_tower(P, R){
+    const V = pxSurf(120, 120), cx = 60, yb = 116, wall = '#C9D3E6', dark = '#8E9AB8'; pxGround(V, 120, yb, P);
+    V.rect(34, 6, 52, 110, wall); V.rect(76, 6, 10, 110, dark); V.rect(32, 4, 56, 4, '#5B6378'); V.rect(56, 0, 2, 6, '#5B6378'); V.set(56, 0, '#FF5F5F');
+    for (let y = 12; y < 100; y += 8){ for (let x = 38; x < 74; x += 8) V.rect(x, y, 5, 5, (x + y) % 3 ? '#8FD0F2' : '#FFE27A'); V.rect(34, y + 6, 52, 1, '#E8EDF7'); }
+    V.rect(50, 100, 20, 16, '#5B6378'); V.rect(52, 102, 16, 14, '#8FD0F2'); V.rect(59, 102, 1, 14, '#5B6378');
+    V.rect(14, 92, 18, 24, '#DCE3F0'); for (let y = 96; y < 112; y += 6) V.rect(17, y, 12, 3, '#8FD0F2'); V.rect(90, 86, 20, 30, '#DCE3F0'); for (let y = 90; y < 112; y += 6) V.rect(93, y, 14, 3, '#8FD0F2');
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  h_gotei(P, R){
+    const V = pxSurf(180, 116), cx = 90, yb = 112, wall = '#FBF3E2', gold = '#E8B84A', roof = '#3E5A8A'; pxGround(V, 180, yb, P);
+    V.rect(14, 56, 44, 50, wall); V.rect(122, 56, 44, 50, wall); pxRoof(V, 10, 44, 52, 12, roof, 'tile'); pxRoof(V, 118, 44, 52, 12, roof, 'tile');
+    V.rect(56, 38, 68, 68, wall); pxGable(V, cx, 12, 40, 26, roof); V.rect(cx - 40, 37, 81, 2, gold); V.rect(cx - 3, 6, 6, 8, gold);
+    for (let x = 62; x <= 114; x += 13){ V.rect(x, 44, 5, 62, '#FFFFFF'); V.rect(x + 4, 44, 1, 62, '#D9CFBC'); V.rect(x - 1, 42, 7, 2, gold); }
+    for (const x0 of [20, 34, 128, 142]) pxWin(V, x0, 66, 8, 12, gold, P.win);
+    V.rect(82, 80, 16, 26, '#7A3A2A'); V.rect(89, 80, 2, 26, gold);
+    for (let y = 0; y < 6; y++) V.rect(cx - 22 + y, yb - 6 + y, 44 - y * 2, 1, '#B5AFA3');
+    for (let y = -4; y <= 4; y++) for (let i = -14; i <= 14; i++) if (i * i / 196 + y * y / 16 <= 1) V.set(34 + i, yb - 3 + y, Math.abs(i) > 11 ? '#B5AFA3' : P.water[0]);
+    V.rect(33, yb - 16, 3, 12, '#B5AFA3'); V.rect(31, yb - 18, 7, 2, P.water[2]); V.set(30, yb - 14, P.water[1]); V.set(38, yb - 14, P.water[1]);
+    pxTree(V, 158, yb, P); pxTree(V, 8, yb, P);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  h_kominka(P, R){
+    const V = pxSurf(150, 100), cx = 75, yb = 96, wall = '#F4ECDA', thatch = '#9A7A4A'; pxGround(V, 150, yb, P);
+    V.rect(26, 56, 98, 38, wall); for (let x = 26; x < 124; x += 14) V.rect(x, 56, 2, 38, '#5B3A22');
+    for (let r = 0; r < 30; r++){ const w = 30 + Math.round(r * 1.95); for (let i = -w; i <= w; i++) V.set(cx + i, 26 + r, (i + r * 3) % 5 === 0 ? pxDk(thatch, .25) : r < 3 ? pxLt(thatch, .2) : thatch); }
+    V.rect(cx - 30, 24, 61, 3, '#5B3A22');
+    for (let x = 40; x < 110; x += 10) if (x < 66 || x > 84) V.rect(x, 64, 8, 18, '#FFFFFF');
+    V.rect(66, 66, 18, 28, '#7A5236'); V.rect(75, 66, 1, 28, '#5B3A22');
+    V.rect(20, 88, 110, 4, '#A8784A'); V.rect(20, 92, 110, 2, '#7A5236'); for (let x = 24; x < 130; x += 20) V.rect(x, 92, 2, 4, '#5B3A22');
+    pxTree(V, 138, yb, P);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  h_sea(P, R){
+    const V = pxSurf(160, 104), cx = 70, yb = 100, wall = '#FFFFFF', roof = '#2E8FE0';
+    for (let y = 88; y < 104; y++) V.rect(0, y, 160, 1, y % 3 ? P.water[0] : P.water[1]); V.rect(0, 88, 160, 1, P.water[2]);
+    for (let y = 80; y < 92; y++) V.rect(0, y, 160, 1, '#F3E2B5');
+    V.rect(36, 44, 72, 40, wall); V.rect(100, 44, 8, 40, '#E2E8EE'); V.rect(32, 38, 80, 6, roof); V.rect(32, 38, 80, 1, pxLt(roof, .3));
+    V.rect(60, 26, 36, 14, wall); V.rect(58, 22, 40, 4, roof);
+    pxWin(V, 44, 52, 14, 12, roof, P.win); pxWin(V, 86, 52, 14, 12, roof, P.win); pxWin(V, 70, 29, 16, 7, roof, P.win);
+    V.rect(64, 60, 16, 24, '#2E8FE0'); V.rect(71, 60, 1, 24, '#1F5E9A');
+    V.rect(130, 44, 3, 40, '#8B5E3C'); for (let i = -14; i <= 14; i++){ V.set(131 + i, 44 - Math.round(Math.abs(i) * .4), P.leaf[1]); V.set(131 + i, 45 - Math.round(Math.abs(i) * .4), P.leaf[0]); }
+    return {c: V.put(), ax: cx, ay: 84};
+  },
+  h_nisetai(P, R){
+    const V = pxSurf(170, 104), cx = 85, yb = 100, wall = '#FFF2DC', wall2 = '#EAF2FF'; pxGround(V, 170, yb, P);
+    V.rect(20, 50, 60, 50, wall); pxGable(V, 50, 22, 38, 30, '#B4532E'); V.rect(90, 46, 60, 54, wall2); pxGable(V, 120, 16, 38, 32, '#4E6EA6');
+    V.rect(78, 70, 14, 30, '#F6E7CF'); V.rect(78, 68, 14, 2, '#8A5A3C');
+    for (const [x, y] of [[28, 60], [62, 60], [98, 58], [132, 58]]) pxWin(V, x, y, 10, 9, '#FFFFFF', P.win);
+    V.rect(42, 78, 14, 22, '#8A5A3C'); V.rect(114, 78, 14, 22, '#5B6E96');
+    V.rect(8, 92, 6, 8, '#D93A3F'); V.rect(156, 92, 6, 8, '#FFD84D');
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  h_smart(P, R){
+    const V = pxSurf(150, 104), cx = 75, yb = 100, wall = '#F4F7FF'; pxGround(V, 150, yb, P);
+    V.rect(30, 52, 92, 48, wall); V.rect(114, 52, 8, 48, '#D6DDEE');
+    for (let r = 0; r < 22; r++) V.rect(26 + r, 30 + r, 96, 1, r % 4 === 0 ? '#9FC3E8' : '#2C4A8A');
+    for (let x = 30; x < 140; x += 12) V.rect(x + 0, 30, 1, 22, '#9FC3E8');
+    V.rect(40, 62, 40, 26, '#39E1F0'); V.rect(40, 62, 40, 1, '#FFFFFF'); V.rect(60, 62, 1, 26, '#2C4A8A');
+    V.rect(92, 66, 16, 34, '#2C4A8A'); V.rect(104, 82, 2, 2, '#39E1F0');
+    V.rect(128, 80, 8, 20, '#B8C4EC'); V.rect(130, 82, 4, 6, '#39E1F0'); V.rect(131, 76, 2, 4, '#FFD84D');
+    pxTree(V, 14, yb, P);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  h_design(P, R){
+    const V = pxSurf(150, 104), cx = 75, yb = 100; pxGround(V, 150, yb, P);
+    V.rect(24, 54, 70, 46, '#2A2D38'); V.rect(60, 28, 70, 40, '#FFFFFF'); V.rect(122, 28, 8, 40, '#DADDE6'); V.rect(60, 28, 70, 2, '#C9CDD8');
+    V.rect(66, 36, 50, 22, '#8FD0F2'); V.rect(66, 36, 50, 1, '#FFFFFF'); V.rect(90, 36, 1, 22, '#5B6378');
+    V.rect(30, 70, 30, 24, '#FFD27A'); V.rect(44, 70, 1, 24, '#2A2D38'); V.rect(70, 74, 14, 26, '#B4532E');
+    V.rect(98, 86, 34, 2, '#5B6378'); pxTree(V, 140, yb, P);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  h_log(P, R){
+    const V = pxSurf(150, 104), cx = 75, yb = 100, wood = '#A8693A'; pxGround(V, 150, yb, P);
+    for (let y = 52; y < 100; y += 4){ V.rect(30, y, 90, 3, wood); V.rect(30, y + 3, 90, 1, pxDk(wood, .3)); V.rect(28, y, 3, 3, '#C98A55'); V.rect(119, y, 3, 3, '#C98A55'); }
+    pxGable(V, cx, 22, 52, 32, '#3F7A4A'); V.rect(100, 18, 8, 20, '#8D8679'); for (let k = 0; k < 4; k++) V.rect(102 + k * 2, 10 - k * 3, 4, 3, '#E8E8EC');
+    pxWin(V, 42, 64, 14, 12, '#5B3A22', '#FFD27A'); pxWin(V, 94, 64, 14, 12, '#5B3A22', '#FFD27A');
+    V.rect(66, 72, 18, 28, '#6B4630'); V.rect(75, 72, 1, 28, '#3A241A');
+    pxTree(V, 12, yb, P); pxTree(V, 140, yb, P);
+    return {c: V.put(), ax: cx, ay: yb};
+  },
+  h_farm(P, R){
+    const V = pxSurf(160, 104), cx = 60, yb = 100; pxGround(V, 160, yb, P);
+    V.rect(20, 54, 70, 46, '#FFF6E8'); pxGable(V, 55, 26, 42, 30, '#D2553F'); pxWin(V, 30, 64, 12, 10, '#FFFFFF', P.win); V.rect(58, 74, 16, 26, '#8A5A3C');
+    for (let r = 0; r < 5; r++){ V.rect(98, 62 + r * 8, 56, 5, '#8E6B3E'); for (let x = 100; x < 152; x += 6) V.rect(x, 60 + r * 8, 3, 3, r % 2 ? '#6FAE3C' : '#A8D65A'); }
+    V.rect(126, 52, 2, 10, '#7A5236'); V.rect(122, 50, 10, 3, '#D93A3F');
+    return {c: V.put(), ax: cx, ay: yb};
+  }
+});
 function goalSprite(P, R){
-  const g = S && S.goal, alt = {hero: P.castle === 'wa' ? 'euro' : 'wa', ceo: 'usa', inventor: 'future', doctor: 'india', sage: 'china'};
+  const g = (S && S.goal) || (isLifeC(S) ? 'h_house' : null), alt = {hero: P.castle === 'wa' ? 'euro' : 'wa', ceo: 'usa', inventor: 'future', doctor: 'india', sage: 'china'};
   if (PX_GOAL[g]) return PX_GOAL[g](P, R);
   return (PX_CASTLE[alt[g]] || PX_CASTLE[P.castle] || PX_CASTLE.euro)(P, R);
 }
@@ -3731,7 +3917,7 @@ function collectHTML(){
   const tabs = [['goal', 'ゴール図鑑'], ['mon', '魔物図鑑'], ['pet', 'おとも'], ['badge', '称号'], ['best', '記録'], ['daily', '今日のクエスト']];
   const nG = Object.keys(META.goals).length, nM = DEXL().filter(e => META.mons[dexKey(e)]).length, nB = Object.keys(META.badges).length;
   let body = '';
-  if (collectTab === 'goal') body = `<p class="cl-n">${nG} / ${GOALS.length} 種類</p><div class="cl-grid">${GOALS.map(g => META.goals[g.k] ? `<div class="cl ok"><i>${g.ic}</i><b>${g.n}</b><small>${g.d}</small></div>` : `<div class="cl"><i>❓</i><b>？？？</b><small>まだ見ぬゴール</small></div>`).join('')}</div>`;
+  if (collectTab === 'goal') body = `<p class="cl-n">${nG} / ${GOALS.length + HOME_GOALS.length} 種類</p><div class="cl-grid">${[...GOALS, ...HOME_GOALS].map(g => META.goals[g.k] ? `<div class="cl ok"><i>${g.ic}</i><b>${g.n}</b><small>${g.d}</small></div>` : `<div class="cl"><i>❓</i><b>？？？</b><small>まだ見ぬゴール</small></div>`).join('')}</div>`;
   if (collectTab === 'mon') body = `<p class="cl-n">${nM} / ${DEXL().length} 体（${Math.round(nM / DEXL().length * 100)}%）</p><div class="cl-grid">${DEXL().map(e => { const ok = META.mons[dexKey(e)], wn = e[0] === 'any' ? 'どこかに' : WORLDS[e[0]].short; return ok ? `<div class="cl ok"><svg viewBox="-66 -100 132 108">${pxSprite(`<use href="#mon-${e[1]}" style="--mc:#7C4DDB"/>`)}</svg><b>${e[2]}</b><small>${wn}</small></div>` : `<div class="cl"><i>❓</i><b>？？？</b><small>${wn}</small></div>`; }).join('')}</div>`;
   if (collectTab === 'pet'){ const all = Object.entries(PETS).flatMap(([r, L]) => L.map(([ic, n]) => [r, ic, n])); body = `<p class="cl-n">${all.filter(p => META.pets[p[2]]).length} / ${all.length}　たまごはお店（山の市場）や宝箱で手に入ります</p><div class="cl-grid">${all.map(([r, ic, n]) => META.pets[n] ? `<div class="cl ok"><i>${ic}</i><b>${n}</b><small>${r}・${PET_FX[r]}</small></div>` : `<div class="cl"><i>❓</i><b>？？？</b><small>${r}</small></div>`).join('')}</div>`; }
   if (collectTab === 'badge') body = `<p class="cl-n">${nB} / ${Object.keys(BADGES).length}</p><div class="cl-grid">${Object.entries(BADGES).map(([id, b]) => META.badges[id] ? `<div class="cl ok"><i>${b[0]}</i><b>${b[1]}</b><small>${b[2]}</small></div>` : `<div class="cl"><i>🔒</i><b>？？？</b><small>${b[2]}</small></div>`).join('')}</div>`;
@@ -3745,7 +3931,7 @@ function openCollect(t){ if (t) collectTab = t; let o = $('#ovCollect'); if (!o)
 /* ---------- result card (an image to keep or share) ---------- */
 async function saveCard(){
   const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), F = '"M PLUS 1","Hiragino Sans","Yu Gothic",sans-serif';
-  const gl = GOALS.find(v => v.k === S.goal) || goalOf(S), cls = CLASSES[S.cls || 'warrior'];
+  const gl = goalBy(S.goal) || goalOf(S), cls = CLASSES[S.cls || 'warrior'];
   const grad = g.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, '#2A2050'); grad.addColorStop(1, '#7A3A6A'); g.fillStyle = grad; g.fillRect(0, 0, W, H);
   g.fillStyle = 'rgba(255,255,255,.08)'; for (let i = 0; i < 60; i++) g.fillRect((i * 173) % W, (i * 97) % H, 4, 4);
   g.textAlign = 'center'; g.fillStyle = '#FFD66B'; g.font = `800 56px ${F}`; g.fillText('マインドクエスト', W / 2, 120);
@@ -4817,7 +5003,7 @@ function pxCave(){
 /* one picture per world, chapter and chosen route; kept as a blob URL once ready */
 const PXMAPS = {};
 function pxMap(kind){
-  const raw = kind === 'cave' ? `c|${curCh()}` : `o|${curWorld()}|${curCh()}|${JSON.stringify(S.routes || {})}|${JSON.stringify(terrRoutes(S))}|${Object.keys(S.forks || {}).join(',')}|${S.goal || ''}`, key = String(hash(raw));
+  const raw = kind === 'cave' ? `c|${curCh()}` : `o|${curWorld()}|${curCh()}|${JSON.stringify(S.routes || {})}|${JSON.stringify(terrRoutes(S))}|${Object.keys(S.forks || {}).join(',')}|${S.goal || ''}|${S.course || ''}`, key = String(hash(raw));
   if (!PXMAPS[key]){
     const c = kind === 'cave' ? pxCave() : pxOver(), M = PXMAPS[key] = {url: c.toDataURL('image/png'), bg: kind === 'cave' ? caveCol().bg : pxPal().g[0]};
     try { c.toBlob(b => { if (!b) return; M.url = URL.createObjectURL(b); const w = $('#world'); if (w && w.dataset.px === key) w.style.backgroundImage = `url('${M.url}')`; }); } catch {}
@@ -5290,7 +5476,7 @@ function storyHTML(){
     text = 'メンタルが0になってしまった…。';
     sub = 'でも大丈夫。休憩地点（最後に通った関所かお店）で目をさました。メンタル50で再出発しよう。これまでの答えはそのまま、夢ポイントは半分になります。';
   } else if (b.k === 'ending'){
-    const g = GOALS.find(v => v.k === S.goal) || goalOf(S); tag = 'YOUR GOAL'; title = `${g.ic} ${g.n}`;
+    const g = goalBy(S.goal) || goalOf(S); tag = 'YOUR GOAL'; title = `${g.ic} ${g.n}`;
     pic = `<svg class="story-pic" viewBox="-110 -84 220 92" aria-hidden="true"><g transform="translate(-40 0) scale(1.3)">${pxPerson(heroLevel())}</g><text x="44" y="-12" font-size="62" text-anchor="middle">${g.ic}</text></svg>`;
     text = `あなたがたどり着いたのは「${g.n}」のゴール！`;
     sub = `${g.d} 旅で集めた運命の力：${tagLine(S)}。職業：${CLASSES[curCls()].n}。`;
@@ -5979,7 +6165,7 @@ function rollHTML(){
     ${moving ? '' : aheadHTML(sq, i)}
     <div class="gate-next">いまいる場所：<b>${esc(segName(cur.seg))}</b>${veh ? `<span>3マス以上進むと${veh.n}に乗れる</span>` : ''}</div>
     ${gateHTML}
-    <div class="gate-next">運命の行き先：<b>${(GOALS.find(g => g.k === S.goal) || goalOf(S)).ic} ${(GOALS.find(g => g.k === S.goal) || goalOf(S)).n}</b><span>${S.goal ? '（決定）' : `運命の力：${tagLine(S)}`}</span></div>
+    <div class="gate-next">運命の行き先：<b>${(goalBy(S.goal) || goalOf(S)).ic} ${(goalBy(S.goal) || goalOf(S)).n}</b><span>${S.goal ? '（決定）' : `運命の力：${tagLine(S)}`}</span></div>
     ${(q.rivals && q.rivals.length) || S.online ? raceHTML() : ''}
     ${q.log.length ? `<ul class="qlog">${q.log.slice(0, 3).map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : ''}`;
 }
@@ -6420,7 +6606,7 @@ function boardHTML(x){
   const sw = SW_Q.map(([f]) => F('swot', f)), cr = ['so', 'wo', 'st', 'wt'].map(f => F('cross', f)), tm = TM_Q.map(([f]) => F('tm', f));
   const ti = x.stages.findIndex(s => s.o === 'thanks'), thanks = ti >= 0 ? x.ans.filter(a => a.s === ti) : [];
   const out = [], cmp = compareRows(x), ik = IK_Q.map(([f]) => F('ikigai', f)), hi = x.stages.findIndex(s => s.o === 'hypo'), hypo = hi >= 0 ? (x.ans.find(a => a.s === hi) || {}).t : '';
-  const gl = x.mode === 'quest' && x.goal ? GOALS.find(g => g.k === x.goal) : null;
+  const gl = x.mode === 'quest' && x.goal ? goalBy(x.goal) : null;
   if (gl) out.push(`<div class="bd goal"><h3>あなたのゴール</h3><p class="goal-big">${gl.ic} <b>${gl.n}</b></p><p>${gl.d}</p><small>運命の力：${esc(tagLine(x))}${x.cls && CLASSES[x.cls] ? `　職業：${CLASSES[x.cls].ic} ${CLASSES[x.cls].n}` : ''}</small></div>`);
   const rk = jobRanking(x);
   if (rk.length) out.push(`<div class="bd jrank"><h3>おすすめ職業ランキング</h3><ol>${rk.map((r, i) => `<li><i>${i + 1}</i><div><b>${esc(r.name)}</b><span class="rk-tag ${r.own ? 'own' : 'new'}">${r.own ? 'あなたの候補' : '新しい発見'}</span><small>${r.why.map(esc).join('／')}</small></div><em><b>${r.sc}</b>点<small>AIに強い ${aiStars(r.ai)}</small></em></li>`).join('')}</ol><p class="cmp-note">点数は、答えと点数から計算した目安です。「AIに強い」は、人の気持ちにふれる・現場で手を動かす・その場で判断する仕事ほど高くなります。「新しい発見」の仕事も、ぜひ調べてみよう。</p></div>`);
