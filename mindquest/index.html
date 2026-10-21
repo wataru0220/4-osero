@@ -953,6 +953,14 @@ body.mg-lock{overflow:hidden}
 .examples{display:flex;flex-wrap:wrap;gap:8px}
 .purpose,.job-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .course-pick{display:grid;gap:6px}
+.coop-sec{gap:6px}.coop-sec .switch b{font-size:15px}.coop-sec > small{color:var(--muted);font-size:12px;line-height:1.5}
+.coop-box{display:grid;gap:4px}.coop-box input{border:1.5px solid var(--line2);border-radius:12px;padding:10px 12px;font-size:16px;background:var(--field)}.coop-box small{color:var(--muted);font-size:11.5px}
+.coop-turn{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;padding:8px 12px;border-radius:12px;font-size:15px;color:#fff;background:#2E8FE0}.coop-turn.p1{background:#E0529B}.coop-turn span{font-size:12px;opacity:.85}
+.coop-who{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.coop-who > span{font-size:12px;font-weight:800;color:var(--muted)}
+.coop-who button{padding:7px 14px;border-radius:999px;border:2px solid var(--line2);background:#fff;font-weight:800;font-size:14px;color:var(--ink2)}
+.coop-who button.p0.on{background:#2E8FE0;border-color:#2E8FE0;color:#fff}.coop-who button.p1.on{background:#E0529B;border-color:#E0529B;color:#fff}
+.coop-who em{font-style:normal;font-size:11.5px;font-weight:700;color:#128A5E}
+.plc{flex:none;font-style:normal;font-size:11px;font-weight:800;color:#fff;padding:2px 8px;border-radius:999px;background:#2E8FE0}.plc.p1{background:#E0529B}
 .purpose.course-ctl{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
 .purpose.course-ctl button{padding:10px 14px;border-radius:14px}.purpose.course-ctl button b{font-size:15px}
 .purpose button,.job-menu button{display:grid;gap:3px;align-content:start;text-align:left;border:2px solid var(--line);background:#fff;border-radius:18px;padding:12px 16px;color:var(--ink)}
@@ -1171,6 +1179,7 @@ body.mg-lock{overflow:hidden}
   .panel[data-st="play"] > .rpg,.panel[data-st="play"] > .question,.panel[data-st="play"] > .question + .hint,.panel[data-st="play"] > .mini{order:-17}
   .panel[data-st="play"] > .pform,.panel[data-st="play"] > .entry,.panel[data-st="play"] > .pick-head,.panel[data-st="play"] > .choices,.panel[data-st="play"] > .own,.panel[data-st="play"] > #btnAiOpts,.panel[data-st="play"] > .timeup,.panel[data-st="play"] > .routes{order:-16}
   .panel[data-st="play"] > .qsbox{order:-16}
+  .panel[data-st="play"] > .coop-who{order:-16}
   .panel[data-st="play"] > .coach{order:-15}
   .panel[data-st="play"] > .answers{order:-14}
   .panel[data-st="play"] > .cond{order:-13}
@@ -1410,6 +1419,9 @@ body.mg-lock{overflow:hidden}
           <button type="button" role="radio" data-cpu="0" aria-checked="false">なし</button>
         </div>
       </div>
+      <div class="vs-sec coop-sec"><label class="switch"><input type="checkbox" id="chkCoop"> <b id="coopLbl">ふたりで協力プレー</b></label>
+        <small id="coopNote">1台を2人で使います。サイコロは交代でふり、関所の問いには2人とも答えます。ふたりそろって答えると「協力ボーナス」！</small>
+        <div class="coop-box" id="coopBox" hidden><input id="p2Name" maxlength="8" placeholder="2人目の名前" aria-label="2人目の名前" autocomplete="off"><small>2人目の勇者は、1人目と並んで旅をします</small></div></div>
       <div class="vs-row"><label class="switch"><input type="checkbox" id="chkOnline"> 通信対戦（友だちと同時にレース）</label></div>
       <div class="vs-online" id="onlineBox" hidden>
         <input id="raceCode" maxlength="12" placeholder="合言葉（例：くりこま）" aria-label="合言葉" autocomplete="off">
@@ -3320,7 +3332,7 @@ const bossName = x => { const i = bossStage(x); return i >= 0 ? (x.stages[i].npc
 const PARTY_ORDER = ['princess', 'wizard', 'beast', 'cat', 'fairy', 'owl'];
 function partySVG(){
   const party = (S && S.quest && S.quest.party) || [];
-  let x = -28, h = '';
+  let x = -28, h = S && S.coop ? `<g class="pm coop2" transform="translate(30 2)">${pxPerson(heroLevel(), undefined, S.coop.av)}</g>` : '';
   PARTY_ORDER.filter(m => party.includes(m)).forEach(m => {
     const fly = m === 'fairy' || m === 'owl';
     h += `<g class="pm" transform="translate(${fly ? -18 : x} ${fly ? -58 : 0})">${pxSprite(memberUse(m))}</g>`;
@@ -5156,6 +5168,7 @@ function qlog(msg){ S.quest.log.unshift(msg); S.quest.log = S.quest.log.slice(0,
 async function roll(){
   if (!S || S.mode !== 'quest' || S.phase !== 'play' || S.quest.qs !== 'roll') return;
   S.quest.qs = 'moving'; S.quest.rolls++;
+  if (S.coop){ S.coop.last = S.coop.turn; S.coop.cur = S.coop.turn; S.coop.turn = 1 - S.coop.turn; }
   if (stageView !== 'board'){ setStageView('board'); renderBoard(); }
   renderPanel(); setScreen('stage');
   const ds = [$('#dice'), $('#dockDice')].filter(Boolean), dm = $('#dockMsg'); let v = 1;
@@ -5560,6 +5573,8 @@ async function clearGate(){
   const lv0 = heroLevel();
   const Qr = rpgQ(), fire = Qr.fx.fire === p.key, extra = (fire ? pts : 0) + (curCls() === 'craft' ? 5 : 0);
   if (fire) Qr.fx.fire = 0; if (Qr.fx.pen && bonus) Qr.fx.pen = 0;
+  const coopB = S.coop && !isPlan(st) && [0, 1].every(i => answersFor(S, p).some(a => a.pl === i));
+  if (coopB){ S.quest.pts += 10; gainGold(20, ''); heal(5, ''); qlog(`🤝 ${S.coop.n[0]}と${S.coop.n[1]}の協力ボーナス +10pt +20G`); setTimeout(() => toast('🤝 協力ボーナス！ +10pt +20G'), 300); }
   S.quest.done[p.key] = true; S.quest.pts += pts + extra; S.quest.qs = bonus ? 'moving' : 'roll'; Qr.rest = 'q:' + p.key;
   gainGold((n * 10 + (won ? (st.monster === 'boss' ? 100 : 50) : 0)) * (fire ? 2 : 1), won ? `${st.npc}をたおしてゴールドを手に入れた` : '答えのごほうび');
   if (curCls() === 'healer') heal(5, 'いやしの力');
@@ -5881,7 +5896,7 @@ function syncScreen(){
   if (dock){
     const moving = S.quest.qs === 'moving', g = [...panel.querySelectorAll('.gate-next')].pop();
     $('#dockRoll').disabled = $('#dockDice').disabled = moving;
-    if (!moving) $('#dockMsg').textContent = 'サイコロをふって進もう';
+    if (!moving) $('#dockMsg').textContent = S.coop ? `${S.coop.n[S.coop.turn]}の番！ サイコロをふろう` : 'サイコロをふって進もう';
     /* "next gate" line from the status panel: 次の関所「〇〇」まで あと5マス */
     const pill = g && g.querySelector('.stage-pill'), left = g && g.querySelector('b') ? g.querySelector('b').textContent : '';
     const name = pill ? [...pill.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() : '';
@@ -6131,6 +6146,8 @@ function playHTML(){
     <p class="hint">答えるたびに枝が伸びます。空欄のまま <kbd>Enter</kbd> で${quest ? '関所を通過' : '次の問いへ'}。</p>`;
   }
   const sty = locked || plan || S.level === 'beginner' ? 'text' : qStyle(S, p.s);
+  if (S.coop && !plan && !locked){ const has = i => list.some(a => a.pl === i);
+    entry = `<div class="coop-who"><span>答える人</span>${S.coop.n.map((nm, i) => `<button type="button" class="p${i}${S.coop.cur === i ? ' on' : ''}" data-pl="${i}" aria-pressed="${S.coop.cur === i}">${esc(nm)}${has(i) ? ' ✓' : ''}</button>`).join('')}<em>${has(0) && has(1) ? '🤝 ふたりそろった！ 協力ボーナス' : 'ふたりとも答えると協力ボーナス'}</em></div>` + entry; }
   if (sty !== 'text') entry = styleHTML(p, st, list, col, entry);
   const nextLbl = quest ? (st.monster ? (battleHP(p) > 0 ? '🏃 にげて進む（ごほうびなし・HP−10）' : '🎉 魔物をたおした！ 関所を通る →') : '答えを決めて進む →') : last ? '採点する →' : '次の問いへ →';
   const realCount = P.filter(q => !q.fork).length, realIdx = P.slice(0, i + 1).filter(q => !q.fork).length;
@@ -6145,7 +6162,7 @@ function playHTML(){
     ${st.show === 'swot' ? swotRefHTML(S) : st.show === 'tm' ? tmLegendHTML() : ''}
     ${entry}
     ${S.coach && S.coach.key === p.key && !locked ? `<div class="coach" role="note"><b>深掘りのひとこと</b><span>${esc(S.coach.msg)}</span>${S.coach.id != null && byId(S, S.coach.id) ? `<button class="btn sm" type="button" data-act="coach-fix">この答えを書き直す</button>` : ''}</div>` : ''}
-    ${!plan && list.length && sty !== 'chat' ? `<ul class="answers">${list.map(a => { const k = S.ans.filter(c => c.par === a.id).length; return `<li style="--c:${col}"><span>${esc(a.t)}</span>${k ? `<em>+${k}</em>` : ''}${locked ? '' : `<button type="button" data-del="${a.id}" aria-label="「${esc(a.t)}」を消す">×</button>`}</li>`; }).join('')}</ul>`
+    ${!plan && list.length && sty !== 'chat' ? `<ul class="answers">${list.map(a => { const k = S.ans.filter(c => c.par === a.id).length; return `<li style="--c:${col}">${S.coop && a.pl != null ? `<em class="plc p${a.pl}">${esc([...S.coop.n[a.pl]].slice(0, 5).join(''))}</em>` : ''}<span>${esc(a.t)}</span>${k ? `<em>+${k}</em>` : ''}${locked ? '' : `<button type="button" data-del="${a.id}" aria-label="「${esc(a.t)}」を消す">×</button>`}</li>`; }).join('')}</ul>`
       : (plan || sty === 'chat' || (S.level === 'beginner' && !locked) ? '' : `<p class="empty">まだ答えがありません。短い言葉でどんどん書きましょう。</p>`)}
     ${quest ? `<p class="power">答えのパワー：<b>${answerPower(p) ? `+${answerPower(p)}マス` : '条件クリアで +1マス'}</b>${specN(p) ? `<b>具体的な答え +${specN(p) * 3}pt</b>` : ''}<span>条件より多く答える・時間を半分以上残すと先へ進める。数字や「〜する」が入った具体的な答えは1つ +3pt</span></p>` : ''}
     <div class="p-foot">
@@ -6168,6 +6185,7 @@ function rollHTML(){
     : `<div class="gate-next">次の関所：<span class="stage-pill" style="--c:${colorOf(S, gate.p.s)}"><i>${gate.p.s + 1}</i>${esc(S.stages[gate.p.s].l)}</span><b>あと${nx - i}マス</b></div>`;
   return `
     <div class="p-head"><p class="kicker">QUEST${S.ng ? ` ・ ${S.ng + 1}周目` : ''}</p><span class="p-count">関所 ${doneN} / ${P.length} 通過</span></div>
+    ${S.coop ? `<div class="coop-turn p${S.coop.turn}">🎲 <b>${esc(S.coop.n[S.coop.turn])}</b> の番です<span>${esc(S.coop.n[1 - S.coop.turn])}は次の番</span></div>` : ''}
     <div class="qstats">
       <div><small>夢ポイント</small><b class="pts">${q.pts}</b></div>
       <div><small>ゴールド</small><b>${rpgQ().gold}G</b></div>
@@ -6287,7 +6305,8 @@ function addText(t){
   if (S.timed && s.to) return false;
   const list = answersFor(S, p);
   if (list.some(a => a.t === t)){ toast(`「${t}」はもう入っています`); sfx.bad(); return false; }
-  S.ans.push({id: S.seq++, t, s: p.s, par: p.par});
+  S.ans.push({id: S.seq++, t, s: p.s, par: p.par, ...(S.coop ? {pl: S.coop.cur} : {})});
+  if (S.coop){ const o = 1 - S.coop.cur; if (!list.some(a => a.pl === o)){ S.coop.cur = o; setTimeout(() => toast(`つぎは ${S.coop.n[o]} の番！`), 600); } }
   if (list.length + 1 === st.min){ sfx.clear(); toast('条件クリア！ さらに足しても大丈夫です'); } else sfx.add(list.length);
   return true;
 }
@@ -7370,6 +7389,7 @@ panel.addEventListener('click', e => {
   if (b.dataset.fight){ fightAct(b.dataset.fight); return; }
   if (b.dataset.x){ extrasAct(b.dataset.x); return; }
   if (b.dataset.qs){ qsAct(b.dataset.qs, b.dataset.v); return; }
+  if (b.dataset.pl != null && S.coop){ S.coop.cur = +b.dataset.pl; save(); renderPanel(); const i = $('#ans'); if (i) i.focus(); return; }
   if (b.dataset.act) onAct(b.dataset.act);
 });
 $('#resultSheet').addEventListener('click', e => { const t = e.target.closest('button[data-rtab]'); if (t){ resultTab = t.dataset.rtab; $('#resultSheet').dataset.rtab = resultTab; $('#resultSheet').querySelectorAll('button[data-rtab]').forEach(x => x.setAttribute('aria-selected', String(x === t))); $('#ovResult').scrollTop = 0; } });
@@ -7546,6 +7566,9 @@ function newSession(theme, stages, timed, mode, level, keep){
   keep = keep || {world: homeWorld, avatar: clone(homeAvatar), heroName: ($('#heroNameInput').value || '').trim().slice(0, 8), age: parseAge($('#ageInput').value)};
   S = {v: 4, theme, stages: clone(stages), world: keep.world, avatar: cleanAvatar(keep.avatar), heroName: keep.heroName || '', age: keep.age, course: keep.course || presetKey, cls: keep.cls || homeCls, tags: {[CLASSES[keep.cls || homeCls].tag]: 1}, goal: null, vseed: rnd(1e9), chapter: 1, lvCarry: 0, chapters: [], forks: clone((PRESETS[presetKey] || {}).forks || {}), routes: {}, timed, mode, level, ans: [], seq: 1, cur: '0:r', stat: {}, phase: 'play', result: null, aiopts: {},
     quest: mode === 'quest' ? {mental: 100, gold: 0, items: {}, fx: {}, vis: {}, rest: 'start', magic: (keep.cls || homeCls) === 'mage' ? 3 : 0, pos: 'start', pts: 0, rolls: 0, done: {}, qs: 'roll', ev: null, timeMod: 0, log: [], last: 1, rivals: null, finN: 0, place: 0, free: false} : null};
+  if (S.quest && $('#chkCoop').checked){ const a = cleanAvatar(S.avatar), life = LIFE_C.has(S.course);
+    S.coop = {n: [S.heroName || 'プレイヤー1', ($('#p2Name').value || '').trim().slice(0, 8) || (life ? 'パートナー' : 'プレイヤー2')], cur: 0, turn: 0, last: 0,
+      av: cleanAvatar({...a, sex: a.sex === 'm' ? 'f' : 'm', hair: a.sex === 'm' ? 'long' : 'short', shirt: (a.shirt + 3) % SHIRTS.length})}; }
   if (S.quest){ S.quest.rivals = newRivals(S).slice(0, homeCpu); S.quest.party = [];
     const code = ($('#raceCode').value || '').trim().slice(0, 12);
     S.online = $('#chkOnline').checked && code ? {code, nick: (S.heroName || 'プレイヤー').slice(0, 8), ci: rnd(OP_COLORS.length)} : null; if (bossStage(S) >= 0){ S.quest.beats = [{k: 'intro'}]; S.quest.qs = 'story'; } }
@@ -7605,9 +7628,12 @@ function renderVs(){
   if (homeMode === 'quest' && !$('#worldCtl').firstChild) renderMaker();
   document.querySelectorAll('#cpuCtl [data-cpu]').forEach(b => b.setAttribute('aria-checked', String(+b.dataset.cpu === homeCpu)));
   $('#onlineBox').hidden = !$('#chkOnline').checked;
+  { const life = LIFE_C.has(presetKey); $('#coopBox').hidden = !$('#chkCoop').checked; $('#coopLbl').textContent = life ? '💑 パートナーと協力プレー' : '🤝 ふたりで協力プレー';
+    $('#p2Name').placeholder = life ? 'パートナーの名前' : '2人目の名前'; $('#coopNote').textContent = life ? 'ふたりの理想の暮らしを、いっしょに作る冒険。1台を2人で使い、サイコロは交代、関所の問いには2人とも答えます。ふたりそろって答えると「協力ボーナス」！' : '1台を2人で使います。サイコロは交代でふり、関所の問いには2人とも答えます。ふたりそろって答えると「協力ボーナス」！'; }
   if (!inViewer) $('#onlineNote').textContent = '通信対戦は、Claudeで共有したこのページを開いて遊ぶときに使えます（アプリ版ではCPU対戦のみ）。';
 }
 $('#cpuCtl').addEventListener('click', e => { const b = e.target.closest('[data-cpu]'); if (b){ homeCpu = +b.dataset.cpu; renderVs(); } });
+$('#chkCoop').addEventListener('change', () => { renderVs(); if ($('#chkCoop').checked) $('#p2Name').focus(); });
 $('#chkOnline').addEventListener('change', () => { renderVs(); if ($('#chkOnline').checked){ const c = $('#raceCode'); if (!c.value) c.focus(); } });
 function renderQuestIcon(){ const el = $('#questIcon'); if (el) el.innerHTML = `<ellipse cx="0" cy="4" rx="58" ry="6" fill="#000" opacity=".06"/><g transform="translate(-24 4) scale(1.15)">${pxPerson(5, homeWorld, homeAvatar)}</g><g transform="translate(34 4) scale(.62)">${pxSprite(`<use href="#mon-${bossKind()}" style="--mc:#C8362F"/>`)}</g><path d="M-6 -60 Q18 -58 22 -26" fill="none" stroke="#FFD84D" stroke-width="4" stroke-linecap="round"/>`; }
 function renderRadios(){
@@ -7641,7 +7667,7 @@ function renderPresets(){
   Object.entries(PRESETS).filter(([k]) => !!JOB_COURSES[k] === (homePurpose === 'job')).forEach(([k, p]) => {
     const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'radio');
     b.setAttribute('aria-checked', String(k === presetKey)); const ic = COURSE_IC[k] || ['📝', '#EEF0F6']; b.innerHTML = `<i class="ci" style="--ic:${ic[1]}">${ic[0]}</i><b>${esc(p.name)}</b>${COURSE_D[k] ? `<small>${COURSE_D[k]}</small>` : ''}`;
-    b.onclick = () => { presetKey = k; if (JOB_COURSES[k]) homeJob = k; else homeDreamK = k; draft = clone(p.st); editing = false; renderPurpose(); renderPresets(); renderExamples(); renderQList(); };
+    b.onclick = () => { presetKey = k; if (JOB_COURSES[k]) homeJob = k; else homeDreamK = k; if (LIFE_C.has(k)) $('#chkCoop').checked = true; renderVs(); draft = clone(p.st); editing = false; renderPurpose(); renderPresets(); renderExamples(); renderQList(); };
     c.append(b);
   });
 }
