@@ -953,6 +953,29 @@ body.mg-lock{overflow:hidden}
 .examples{display:flex;flex-wrap:wrap;gap:8px}
 .purpose,.job-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .course-pick{display:grid;gap:6px}
+.pr-call{display:grid;gap:6px;padding:14px;border-radius:16px;background:linear-gradient(135deg,#1B2140,#3A2A6A);color:#fff;box-shadow:0 10px 24px -14px #3A2A6A}.pr-call b{font-size:17px}.pr-call span{font-size:13px;line-height:1.6;color:#DCE0F5}.pr-call .btn{justify-self:start}
+.pr-home{display:grid;justify-items:start;text-align:left;border-color:#3A2A6A;background:#F4F1FF}.pr-home small{font-size:11.5px;color:var(--muted);font-weight:600}
+.sheet.practice{display:flex;flex-direction:column;gap:12px;max-width:640px}
+.pr-head{display:flex;align-items:center;gap:8px}.pr-head > b{font-size:18px;flex:1}.pr-sel{max-width:46%;border:1.5px solid var(--line2);border-radius:10px;padding:6px 8px;font-size:13px}
+.pr-top{display:flex;gap:14px;align-items:center}
+.pr-gauge{flex:none;width:96px;height:96px;border-radius:50%;display:grid;place-items:center;align-content:center;background:conic-gradient(#F2554E calc(var(--p) * 1%),#EEF0F6 0);position:relative}
+.pr-gauge::before{content:'';position:absolute;inset:9px;border-radius:50%;background:var(--surface)}.pr-gauge b,.pr-gauge span{position:relative}.pr-gauge b{font-family:var(--en);font-size:28px;line-height:1}.pr-gauge b small{font-size:13px}.pr-gauge span{font-size:11px;color:var(--muted);font-weight:700}
+.pr-meta{flex:1;min-width:0;display:grid;gap:4px}.pr-meta small{color:var(--muted);font-size:11.5px}.pr-meta h3{margin:0;font-size:17px;text-wrap:balance}.pr-meta p{margin:0;font-size:13px}
+.pr-bar{position:relative;height:10px;border-radius:999px;background:#EEF0F6;overflow:hidden}.pr-bar i{display:block;height:100%;background:var(--grad);border-radius:999px;transition:width .5s}.pr-bar em{position:absolute;top:0;bottom:0;width:2px;background:#fff}
+.pr-coach{display:flex;gap:10px;padding:12px;border-radius:16px;background:#FFF8E6;border:1.5px solid #E8B84A}.pr-coach .owl{font-size:34px;line-height:1}.pr-coach > div{display:grid;gap:6px;min-width:0}.pr-coach b{font-size:12.5px;color:#8A5A0B}.pr-coach p{margin:0;font-size:14.5px;line-height:1.65;font-weight:700}.pr-coach .btn{justify-self:start}
+.pr-ai{margin:0;white-space:pre-wrap;font-family:inherit;font-size:13.5px;line-height:1.6;background:#fff;border-radius:10px;padding:8px 10px}
+.pr-sec{display:grid;gap:6px}.pr-sec h4{margin:0;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:15px}.pr-sec h4 small{font-size:11.5px;color:var(--muted);font-weight:600}.pr-sec h4 em{margin-left:auto;font-style:normal;font-family:var(--en);font-size:13px;color:#128A5E}
+.pr-row{display:flex;gap:4px;align-items:stretch}.pr-del{border:none;background:none;color:var(--dim);font-size:16px;padding:0 6px}
+.pr-chk{flex:1;display:flex;gap:10px;align-items:center;text-align:left;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--ink);font-size:14px;font-weight:700}
+.pr-chk i{flex:none;width:24px;height:24px;border-radius:8px;border:2px solid var(--line2);display:grid;place-items:center;font-style:normal;color:#fff;font-weight:900}
+.pr-chk span{display:grid;gap:1px}.pr-chk small{font-size:11px;color:var(--muted);font-weight:600}
+.pr-chk.on{background:#E3F6EE;border-color:#15A37C}.pr-chk.on i{background:#15A37C;border-color:#15A37C}.pr-chk.on span{color:#128A5E}
+.pr-habit{display:grid;gap:6px;padding:8px;border-radius:14px;background:var(--soft)}.pr-habit.quit .pr-chk.on{background:#EEF4FF;border-color:#2E8FE0}.pr-habit.quit .pr-chk.on i{background:#2E8FE0;border-color:#2E8FE0}
+.pr-cal{display:grid;grid-template-columns:repeat(14,1fr);gap:3px}.pr-cal i{height:12px;border-radius:3px;background:#E3E6EF}.pr-cal i.on{background:#F2554E}.pr-habit.quit .pr-cal i.on{background:#2E8FE0}.pr-cal i.today{outline:2px solid #1B2140;outline-offset:1px}
+.pr-streak{font-size:12px;font-weight:800;color:#C8362F}
+.pr-add,.pr-note{display:flex;gap:6px;flex-wrap:wrap}.pr-add input,.pr-note input{flex:1 1 160px;min-width:0;border:1.5px solid var(--line2);border-radius:12px;padding:10px 12px;font-size:16px;background:var(--field)}
+.pr-notes{margin:0;padding-left:1.1em;display:grid;gap:4px;font-size:13px}.pr-notes b{margin-right:6px}
+
 .coop-sec{gap:6px}.coop-sec .switch b{font-size:15px}.coop-sec > small{color:var(--muted);font-size:12px;line-height:1.5}
 .coop-box{display:grid;gap:6px}.rel-h{font-size:13px}.purpose.rel-ctl{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.purpose.rel-ctl button{grid-template-columns:1fr;justify-items:center;text-align:center;padding:8px 6px;border-radius:14px}.purpose.rel-ctl button > *{grid-column:1 !important;grid-row:auto !important}.purpose.rel-ctl .ci{width:42px;height:42px;font-size:24px;border-radius:12px}.purpose.rel-ctl b{font-size:14px}.purpose.rel-ctl small{font-size:10.5px;line-height:1.4}.coop-sec .maker{margin-top:2px}.coop-box input{border:1.5px solid var(--line2);border-radius:12px;padding:10px 12px;font-size:16px;background:var(--field)}.coop-box small{color:var(--muted);font-size:11.5px}
 .coop-turn{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;padding:8px 12px;border-radius:12px;font-size:15px;color:#fff;background:#2E8FE0}.coop-turn.p1{background:#E0529B}.coop-turn span{font-size:12px;opacity:.85}
@@ -1343,7 +1366,7 @@ body.mg-lock{overflow:hidden}
     <div class="title-art" data-hs="1" id="titleArt" role="img" aria-label="勇者と仲間たちがドラゴンとたたかい、夢の城をめざすタイトル画面"></div>
     <h1 class="sr-only">マインドクエスト</h1>
     <p class="title-sub" data-hs="1">問いに答えて、たたかって、夢をかなえろ！</p>
-    <div class="collect-row" data-hs="1"><button class="btn" type="button" id="btnCollect">📖 図鑑と記録・今日のクエスト</button></div>
+    <div class="collect-row" data-hs="1"><button class="btn pr-home" type="button" id="btnPractice" hidden></button><button class="btn" type="button" id="btnCollect">📖 図鑑と記録・今日のクエスト</button></div>
     <div class="title-row" data-hs="1">
       <p class="title-tag">テーマを決めて、<b>問いに答えるたびに強くなる</b>。モンスター（不安・言いわけ・あきらめ）をたおして、夢の城をめざそう！</p>
       <div class="install" id="installBox"><button class="app-card" type="button" id="btnInstall"><span class="ac-qr" id="appMiniQR" aria-hidden="true">📱</span><span class="ac-t"><b id="installLabel">📱 アプリにする</b><small id="installNote">QRコードでスマホにも入れられます</small></span><span class="ac-go" aria-hidden="true">›</span></button></div>
@@ -3962,6 +3985,147 @@ function reportPractice(){
   tot('practice'); if (META.pdays.length >= 7) badge('prac7'); sfx.done(); save(); renderBoard(); refresh();
 }
 
+/* =========================================================
+   PRACTICE MODE: after the mind map is finished, the answers become a plan for real life.
+   One-off actions to tick off, a daily "special move" habit, habits to quit, and a weekly look back.
+   An owl coach keeps you company: it reads your progress and says what to do next. Kept on this device
+   (separately from the game save, so a new adventure does not erase it).
+   ========================================================= */
+const PR_KEY = 'mindquest-practice';
+let PR = (() => { const v = store.get(PR_KEY, null); return v && Array.isArray(v.plans) ? v : {plans: [], cur: null}; })();
+const prSave = () => store.set(PR_KEY, PR);
+const prPlan = () => PR.plans.find(p => p.id === PR.cur) || PR.plans[0] || null;
+const prDays = n => { const out = []; const d = new Date(); for (let i = n - 1; i >= 0; i--){ const x = new Date(d); x.setDate(d.getDate() - i); out.push(`${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`); } return out; };
+const prToday = () => prDays(1)[0];
+const PR_CAT = {first: ['👣', '最初の一歩', '今日・明日やる、小さな一歩'], act: ['⚔️', 'やること', '目標に近づく行動'], plan: ['🛡️', 'もしもの作戦', '困ったときの切りぬけ方（起きたらチェック）'], thanks: ['🎁', '感謝・恩返し', 'お世話になった人へ'], own: ['✏️', '自分で足したこと', '']};
+/* build a plan from a finished session */
+function prFromSession(x){
+  const byO = os => x.stages.map((st, i) => [st, i]).filter(([st]) => os.includes(st.o)).flatMap(([st, i]) => x.ans.filter(a => a.s === i).map(a => a.t));
+  const uniq = a => [...new Set(a.map(t => String(t).trim()).filter(Boolean))];
+  let n = 0; const T = (t, k) => ({id: 't' + (n++), t: t.slice(0, 60), k, done: 0});
+  const fieldOf = (o, f) => { const i = x.stages.findIndex(s => s.o === o); if (i < 0) return ''; const a = x.ans.find(v => v.s === i && v.f === f); return a ? a.t : ''; };
+  const tasks = [
+    ...uniq(byO(['first'])).map(t => T(t, 'first')),
+    ...uniq(byO(['act', 'prep', 'keep', 'verify', 'trial', 'cheap', 'learn', 'meet', 'talk'])).slice(0, 12).map(t => T(t, 'act')),
+    ...uniq([fieldOf('tm', 'q1'), fieldOf('tm', 'q2')]).map(t => T(t, 'act')),
+    ...uniq(byO(['over'])).slice(0, 5).map(t => T(t, 'plan')),
+    ...uniq(byO(['repay'])).slice(0, 4).map(t => T(t, 'thanks'))
+  ];
+  const what = fieldOf('what', 'what'), pace = fieldOf('what', 'pace'), start = fieldOf('what', 'start');
+  const habits = what ? [{id: 'h0', t: what, pace, start, checks: {}}] : [];
+  const quits = uniq([...byO(['stop']), fieldOf('tm', 'q4')]).slice(0, 4).map((t, i) => ({id: 'q' + i, t, checks: {}}));
+  return {id: 'p' + Date.now().toString(36), theme: x.theme, course: x.course || '', coop: x.coop ? x.coop.n : null, start: prToday(), tasks, habits, quits, notes: [], seen: {}, best: 0};
+}
+/* how far along: tasks count most, then the habit and the quitting over the last 7 days */
+function prScore(P){
+  const d7 = prDays(7), parts = [];
+  const real = P.tasks.filter(t => t.k !== 'plan');
+  if (real.length) parts.push([real.filter(t => t.done).length / real.length, 60]);
+  if (P.habits.length) parts.push([P.habits.reduce((s, h) => s + d7.filter(d => h.checks[d]).length, 0) / (P.habits.length * 7), 28]);
+  if (P.quits.length) parts.push([P.quits.reduce((s, q) => s + d7.filter(d => q.checks[d]).length, 0) / (P.quits.length * 7), 12]);
+  const w = parts.reduce((s, p) => s + p[1], 0); return w ? Math.round(parts.reduce((s, p) => s + p[0] * p[1], 0) / w * 100) : 0;
+}
+const PR_RANK = [[0, '見習い', 1], [20, '挑戦者', 2], [40, '実践者', 3], [60, '達人', 4], [80, 'マスター', 5], [100, '夢の実現者', 5]];
+const prRank = sc => PR_RANK.filter(r => sc >= r[0]).pop();
+const prStreak = h => { const days = prDays(60).reverse(); let i = h.checks[days[0]] ? 0 : 1, n = 0; for (; i < days.length && h.checks[days[i]]; i++) n++; return n; };
+const prActive = (P, d) => P.habits.some(h => h.checks[d]) || P.quits.some(q => q.checks[d]) || P.tasks.some(t => t.doneAt === d);
+/* the owl coach: one line that fits where you are now */
+function prCoach(P){
+  const sc = prScore(P), today = prToday(), d = prDays(8), lastAct = [...d].reverse().findIndex(x => prActive(P, x));
+  const next = P.tasks.find(t => !t.done && t.k === 'first') || P.tasks.find(t => !t.done && t.k === 'act') || P.tasks.find(t => !t.done && t.k !== 'plan');
+  const h = P.habits[0], st = h ? prStreak(h) : 0, who = P.coop ? `${P.coop[0]}さんと${P.coop[1]}さん` : 'きみ';
+  if (sc >= 100) return `ホッホー！ 達成度100％！ ${who}は「${P.theme}」の夢の実現者だ。次の夢も、いっしょに描こう。`;
+  if (lastAct < 0 && P.start >= d[1]) return `ホッホー、実践モードへようこそ！ わたしはフクロウ先生。きみの実践に毎日つきあうよ。まずは「${next ? next.t : h ? h.t : '小さな一歩'}」から始めよう。できたらチェックしてね。`;
+  if (lastAct < 0) return `ホッホー、久しぶりだね。続けられなかった日があっても大丈夫。今日は「${next ? next.t : h ? h.t : '小さな一歩'}」を5分だけやってみよう。`;
+  if (lastAct >= 3) return `${lastAct}日ぶりだね。また来てくれてうれしいよ。いきなり全部はやらず、ひとつだけチェックしよう。`;
+  if (h && st >= 7) return `必殺技「${h.t}」が${st}日連続！ もう立派な習慣だ。ここまで来た自分をほめよう。`;
+  if (h && st >= 3) return `必殺技「${h.t}」が${st}日連続！ その調子。明日もここでチェックしよう。`;
+  if (h && !h.checks[today]) return `今日の必殺技「${h.t}」はもうやった？ やったらチェックしよう。${next ? `時間があれば「${next.t}」もね。` : ''}`;
+  if (!P.notes.length || P.notes[P.notes.length - 1].d < d[1]) { if (new Date().getDay() === 0 || P.notes.length === 0 && P.start < d[1]) return '今週をふり返ろう。下の「1週間のふり返り」に、うまくいったことと、次に変えることを書いてみて。'; }
+  if (next) return `次は「${next.t}」に挑戦してみよう。小さく始めるのがコツだよ。`;
+  return `達成度${sc}％。毎日の必殺技とやめることのチェックを続けて、100％をめざそう！`;
+}
+let prAI = {id: null, text: '', wait: false};
+function practiceHTML(){
+  const P = prPlan(); if (!P) return `<div class="pr-head"><b>🚀 実践モード</b><button type="button" class="btn sm" data-pr="close">とじる</button></div><p class="hint">冒険をクリアすると、答えから実践プランができます。</p>`;
+  const sc = prScore(P), rk = prRank(sc), today = prToday(), d14 = prDays(14), dayN = Math.max(1, Math.round((new Date(today) - new Date(P.start)) / 864e5) + 1);
+  const chk = (on, attr, label, sub) => `<button type="button" class="pr-chk${on ? ' on' : ''}" ${attr} aria-pressed="${on}"><i>${on ? '✓' : ''}</i><span>${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ''}</span></button>`;
+  const cats = Object.entries(PR_CAT).map(([k, [ic, n, d]]) => { const L = P.tasks.filter(t => t.k === k); if (!L.length) return '';
+    return `<div class="pr-sec"><h4>${ic} ${n}<small>${d}</small><em>${L.filter(t => t.done).length}/${L.length}</em></h4>${L.map(t => `<div class="pr-row">${chk(t.done, `data-pr="task" data-v="${t.id}"`, t.t, t.done && t.doneAt ? `${t.doneAt.slice(5).replace('-', '/')} できた！` : '')}<button type="button" class="pr-del" data-pr="del" data-v="${t.id}" aria-label="消す">×</button></div>`).join('')}</div>`; }).join('');
+  const habits = P.habits.map(h => `<div class="pr-habit">${chk(!!h.checks[today], `data-pr="habit" data-v="${h.id}"`, `今日、必殺技「${h.t}」をやった`, [h.pace, h.start ? h.start + '〜' : ''].filter(Boolean).join('・'))}<div class="pr-cal">${d14.map(d => `<i class="${h.checks[d] ? 'on' : ''}${d === today ? ' today' : ''}" title="${d}"></i>`).join('')}</div><small class="pr-streak">🔥 ${prStreak(h)}日連続</small></div>`).join('');
+  const quits = P.quits.map(q => `<div class="pr-habit quit">${chk(!!q.checks[today], `data-pr="quit" data-v="${q.id}"`, `今日は「${q.t}」をがまんできた`, '')}<div class="pr-cal">${d14.map(d => `<i class="${q.checks[d] ? 'on' : ''}${d === today ? ' today' : ''}"></i>`).join('')}</div></div>`).join('');
+  const notes = P.notes.slice(-3).reverse().map(n => `<li><b>${n.d.slice(5).replace('-', '/')}</b>👍 ${esc(n.good || '—')}　➡️ ${esc(n.next || '—')}</li>`).join('');
+  return `<div class="pr-head"><b>🚀 実践モード</b>${PR.plans.length > 1 ? `<select class="pr-sel" data-pr-sel aria-label="プラン">${PR.plans.map(p => `<option value="${p.id}"${p.id === P.id ? ' selected' : ''}>${esc(p.theme)}</option>`).join('')}</select>` : ''}<button type="button" class="btn sm" data-pr="close">とじる</button></div>
+    <div class="pr-top"><div class="pr-gauge" style="--p:${sc}"><b>${sc}<small>%</small></b><span>達成度</span></div>
+      <div class="pr-meta"><small>実践プラン ${P.coop ? `（${esc(P.coop.join('・'))}）` : ''}</small><h3>「${esc(P.theme)}」</h3><p>実践ランク：<b>${rk[1]}</b>　・　${dayN}日目</p>
+        <div class="pr-bar"><i style="width:${sc}%"></i>${[25, 50, 75].map(v => `<em style="left:${v}%"></em>`).join('')}</div></div></div>
+    <div class="pr-coach"><span class="owl">🦉</span><div><b>伴走コーチ・フクロウ先生</b><p>${esc(prCoach(P))}</p>${sampleAvail ? `<button type="button" class="btn sm" data-pr="ai" ${prAI.wait ? 'disabled' : ''}>${prAI.wait ? '考え中…' : '🤖 AIコーチにくわしく相談'}</button>` : ''}${prAI.id === P.id && prAI.text ? `<pre class="pr-ai">${esc(prAI.text)}</pre>` : ''}</div></div>
+    ${habits || quits ? `<div class="pr-sec"><h4>📅 毎日のチェック<small>やったら今日の分をチェック。カレンダーは2週間分</small></h4>${habits}${quits}</div>` : ''}
+    ${cats}
+    <div class="pr-add"><input id="prNew" maxlength="60" placeholder="やることを自分で足す（例：資料を1冊読む）" aria-label="やることを足す" autocomplete="off"><button type="button" class="btn sm primary" data-pr="add">足す</button></div>
+    <div class="pr-sec"><h4>📝 1週間のふり返り</h4>
+      <div class="pr-note"><input id="prGood" maxlength="60" placeholder="うまくいったこと" aria-label="うまくいったこと"><input id="prNext" maxlength="60" placeholder="次に変えること" aria-label="次に変えること"><button type="button" class="btn sm" data-pr="note">記録する</button></div>
+      ${notes ? `<ul class="pr-notes">${notes}</ul>` : ''}</div>
+    <p class="hint">記録はこの端末に保存されます。新しい冒険を始めても、この実践プランは残ります。</p>
+    <button type="button" class="btn link" data-pr="remove" style="align-self:flex-start">このプランを消す</button>`;
+}
+function openPractice(fromSession){
+  if (fromSession && S && S.phase === 'done'){
+    let P = S.pid && PR.plans.find(p => p.id === S.pid);
+    if (!P){ P = prFromSession(S); PR.plans.push(P); S.pid = P.id; save(); toast('🚀 実践モードが発動！ 答えから実践プランを作りました'); sfx.done(); }
+    PR.cur = P.id; prSave();
+  }
+  let o = $('#ovPractice');
+  if (!o){
+    document.body.insertAdjacentHTML('beforeend', '<div class="overlay" id="ovPractice" hidden><div class="sheet practice"></div></div>'); o = $('#ovPractice');
+    o.addEventListener('click', e => { if (e.target === o){ o.hidden = true; return; } const b = e.target.closest('[data-pr]'); if (b) prAct(b.dataset.pr, b.dataset.v); });
+    o.addEventListener('change', e => { if (e.target.matches('[data-pr-sel]')){ PR.cur = e.target.value; prSave(); prRender(); } });
+  }
+  prRender(); o.hidden = false; o.scrollTop = 0;
+}
+const prRender = () => { const o = $('#ovPractice'); if (o) o.querySelector('.sheet').innerHTML = practiceHTML(); renderHomePractice(); };
+function prAct(a, v){
+  const P = prPlan(); if (a === 'close'){ $('#ovPractice').hidden = true; return; } if (!P) return;
+  const today = prToday(), before = prScore(P);
+  if (a === 'task'){ const t = P.tasks.find(x => x.id === v); if (!t) return; t.done = t.done ? 0 : 1; t.doneAt = t.done ? today : null; t.done ? sfx.good() : sfx.step(); }
+  else if (a === 'habit' || a === 'quit'){ const h = (a === 'habit' ? P.habits : P.quits).find(x => x.id === v); if (!h) return; if (h.checks[today]) delete h.checks[today]; else { h.checks[today] = 1; sfx.good(); } }
+  else if (a === 'del'){ P.tasks = P.tasks.filter(x => x.id !== v); }
+  else if (a === 'add'){ const i = $('#prNew'), t = (i.value || '').trim().slice(0, 60); if (!t) return; P.tasks.push({id: 't' + Date.now().toString(36), t, k: 'own', done: 0}); sfx.add(1); }
+  else if (a === 'note'){ const g = ($('#prGood').value || '').trim().slice(0, 60), n = ($('#prNext').value || '').trim().slice(0, 60); if (!g && !n) return; P.notes.push({d: today, good: g, next: n}); toast('ふり返りを記録した！'); sfx.next(); }
+  else if (a === 'remove'){ if (!P.rm){ P.rm = 1; toast('もう一度押すと、このプランを消します'); setTimeout(() => { P.rm = 0; }, 4000); return; } PR.plans = PR.plans.filter(p => p !== P); PR.cur = PR.plans[0] ? PR.plans[0].id : null; prSave(); prRender(); return; }
+  else if (a === 'ai'){ prAskAI(P); return; }
+  const after = prScore(P);
+  [25, 50, 75, 100].forEach(m => { if (before < m && after >= m && !P.seen[m]){ P.seen[m] = 1; setTimeout(() => { toast(m === 100 ? '🎉 達成度100％！ 夢の実現者！' : `🎉 達成度${m}％をこえた！ 実践ランク「${prRank(after)[1]}」`); m === 100 ? sfx.fanfare() : sfx.done(); }, 200); } });
+  P.best = Math.max(P.best || 0, after); prSave(); prRender();
+}
+function prAskAI(P){
+  if (!sampleAvail || prAI.wait) return;
+  prAI = {id: P.id, text: '', wait: true}; prRender();
+  const undone = P.tasks.filter(t => !t.done && t.k !== 'plan').slice(0, 6).map(t => '・' + t.t).join('\n'), done = P.tasks.filter(t => t.done).slice(0, 6).map(t => '・' + t.t).join('\n');
+  const h = P.habits[0], note = P.notes[P.notes.length - 1];
+  samplePromise.then(async sample => {
+    try {
+      const r = await sample(`あなたは、目標の実践に寄りそう伴走コーチ「フクロウ先生」です。テーマ「${P.theme}」に取り組んでいる人へ、いまの状況を見て、やさしい日本語でアドバイスしてください。
+- 3行だけ。各行は「・」で始め、40文字以内。
+- 1行目はできていることをほめる。2行目は次の一歩を具体的に。3行目は続けるコツ。
+- 医療・法律・お金の判断を断定しない。
+達成度：${prScore(P)}％（${Math.max(1, Math.round((new Date(prToday()) - new Date(P.start)) / 864e5) + 1)}日目）
+できたこと：
+${done || 'まだなし'}
+まだのこと：
+${undone || 'なし'}
+${h ? `毎日の必殺技：「${h.t}」（${prStreak(h)}日連続）` : ''}
+${note ? `最近のふり返り：うまくいった「${note.good}」／次に変える「${note.next}」` : ''}`, {modelTier: 'default'});
+      prAI = {id: P.id, text: String((r && r.text) || '').trim().slice(0, 400), wait: false};
+    } catch (e){ prAI = {id: P.id, text: 'いまはAIコーチにつながりませんでした。', wait: false}; }
+    prRender();
+  });
+}
+function renderHomePractice(){
+  const b = $('#btnPractice'); if (!b) return; const P = prPlan();
+  b.hidden = !P; if (P) b.innerHTML = `🚀 実践モード<small>「${esc([...P.theme].slice(0, 12).join(''))}」 達成度 ${prScore(P)}％</small>`;
+}
+
 /* ---------- golden monster (rare, runs away) ---------- */
 function goldFoe(F){ return {...F, kind: 'gold', n: 'ゴールドスライム', col: '#FFD84D', gold: 1, hp: 24 + F.lv * 4, max: 24 + F.lv * 4, atk: 2, msg: '✨ 金色の魔物、ゴールドスライムがあらわれた！ にげ足が速いぞ'}; }
 
@@ -4288,6 +4452,8 @@ function metaGoal(){ const Q = rpgQ(); META.goals[S.goal] = 1; metaSave(); tot('
 function petsHTML(){ const Q = rpgQ(), P = Q.pets || [], E = Q.eggs || []; if (!P.length && !E.length) return ''; return `<div class="pets">${P.length ? `<span>おとも：${P.map(p => `${p.ic}${esc(p.n)}<small>${p.r}</small>`).join('　')}</span>` : ''}${E.length ? `<span>🥚 たまご：あと${E.map(n => Math.max(1, n) + 'マス').join('・')}でかえる</span>` : ''}</div>`; }
 function extrasAct(a){ if (a === 'chest') takeChest(); else if (a === 'prac') reportPractice(); else if (a === 'collect') openCollect(); else if (a === 'card') saveCard(); else if (a === 'ng') newGamePlus(); }
 document.querySelector('#btnCollect') && document.querySelector('#btnCollect').addEventListener('click', () => openCollect());
+document.querySelector('#btnPractice') && document.querySelector('#btnPractice').addEventListener('click', () => openPractice(false));
+renderHomePractice();
 function syncBattle(){
   const el = $('#battle'); if (!el) return;
   if (S && S.mode === 'quest' && S.phase === 'play' && S.quest.qs === 'fight' && S.quest.fight && S.quest.fight.mg) setTimeout(mountMG, 0);
@@ -6288,6 +6454,7 @@ function doneHTML(){
     ${qualityHTML(S)}
     ${firsts.length ? `<div class="first"><h3>最初の一歩</h3><ul>${firsts.map(a => `<li>${esc(a.t)}</li>`).join('')}</ul></div>` : ''}
     ${r ? (() => { const E = expertOf(S); return E.advice.length ? `<div class="advice expert"><h3>${S.mode === 'quest' ? '王さまと専門家からのアドバイス' : '専門家からのアドバイス'}${E.field ? `（${esc(E.field)}）` : ''}</h3><ol>${E.advice.map(a => `<li>${esc(a)}</li>`).join('')}</ol></div>` : ''; })() : ''}
+    <div class="pr-call"><b>🚀 実践モードが発動！</b><span>マインドマップの答えから、実践プラン（最初の一歩・やること・毎日の必殺技・やめること）を作りました。達成度をチェックしながら、フクロウ先生が伴走します。</span><button class="btn primary" type="button" data-act="practice">実践モードをひらく →</button></div>
     <div class="btn-col">
       <button class="btn primary" type="button" data-act="result">採点結果を見る</button>
       ${S.mode === 'quest' ? `<button class="btn dark" type="button" data-act="ng">🔁 強くてニューゲーム（レベル・装備・おともを引きついで${(S.ng || 0) + 2}周目へ）</button><button class="btn" type="button" data-act="card">🖼️ 結果カードを画像で保存</button>` : ''}
@@ -6430,9 +6597,10 @@ function finish(){
   if (!S.result || S.result.hash !== h){ S.result = heuristic(S); S.result.hash = h; S.result.ai = 'pending'; }
   else S.result.stats = statsOf(S);
   if (S.mode === 'quest'){ buildMap(); return; }
-  sfx.done(); refresh(); openResult();
+  sfx.done(); prAuto(); refresh(); openResult();
   if (S.result.ai === 'pending') runAI();
 }
+function prAuto(){ if (!S || S.sample || S.pid) return; const P = prFromSession(S); if (!P.tasks.length && !P.habits.length) return; PR.plans.push(P); PR.cur = P.id; S.pid = P.id; prSave(); save(); setTimeout(() => toast('🚀 実践モードが発動！ 答えから実践プランを作りました'), 1600); }
 let revealN = Infinity;
 async function buildMap(){
   building = true; save();
@@ -6442,6 +6610,7 @@ async function buildMap(){
   for (let k = 1; k <= total; k++){ revealN = k; renderMap(); if (k % 2) sfx.add(k); await sleep(reduced ? 20 : 170); }
   revealN = Infinity; building = false;
   await sleep(700); sfx.done(); toast('マインドマップが完成しました！');
+  prAuto();
   refresh();
   await sleep(1300); openResult();
   if (S.result.ai === 'pending') runAI();
@@ -6959,6 +7128,7 @@ function renderResult(){
         ${firsts.length ? `<div class="first"><h3>最初の一歩（今日からやること）</h3><ul>${firsts.map(a => `<li>${esc(a.t)}</li>`).join('')}</ul></div>` : ''}
         ${timelineHTML(S)}
         <div class="r-actions">
+          <button class="btn primary" type="button" data-act="practice">🚀 実践モード</button>
           ${nextChBtn()}
           ${sageBtn('専門家の賢者に質問する')}
           <button class="btn primary" type="button" data-act="print">印刷する</button>
@@ -7399,6 +7569,7 @@ function onAct(a){
   else if (a === 'retry'){ $('#ovResult').hidden = true; if (aiCtl) aiCtl.abort(); clearMap(); const fk = S.forks; newSession(S.theme, S.stages.filter(st => (st.ch || 1) === 1), S.timed, S.mode, S.level, {world: S.world, avatar: S.avatar, heroName: S.heroName, age: S.age, course: S.course}); S.forks = fk || {}; refresh(); toast('もう一度挑戦！ 前回より高い点を目指しましょう'); }
   else if (a === 'ng') newGamePlus();
   else if (a === 'collect') openCollect();
+  else if (a === 'practice'){ $('#ovResult').hidden = true; openPractice(true); }
   else if (a === 'card') saveCard();
   else if (a === 'menu'){ $('#ovResult').hidden = true; openHome(); }
   else if (a === 'ai-stop'){ if (aiCtl) aiCtl.abort(); }
@@ -7727,7 +7898,7 @@ function openHome(){
   $('#btnResume').hidden = !S; $('#resumeNote').hidden = !S;
   if (S){ $('#btnResume').textContent = `続きから：「${S.theme}」`; if (view !== S){ view = S; clearMap(); setStageView(stageView); renderMap(); if (S.mode === 'quest') renderBoard(); } }
   else { view = sampleSession(); clearMap(); setStageView('map'); renderMap(); }
-  renderRadios(); renderPurpose(); renderPresets(); renderExamples(); renderQList(); renderInstall(); setHomeStep(1);
+  renderHomePractice(); renderRadios(); renderPurpose(); renderPresets(); renderExamples(); renderQList(); renderInstall(); setHomeStep(1);
   setTimeout(() => { if (matchMedia('(pointer:fine)').matches) $('#themeInput').focus({preventScroll: true}); }, 60);
 }
 /* phone: the home screen is split into steps (theme → how to play → hero → course), one screen each */
