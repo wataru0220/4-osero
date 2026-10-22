@@ -1547,7 +1547,7 @@ const fmt = s => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s / 60)}:
 const fmtLimit = s => s % 60 === 0 ? `${s / 60}分` : s > 60 ? `${Math.floor(s / 60)}分${s % 60}秒` : `${s}秒`;
 const hash = str => { let h = 5381; for (const c of str) h = (h * 33 + c.codePointAt(0)) >>> 0; return h; };
 /* ---------- pixel-art characters: each character's vector art is drawn once into a small canvas (1 dot = PXC_U units), then shown as a crisp sprite ---------- */
-const PXC_U = 1.7, PX_SS = 5, PX_BOX = [-76, -112, 152, 124], PX_LINE = [34, 28, 52];
+const PXC_U = 1.45, PX_SS = 5, PX_BOX = [-76, -112, 152, 124], PX_LINE = [34, 28, 52];
 const PXS = new Map();
 let pxQ = Promise.resolve(), pxCss = null;
 const pxFly = inner => /#pm-(fairy|owl)"/.test(inner);
@@ -1598,8 +1598,16 @@ async function pxMake(key, inner, css){
   const og = o.getContext('2d'), od = og.createImageData(OW, OH), at = (i, j) => i < 0 || j < 0 || i >= W || j >= H ? -1 : dot[j * W + i];
   for (let y = 0; y < OH; y++) for (let x = 0; x < OW; x++){
     const i = x + i1 - 1, j = y + j1 - 1, v = at(i, j), q = (y * OW + x) * 4;
-    if (v >= 0){ od.data[q] = v >> 16; od.data[q + 1] = (v >> 8) & 255; od.data[q + 2] = v & 255; od.data[q + 3] = 255; }
-    else if (at(i - 1, j) >= 0 || at(i + 1, j) >= 0 || at(i, j - 1) >= 0 || at(i, j + 1) >= 0){ od.data[q] = PX_LINE[0]; od.data[q + 1] = PX_LINE[1]; od.data[q + 2] = PX_LINE[2]; od.data[q + 3] = 255; }
+    if (v >= 0){
+      /* 16-bit style shading: light from the top left, so the lower right edge of every color area is darker and the upper left edge brighter */
+      const dn = at(i, j + 1) !== v || at(i + 1, j) !== v, up = at(i, j - 1) !== v || at(i - 1, j) !== v, k = dn ? .74 : up ? 1.16 : 1;
+      od.data[q] = Math.min(255, (v >> 16) * k); od.data[q + 1] = Math.min(255, ((v >> 8) & 255) * k); od.data[q + 2] = Math.min(255, (v & 255) * k); od.data[q + 3] = 255;
+    }
+    else if (at(i - 1, j) >= 0 || at(i + 1, j) >= 0 || at(i, j - 1) >= 0 || at(i, j + 1) >= 0){
+      /* a colored outline: a very dark version of the color next to it */
+      const nb = [at(i - 1, j), at(i + 1, j), at(i, j - 1), at(i, j + 1)].find(c => c >= 0);
+      od.data[q] = Math.round((nb >> 16) * .22 + PX_LINE[0] * .5); od.data[q + 1] = Math.round(((nb >> 8) & 255) * .22 + PX_LINE[1] * .5); od.data[q + 2] = Math.round((nb & 255) * .22 + PX_LINE[2] * .5); od.data[q + 3] = 255;
+    }
     else if (v === -2) od.data[q + 3] = 56;
   }
   og.putImageData(od, 0, 0);
@@ -3180,7 +3188,7 @@ heroPerson = function(w, av){
   return h;
 };
 /* two heads tall (chibi): the body is squashed, the head is enlarged and set on the shoulders, and it gets a second eye */
-const CHIBI_B = 'matrix(.85 0 0 .62 0 0)', CHIBI_H = 'matrix(1.5 0 0 1.5 0 33.5)';
+const CHIBI_B = 'matrix(.9 0 0 .8 0 0)', CHIBI_H = 'matrix(1.22 0 0 1.22 0 17.3)';
 function chibify(h, eye2 = '<circle cx="-2.4" cy="-44" r="1.3" fill="#1B2140"/>'){
   const i = h.indexOf('<circle cx="0" cy="-44" r="9'), o = h.indexOf('>') + 1, j = h.lastIndexOf('</g>');
   if (i < 0 || j < i) return h;
@@ -4502,10 +4510,10 @@ function sceneryCave(){
    Trees, houses and the castle are small shaded sprites, placed from the back (top) to the front (bottom).
    ========================================================= */
 const PXU = 2, PXF = "'DotGothic16','M PLUS 1',sans-serif";
-const PX_BASE = {g: ['#6BBE4E', '#5AA844', '#86D067', '#3F8A36'], road: ['#DCC08A', '#B89A62', '#EBD6A6', '#9A7C4C'], cliff: ['#A88D57', '#7B6437', '#C8AE72', '#54452A'],
-  step: ['#CFC8B8', '#8F8878', '#E8E3D6'], water: ['#3F89DA', '#74B6F0', '#E8F6FF', '#2D6BB4'], leaf: ['#2F7A34', '#44A04A', '#6BC266', '#B2E69A'], trunk: ['#7A5236', '#4E3320'],
+const PX_BASE = {g: ['#5C9C2C', '#467E22', '#80B83C', '#2C5616'], road: ['#B27840', '#8A582C', '#CB9152', '#6A401E'], cliff: ['#8E6A3E', '#664826', '#B08A56', '#3E2A14'],
+  step: ['#CFC8B8', '#8F8878', '#E8E3D6'], water: ['#1E2E80', '#3450B0', '#7E9AE6', '#121C58'], leaf: ['#235E22', '#367F2C', '#5CA63E', '#9ED46E'], trunk: ['#6E4426', '#43281A'],
   pine: ['#1F5E36', '#2E7C47', '#4E9F62'], rock: ['#A9A6B2', '#7D7A8A', '#D4D2DC', '#56536A'], flower: ['#F2554E', '#FFD84D', '#FFFFFF', '#8C6CF2'],
-  wall: '#F1E4C8', beam: '#7A5236', roof: ['#B4532E', '#8B5A36', '#4E6EA6', '#8C3A3A'], door: '#6B4630', win: '#8FD0F2', wood: ['#BA8B56', '#8D6337', '#5F4023'],
+  wall: '#DCCFAE', beam: '#6B4630', roof: ['#3E5A3A', '#4A5A6A', '#5E4634', '#6A3A2E'], door: '#5E3A22', win: '#8FD0F2', wood: ['#B07A44', '#83552C', '#55361C'],
   stone: ['#B5AFA3', '#8D8679', '#DDD8CE'], field: ['#8E6B3E', '#6FAE3C', '#A8D65A'], tree: 'round', hl: 'pine', house: 'euro', castle: 'euro',
   cw: ['#CFCBC3', '#A29D93', '#6E6A62', '#E8E5DF'], cr: '#C8412F', flag: '#FFD84D'};
 const PX_WORLD = {
@@ -4557,11 +4565,14 @@ function pxGrass(V, P, R){
   const {w, h, d} = V, [c0, c1, c2, c3] = P.g.map(V.u), n1 = pxNoise(R, w, h, 16), n2 = pxNoise(R, w, h, 5);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){ const v = n1(x, y) * .65 + n2(x, y) * .35, r = R(); d[y * w + x] = v > .64 ? (r < .5 ? c1 : c0) : v < .32 ? (r < .3 ? c2 : c0) : r < .035 ? c1 : r > .988 ? c2 : c0; }
   if (P.grid){ for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){ const gx = x % 16, gy = y % 16; if (gx === 15 || gy === 15) d[y * w + x] = c3; else if (gx === 0 || gy === 0) d[y * w + x] = c2; } return; }
-  const n = w * h / (P.sand ? 80 : 45) | 0;
-  for (let k = 0; k < n; k++){
-    const x = 1 + R() * (w - 3) | 0, y = 1 + R() * (h - 3) | 0, i = y * w + x;
-    if (P.sand){ d[i] = c1; d[i + 1] = c2; continue; }
-    const col = R() < .65 ? c1 : c3; d[i] = col; d[i + 2] = col; d[i + w + 1] = col; if (R() < .35) d[i - w + 1] = c2;
+  if (P.sand){ for (let k = 0; k < w * h / 80; k++){ const i = (1 + R() * (h - 3) | 0) * w + (1 + R() * (w - 3) | 0); d[i] = c1; d[i + 1] = c2; } return; }
+  /* 16-bit style meadow: shaded patches, then blades of grass everywhere */
+  const n3 = pxNoise(R, w, h, 30), deep = V.u(hexMix(P.g[3], P.g[1], .5));
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){ const v = n3(x, y); if (v > .66) d[y * w + x] = R() < .55 ? c1 : deep; else if (v < .28 && R() < .5) d[y * w + x] = c2; }
+  for (let k = 0; k < w * h / 9; k++){
+    const x = 1 + R() * (w - 3) | 0, y = 1 + R() * (h - 4) | 0, i = y * w + x, dark = n3(x, y) > .55;
+    d[i] = dark ? c0 : c2; d[i + w] = dark ? c3 : c1; if (R() < .5) d[i + 2 * w] = c3;
+    if (R() < .3){ d[i + w - 1] = c1; d[i + w + 1] = c1; }
   }
 }
 /* where the road is: 1 = the road, 2 = the faded road of the path not taken. Edges get a few bites so they are not ruler-straight */
@@ -4642,6 +4653,7 @@ function pxRiver(V, P, R, ry0, ry1){
    a light grass lip above that bank, and stone stairs wherever it runs down a cliff */
 function pxPaint(V, P, R, M, F, faces, skip){
   const {w, h, d} = V, mk = cols => cols.map(V.u), base = P.road, dim = base.map(c => hexMix(c, P.g[0], .55));
+  const rnA = pxNoise(R, w, h, 3), rnB = pxNoise(R, w, h, 9);
   const RN = mk(base), RD = mk(dim), SN = mk(P.step), SD = mk(P.step.map(c => hexMix(c, P.g[0], .55))), lip = V.u(P.metal ? P.road[2] : P.snow ? '#FFFFFF' : P.g[2]);
   const half = [V.u(hexMix(base[1], base[0], .5)), V.u(hexMix(dim[1], dim[0], .5))], deep = [V.u(pxDk(base[1], .16)), V.u(pxDk(dim[1], .1))], edge = [V.u(pxLt(base[0], .12)), V.u(pxLt(dim[0], .06))];
   for (let y = 2; y < h - 1; y++){
@@ -4656,7 +4668,7 @@ function pxPaint(V, P, R, M, F, faces, skip){
       else if (!M[i - 2 * w]) d[i] = Rc[1];
       else if (!M[i - 3 * w]) d[i] = half[k];
       else if (!M[i + w]) d[i] = edge[k];
-      else { const r = R(); d[i] = r < .045 ? Rc[1] : r < .085 ? Rc[2] : r < .1 ? Rc[3] : Rc[0]; }
+      else { const v = rnA(x, y) * .65 + rnB(x, y) * .35 + (R() - .5) * .18; d[i] = v > .66 ? Rc[1] : v < .3 ? Rc[2] : R() < .025 ? Rc[3] : Rc[0]; if (R() < .004 && M[i + w] && M[i + 1]){ d[i] = Rc[2]; d[i + 1] = Rc[2]; d[i + w] = Rc[3]; d[i + w + 1] = Rc[1]; } }
     }
   }
 }
@@ -4704,6 +4716,18 @@ function pxBlob(V, blobs, pal, R, line, snow){
   }
 }
 const PX_SPR = {
+  fence(P, R){
+    const V = pxSurf(34, 14), W = P.wood, by = 12;
+    V.rect(1, 5, 32, 2, W[1]); V.rect(1, 5, 32, 1, W[0]);
+    for (let x = 1; x < 33; x += 5){ V.rect(x, 1, 3, by - 1, W[1]); V.rect(x, 1, 1, by - 1, W[0]); V.rect(x + 2, 1, 1, by - 1, W[2]); V.rect(x, 0, 3, 1, pxLt(W[0], .25)); V.rect(x, by, 3, 1, P.g[3]); }
+    return {c: V.put(), ax: 17, ay: by, r: 10, top: 12};
+  },
+  barrel(P, R){
+    const V = pxSurf(14, 16), W = P.wood, by = 14;
+    for (let y = 2; y < by; y++){ const bulge = y > 4 && y < by - 3 ? 1 : 0; V.rect(3 - bulge, y, 8 + bulge * 2, 1, y % 5 === 2 ? '#4A4A52' : W[1]); V.set(3 - bulge, y, W[2]); V.set(10 + bulge, y, W[2]); V.set(5, y, W[0]); }
+    V.rect(3, 1, 8, 2, W[0]); V.rect(4, 1, 6, 1, pxLt(W[0], .3)); V.rect(2, by, 10, 1, P.g[3]);
+    return {c: V.put(), ax: 7, ay: by, r: 6, top: 14};
+  },
   round(P, R){
     const V = pxSurf(36, 44), cx = 18, by = 41, j = () => (R() - .5) * 2.4;
     pxShadow(V, cx + 3, by, 12, 2, P.g[3]);
@@ -4790,14 +4814,15 @@ const pxSnowTop = (V, x, y, w, R) => { for (let r = 0; r < 4; r++) for (let i = 
 const pxWin = (V, x, y, w, h, frame, glass) => { V.rect(x - 1, y - 1, w + 2, h + 2, frame); V.rect(x, y, w, h, glass); V.set(x, y, pxLt(glass, .6)); };
 const PX_HOUSE = {
   euro(P, roof, R){
-    const V = pxSurf(60, 58), x0 = 10, W = 40, yb = 55, wh = 17, rd = 18, top = yb - wh - rd, cx = x0 + W / 2;
+    const V = pxSurf(62, 64), x0 = 11, W = 40, yb = 61, wh = 21, rd = 22, top = yb - wh - rd, cx = x0 + W / 2, st = P.stone;
     V.rect(x0 + W, yb - wh + 4, 5, wh - 3, P.g[3]); V.rect(x0 + 4, yb, W + 1, 2, P.g[3]);
-    V.rect(x0, yb - wh, W, wh, P.wall); V.rect(x0 + W - 6, yb - wh, 6, wh, pxDk(P.wall, .12));
-    [x0, x0 + W - 1, x0 + 12, x0 + W - 13].forEach(x => V.rect(x, yb - wh, 1, wh, P.beam)); V.rect(x0, yb - wh + 8, W, 1, P.beam); V.rect(x0, yb - 2, W, 2, P.stone[1]);
-    V.rect(cx - 5, yb - 13, 10, 1, P.beam); V.rect(cx - 4, yb - 12, 8, 12, P.door); V.rect(cx, yb - 12, 1, 12, pxDk(P.door, .25)); V.set(cx + 2, yb - 6, P.flag);
-    [x0 + 4, x0 + W - 11].forEach(x => { pxWin(V, x, yb - 13, 7, 6, P.beam, P.win); V.rect(x + 3, yb - 13, 1, 6, P.beam); V.rect(x, yb - 10, 7, 1, P.beam); });
-    pxRoof(V, x0 - 4, top, W + 8, rd, roof, 'shingle'); V.rect(x0, yb - wh, W, 1, pxDk(P.wall, .35));
-    V.rect(x0 + W - 12, top - 6, 6, 10, P.stone[0]); V.rect(x0 + W - 7, top - 6, 1, 10, P.stone[1]); V.rect(x0 + W - 12, top - 6, 6, 1, P.stone[2]);
+    for (let y = yb - wh; y < yb; y++) for (let x = x0; x < x0 + W; x++){ const r = y - (yb - wh), off = (r >> 2) % 2 ? 3 : 0, mortar = r % 4 === 3 || (x - x0 + off) % 7 === 0; V.set(x, y, mortar ? st[1] : (x * 3 + y * 5) % 11 === 0 ? st[2] : x > x0 + W - 6 ? pxDk(st[0], .14) : st[0]); }
+    V.rect(cx - 4, yb - 13, 8, 13, P.door); V.rect(cx - 3, yb - 14, 6, 1, P.door); V.rect(cx, yb - 13, 1, 13, pxDk(P.door, .35)); V.rect(cx - 5, yb - 14, 1, 14, st[1]); V.rect(cx + 4, yb - 14, 1, 14, st[1]); V.set(cx + 2, yb - 7, '#FFD27A');
+    [x0 + 4, x0 + W - 12].forEach(x => { V.rect(x - 1, yb - 17, 9, 10, st[1]); V.rect(x, yb - 16, 7, 8, '#2E4A9A'); V.rect(x + 2, yb - 15, 3, 6, '#C8402E'); V.set(x + 3, yb - 16, '#FFD27A'); V.rect(x, yb - 12, 7, 1, st[1]); });
+    pxRoof(V, x0 - 4, top, W + 8, rd, roof, 'shingle'); V.rect(x0, yb - wh, W, 1, pxDk(st[0], .5));
+    for (let k = 0; k < 26; k++) V.set(x0 - 2 + R() * (W + 4), top + 2 + R() * (rd - 4), R() < .6 ? P.leaf[1] : P.leaf[2]);
+    V.rect(x0 + W - 12, top - 7, 6, 11, st[0]); V.rect(x0 + W - 7, top - 7, 1, 11, st[1]); V.rect(x0 + W - 13, top - 8, 8, 2, st[2]);
+    for (let k = 0; k < 8; k++){ const x = x0 + (R() < .5 ? R() * 6 : W - 8 + R() * 6) | 0, y = yb - wh + 2 + R() * (wh - 4) | 0; V.set(x, y, P.leaf[k % 2]); V.set(x, y + 1, P.leaf[0]); }
     if (P.snow) pxSnowTop(V, x0 - 4, top, W + 8, R);
     return {c: V.put(), ax: cx, ay: yb};
   },
@@ -5018,7 +5043,7 @@ function pxOver(){
   mesas.forEach(([x0, y0, mw, mh]) => { spot(2, (x0 + 10) * PXU, (x0 + mw - 10) * PXU, (y0 + 14) * PXU, (y0 + mh - 1) * PXU, [6, 4, 9], (x, y) => put(sp(TK, R() * 3 | 0, () => PX_SPR[TK](P, R)), x, y)); spot(2, (x0 + 6) * PXU, (x0 + mw - 6) * PXU, (y0 + 8) * PXU, (y0 + mh - 1) * PXU, [5, 3, 6], (x, y) => put(sp('bush', R() * 3 | 0, () => PX_SPR.bush(P, R)), x, y)); });
   const house = PX_HOUSE[P.house] || PX_HOUSE.euro;
   spot(11, 40, 960, 2800, 3390, [27, 46, 27], (x, y) => { const roof = P.roof[R() * P.roof.length | 0]; put(sp('house', roof, () => house(P, roof, R)), x, y); });
-  plant(16, TK, 10, 990, 2760, 3395); plant(10, 'bush', 10, 990, 2760, 3395);
+  plant(16, TK, 10, 990, 2760, 3395); plant(10, 'bush', 10, 990, 2760, 3395); plant(12, 'fence', 30, 970, 2770, 3390); plant(8, 'barrel', 30, 970, 2770, 3390);
   const TK2 = TK === 'cactus' ? 'round' : TK;
   plant(6, TK, 300, 600, 2350, 2660); plant(8, 'rock', 640, 990, 2250, 2720); plant(6, 'palm', 120, 300, 2280, 2700);
   plant(10, 'cactus', 360, 640, 1760, 2230); plant(5, 'rock', 360, 640, 1760, 2230);
