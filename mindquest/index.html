@@ -954,7 +954,7 @@ body.mg-lock{overflow:hidden}
 .purpose,.job-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .course-pick{display:grid;gap:6px}
 .coop-sec{gap:6px}.coop-sec .switch b{font-size:15px}.coop-sec > small{color:var(--muted);font-size:12px;line-height:1.5}
-.coop-box{display:grid;gap:6px}.coop-sec .maker{margin-top:2px}.coop-box input{border:1.5px solid var(--line2);border-radius:12px;padding:10px 12px;font-size:16px;background:var(--field)}.coop-box small{color:var(--muted);font-size:11.5px}
+.coop-box{display:grid;gap:6px}.rel-h{font-size:13px}.purpose.rel-ctl{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.purpose.rel-ctl button{grid-template-columns:1fr;justify-items:center;text-align:center;padding:8px 6px;border-radius:14px}.purpose.rel-ctl button > *{grid-column:1 !important;grid-row:auto !important}.purpose.rel-ctl .ci{width:42px;height:42px;font-size:24px;border-radius:12px}.purpose.rel-ctl b{font-size:14px}.purpose.rel-ctl small{font-size:10.5px;line-height:1.4}.coop-sec .maker{margin-top:2px}.coop-box input{border:1.5px solid var(--line2);border-radius:12px;padding:10px 12px;font-size:16px;background:var(--field)}.coop-box small{color:var(--muted);font-size:11.5px}
 .coop-turn{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;padding:8px 12px;border-radius:12px;font-size:15px;color:#fff;background:#2E8FE0}.coop-turn.p1{background:#E0529B}.coop-turn span{font-size:12px;opacity:.85}
 .coop-who{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.coop-who > span{font-size:12px;font-weight:800;color:var(--muted)}
 .coop-who button{padding:7px 14px;border-radius:999px;border:2px solid var(--line2);background:#fff;font-weight:800;font-size:14px;color:var(--ink2)}
@@ -1422,6 +1422,8 @@ body.mg-lock{overflow:hidden}
       <div class="vs-sec coop-sec"><label class="switch"><input type="checkbox" id="chkCoop"> <b id="coopLbl">ふたりで協力プレー</b></label>
         <small id="coopNote">1台を2人で使います。サイコロは交代でふり、関所の問いには2人とも答えます。ふたりそろって答えると「協力ボーナス」！</small>
         <div class="coop-box" id="coopBox" hidden>
+          <b class="rel-h">ふたりの関係（問いの内容が変わります）</b>
+          <div class="purpose rel-ctl" id="relCtl" role="radiogroup" aria-label="ふたりの関係"></div>
           <div class="maker">
             <svg id="p2Preview" viewBox="-70 -104 140 112" aria-label="パートナーの見た目"></svg>
             <div class="maker-ctl" id="p2Ctl">
@@ -7614,8 +7616,61 @@ const COUPLE_Q = {
     '今から続けること': {q: '長生きの仙人が聞く。理想の老後のために、ふたりで今から続けることは？'}
   }
 };
-function coupleStages(course, stages){
-  const M = COUPLE_Q[course]; if (!M) return stages;
+/* the relationship of the two players changes the couple questions again: matchmaking (getting to know each other),
+   dating (COUPLE_Q as it is) or married (the years ahead, old age and preparing for the end of life) */
+const REL = {kon: ['💐', '婚活中', 'お見合い・結婚相談所などで、おたがいを知る'], kou: ['💕', '交際中', 'おつきあいしているふたり'], fuu: ['💍', '夫婦', '結婚しているふたり。老後や終活にも']};
+const KON_COMMON = {
+  'あなたの魅力': {l: 'おたがいの魅力', q: '丘の上で、おたがいを見つめてみよう。話してみてわかった相手のいいところは？ 自分のいいところも伝えよう。', fl: {str: ['相手のいいところは？（ふたりとも書こう）', '相手の魅力', '例：話をよく聞いてくれる'], use: ['ふたりの関係にどう生かせそう？', '生かし方', '例：相談ごとはまず話してみる']}, hint: '会ったばかりでも大丈夫。小さな「いいな」を伝えよう。'},
+  '支えてくれる人': {q: 'ふたりの婚活を応援してくれる人は誰？ その人に何をお願いする？', fl: {who: ['応援してくれる人は？', '応援してくれる人', '例：相談所のカウンセラー'], ask: ['その人に何をお願いする？', 'お願い', '例：進め方のアドバイスをもらう']}},
+  '最初の一歩': {l: 'ふたりの次の一歩', q: '門をひらく合言葉は「次の一歩」。次に会うときまでに、ふたりでやってみたいことは？', qf: '門をひらく合言葉は「次の一歩」。次に会うときまでに、ふたりでやってみたいことは？', hint: '「好きなお店を教え合う」くらい小さなことでOK。'}
+};
+const FUU_COMMON = {
+  '未来の自分': {l: '未来のふたり', q: '未来の道で、年を重ねたふたりに会った！ 未来のふたりは、今のふたりに何と言う？'},
+  '感謝したい人': {q: '城の大臣が問う。ここまで夫婦で歩んでこられたのは、誰のおかげかな？ ふたりを支えてくれた人は？'},
+  '最初の一歩': {q: '門をひらく合言葉は「最初の一歩」。ふたりの必殺技「{@what}」のために、今日・明日やることは？', qf: '門をひらく合言葉は「最初の一歩」。これからのふたりのために、今日・明日やることは？'}
+};
+const COUPLE_REL = {
+  kon: {
+    life: {...KON_COMMON,
+      '理想の暮らし': {l: 'おたがいの理想の暮らし', q: 'はじまりの町の長老が聞く。おたがいが思い描く「{t}」の暮らしを話してみよう。理由・誰と喜びたいか・何年後か・大切にしたいことは？', fl: {why: ['かなえたい理由は？（おたがいに）', '理由', '例：安心できる家庭がほしいから'], for: ['誰に喜んでほしい？', '誰と', '例：両親'], core: ['暮らしの中で大切にしたいことは？', '大切なこと', '例：休日はゆっくり過ごす'], score: ['いまの婚活の満足度は10点満点で何点？', '満足度', '例：5点']}, hint: 'ちがいが見つかっても大丈夫。ちがいを知ることが、いちばんの収穫。'},
+      '先輩の知恵': {q: '先輩夫婦が笑う。結婚する前に、ふたりで話しておくといいことは何だと思う？'},
+      '不安': {q: 'モンスター「ふあん」がささやく…「うまくいくはずがない」。婚活で、いちばん心配なことは何？', alt: ['モンスター「ふあん」が道をふさいだ！ 結婚を考えるうえで、相手に聞きにくいことは何？']}
+    },
+    lifeup: {...KON_COMMON,
+      '理想のパートナー': {l: 'おたがいの理想', q: '出会いの町の長老が聞く。おたがいの「理想のパートナー像」を教え合おう。人柄・価値観・いっしょにしたいこと・相手にしてあげたいことは？', fl: {pkind: ['理想のパートナーの人柄は？', '人柄', '例：思いやりがある人'], pvalue: ['結婚して大切にしたい価値観は？', '価値観', '例：家族の時間を大切にする'], pdo: ['パートナーといっしょにしたいことは？', 'したいこと', '例：休日に料理をする'], pgive: ['パートナーにしてあげたいことは？', 'してあげたいこと', '例：疲れているときに話を聞く']}},
+      '出会い方': {l: 'ふたりの第一印象', q: '町の案内人が聞く。はじめて会ったとき、相手の第一印象は？ 話してみて意外だったことは？', hint: 'いいところを中心に。おたがいに書くと話がはずみます。'},
+      'やること': {q: '「{a}」をきっかけに、ふたりがもっと知り合うために何をする？', alt: ['「{a}」のような話を、次はどこでしてみたい？']},
+      '理想の結婚': {q: '結婚の川のほとりで、川の精が聞く。おたがいの理想の結婚は？ いつごろ、どんな形で、どんなルールと約束を大切にしたい？', hint: '答えがちがっても大丈夫。ちがいをすり合わせるのが婚活。'},
+      '話し合うこと': {l: 'おたがいに聞きたいこと', q: '川の渡し守が聞く。結婚を考えるうえで、相手に聞いてみたいことは？（仕事・お金・家事・住む場所・家族…）'},
+      '理想の家族': {q: '家族の守り神が聞く。おたがいの理想の家族は？ 何人で、どんな家族で、どんな習慣を大切にしたい？'},
+      '不安': {q: 'モンスター「ふあん」がささやく…「うまくいくはずがない」。結婚や家族をもつうえで、いちばん心配なことは何？'},
+      '理想の家づくり': {q: '大工の棟梁が図面を広げた。おたがいの理想の家は？ どこに、どんな家を、何にこだわって、どれくらいの予算で？'},
+      '理想の老後': {q: 'しあわせの住まいの門番が聞く。おたがいの理想の老後は？ どこで、誰と、毎日どんなことをして過ごしたい？'}
+    }
+  },
+  fuu: {
+    life: {...FUU_COMMON,
+      '理想の暮らし': {l: 'これからのふたりの暮らし', q: 'はじまりの町の長老が聞く。これからの「{t}」は、ふたりにとってどんな幸せ？ 理由・誰と喜びたいか・何年後か・大切にしたいことを、話し合おう。', fl: {why: ['ふたりがかなえたい理由は？', '理由', '例：ふたりで笑って年を重ねたいから'], for: ['誰といっしょに喜びたい？', '誰と', '例：子どもや孫'], core: ['これからも大切にしたいことは？', '大切なこと', '例：毎日の会話'], score: ['いまの夫婦の満足度は10点満点で何点？', '満足度', '例：7点']}},
+      '先輩の知恵': {l: '夫婦の知恵', q: '人生の先輩が聞く。これまでの夫婦生活で学んだことは？ これからの「{t}」に生かせることは？'},
+      '理想の住まい': {l: 'これからの住まい', q: '大工の棟梁が図面を広げた。これからのふたりの住まいは？ 住みつづける・リフォーム・住みかえ…どこで、どんな家に、何にこだわる？', fl: {hwhere: ['これからどこに住みたい？', '場所', '例：今の家に住みつづける'], htype: ['どんな住まいにしたい？', '住まい', '例：段差のない平屋にリフォーム'], hmust: ['ゆずれないことは？', 'こだわり', '例：孫が泊まれる部屋'], hbudget: ['予算や資金の計画は？', '予算', '例：退職金の一部で']}}
+    },
+    lifeup: {...FUU_COMMON,
+      '理想のパートナー': {l: 'ふたりの歩み', q: '出会いの町の長老が聞く。ふたりはこれからどんな夫婦でいたい？ 相手の好きなところ、大切にしたい価値観、いっしょにしたいこと、相手にしてあげたいことは？', fl: {pkind: ['相手のどんなところが好き？', '好きなところ', '例：いつも味方でいてくれるところ'], pvalue: ['夫婦で大切にしたい価値観は？', '価値観', '例：ありがとうを言葉にする'], pdo: ['これからふたりでしたいことは？', 'したいこと', '例：年に一度の夫婦旅行'], pgive: ['相手にしてあげたいことは？', 'してあげたいこと', '例：体を気づかう']}},
+      '出会い方': {l: 'ふたりの思い出', q: '町の案内人が聞く。ふたりの出会いは？ これまでで一番の思い出は？'},
+      'やること': {q: '「{a}」のような思い出を、これからも作っていくために、ふたりで何をする？'},
+      '理想の結婚': {l: '夫婦の約束', q: '川の精が聞く。これからも仲よくいるための、ふたりの約束は？', fl: {wwhen: ['次の記念日はいつ？ どう祝う？', '記念日', '例：結婚記念日にふたりで食事'], wstyle: ['ふたりの時間の過ごし方は？', '過ごし方', '例：毎晩お茶を飲みながら話す'], wrule: ['ふたりのルールは？', 'ルール', '例：けんかはその日のうちに仲直り'], wpromise: ['いちばん大切にしたい約束は？', '約束', '例：ありがとうを毎日言う']}},
+      '話し合うこと': {q: '川の渡し守が聞く。これからのために、ふたりで話し合っておきたいことは？（お金・健康・仕事・家族・住まい…）'},
+      '理想の家族': {l: '家族のこれから', q: '家族の守り神が聞く。ふたりの家族を、これからどんな家族にしたい？ 大切にしたい習慣や、次の世代に伝えたいことは？'},
+      '不安': {q: 'モンスター「ふあん」がささやく…「この先が心配だろう」。これからの暮らしで、ふたりがいちばん心配なことは何？'},
+      '理想の家づくり': {l: 'これからの住まい', q: '大工の棟梁が図面を広げた。これからのふたりの住まいは？ 住みつづける・リフォーム・住みかえ…どこで、どんな家に？'},
+      '家づくりの準備': {q: '山道の測量士が聞く。これからの住まいのために、ふたりで準備することは？'},
+      '理想の老後': {l: 'ふたりの老後', q: 'しあわせの住まいの門番が聞く。ふたりの理想の老後は？ どこで、誰と、毎日どんなことをして過ごしている？'},
+      '今から続けること': {l: '終活の準備', q: '長生きの仙人が聞く。安心して年を重ねるために、ふたりで今から準備しておきたいことは？（健康・お金・住まい・エンディングノート・家族への伝言…）', hint: '終活は「これからを楽しむための準備」。できることから少しずつ。'}
+    }
+  }
+};
+function coupleStages(course, stages, rel){
+  const M = COUPLE_Q[course] ? {...COUPLE_Q[course], ...((COUPLE_REL[rel] || {})[course] || {})} : null; if (!M) return stages;
   return stages.map(st => {
     const o = M[st.l]; if (!o || st.wild) return st;
     const n = {...st, q: o.q, vq: undefined, alt: o.alt || undefined};
@@ -7631,7 +7686,7 @@ function newSession(theme, stages, timed, mode, level, keep){
     quest: mode === 'quest' ? {mental: 100, gold: 0, items: {}, fx: {}, vis: {}, rest: 'start', magic: (keep.cls || homeCls) === 'mage' ? 3 : 0, pos: 'start', pts: 0, rolls: 0, done: {}, qs: 'roll', ev: null, timeMod: 0, log: [], last: 1, rivals: null, finN: 0, place: 0, free: false} : null};
   if (S.quest && $('#chkCoop').checked && LIFE_C.has(S.course)){ const a = cleanAvatar(S.avatar), life = true;
     S.coop = {n: [S.heroName || 'プレイヤー1', ($('#p2Name').value || '').trim().slice(0, 8) || (life ? 'パートナー' : 'プレイヤー2')], cur: 0, turn: 0, last: 0,
-      av: cleanAvatar(homeAvatar2 || partnerOf(a))}; S.stages = coupleStages(S.course, S.stages); }
+      av: cleanAvatar(homeAvatar2 || partnerOf(a))}; S.coop.rel = REL[homeRel] ? homeRel : 'kou'; S.stages = coupleStages(S.course, S.stages, S.coop.rel); }
   if (S.quest){ S.quest.rivals = newRivals(S).slice(0, homeCpu); S.quest.party = [];
     const code = ($('#raceCode').value || '').trim().slice(0, 12);
     S.online = $('#chkOnline').checked && code ? {code, nick: (S.heroName || 'プレイヤー').slice(0, 8), ci: rnd(OP_COLORS.length)} : null; if (bossStage(S) >= 0){ S.quest.beats = [{k: 'intro'}]; S.quest.qs = 'story'; } }
@@ -7680,7 +7735,8 @@ function renderPreview0(){
   $('#heroPreview').innerHTML = `<g transform="translate(-30 4) scale(1.2)">${pxPerson(1, homeWorld, homeAvatar)}</g><g transform="translate(32 4) scale(1.2)">${pxPerson(5, homeWorld, homeAvatar)}</g><text x="-30" y="-94" text-anchor="middle" font-size="9" font-weight="800" fill="#646B8A" font-family="${FONT}">Lv.1</text><text x="32" y="-94" text-anchor="middle" font-size="9" font-weight="800" fill="#C8362F" font-family="${FONT}">Lv.5 ${esc(WORLDS[homeWorld].hero)}</text>${nm ? `<text x="0" y="-2" text-anchor="middle" font-size="10" font-weight="800" fill="#1B2140" font-family="${FONT}" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(nm)}</text>` : ''}`;
 }
 $('#clsCtl').addEventListener('click', e => { const b = e.target.closest('[data-cls]'); if (!b) return; homeCls = b.dataset.cls; saveHome(); renderMaker(); });
-let homeAvatar2 = null;
+let homeAvatar2 = null, homeRel = 'kou';
+function renderRel(){ $('#relCtl').innerHTML = Object.entries(REL).map(([k, [ic, n, d]]) => `<button type="button" role="radio" data-rel="${k}" aria-checked="${k === homeRel}"><i class="ci" style="--ic:${{kon: '#FFE0EC', kou: '#FFE7A8', fuu: '#E3E9FF'}[k]}">${ic}</i><b>${n}</b><small>${d}</small></button>`).join(''); }
 const partnerOf = a => cleanAvatar({...a, sex: a.sex === 'm' ? 'f' : 'm', hair: a.sex === 'm' ? 'long' : 'short', shirt: (a.shirt + 3) % SHIRTS.length});
 function renderMaker2(){
   const a = homeAvatar2 = cleanAvatar(homeAvatar2 || partnerOf(homeAvatar)), opt = (key, list, cur, sw) => list.map(([v, label]) => `<button type="button" role="radio" class="${sw ? 'sw' : ''}" data-mk2="${key}" data-v="${v}" aria-checked="${String(v) === String(cur)}" ${sw ? `style="background:${label}" aria-label="${key}${v}"` : ''}>${sw ? '' : label}</button>`).join('');
@@ -7693,10 +7749,11 @@ function renderMaker2(){
   const nm = ($('#p2Name').value || '').trim() || 'パートナー';
   $('#p2Preview').innerHTML = `<g transform="translate(-30 4) scale(1.2)">${pxPerson(1, homeWorld, homeAvatar)}</g><g transform="translate(32 4) scale(1.2)">${pxPerson(1, homeWorld, a)}</g><text x="-30" y="-94" text-anchor="middle" font-size="9" font-weight="800" fill="#2E8FE0" font-family="${FONT}">${esc(($('#heroNameInput').value || '').trim() || 'あなた')}</text><text x="32" y="-94" text-anchor="middle" font-size="9" font-weight="800" fill="#E0529B" font-family="${FONT}">${esc(nm)}</text>`;
 }
-const saveP2 = () => store.set('mindquest-p2', {avatar: homeAvatar2, name: $('#p2Name').value || ''});
+const saveP2 = () => store.set('mindquest-p2', {avatar: homeAvatar2, name: $('#p2Name').value || '', rel: homeRel});
+$('#relCtl').addEventListener('click', e => { const b = e.target.closest('[data-rel]'); if (!b) return; homeRel = b.dataset.rel; saveP2(); renderRel(); });
 $('#p2Ctl').addEventListener('click', e => { const b = e.target.closest('[data-mk2]'); if (!b) return; const k = b.dataset.mk2, v = b.dataset.v; homeAvatar2 = cleanAvatar({...homeAvatar2, [k]: ['skin', 'hc', 'shirt'].includes(k) ? +v : v}); if (k === 'sex' && homeAvatar2.hair === 'short' && v === 'f') homeAvatar2.hair = 'long'; saveP2(); renderMaker2(); });
 $('#p2Name').addEventListener('input', () => { saveP2(); renderMaker2(); });
-{ const p = store.get('mindquest-p2', null); if (p){ if (p.avatar) homeAvatar2 = cleanAvatar(p.avatar); $('#p2Name').value = String(p.name || '').slice(0, 8); } }
+{ const p = store.get('mindquest-p2', null); if (p){ if (p.avatar) homeAvatar2 = cleanAvatar(p.avatar); if (REL[p.rel]) homeRel = p.rel; $('#p2Name').value = String(p.name || '').slice(0, 8); } }
 function saveHome(){ store.set('mindquest-hero', {cls: homeCls, world: homeWorld, avatar: homeAvatar, name: $('#heroNameInput').value || '', age: $('#ageInput').value || ''}); }
 $('#worldCtl').addEventListener('click', e => { const b = e.target.closest('[data-world]'); if (!b) return; homeWorld = b.dataset.world; saveHome(); renderMaker(); });
 document.querySelector('.maker-ctl').addEventListener('click', e => { const b = e.target.closest('[data-mk]'); if (!b) return; const k = b.dataset.mk, v = b.dataset.v; homeAvatar = cleanAvatar({...homeAvatar, [k]: ['skin', 'hc', 'shirt'].includes(k) ? +v : v}); if (k === 'sex' && homeAvatar.hair === 'short' && v === 'f') homeAvatar.hair = 'long'; saveHome(); renderMaker(); });
@@ -7708,7 +7765,7 @@ function renderVs(){
   if (homeMode === 'quest' && !$('#worldCtl').firstChild) renderMaker();
   document.querySelectorAll('#cpuCtl [data-cpu]').forEach(b => b.setAttribute('aria-checked', String(+b.dataset.cpu === homeCpu)));
   $('#onlineBox').hidden = !$('#chkOnline').checked;
-  { const life = LIFE_C.has(presetKey); $('.coop-sec').hidden = !life; if (!life) $('#chkCoop').checked = false; $('#coopBox').hidden = !$('#chkCoop').checked; if (!$('#coopBox').hidden) renderMaker2(); $('#coopLbl').textContent = '💑 パートナーと協力プレー';
+  { const life = LIFE_C.has(presetKey); $('.coop-sec').hidden = !life; if (!life) $('#chkCoop').checked = false; $('#coopBox').hidden = !$('#chkCoop').checked; if (!$('#coopBox').hidden){ renderRel(); renderMaker2(); } $('#coopLbl').textContent = '💑 パートナーと協力プレー';
     $('#coopNote').textContent = 'ふたりの理想の暮らしを、いっしょに作る冒険。1台を2人で使い、サイコロは交代、問いは「ふたり」向けの内容になり、関所では2人とも答えます。ふたりそろって答えると「協力ボーナス」！'; }
   if (!inViewer) $('#onlineNote').textContent = '通信対戦は、Claudeで共有したこのページを開いて遊ぶときに使えます（アプリ版ではCPU対戦のみ）。';
 }
