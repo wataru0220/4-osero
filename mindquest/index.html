@@ -981,6 +981,9 @@ body.mg-lock{overflow:hidden}
 .adca-rate{display:flex;align-items:center;gap:4px}.adca-rate span{font-size:12px;font-weight:800;color:var(--muted);margin-right:4px}.adca-rate button{border:none;background:none;font-size:24px;color:#D8DCE7;padding:0 2px}.adca-rate button.on{color:#F2B33A}
 .adca-dec{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.adca-dec button{padding:9px 4px;border-radius:12px;border:1.5px solid var(--line2);background:#fff;font-weight:800;font-size:12.5px}.adca-dec button.on{background:#1B2140;color:#fff;border-color:#1B2140}
 @media (max-width:420px){.adca-dec{grid-template-columns:1fr}}
+.pdca-plan{display:grid;gap:6px}.pdca-plan label{display:grid;gap:3px;font-size:12px;font-weight:800;color:var(--muted)}.pdca-plan input{border:1.5px solid var(--line2);border-radius:12px;padding:10px 12px;font-size:16px;background:var(--field);color:var(--ink);font-weight:500}
+.pdca-span{display:flex;align-items:center;gap:6px}.pdca-span span{font-size:12px;font-weight:800;color:var(--muted)}.pdca-span button{padding:6px 14px;border-radius:999px;border:1.5px solid var(--line2);background:#fff;font-weight:800}.pdca-span button.on{background:#1B2140;color:#fff;border-color:#1B2140}
+.adca-q small{font-weight:600;color:var(--muted)}
 .pr-notes{margin:0;padding-left:1.1em;display:grid;gap:4px;font-size:13px}.pr-notes b{margin-right:6px}
 
 .coop-sec{gap:6px}.coop-sec .switch b{font-size:15px}.coop-sec > small{color:var(--muted);font-size:12px;line-height:1.5}
@@ -4030,7 +4033,7 @@ function prScore(P){
   if (real.length) parts.push([real.filter(t => t.done).length / real.length, 60]);
   if (P.habits.length) parts.push([P.habits.reduce((s, h) => s + d7.filter(d => h.checks[d]).length, 0) / (P.habits.length * 7), 28]);
   if (P.quits.length) parts.push([P.quits.reduce((s, q) => s + d7.filter(d => q.checks[d]).length, 0) / (P.quits.length * 7), 12]);
-  { const C = adcaOf(P), stepN = (P.cycles || []).length * 4 + ['A', 'D', 'C', 'A2'].indexOf(C.ph); parts.push([Math.min(1, stepN / 12), 20]); }
+  { const C = adcaOf(P), stepN = (P.cycles || []).length * 4 + ['P', 'D', 'C', 'A'].indexOf(C.ph); parts.push([Math.min(1, stepN / 12), 20]); }
   const w = parts.reduce((s, p) => s + p[1], 0); return w ? Math.round(parts.reduce((s, p) => s + p[0] * p[1], 0) / w * 100) : 0;
 }
 const PR_RANK = [[0, '見習い', 1], [20, '挑戦者', 2], [40, '実践者', 3], [60, '達人', 4], [80, 'マスター', 5], [100, '夢の実現者', 5]];
@@ -4043,9 +4046,9 @@ function prCoach(P){
   const next = P.tasks.find(t => !t.done && t.k === 'first') || P.tasks.find(t => !t.done && t.k === 'act') || P.tasks.find(t => !t.done && t.k !== 'plan');
   const h = P.habits[0], st = h ? prStreak(h) : 0, who = P.coop ? `${P.coop[0]}さんと${P.coop[1]}さん` : 'きみ';
   const C = adcaOf(P), cd = C.start ? Math.round((new Date(today) - new Date(C.start)) / 864e5) + 1 : 0;
-  if (C.ph === 'D' && cd >= 7 && sc < 100) return `「${C.act}」を始めて${cd}日。ADCAの「チェック」の時期だよ。うまくいったこと・いかなかったことをふり返って、やり方を改善しよう。`;
-  if (C.ph === 'C') return 'ふり返りは、自分を責めるためじゃない。うまくいった理由と、つまずいた理由を見つけるためさ。正直に書いてみよう。';
-  if (C.ph === 'A2') return '改善は小さくていい。「時間を変える」「量を半分にする」くらいの工夫で、次のサイクルはぐっと回りやすくなるよ。';
+  if (C.ph === 'D' && cd >= (C.span || 7) && sc < 100) return `計画「${C.act}」の期間（${C.span || 7}日）が終わったね。PDCAの「チェック」の時期だよ。計画どおりにできたか評価しよう。`;
+  if (C.ph === 'C') return '評価は、自分を責めるためじゃない。できた理由と、できなかった原因を見つけるためさ。正直に書いてみよう。';
+  if (C.ph === 'A') return '改善策は小さくていい。「時間を変える」「量を半分にする」くらいの見直しで、次の計画はぐっと回りやすくなるよ。';
   if (sc >= 100) return `ホッホー！ 達成度100％！ ${who}は「${P.theme}」の夢の実現者だ。次の夢も、いっしょに描こう。`;
   if (lastAct < 0 && P.start >= d[1]) return `ホッホー、実践モードへようこそ！ わたしはフクロウ先生。きみの実践に毎日つきあうよ。まずは「${next ? next.t : h ? h.t : '小さな一歩'}」から始めよう。できたらチェックしてね。`;
   if (lastAct < 0) return `ホッホー、久しぶりだね。続けられなかった日があっても大丈夫。今日は「${next ? next.t : h ? h.t : '小さな一歩'}」を5分だけやってみよう。`;
@@ -4054,50 +4057,54 @@ function prCoach(P){
   if (h && st >= 3) return `必殺技「${h.t}」が${st}日連続！ その調子。明日もここでチェックしよう。`;
   if (h && !h.checks[today]) return `今日の必殺技「${h.t}」はもうやった？ やったらチェックしよう。${next ? `時間があれば「${next.t}」もね。` : ''}`;
   if (!P.notes.length || P.notes[P.notes.length - 1].d < d[1]) { if (new Date().getDay() === 0 || P.notes.length === 0 && P.start < d[1]) return '今週をふり返ろう。下の「1週間のふり返り」に、うまくいったことと、次に変えることを書いてみて。'; }
-  if (C.ph === 'A' && (P.cycles || []).length === 0) return `ADCAは「まず動く」から。完ぺきな計画はいらないよ。下のADCAサイクルで、やってみることを1つ決めよう。`;
+  if (C.ph === 'P' && (P.cycles || []).length === 0) return `PDCAは「計画（Plan）」から。下のPDCAサイクルで、何を・どのくらい・いつまでにやるか決めよう。`;
   if (next) return `次は「${next.t}」に挑戦してみよう。小さく始めるのがコツだよ。`;
   return `達成度${sc}％。毎日の必殺技とやめることのチェックを続けて、100％をめざそう！`;
 }
-/* ---------- ADCA cycle: Action (move first) → Do (keep going) → Check (look back) → Action (improve and go again) ---------- */
-const ADCA_PH = [['A', 'アクション', 'まず動く', '🏃'], ['D', 'ドゥ', 'やり続ける', '🔁'], ['C', 'チェック', 'ふり返る', '🔍'], ['A2', 'アクション', '改善して次へ', '🔧']];
-const adcaOf = P => P.adca || (P.adca = {n: 1, ph: 'A', act: '', start: null, days: {}, rate: 0, good: '', bad: '', dec: '', chg: ''});
+/* ---------- PDCA cycle: Plan (what, how much, until when) → Do → Check (evaluate) → Action (improve and plan again) ---------- */
+const ADCA_PH = [['P', 'プラン', '計画する', '📝'], ['D', 'ドゥ', '実行する', '🏃'], ['C', 'チェック', '評価する', '🔍'], ['A', 'アクション', '改善する', '🔧']];
+const adcaOf = P => P.adca || (P.adca = {n: 1, ph: 'P', act: '', goal: '', span: 7, start: null, days: {}, rate: 0, good: '', bad: '', dec: '', chg: ''});
 function adcaHTML(P){
   const C = adcaOf(P), today = prToday(), pi = ADCA_PH.findIndex(p => p[0] === C.ph), dN = C.start ? Math.max(1, Math.round((new Date(today) - new Date(C.start)) / 864e5) + 1) : 0, doneD = Object.keys(C.days).length;
-  const ring = `<div class="adca-ring">${ADCA_PH.map(([k, en, jp, ic], i) => `<div class="adca-st${i === pi ? ' on' : i < pi ? ' done' : ''}"><i>${ic}</i><b>${k === 'A2' ? 'A' : k}</b><small>${jp}</small></div>`).join('<span class="adca-ar">→</span>')}</div>`;
+  const ring = `<div class="adca-ring">${ADCA_PH.map(([k, en, jp, ic], i) => `<div class="adca-st${i === pi ? ' on' : i < pi ? ' done' : ''}"><i>${ic}</i><b>${k}</b><small>${jp}</small></div>`).join('<span class="adca-ar">→</span>')}</div>`;
   const sugg = P.tasks.filter(t => !t.done && t.k !== 'plan').slice(0, 4).map(t => `<button type="button" class="ex" data-pr="adca-pick" data-v="${esc(t.t)}">${esc(t.t)}</button>`).join('');
   let body = '';
-  if (C.ph === 'A') body = `<p class="adca-q">${C.n > 1 ? `第${C.n}サイクル。前回の改善をふまえて、` : ''}まず何をやってみる？ 考えすぎず、すぐ動けることを1つ決めよう。</p>
-    <div class="pr-add"><input id="adcaAct" maxlength="60" value="${esc(C.act)}" placeholder="例：過去問を1日1問解く" aria-label="やってみること"><button type="button" class="btn sm primary" data-pr="adca-go">これで動き出す！</button></div>${sugg ? `<div class="examples">${sugg}</div>` : ''}`;
-  else if (C.ph === 'D') body = `<p class="adca-q">「<b>${esc(C.act)}</b>」を続けよう（${dN}日目・目安は7日）。</p>
+  if (C.ph === 'P') body = `<p class="adca-q">${C.n > 1 ? `第${C.n}サイクル。前回の改善をふまえて、` : ''}計画を立てよう。何を・どのくらい・いつまでにやる？</p>
+    <div class="pdca-plan"><label>何を<input id="adcaAct" maxlength="60" value="${esc(C.act)}" placeholder="例：過去問を1日1問解く" aria-label="何をやるか"></label>
+      <label>どのくらい（目標）<input id="adcaGoal" maxlength="40" value="${esc(C.goal || '')}" placeholder="例：7日のうち5日はやる" aria-label="目標"></label>
+      <div class="pdca-span"><span>期間</span>${[7, 14, 30].map(n => `<button type="button" class="${(C.span || 7) === n ? 'on' : ''}" data-pr="adca-span" data-v="${n}">${n}日</button>`).join('')}</div></div>
+    ${sugg ? `<div class="examples">${sugg}</div>` : ''}<button type="button" class="btn sm primary" data-pr="adca-go">この計画で実行する！</button>`;
+  else if (C.ph === 'D') body = `<p class="adca-q">計画「<b>${esc(C.act)}</b>」を実行しよう（${dN}日目／期間${C.span || 7}日）${C.goal ? `<br><small>目標：${esc(C.goal)}</small>` : ''}</p>
     <button type="button" class="pr-chk${C.days[today] ? ' on' : ''}" data-pr="adca-day" aria-pressed="${!!C.days[today]}"><i>${C.days[today] ? '✓' : ''}</i><span>今日やった<small>${doneD}日やった</small></span></button>
     <div class="pr-cal">${prDays(14).map(d => `<i class="${C.days[d] ? 'on' : ''}${d === today ? ' today' : ''}"></i>`).join('')}</div>
-    <button type="button" class="btn sm${dN >= 7 ? ' primary' : ''}" data-pr="adca-check">ふり返り（チェック）へ進む →</button>`;
-  else if (C.ph === 'C') body = `<p class="adca-q">「<b>${esc(C.act)}</b>」を${doneD}日やった。ふり返ってみよう。</p>
-    <div class="adca-rate"><span>うまくいった度</span>${[1, 2, 3, 4, 5].map(v => `<button type="button" class="${C.rate >= v ? 'on' : ''}" data-pr="adca-rate" data-v="${v}" aria-label="${v}点">★</button>`).join('')}</div>
-    <div class="pr-note"><input id="adcaGood" maxlength="60" value="${esc(C.good)}" placeholder="よかったこと・続けたいこと" aria-label="よかったこと"><input id="adcaBad" maxlength="60" value="${esc(C.bad)}" placeholder="うまくいかなかったこと・その理由" aria-label="うまくいかなかったこと"></div>
+    <button type="button" class="btn sm${dN >= (C.span || 7) ? ' primary' : ''}" data-pr="adca-check">評価（チェック）へ進む →</button>`;
+  else if (C.ph === 'C') body = `<p class="adca-q">計画「<b>${esc(C.act)}</b>」を${doneD}日実行した${C.goal ? `（目標：${esc(C.goal)}）` : ''}。計画どおりにできたか評価しよう。</p>
+    <div class="adca-rate"><span>計画どおり度</span>${[1, 2, 3, 4, 5].map(v => `<button type="button" class="${C.rate >= v ? 'on' : ''}" data-pr="adca-rate" data-v="${v}" aria-label="${v}点">★</button>`).join('')}</div>
+    <div class="pr-note"><input id="adcaGood" maxlength="60" value="${esc(C.good)}" placeholder="できたこと・うまくいった理由" aria-label="できたこと"><input id="adcaBad" maxlength="60" value="${esc(C.bad)}" placeholder="できなかったこと・その原因" aria-label="できなかったこと"></div>
     <button type="button" class="btn sm primary" data-pr="adca-improve">改善（アクション）へ進む →</button>`;
-  else body = `<p class="adca-q">ふり返りをもとに、次はどうする？</p>
-    <div class="adca-dec">${[['keep', '👍 このまま続ける'], ['change', '🔧 やり方を変えて続ける'], ['next', '➡️ 別のことに挑戦']].map(([k, n]) => `<button type="button" class="${C.dec === k ? 'on' : ''}" data-pr="adca-dec" data-v="${k}">${n}</button>`).join('')}</div>
-    <div class="pr-add"><input id="adcaChg" maxlength="60" value="${esc(C.chg)}" placeholder="${C.dec === 'next' ? '次に挑戦すること' : '次はこう変える（例：朝に時間を移す）'}" aria-label="次の工夫"><button type="button" class="btn sm primary" data-pr="adca-next">次のサイクルへ →</button></div>`;
-  const hist = (P.cycles || []).slice(-4).reverse().map(c => `<li><b>第${c.n}サイクル</b>「${esc(c.act)}」${c.doneD}日・${'★'.repeat(c.rate || 0)}${c.chg ? `　→ ${esc(c.chg)}` : ''}</li>`).join('');
-  return `<div class="pr-sec adca"><h4>🔄 ADCAサイクル<small>まず動く → やり続ける → ふり返る → 改善する。動きながら良くしていく回し方</small><em>${(P.cycles || []).length}周</em></h4>${ring}<div class="adca-body">${body}</div>${hist ? `<ul class="pr-notes">${hist}</ul>` : ''}</div>`;
+  else body = `<p class="adca-q">評価をもとに、改善策を決めよう。次の計画はどうする？</p>
+    <div class="adca-dec">${[['keep', '👍 同じ計画で続ける'], ['change', '🔧 計画を見直す'], ['next', '➡️ 新しい計画を立てる']].map(([k, n]) => `<button type="button" class="${C.dec === k ? 'on' : ''}" data-pr="adca-dec" data-v="${k}">${n}</button>`).join('')}</div>
+    <div class="pr-add"><input id="adcaChg" maxlength="60" value="${esc(C.chg)}" placeholder="${C.dec === 'next' ? '次の計画で取り組むこと' : '改善策（例：朝に時間を移す）'}" aria-label="改善策"><button type="button" class="btn sm primary" data-pr="adca-next">次の計画（P）へ →</button></div>`;
+  const hist = (P.cycles || []).slice(-4).reverse().map(c => `<li><b>第${c.n}サイクル</b>「${esc(c.act)}」${c.doneD}日${c.goal ? `（目標：${esc(c.goal)}）` : ''}・${'★'.repeat(c.rate || 0)}${c.chg ? `　→ ${esc(c.chg)}` : ''}</li>`).join('');
+  return `<div class="pr-sec adca"><h4>🔄 PDCAサイクル<small>計画（Plan）→ 実行（Do）→ 評価（Check）→ 改善（Action）をくり返して、目標に近づく</small><em>${(P.cycles || []).length}周</em></h4>${ring}<div class="adca-body">${body}</div>${hist ? `<ul class="pr-notes">${hist}</ul>` : ''}</div>`;
 }
 function adcaAct(P, a, v){
   const C = adcaOf(P), today = prToday(), val = id => (($('#' + id) || {}).value || '').trim().slice(0, 60);
   if (a === 'adca-pick'){ const i = $('#adcaAct'); if (i) i.value = v; return 'stay'; }
-  if (a === 'adca-go'){ const t = val('adcaAct'); if (!t){ toast('やってみることを1つ書こう'); return 'stay'; } C.act = t; C.ph = 'D'; C.start = today; C.days = {}; sfx.good(); toast('🏃 アクション！ まず動き出した'); }
+  if (a === 'adca-span'){ C.act = val('adcaAct') || C.act; C.goal = val('adcaGoal') || C.goal; C.span = +v || 7; sfx.step(); }
+  else if (a === 'adca-go'){ const t = val('adcaAct'); if (!t){ toast('何をやるか、計画を書こう'); return 'stay'; } C.act = t; C.goal = val('adcaGoal'); C.ph = 'D'; C.start = today; C.days = {}; sfx.good(); toast('📝 計画を立てた！ 実行（Do）スタート'); }
   else if (a === 'adca-day'){ if (C.days[today]) delete C.days[today]; else { C.days[today] = 1; sfx.good(); } }
   else if (a === 'adca-check'){ C.ph = 'C'; sfx.next(); }
   else if (a === 'adca-rate'){ C.rate = +v; C.good = val('adcaGood') || C.good; C.bad = val('adcaBad') || C.bad; sfx.step(); }
-  else if (a === 'adca-improve'){ C.good = val('adcaGood'); C.bad = val('adcaBad'); if (!C.rate && !C.good && !C.bad){ toast('うまくいった度か、ふり返りを書こう'); return 'stay'; } C.ph = 'A2'; sfx.next(); }
+  else if (a === 'adca-improve'){ C.good = val('adcaGood'); C.bad = val('adcaBad'); if (!C.rate && !C.good && !C.bad){ toast('計画どおり度か、評価を書こう'); return 'stay'; } C.ph = 'A'; sfx.next(); }
   else if (a === 'adca-dec'){ C.dec = v; C.chg = val('adcaChg') || C.chg; sfx.step(); }
   else if (a === 'adca-next'){
-    C.chg = val('adcaChg'); if (!C.dec){ toast('次にどうするかを選ぼう'); return 'stay'; }
-    P.cycles = P.cycles || []; P.cycles.push({n: C.n, act: C.act, doneD: Object.keys(C.days).length, rate: C.rate, good: C.good, bad: C.bad, dec: C.dec, chg: C.chg, end: today});
+    C.chg = val('adcaChg'); if (!C.dec){ toast('次の計画をどうするか選ぼう'); return 'stay'; }
+    P.cycles = P.cycles || []; P.cycles.push({n: C.n, act: C.act, goal: C.goal, doneD: Object.keys(C.days).length, rate: C.rate, good: C.good, bad: C.bad, dec: C.dec, chg: C.chg, end: today});
     if (C.good || C.bad) P.notes.push({d: today, good: C.good, next: C.chg || C.bad});
     const nextAct = C.dec === 'keep' ? C.act : C.chg || C.act;
-    P.adca = {n: C.n + 1, ph: 'A', act: nextAct, start: null, days: {}, rate: 0, good: '', bad: '', dec: '', chg: ''};
-    sfx.done(); toast(`🔄 第${C.n}サイクル完了！ 次のサイクルへ`);
+    P.adca = {n: C.n + 1, ph: 'P', act: nextAct, goal: C.dec === 'next' ? '' : C.goal, span: C.span || 7, start: null, days: {}, rate: 0, good: '', bad: '', dec: '', chg: ''};
+    sfx.done(); toast(`🔄 PDCA 第${C.n}サイクル完了！ 次の計画へ`);
   }
   return '';
 }
@@ -4120,7 +4127,7 @@ function practiceHTML(){
     ${habits || quits ? `<div class="pr-sec"><h4>📅 毎日のチェック<small>やったら今日の分をチェック。カレンダーは2週間分</small></h4>${habits}${quits}</div>` : ''}
     ${cats}
     <div class="pr-add"><input id="prNew" maxlength="60" placeholder="やることを自分で足す（例：資料を1冊読む）" aria-label="やることを足す" autocomplete="off"><button type="button" class="btn sm primary" data-pr="add">足す</button></div>
-    ${notes ? `<div class="pr-sec"><h4>📝 ふり返りの記録<small>ADCAの「チェック」で書いたこと</small></h4><ul class="pr-notes">${notes}</ul></div>` : ''}
+    ${notes ? `<div class="pr-sec"><h4>📝 評価の記録<small>PDCAの「チェック」で書いたこと</small></h4><ul class="pr-notes">${notes}</ul></div>` : ''}
     <p class="hint">記録はこの端末に保存されます。新しい冒険を始めても、この実践プランは残ります。</p>
     <button type="button" class="btn link" data-pr="remove" style="align-self:flex-start">このプランを消す</button>`;
 }
@@ -4172,7 +4179,7 @@ ${done || 'まだなし'}
 ${undone || 'なし'}
 ${h ? `毎日の必殺技：「${h.t}」（${prStreak(h)}日連続）` : ''}
 ${note ? `最近のふり返り：うまくいった「${note.good}」／次に変える「${note.next}」` : ''}
-ADCAサイクル：第${adcaOf(P).n}サイクルの「${({A: 'アクション（まず動く）', D: 'ドゥ（やり続ける）', C: 'チェック（ふり返る）', A2: 'アクション（改善）'})[adcaOf(P).ph]}」の段階${adcaOf(P).act ? `、取り組み中「${adcaOf(P).act}」` : ''}`, {modelTier: 'default'});
+PDCAサイクル：第${adcaOf(P).n}サイクルの「${({P: 'プラン（計画）', D: 'ドゥ（実行）', C: 'チェック（評価）', A: 'アクション（改善）'})[adcaOf(P).ph]}」の段階${adcaOf(P).act ? `、計画「${adcaOf(P).act}」${adcaOf(P).goal ? `（目標：${adcaOf(P).goal}）` : ''}` : ''}`, {modelTier: 'default'});
       prAI = {id: P.id, text: String((r && r.text) || '').trim().slice(0, 400), wait: false};
     } catch (e){ prAI = {id: P.id, text: 'いまはAIコーチにつながりませんでした。', wait: false}; }
     prRender();
