@@ -954,7 +954,7 @@ body.mg-lock{overflow:hidden}
 .purpose,.job-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .course-pick{display:grid;gap:6px}
 .coop-sec{gap:6px}.coop-sec .switch b{font-size:15px}.coop-sec > small{color:var(--muted);font-size:12px;line-height:1.5}
-.coop-box{display:grid;gap:4px}.coop-box input{border:1.5px solid var(--line2);border-radius:12px;padding:10px 12px;font-size:16px;background:var(--field)}.coop-box small{color:var(--muted);font-size:11.5px}
+.coop-box{display:grid;gap:6px}.coop-sec .maker{margin-top:2px}.coop-box input{border:1.5px solid var(--line2);border-radius:12px;padding:10px 12px;font-size:16px;background:var(--field)}.coop-box small{color:var(--muted);font-size:11.5px}
 .coop-turn{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;padding:8px 12px;border-radius:12px;font-size:15px;color:#fff;background:#2E8FE0}.coop-turn.p1{background:#E0529B}.coop-turn span{font-size:12px;opacity:.85}
 .coop-who{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.coop-who > span{font-size:12px;font-weight:800;color:var(--muted)}
 .coop-who button{padding:7px 14px;border-radius:999px;border:2px solid var(--line2);background:#fff;font-weight:800;font-size:14px;color:var(--ink2)}
@@ -1421,7 +1421,20 @@ body.mg-lock{overflow:hidden}
       </div>
       <div class="vs-sec coop-sec"><label class="switch"><input type="checkbox" id="chkCoop"> <b id="coopLbl">ふたりで協力プレー</b></label>
         <small id="coopNote">1台を2人で使います。サイコロは交代でふり、関所の問いには2人とも答えます。ふたりそろって答えると「協力ボーナス」！</small>
-        <div class="coop-box" id="coopBox" hidden><input id="p2Name" maxlength="8" placeholder="2人目の名前" aria-label="2人目の名前" autocomplete="off"><small>2人目の勇者は、1人目と並んで旅をします</small></div></div>
+        <div class="coop-box" id="coopBox" hidden>
+          <div class="maker">
+            <svg id="p2Preview" viewBox="-70 -104 140 112" aria-label="パートナーの見た目"></svg>
+            <div class="maker-ctl" id="p2Ctl">
+              <input id="p2Name" maxlength="8" placeholder="パートナーの名前" aria-label="パートナーの名前" autocomplete="off">
+              <div class="mk-row"><span>性別</span><div class="mk-opts" id="mk2Sex" role="radiogroup" aria-label="パートナーの性別"></div></div>
+              <div class="mk-row"><span>肌の色</span><div class="mk-opts" id="mk2Skin" role="radiogroup" aria-label="パートナーの肌の色"></div></div>
+              <div class="mk-row"><span>体型</span><div class="mk-opts" id="mk2Body" role="radiogroup" aria-label="パートナーの体型"></div></div>
+              <div class="mk-row"><span>髪型</span><div class="mk-opts" id="mk2Hair" role="radiogroup" aria-label="パートナーの髪型"></div></div>
+              <div class="mk-row"><span>髪の色</span><div class="mk-opts" id="mk2Hc" role="radiogroup" aria-label="パートナーの髪の色"></div></div>
+              <div class="mk-row"><span>服の色</span><div class="mk-opts" id="mk2Shirt" role="radiogroup" aria-label="パートナーの服の色"></div></div>
+            </div>
+          </div>
+          <small>パートナーは、あなたの勇者と並んで旅をします</small></div></div>
       <div class="vs-row"><label class="switch"><input type="checkbox" id="chkOnline"> 通信対戦（友だちと同時にレース）</label></div>
       <div class="vs-online" id="onlineBox" hidden>
         <input id="raceCode" maxlength="12" placeholder="合言葉（例：くりこま）" aria-label="合言葉" autocomplete="off">
@@ -6091,7 +6104,7 @@ const FUN_ALT = {
   pick: ['候補の中で、考えるだけで顔がにやけるのはどれ？', 'コインを投げて「表は〇〇」と決めたとき、本当は表が出てほしいのは？']
 };
 function funAlt(x, st, si, base){
-  if (!st || st.p >= 0 || st.monster || isPlan(st)) return base;
+  if (x.coop || !st || st.p >= 0 || st.monster || isPlan(st)) return base;
   const L = FUN_ALT[st.o]; if (!L) return base;
   const h = hash(`${x.theme}|${x.vseed || 0}|fun|${si}`);
   return h % 3 === 0 ? L[(h >> 3) % L.length] : base;
@@ -7561,14 +7574,64 @@ function addWild(stages, course){
   const job = course === 'career' || course === 'calling', picks = job ? [...take(WILD_JOB, 2), ...take(WILD, 2)] : take(WILD, 4), segs = [...take(['town', 'river', 'post'], 3), 'river'];
   return [...stages, ...picks.map(([l, q], k) => ({l: 'ひらめき：' + l, q, p: -1, min: 1, sec: 80, o: 'wild', wild: 1, npc: WILD_NPC[Math.floor(R() * WILD_NPC.length)], seg: segs[k], hint: '毎回ちがう「ひらめきの問い」。正解はありません。思いついたことをそのまま書くと、新しい発見があるかも！'}))];
 }
+/* ---------- couple questions: in the partner co-op the life courses ask about "the two of you" ----------
+   per course, per stage label: a new question (and label / form texts). Other stages stay as they are */
+const CP_COMMON = {
+  '支えてくれる人': {q: '森の奥は、ふたりだけでは進めない。ふたりを支えてくれる人は誰？ その人に何をお願いする？', fl: {who: ['ふたりを支えてくれる人は？', '支えてくれる人', '例：おたがいの両親'], ask: ['その人に何をお願いする？', 'お願い', '例：困ったときに相談にのってもらう']}},
+  'あなたの魅力': {l: 'おたがいの魅力', q: '丘の上で、おたがいを見つめてみよう。相手のいいところは？ それをふたりの暮らしにどう生かす？', fl: {str: ['相手のいいところは？（ふたりとも書こう）', '相手の魅力', '例：いつも笑わせてくれる'], use: ['それをふたりの暮らしにどう生かす？', '生かし方', '例：つらい日はふたりで笑い話をする']}, hint: 'ふだんは照れて言えないことも、ここなら言える。'},
+  'SWOT分析': {q: '軍師が地図を広げた。ふたりの作戦会議だ。ふたりの強み・弱みと、まわりの機会・脅威は？'},
+  'クロスSWOT': {q: '軍師が4つの作戦を並べた。ふたりのSWOTをかけ合わせて、作戦を立てよう！'},
+  '作戦': {q: '「{a}」が本当に起きてしまった！ そのとき、ふたりでどう乗りこえる？', alt: ['「{a}」でふたりの心が折れそう。誰に助けを求めて、どう動く？', '「{a}」が起きる前に、ふたりで今から打てる手は？']},
+  'やめること': {q: 'モンスター「いいわけ」が「いつか、そのうちでいいよ」とささやく…。ふたりの暮らしのじゃまをしている習慣や、つい言ってしまう言い訳は？'},
+  '必殺技': {q: 'ボスドラゴン「あきらめ」がほえる！「ふたりの夢なんて、どうせかなわないさ」──ふたりの必殺技でたおせ！ 何を・どのペースで・いつからやる？', fl: {what: ['ふたりの必殺技：何をする？', '何を', '例：週1回、ふたりで夢の話をする']}},
+  '時間管理': {q: '時の番人が4つの砂時計を並べた。ふたりの時間を、4つの箱に分けよう。'},
+  '理想の1日': {q: 'ひだまりの道へようこそ。夢がかなった日、ふたりは朝から夜まで、どんな1日を過ごしている？'},
+  '未来の自分': {l: '未来のふたり', q: '未来の道で、年を重ねたふたりに会った！ 未来のふたりは、今のふたりに何と言う？'},
+  '最初の一歩': {q: '門をひらく合言葉は「最初の一歩」。ふたりの必殺技「{@what}」のために、今日・明日やることは？', qf: '門をひらく合言葉は「最初の一歩」。ふたりで今日・明日から何をする？'}
+};
+const COUPLE_Q = {
+  life: {...CP_COMMON,
+    '理想の暮らし': {l: 'ふたりの理想の暮らし', q: 'はじまりの町の長老が聞く。ふたりにとって「{t}」はどんな幸せ？ 理由・誰と喜びたいか・何年後か・大切にしたいことを、話し合って決めよう。', fl: {why: ['ふたりがかなえたい理由は？', '理由', '例：毎日いっしょに笑っていたいから'], for: ['誰といっしょに喜びたい？', '誰と', '例：おたがいの家族'], core: ['ふたりで大切にしたいことは？', '大切なこと', '例：その日のことを話す時間'], score: ['いまのふたりの満足度は10点満点で何点？', '満足度', '例：6点']}},
+    '整えたいこと': {q: '道具屋の主人が聞く。「{t}」のために、ふたりでそろえたいもの・整えたいことは何だい？'},
+    'やること': {q: '「{a}」を整えるために、ふたりでそれぞれ何をする？', alt: ['「{a}」のために、今月ふたりで何から動く？', '「{a}」のために、役わり分担をするなら？']},
+    '先輩の知恵': {q: '先輩夫婦が笑う。「{t}」で、ふたりが先に知っておくといいことは何だと思う？'},
+    '不安': {q: 'モンスター「ふあん」がささやく…「ふたりじゃ無理だよ」。「{t}」で、ふたりがいちばん心配なことは何？', alt: ['モンスター「ふあん」が道をふさいだ！ ふたりの間で、すれちがいが起きるとしたら何？']},
+    '感謝したい人': {q: '城の大臣が問う。ここまで来られたのは、誰のおかげかな？ ふたりを育て、支えてくれた人は？'},
+    '恩返し': {q: '「{a}」に、ふたりでどんな感謝や恩返しをする？', vq: null},
+    '理想の住まい': {l: 'ふたりの住まい', q: '大工の棟梁が図面を広げた。ふたりの理想の住まいは？ どこに、どんな家を、何にこだわって、どれくらいの予算で？'}
+  },
+  lifeup: {...CP_COMMON,
+    '理想のパートナー': {l: 'ふたりの関係', q: '出会いの町の長老が聞く。ふたりはどんな関係でいたい？ 相手の好きなところ、大切にしたい価値観、いっしょにしたいこと、相手にしてあげたいことを書こう。', fl: {pkind: ['相手のどんなところが好き？', '好きなところ', '例：やさしくて、よく笑うところ'], pvalue: ['ふたりで大切にしたい価値観は？', '価値観', '例：家族の時間を大切にする'], pdo: ['ふたりでしたいことは？', 'したいこと', '例：毎年ひとつ、新しい場所へ旅行する'], pgive: ['相手にしてあげたいことは？', 'してあげたいこと', '例：疲れているときに話を聞く']}},
+    '出会い方': {l: 'ふたりの思い出', q: '町の案内人が聞く。ふたりはどこで出会った？ 心に残っているふたりの思い出は？', hint: '出会った日、はじめてのデート、忘れられない言葉。ふたりで思い出しながら書こう。'},
+    'やること': {q: '「{a}」のような思い出を、これからも作っていくために、ふたりで何をする？', alt: ['「{a}」の気持ちを忘れないために、ふたりで続けることは？']},
+    '理想の結婚': {q: '結婚の川のほとりで、川の精が聞く。ふたりの理想の結婚は？ いつごろ、どんな形で、どんなルールと約束を大切にする？'},
+    '話し合うこと': {q: '川の渡し守が聞く。ふたりで話し合っておきたいことは？（お金・仕事・家事・家族・住む場所…）'},
+    '理想の家族': {q: '子育ての洞窟の入口で、家族の守り神が聞く。ふたりで作りたい理想の家族は？ 何人で、どんな家族で、どんな習慣を大切にする？'},
+    '不安': {q: 'モンスター「ふあん」がささやく…「ふたりじゃ無理だよ」。ふたりで家族をつくるうえで、いちばん心配なことは何？', alt: ['モンスター「ふあん」が道をふさいだ！ ふたりの間で、すれちがいが起きるとしたら何？']},
+    '理想の家づくり': {q: '大工の棟梁が図面を広げた。ふたりの理想の家は？ どこに、どんな家を、何にこだわって、どれくらいの予算で建てる？'},
+    '家づくりの準備': {q: '山道の測量士が聞く。理想の家のために、ふたりで今から準備することは？'},
+    '理想の老後': {q: 'しあわせの住まいの門番が聞く。ふたりの理想の老後は？ どこで、誰と、毎日どんなことをして過ごしている？'},
+    '今から続けること': {q: '長生きの仙人が聞く。理想の老後のために、ふたりで今から続けることは？'}
+  }
+};
+function coupleStages(course, stages){
+  const M = COUPLE_Q[course]; if (!M) return stages;
+  return stages.map(st => {
+    const o = M[st.l]; if (!o || st.wild) return st;
+    const n = {...st, q: o.q, vq: undefined, alt: o.alt || undefined};
+    if (o.qf) n.qf = o.qf; if (o.l) n.l = o.l; if (o.hint) n.hint = o.hint;
+    if (o.fl && st.fields) n.fields = st.fields.map(f => o.fl[f[0]] ? [f[0], o.fl[f[0]][0], o.fl[f[0]][1], o.fl[f[0]][2], f[4]] : f);
+    return n;
+  });
+}
 function newSession(theme, stages, timed, mode, level, keep){
   stages = addWild(stages.filter(st => !st.wild), (keep && keep.course) || presetKey);
   keep = keep || {world: homeWorld, avatar: clone(homeAvatar), heroName: ($('#heroNameInput').value || '').trim().slice(0, 8), age: parseAge($('#ageInput').value)};
   S = {v: 4, theme, stages: clone(stages), world: keep.world, avatar: cleanAvatar(keep.avatar), heroName: keep.heroName || '', age: keep.age, course: keep.course || presetKey, cls: keep.cls || homeCls, tags: {[CLASSES[keep.cls || homeCls].tag]: 1}, goal: null, vseed: rnd(1e9), chapter: 1, lvCarry: 0, chapters: [], forks: clone((PRESETS[presetKey] || {}).forks || {}), routes: {}, timed, mode, level, ans: [], seq: 1, cur: '0:r', stat: {}, phase: 'play', result: null, aiopts: {},
     quest: mode === 'quest' ? {mental: 100, gold: 0, items: {}, fx: {}, vis: {}, rest: 'start', magic: (keep.cls || homeCls) === 'mage' ? 3 : 0, pos: 'start', pts: 0, rolls: 0, done: {}, qs: 'roll', ev: null, timeMod: 0, log: [], last: 1, rivals: null, finN: 0, place: 0, free: false} : null};
-  if (S.quest && $('#chkCoop').checked){ const a = cleanAvatar(S.avatar), life = LIFE_C.has(S.course);
+  if (S.quest && $('#chkCoop').checked && LIFE_C.has(S.course)){ const a = cleanAvatar(S.avatar), life = true;
     S.coop = {n: [S.heroName || 'プレイヤー1', ($('#p2Name').value || '').trim().slice(0, 8) || (life ? 'パートナー' : 'プレイヤー2')], cur: 0, turn: 0, last: 0,
-      av: cleanAvatar({...a, sex: a.sex === 'm' ? 'f' : 'm', hair: a.sex === 'm' ? 'long' : 'short', shirt: (a.shirt + 3) % SHIRTS.length})}; }
+      av: cleanAvatar(homeAvatar2 || partnerOf(a))}; S.stages = coupleStages(S.course, S.stages); }
   if (S.quest){ S.quest.rivals = newRivals(S).slice(0, homeCpu); S.quest.party = [];
     const code = ($('#raceCode').value || '').trim().slice(0, 12);
     S.online = $('#chkOnline').checked && code ? {code, nick: (S.heroName || 'プレイヤー').slice(0, 8), ci: rnd(OP_COLORS.length)} : null; if (bossStage(S) >= 0){ S.quest.beats = [{k: 'intro'}]; S.quest.qs = 'story'; } }
@@ -7617,6 +7680,23 @@ function renderPreview0(){
   $('#heroPreview').innerHTML = `<g transform="translate(-30 4) scale(1.2)">${pxPerson(1, homeWorld, homeAvatar)}</g><g transform="translate(32 4) scale(1.2)">${pxPerson(5, homeWorld, homeAvatar)}</g><text x="-30" y="-94" text-anchor="middle" font-size="9" font-weight="800" fill="#646B8A" font-family="${FONT}">Lv.1</text><text x="32" y="-94" text-anchor="middle" font-size="9" font-weight="800" fill="#C8362F" font-family="${FONT}">Lv.5 ${esc(WORLDS[homeWorld].hero)}</text>${nm ? `<text x="0" y="-2" text-anchor="middle" font-size="10" font-weight="800" fill="#1B2140" font-family="${FONT}" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(nm)}</text>` : ''}`;
 }
 $('#clsCtl').addEventListener('click', e => { const b = e.target.closest('[data-cls]'); if (!b) return; homeCls = b.dataset.cls; saveHome(); renderMaker(); });
+let homeAvatar2 = null;
+const partnerOf = a => cleanAvatar({...a, sex: a.sex === 'm' ? 'f' : 'm', hair: a.sex === 'm' ? 'long' : 'short', shirt: (a.shirt + 3) % SHIRTS.length});
+function renderMaker2(){
+  const a = homeAvatar2 = cleanAvatar(homeAvatar2 || partnerOf(homeAvatar)), opt = (key, list, cur, sw) => list.map(([v, label]) => `<button type="button" role="radio" class="${sw ? 'sw' : ''}" data-mk2="${key}" data-v="${v}" aria-checked="${String(v) === String(cur)}" ${sw ? `style="background:${label}" aria-label="${key}${v}"` : ''}>${sw ? '' : label}</button>`).join('');
+  $('#mk2Sex').innerHTML = opt('sex', [['m', '男性'], ['f', '女性']], a.sex);
+  $('#mk2Skin').innerHTML = opt('skin', SKINS.map((c, i) => [i, c]), a.skin, true);
+  $('#mk2Body').innerHTML = opt('body', BODIES, a.body);
+  $('#mk2Hair').innerHTML = opt('hair', HAIR_STYLES, a.hair);
+  $('#mk2Hc').innerHTML = opt('hc', HAIR_COLORS.map((c, i) => [i, c]), a.hc, true);
+  $('#mk2Shirt').innerHTML = opt('shirt', SHIRTS.map((c, i) => [i, c]), a.shirt, true);
+  const nm = ($('#p2Name').value || '').trim() || 'パートナー';
+  $('#p2Preview').innerHTML = `<g transform="translate(-30 4) scale(1.2)">${pxPerson(1, homeWorld, homeAvatar)}</g><g transform="translate(32 4) scale(1.2)">${pxPerson(1, homeWorld, a)}</g><text x="-30" y="-94" text-anchor="middle" font-size="9" font-weight="800" fill="#2E8FE0" font-family="${FONT}">${esc(($('#heroNameInput').value || '').trim() || 'あなた')}</text><text x="32" y="-94" text-anchor="middle" font-size="9" font-weight="800" fill="#E0529B" font-family="${FONT}">${esc(nm)}</text>`;
+}
+const saveP2 = () => store.set('mindquest-p2', {avatar: homeAvatar2, name: $('#p2Name').value || ''});
+$('#p2Ctl').addEventListener('click', e => { const b = e.target.closest('[data-mk2]'); if (!b) return; const k = b.dataset.mk2, v = b.dataset.v; homeAvatar2 = cleanAvatar({...homeAvatar2, [k]: ['skin', 'hc', 'shirt'].includes(k) ? +v : v}); if (k === 'sex' && homeAvatar2.hair === 'short' && v === 'f') homeAvatar2.hair = 'long'; saveP2(); renderMaker2(); });
+$('#p2Name').addEventListener('input', () => { saveP2(); renderMaker2(); });
+{ const p = store.get('mindquest-p2', null); if (p){ if (p.avatar) homeAvatar2 = cleanAvatar(p.avatar); $('#p2Name').value = String(p.name || '').slice(0, 8); } }
 function saveHome(){ store.set('mindquest-hero', {cls: homeCls, world: homeWorld, avatar: homeAvatar, name: $('#heroNameInput').value || '', age: $('#ageInput').value || ''}); }
 $('#worldCtl').addEventListener('click', e => { const b = e.target.closest('[data-world]'); if (!b) return; homeWorld = b.dataset.world; saveHome(); renderMaker(); });
 document.querySelector('.maker-ctl').addEventListener('click', e => { const b = e.target.closest('[data-mk]'); if (!b) return; const k = b.dataset.mk, v = b.dataset.v; homeAvatar = cleanAvatar({...homeAvatar, [k]: ['skin', 'hc', 'shirt'].includes(k) ? +v : v}); if (k === 'sex' && homeAvatar.hair === 'short' && v === 'f') homeAvatar.hair = 'long'; saveHome(); renderMaker(); });
@@ -7628,8 +7708,8 @@ function renderVs(){
   if (homeMode === 'quest' && !$('#worldCtl').firstChild) renderMaker();
   document.querySelectorAll('#cpuCtl [data-cpu]').forEach(b => b.setAttribute('aria-checked', String(+b.dataset.cpu === homeCpu)));
   $('#onlineBox').hidden = !$('#chkOnline').checked;
-  { const life = LIFE_C.has(presetKey); $('#coopBox').hidden = !$('#chkCoop').checked; $('#coopLbl').textContent = life ? '💑 パートナーと協力プレー' : '🤝 ふたりで協力プレー';
-    $('#p2Name').placeholder = life ? 'パートナーの名前' : '2人目の名前'; $('#coopNote').textContent = life ? 'ふたりの理想の暮らしを、いっしょに作る冒険。1台を2人で使い、サイコロは交代、関所の問いには2人とも答えます。ふたりそろって答えると「協力ボーナス」！' : '1台を2人で使います。サイコロは交代でふり、関所の問いには2人とも答えます。ふたりそろって答えると「協力ボーナス」！'; }
+  { const life = LIFE_C.has(presetKey); $('.coop-sec').hidden = !life; if (!life) $('#chkCoop').checked = false; $('#coopBox').hidden = !$('#chkCoop').checked; if (!$('#coopBox').hidden) renderMaker2(); $('#coopLbl').textContent = '💑 パートナーと協力プレー';
+    $('#coopNote').textContent = 'ふたりの理想の暮らしを、いっしょに作る冒険。1台を2人で使い、サイコロは交代、問いは「ふたり」向けの内容になり、関所では2人とも答えます。ふたりそろって答えると「協力ボーナス」！'; }
   if (!inViewer) $('#onlineNote').textContent = '通信対戦は、Claudeで共有したこのページを開いて遊ぶときに使えます（アプリ版ではCPU対戦のみ）。';
 }
 $('#cpuCtl').addEventListener('click', e => { const b = e.target.closest('[data-cpu]'); if (b){ homeCpu = +b.dataset.cpu; renderVs(); } });
