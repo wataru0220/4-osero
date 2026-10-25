@@ -625,6 +625,15 @@ details.own[open] summary{margin-bottom:8px}
 @keyframes btShake{25%{transform:translate(-6px,3px)}50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,2px)}}
 .bt-hero.awake svg{filter:drop-shadow(0 0 8px #FFD84D) drop-shadow(0 0 14px #FF7A3D)}
 .bt-mon.form2 svg{filter:hue-rotate(250deg) saturate(1.6) drop-shadow(0 0 12px #B04DFF);transform:scale(1.12)}
+.mg-duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.mg-duo button{display:grid;justify-items:center;gap:2px;padding:12px 6px;border-radius:16px;border:3px solid #fff;background:linear-gradient(180deg,#3A2A6A,#1B1430);color:#fff;font-weight:900;box-shadow:0 5px 0 #0B0820}
+.mg-duo button i{font-style:normal;font-size:30px;line-height:1}.mg-duo button b{font-size:15px}.mg-duo button small{font-size:10.5px;font-weight:600;color:#C9D0E6;line-height:1.35;text-align:center}
+.mg-duo button[data-fight="kick"]{background:linear-gradient(180deg,#B4322F,#5A1414)}.mg-duo button[data-fight="shoot"]{background:linear-gradient(180deg,#2E6BB4,#142A5A)}
+.mg-duo button:active{transform:translateY(4px);box-shadow:0 1px 0 #0B0820}.mg-duo button:disabled{opacity:.5}
+.mg-duo .mg-run{grid-column:1 / -1;padding:8px;flex-direction:row;background:#3A3350;border-width:2px;box-shadow:none;font-size:13px}.mg-duo .mg-run small{display:inline;margin-left:6px}
+.mg-duo.stage{position:relative;z-index:3;margin:0 14px 14px;grid-row:3;align-self:end}.battle .bt-log{grid-row:2}
+.mg-duo.stage button{padding:9px 6px}.mg-duo.stage button i{font-size:24px}.mg-duo.stage button small{display:none}.mg-duo.stage .mg-run small{display:inline}
+.mg-duo-h{margin:0;font-size:13px;font-weight:800}
 .mg-pick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .mg-pick b{grid-column:1 / -1;font-size:13px}
 .mg-pick button{display:grid;gap:2px;justify-items:center;padding:8px 4px;border-radius:12px;border:2px solid var(--line);background:#fff;font-weight:800;font-size:13px;color:var(--ink)}
@@ -3811,6 +3820,8 @@ function foeOf(k){
 }
 const heroAtk = () => { const lv = heroLevel(); return Math.round((12 + lv * 6 + Math.random() * 8 + gearBonus() * 3 + petAtk()) * (curCls() === 'warrior' ? 1.3 : 1)); };
 const fireDmg = () => 40 + heroLevel() * 10 + (curCls() === 'mage' ? 15 : 0);
+const MG_FIGHT = ['shoot', 'kick'];
+const fightPick = (F, cls) => `<div class="mg-duo${cls ? ' ' + cls : ''}">${MG_FIGHT.map(k => { const [ic, n, d] = MG[k]; return `<button type="button" data-fight="${k}" ${F.busy ? 'disabled' : ''}><i>${ic}</i><b>${n}で戦う</b><small>${d}</small></button>`; }).join('')}<button type="button" class="mg-run" data-fight="run" ${F.busy ? 'disabled' : ''}>🏃 にげる<small>${F.gold ? '9割で成功' : '6割で成功'}</small></button></div>`;
 const fightCmds = (F, Q, panelMode) => `<button type="button" data-fight="atk" ${F.busy ? 'disabled' : ''}>⚔️ こうげき<small>約${heroAtk()}</small></button><button type="button" data-fight="fire" ${F.busy || !Q.magic ? 'disabled' : ''}>🔥 まほう<small>ファイア ×${Q.magic}</small></button><button type="button" data-fight="guard" ${F.busy ? 'disabled' : ''}>🛡️ ぼうぎょ<small>ダメージ半分</small></button>${panelMode ? '' : `<button type="button" data-bt="item">🎒 どうぐ<small>もちもの</small></button>`}<button type="button" data-fight="run" ${F.busy ? 'disabled' : ''}>🏃 にげる<small>${F.gold ? '9割で成功' : '6割で成功'}</small></button>`;
 function fightOverHTML(F){
   if (F.won) return winHTML('', 'VICTORY!', `${esc(F.n)}をたおした！`, F.rew || [], '<button type="button" data-fight="end">ごほうびを受け取って進む →</button>');
@@ -3823,7 +3834,7 @@ function fightSceneHTML(F){
     <div class="bt-mon${F.won ? ' dead' : ''}"><div class="bt-tag"><b>${esc(F.n)} Lv.${F.lv}</b><span class="hpb"><i style="width:${hp}%"></i></span><small>HP ${Math.max(0, F.hp)}/${F.max}</small>${F.charge && !over ? '<em class="chg">⚡ 力をためている！</em>' : ''}</div>
       <svg viewBox="-75 -100 150 108" aria-hidden="true"><g class="bt-body" transform="translate(0 0) scale(1.4)">${pxSprite(`<use href="#mon-${F.kind}" style="--mc:${F.col}"/>`)}</g></svg></div>
     <div class="bt-hero${awake() ? ' awake' : ''}"><svg viewBox="-55 -80 110 88" aria-hidden="true"><g class="bt-body" transform="scale(1.1)">${pxPerson(lv)}</g></svg>${heroTagHTML('約' + heroAtk())}</div>
-    ${over ? fightOverHTML(F) : logHTML(F.log) + `<div class="bt-cmd five">${fightCmds(F, Q, false)}</div>`}
+    ${over ? fightOverHTML(F) : logHTML(F.log) + fightPick(F, 'stage')}
     <div class="bt-fx"></div>`;
 }
 function fightPanelHTML(){
@@ -3833,9 +3844,8 @@ function fightPanelHTML(){
     <p class="bt-rule">⚔️ ${BT_RULE}</p>
     ${statBarHTML()}${itemBarHTML('fight')}
     ${F.mg ? '<p class="hint" style="text-align:center">🎮 ミニゲーム中…（画面いっぱいで遊べます）</p>' : ''}
-    <div class="bt-cmd panel${over ? ' one' : ' four'}${F.mg ? ' hide' : ''}">${over ? `<button type="button" data-fight="end">${F.won ? 'ごほうびを受け取って進む →' : '先へ進む →'}</button>` : fightCmds(F, Q, true)}</div>
-    ${F.mg || over ? '' : `<div class="mg-pick"><b>🎮 ミニゲームで戦う</b>${Object.entries(MG).map(([k, [ic, n, d]]) => `<button type="button" data-fight="${k}">${ic} ${n}<small>${d}</small></button>`).join('')}</div>`}
-    <p class="hint">ぼうぎょ：その間に受けるダメージが半分。魔物が「力をためている」ときは次のこうげきが2倍なので、ぼうぎょがおすすめ。レベルが上がるほど魔物も強くなります。</p>`;
+    ${over ? `<div class="bt-cmd panel one"><button type="button" data-fight="end">${F.won ? 'ごほうびを受け取って進む →' : '先へ進む →'}</button></div>` : F.mg ? '' : `<p class="mg-duo-h">🎮 どちらで戦う？（魔物のHPを0にすれば勝ち。たおせなければ、もう一度えらべます）</p>${fightPick(F, '')}`}
+    <p class="hint">シューティングは弾幕をよけて撃ちまくる、格闘はパンチ・キック・ガードで戦う。レベルが上がるほど魔物も強くなります。</p>`;
 }
 function fightWin(F){
   const Q = rpgQ(), g = gainGold(F.gold ? 300 : 20 + F.lv * 10, ''), pts = F.gold ? 50 : 10 + F.lv * 5; Q.pts += pts; F.won = 1; F.busy = 0; F.mg = null;
@@ -4508,6 +4518,8 @@ function mountMG(){
       F.log = F.log || []; blogAdd(F.log, F.msg); F.turn = (F.turn || 1) + 1;
       if (taken && hurt(taken, `${F.n}との戦いで`, true)) return;
       if (F.hp <= 0){ F.viaMg = 1; fightWin(F); return; }
+      if (F.gold && Math.random() < .45){ F.ran = 1; F.fled = 1; F.runMsg = 'ゴールドスライムはにげだした…'; blogAdd(F.log, F.runMsg); qlog('ゴールドスライムににげられた'); save(); renderPanel(); return; }
+      blogAdd(F.log, `${F.n}はまだ立っている！（のこりHP ${F.hp}）もう一度、どちらで戦うかえらぼう`);
       save(); renderPanel();
     };
   }); };
