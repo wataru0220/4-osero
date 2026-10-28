@@ -125,6 +125,170 @@
     return { canvas: cv, scale: f, red, blue };
   }
 
+  // ---------- ② 自動読み取り：部屋（クリック1回／室名から）と、壁の撤去・新設 ----------
+  const maskCache = new Map();
+  // 図面の線（暗い画素）のマスク。長辺 maxPx に縮小して扱う（k＝縮小率）
+  async function lineMask(url, maxPx) {
+    const key = url.length + ":" + url.slice(-64) + ":" + maxPx;
+    if (maskCache.has(key)) return maskCache.get(key);
+    const img = await loadImg(url);
+    const k = Math.min(1, maxPx / Math.max(img.width, img.height)), w = Math.round(img.width * k), h = Math.round(img.height * k);
+    const m = { k, w, h, a: darkMask(img, k, w, h) };
+    if (maskCache.size > 6) maskCache.clear();
+    maskCache.set(key, m);
+    return m;
+  }
+  function dilate(a, w, h, r) {
+    if (r <= 0) return a;
+    const t = new Uint8Array(w * h), o = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (a[y * w + x]) for (let d = -r; d <= r; d++) { const xx = x + d; if (xx >= 0 && xx < w) t[y * w + xx] = 1; }
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (t[y * w + x]) for (let d = -r; d <= r; d++) { const yy = y + d; if (yy >= 0 && yy < h) o[yy * w + x] = 1; }
+    return o;
+  }
+  function drawBarriers(a, w, h, k, shapes) {
+    // 手で引いた壁も仕切りとして使う（扉の開口を閉じるのに便利）
+    (shapes || []).filter((s) => s.type === "wall" && s.pts).forEach((s) => {
+      for (let i = 0; i < s.pts.length - 1; i++) {
+        const p = s.pts[i], q = s.pts[i + 1], n = Math.ceil(Math.hypot(q.x - p.x, q.y - p.y) * k) + 1;
+        for (let j = 0; j <= n; j++) {
+          const x = Math.round((p.x + ((q.x - p.x) * j) / n) * k), y = Math.round((p.y + ((q.y - p.y) * j) / n) * k);
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < w && yy < h) a[yy * w + xx] = 1; }
+        }
+      }
+    });
+  }
+  // 塗りつぶした領域の外周をたどる（Moore近傍）→ 間引いて多角形に
+  function traceOutline(F, w, h) {
+    let s = -1;
+    for (let i = 0; i < w * h; i++) if (F[i]) { s = i; break; }
+    if (s < 0) return [];
+    const D = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+    const at = (x, y) => x >= 0 && y >= 0 && x < w && y < h && F[y * w + x];
+    const sx = s % w, sy = (s / w) | 0, pts = [];
+    let x = sx, y = sy, dir = 6, guard = 0;
+    do {
+      pts.push({ x, y });
+      let found = false;
+      for (let i = 0; i < 8; i++) {
+        const d = (dir + 6 + i) % 8, nx = x + D[d][0], ny = y + D[d][1];
+        if (at(nx, ny)) { x = nx; y = ny; dir = d; found = true; break; }
+      }
+      if (!found) break;
+    } while ((x !== sx || y !== sy) && ++guard < 400000);
+    return pts;
+  }
+  function rdp(pts, eps) {
+    if (pts.length < 3) return pts;
+    const dist = (p, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1; return Math.abs(dy * p.x - dx * p.y + b.x * a.y - b.y * a.x) / L; };
+    const keep = new Uint8Array(pts.length); keep[0] = keep[pts.length - 1] = 1;
+    const st = [[0, pts.length - 1]];
+    while (st.length) {
+      const [i, j] = st.pop(); let mx = 0, mi = -1;
+      for (let k = i + 1; k < j; k++) { const d = dist(pts[k], pts[i], pts[j]); if (d > mx) { mx = d; mi = k; } }
+      if (mx > eps && mi > 0) { keep[mi] = 1; st.push([i, mi], [mi, j]); }
+    }
+    return pts.filter((_, i) => keep[i]);
+  }
+  // 部屋の中の1点から、線に囲まれた範囲を塗りつぶして部屋の形を出す（px座標の多角形）
+  async function floodRoom(url, seed, shapes, opt) {
+    const o = opt || {};
+    const M = await lineMask(url, 1600), { k, w, h } = M;
+    const a = dilate(M.a, w, h, 1);
+    drawBarriers(a, w, h, k, shapes);
+    let sx = Math.round(seed.x * k), sy = Math.round(seed.y * k);
+    // 文字の上をクリックしたときは近くの空白から始める
+    if (a[sy * w + sx]) {
+      let best = null;
+      for (let r = 1; r < 25 && !best; r++) for (let dy = -r; dy <= r && !best; dy++) for (let dx = -r; dx <= r; dx++) { const x = sx + dx, y = sy + dy; if (x >= 0 && y >= 0 && x < w && y < h && !a[y * w + x]) { best = [x, y]; break; } }
+      if (!best) return { ok: false, why: "線の上です" };
+      [sx, sy] = best;
+    }
+    const F = new Uint8Array(w * h), st = [sy * w + sx]; F[sy * w + sx] = 1;
+    let n = 0, edge = false;
+    const limit = (o.maxFrac || 0.5) * w * h;
+    while (st.length) {
+      const i = st.pop(); n++;
+      if (n > limit) return { ok: false, why: "囲まれていません（扉の所が開いている・外につながっている）" };
+      const x = i % w, y = (i / w) | 0;
+      if (x === 0 || y === 0 || x === w - 1 || y === h - 1) edge = true;
+      if (x > 0 && !a[i - 1] && !F[i - 1]) { F[i - 1] = 1; st.push(i - 1); }
+      if (x < w - 1 && !a[i + 1] && !F[i + 1]) { F[i + 1] = 1; st.push(i + 1); }
+      if (y > 0 && !a[i - w] && !F[i - w]) { F[i - w] = 1; st.push(i - w); }
+      if (y < h - 1 && !a[i + w] && !F[i + w]) { F[i + w] = 1; st.push(i + w); }
+    }
+    if (edge) return { ok: false, why: "図面の外までつながっています" };
+    if (n < 30) return { ok: false, why: "小さすぎます" };
+    // 文字などで中にできた穴は外周だけ使うので無視。線の太さの半分＋太らせた1px＋画素の中心の分（約2.5px）だけ外周を外へ戻す
+    const outline = rdp(traceOutline(F, w, h), 1.5);
+    const c = outline.reduce((s, p) => ({ x: s.x + p.x / outline.length, y: s.y + p.y / outline.length }), { x: 0, y: 0 });
+    const pts = outline.map((p) => { const dx = p.x - c.x, dy = p.y - c.y, L = Math.hypot(dx, dy) || 1; return { x: (p.x + (dx / L) * 2.5) / k, y: (p.y + (dy / L) * 2.5) / k }; });
+    return { ok: pts.length >= 3, pts, why: pts.length >= 3 ? "" : "形を取れません" };
+  }
+
+  // 撤去・新設した壁を自動検出：位置合わせした2枚の線の差のうち、まっすぐ長く続くものだけを壁とみなす
+  async function detectWallChanges(gD, gUrl, kD, kUrl) {
+    const [gi, ki] = await Promise.all([loadImg(gUrl), loadImg(kUrl)]);
+    const s = gD.ppm > 0 && kD.ppm > 0 ? gD.ppm / kD.ppm : 1;
+    const og = gD.origin || { x: 0, y: 0 }, ok = kD.origin || { x: 0, y: 0 };
+    const d = { x: og.x - ok.x * s, y: og.y - ok.y * s };
+    const f = Math.min(1, 1600 / Math.max(gi.width, gi.height)), w = Math.round(gi.width * f), h = Math.round(gi.height * f);
+    const A = darkMask(gi, f, w, h);
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+    const c = cv.getContext("2d"); c.fillStyle = "#fff"; c.fillRect(0, 0, w, h);
+    c.drawImage(ki, d.x * f, d.y * f, ki.width * s * f, ki.height * s * f);
+    const kd = c.getImageData(0, 0, w, h).data, B = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) B[i] = (kd[i * 4] + kd[i * 4 + 1] + kd[i * 4 + 2]) / 3 < 150 ? 1 : 0;
+    const ppmW = gD.ppm * f; // 作業画像の px/mm
+    const minLen = Math.max(8, 450 * ppmW), wallT = Math.max(2, Math.round(220 * ppmW)); // 45cm 未満は壁とみなさない／壁厚の目安
+    const Ad = dilate(A, w, h, 2), Bd = dilate(B, w, h, 2);
+    const R = new Uint8Array(w * h), N = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) { R[i] = A[i] && !Bd[i] ? 1 : 0; N[i] = B[i] && !Ad[i] ? 1 : 0; }
+    const segsOf = (M) => {
+      const out = [];
+      const scan = (horiz) => {
+        const L1 = horiz ? h : w, L2 = horiz ? w : h, runs = [];
+        for (let u = 0; u < L1; u++) {
+          let st = -1;
+          for (let v = 0; v <= L2; v++) {
+            const on = v < L2 && (horiz ? M[u * w + v] : M[v * w + u]);
+            if (on && st < 0) st = v;
+            if (!on && st >= 0) { if (v - st >= minLen) runs.push({ u, a: st, b: v - 1 }); st = -1; }
+          }
+        }
+        // 近い行（壁の厚み以内）で重なる線を1本の壁にまとめる（二重線の壁も1本に）
+        const groups = [];
+        runs.forEach((r) => {
+          const g = groups.find((g) => r.u - g.u1 <= wallT && Math.min(g.b, r.b) - Math.max(g.a, r.a) > 0.5 * Math.min(g.b - g.a, r.b - r.a));
+          if (g) { g.u1 = r.u; g.a = Math.min(g.a, r.a); g.b = Math.max(g.b, r.b); g.us.push(r.u); }
+          else groups.push({ u0: r.u, u1: r.u, a: r.a, b: r.b, us: [r.u] });
+        });
+        // 文字が重なって途切れた壁や、二重線が別々に拾われた壁を1本にまとめる（同じ線上で重なる／30cm以内の切れ目）
+        const gapMax = Math.max(3, 300 * ppmW);
+        let merged = true;
+        while (merged) {
+          merged = false;
+          for (let i = 0; i < groups.length && !merged; i++) for (let j = i + 1; j < groups.length && !merged; j++) {
+            const A = groups[i], B = groups[j];
+            const near = Math.abs((A.u0 + A.u1) / 2 - (B.u0 + B.u1) / 2) <= wallT;
+            if (near && Math.min(A.b, B.b) - Math.max(A.a, B.a) >= -gapMax) {
+              A.a = Math.min(A.a, B.a); A.b = Math.max(A.b, B.b); A.u0 = Math.min(A.u0, B.u0); A.u1 = Math.max(A.u1, B.u1);
+              groups.splice(j, 1); merged = true;
+            }
+          }
+        }
+        groups.forEach((g) => {
+          const u = (g.u0 + g.u1) / 2;
+          out.push(horiz ? [{ x: g.a / f, y: u / f }, { x: g.b / f, y: u / f }] : [{ x: u / f, y: g.a / f }, { x: u / f, y: g.b / f }]);
+        });
+      };
+      scan(true); scan(false);
+      return out;
+    };
+    const removed = segsOf(R);
+    const added = segsOf(N).map((sg) => sg.map((p) => ({ x: (p.x - d.x) / s, y: (p.y - d.y) / s }))); // 完成図の px へ
+    return { removed, added };
+  }
+
   // ---------- トレース用キャンバス ----------
   const COLORS = { room: "rgba(22,163,74,.18)", roomLine: "#15803d", wallG: "#dc2626", wallK: "#2563eb", pt: "#7c3aed", sel: "#f59e0b", est: "#0d9488" };
   const PT_ICON = { door: "D", window: "窓", light: "灯", outlet: "コ", faucet: "水", other: "他" };
@@ -202,7 +366,8 @@
         label(s.name + (a ? ` ${a.toFixed(2)}㎡` : ""), cx, cy, lw, "#14532d");
       } else if (s.type === "wall" && s.pts) {
         ctx.strokeStyle = selected ? COLORS.sel : side === "genkyo" ? COLORS.wallG : COLORS.wallK; ctx.lineWidth = (selected ? 7 : 5) * lw; ctx.lineCap = "round";
-        ctx.beginPath(); s.pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); ctx.stroke();
+        if (s.auto) ctx.setLineDash([10 * lw, 5 * lw]); // 自動検出の壁は破線
+        ctx.beginPath(); s.pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); ctx.stroke(); ctx.setLineDash([]);
       } else if (s.type === "pt") {
         const r = 11 * lw;
         ctx.fillStyle = selected ? COLORS.sel : s.replace ? "#ea580c" : s.keep ? "#64748b" : COLORS.pt;
@@ -306,6 +471,15 @@
     function onClick(p0, e) {
       const t = P.tool;
       if (t === "pt") { commit({ type: "pt", kind: P.ptKind, x: p0.x, y: p0.y, replace: false }); return; }
+      if (t === "fill") {
+        // 戻り値 { pts, name, est }：est（帖数の概算の部屋）が中にあれば、その室名を引き継いで概算を消す
+        opts.fillRoom && opts.fillRoom(p0, P.d.shapes).then((r) => {
+          if (!r) return;
+          if (r.est) { const i = P.d.shapes.indexOf(r.est); if (i >= 0) P.d.shapes.splice(i, 1); }
+          commit({ type: "room", name: r.name || (opts.nextRoomName ? opts.nextRoomName() : "部屋"), jo: r.est ? r.est.jo : undefined, pts: r.pts, floor: true, wall: true, ceil: true, auto: true });
+        });
+        return;
+      }
       if (t === "origin") { P.d.origin = { x: p0.x, y: p0.y }; P.d.originSet = true; emit("calib"); draw(); return; }
       if (t === "scale") {
         if (!P.draft) { P.draft = { kind: "scale", pts: [p0] }; draw(); return; }
@@ -364,5 +538,5 @@
     return (from.shapes || []).map((s) => (s.pts ? Object.assign({}, s, { pts: s.pts.map(f) }) : Object.assign({}, s, f(s))));
   }
 
-  G.Drawing = { pdfOpts, importDrawing, autoAlign, diffOverlay, Pad, mapShapes, loadScript, renderPdfPage, textFromItems, loadImg, readAs };
+  G.Drawing = { floodRoom, detectWallChanges, pdfOpts, importDrawing, autoAlign, diffOverlay, Pad, mapShapes, loadScript, renderPdfPage, textFromItems, loadImg, readAs };
 })(window);

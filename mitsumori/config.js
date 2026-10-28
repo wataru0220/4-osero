@@ -7,7 +7,7 @@
 window.MITSUMORI_CONFIG = {
   appName: "栗駒見積帳",
   // 本体ファイルを更新したら版を上げる（?v= と sw.js を揃える）
-  appVersion: "2026-10-05j",
+  appVersion: "2026-10-06f",
 
   // Firebase Realtime Database（オセロ／勤怠／匠コネクトと同じプロジェクトを流用）。
   // データは別パス "mitsumori/" に保存。apiKey を空にすると端末内のお試しモードになります。

@@ -116,7 +116,7 @@
   }
 
   // ---------- ルーター ----------
-  function startRouter() { window.addEventListener("hashchange", render); renderNav(); render(); }
+  function startRouter() { window.addEventListener("hashchange", render); ensureSpecPrices(); renderNav(); render(); }
   function go(h) { if (location.hash === h) render(); else location.hash = h; }
   function renderNav() {
     const items = ADMIN
@@ -252,14 +252,32 @@
       <label class="fld">支払：中間時 %<input data-pay="1" type="number" value="${Math.round((p.pay || [])[1] * 100) || 0}"></label>
       <label class="fld">支払：完成時 %<input data-pay="2" type="number" value="${Math.round((p.pay || [])[2] * 100) || 0}"></label>
       </div>
+      ${specCard(p)}
       <div class="row-end"><button class="btn" id="dup">この案件を複製</button>${ADMIN || p.staff === S.me ? '<button class="btn danger" id="del">削除</button>' : ""}<a class="btn pri" href="#/p/${p.id}/zumen">次へ：図面 →</a></div>`;
     el.onchange = (e) => {
       const t = e.target;
       if (t.dataset.f) { p[t.dataset.f] = t.type === "number" ? num(t.value) : t.value; saveProject(p); refreshHead(p); }
+      if (t.dataset.spec) {
+        p.specs = p.specs || {};
+        const cat = MQ.specList(S.settings).find((c) => c.key === t.dataset.spec);
+        if (t.value === "") delete p.specs[cat.key]; else p.specs[cat.key] = num(t.value);
+        recalcAuto(p); refreshHead(p); tabInfo(p, el); toast("仕様を変えて見積明細を計算し直しました"); return;
+      }
       if (t.dataset.pay) { p.pay = p.pay || [0.3, 0.4, 0.3]; p.pay[+t.dataset.pay] = num(t.value) / 100; saveProject(p); const sm = p.pay.reduce((a, b) => a + b, 0); if (Math.abs(sm - 1) > 0.001) toast("支払割合の合計が100%になっていません（" + Math.round(sm * 100) + "%）"); }
     };
     $("#dup").onclick = () => { const q = JSON.parse(JSON.stringify(p)); q.id = MQ.uid("P"); q.no = p.no + "-2"; q.name = p.name + "（複製）"; q.status = "見積中"; q.staff = S.me || p.staff; q.created = Date.now(); saveProject(normProject(q), true); copyImages(p.id, q.id); go(`#/p/${q.id}/info`); };
     $("#del") && ($("#del").onclick = () => { if (!confirm("この案件を削除します。よろしいですか？（元に戻せません）")) return; DB.remove(S.base + "/projects/" + p.id); DB.remove(S.base + "/images/" + p.id); delete S.projects[p.id]; go("#/list"); });
+  }
+  // ③ この案件の仕様（会社の標準仕様から変えるときだけ選ぶ）
+  function specCard(p) {
+    const ps = p.specs || {};
+    return `<div class="card"><h3>仕様 <small class="muted">会社の標準仕様から変えるときだけ選びます。変えると見積明細が計算し直されます</small></h3><div class="grid2">
+      ${MQ.specList(S.settings).map((cat) => {
+        const changed = has(ps[cat.key]);
+        if (cat.type === "number") return `<label class="fld ${changed ? "chg" : ""}">${esc(cat.label)}（${esc(cat.unit || "")}）<input type="number" data-spec="${esc(cat.key)}" value="${changed ? ps[cat.key] : ""}" placeholder="標準 ${cat.value}"></label>`;
+        return `<label class="fld ${changed ? "chg" : ""}">${esc(cat.label)}<select data-spec="${esc(cat.key)}"><option value="">標準：${esc((cat.options[cat.sel] || {}).name || "")}</option>
+          ${cat.options.map((o, i) => `<option value="${i}" ${changed && +ps[cat.key] === i ? "selected" : ""}>${esc(o.name)}${o.priceId && !S.prices[o.priceId] ? "（単価表に項目なし）" : ""}</option>`).join("")}</select></label>`;
+      }).join("")}</div></div>`;
   }
   async function copyImages(from, to) { const im = await DB.get(S.base + "/images/" + from); if (im) DB.set(S.base + "/images/" + to, im); }
 
@@ -275,9 +293,10 @@
     el.innerHTML = `<div class="zumen">
       <div class="z-left">
         <div class="z-side">${[["genkyo", "現況図"], ["kansei", "完成図"]].map(([k, t]) => `<button class="seg ${padSide === k ? "on" : ""}" data-side="${k}">${t}${p.drawings[k] ? " ✓" : ""}</button>`).join("")}
-          <button class="btn sm" id="zAlign" title="現況図と完成図を重ね合わせて、変わった所を色付け">🔍 位置合わせ・変更箇所</button></div>
+          <button class="btn pri sm" id="zAuto" title="位置合わせ→部屋の検出→撤去・新設した壁の検出→見積に反映">🤖 図面を自動で読む</button>
+          <button class="btn sm" id="zAlign" title="現況図と完成図を重ね合わせて、変わった所を色付け">🔍 変更箇所の色付け</button></div>
         <div class="z-tools" id="zTools">
-          ${[["select", "✋ 選択・移動"], ["room", "▱ 部屋"], ["wall", "┃ 壁"], ["pt", "● 建具・設備"], ["scale", "📏 縮尺"], ["origin", "✚ 基準点"]].map(([k, t]) => `<button class="tool" data-tool="${k}">${t}</button>`).join("")}
+          ${[["select", "✋ 選択・移動"], ["fill", "🪣 部屋（1クリック）"], ["room", "▱ 部屋（角をなぞる）"], ["wall", "┃ 壁"], ["pt", "● 建具・設備"], ["scale", "📏 縮尺"], ["origin", "✚ 基準点"]].map(([k, t]) => `<button class="tool" data-tool="${k}">${t}</button>`).join("")}
           <select id="ptKind">${Object.entries(MQ.PT_KINDS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select>
           <span class="sp"></span><button class="tool" id="zUndo" title="元に戻す (Ctrl+Z)">↶</button><button class="tool" id="zIn">＋</button><button class="tool" id="zOut">－</button><button class="tool" id="zFit">全体</button>
         </div>
@@ -293,6 +312,13 @@
       onChange: (what) => { onShapes(p, what); },
       onSelect: () => refreshZumenSide(),
       askLength: (cb) => ask("縮尺を合わせる", "いま引いた線の実際の長さ（mm）", "", (v) => cb(num(v))),
+      fillRoom: async (pt, shapes) => {
+        const url = await getImage(p.id, padSide);
+        const r = await Drawing.floodRoom(url, pt, shapes);
+        if (!r.ok) { toast("部屋の形を取れません：" + r.why + "。扉の所に「┃ 壁」で線を引いて閉じてから、もう一度クリックしてください", 6000); return null; }
+        const est = shapes.find((s) => s.type === "room" && s.est && inPolyPx({ x: s.x, y: s.y }, r.pts));
+        return { pts: r.pts, est, name: est ? est.name : "" };
+      },
       nextRoomName: () => { const n = (cur(p).shapes || []).filter((s) => s.type === "room").length + 1; return "部屋" + n; }
     });
     $$(".seg[data-side]").forEach((b) => (b.onclick = () => { padSide = b.dataset.side; tabZumen(p, el); }));
@@ -300,6 +326,7 @@
     $("#ptKind").onchange = (e) => { pad.setPtKind(e.target.value); setTool("pt"); };
     $("#zUndo").onclick = () => pad.undo(); $("#zIn").onclick = () => pad.zoom(1.25); $("#zOut").onclick = () => pad.zoom(0.8); $("#zFit").onclick = () => pad.fit();
     $("#zAlign").onclick = () => alignAndDiff(p);
+    $("#zAuto").onclick = () => autoRead(p);
     const drop = $("#zDrop"), file = $("#zFile");
     drop.onclick = () => file.click();
     file.onchange = () => file.files[0] && loadDrawingFile(p, file.files[0]);
@@ -314,6 +341,7 @@
   function hint(t) {
     const H = {
       select: "図形をタップで選択（ドラッグで移動）。何もない所をドラッグで画面移動、ホイール／2本指で拡大。",
+      fill: "部屋の中を1回クリックすると、線で囲まれた範囲を自動で読み取って部屋にします（面積・周長）。扉の所が開いていて外まで広がるときは、先に「┃ 壁」で扉の所に線を引いてください。",
       room: "部屋の角を順にクリック → 最初の点をクリック（またはダブルクリック／Enter）で閉じる。水平・垂直に自動で揃います。",
       wall: "壁の端から端へクリック（折れ線可）→ ダブルクリック／Enter で確定。現況図にあって完成図にない壁＝撤去、逆＝新設として計算。",
       pt: "建具・設備の位置をクリック。完成図で既存と同じ場所（60cm以内）なら「既存」、無ければ「新設」。交換するものは右の欄で「交換」に。",
@@ -338,7 +366,7 @@
     try {
       const r = await Drawing.importDrawing(file);
       const d = { file: file.name, w: r.w, h: r.h, ppm: r.ppm, scaleDen: r.scaleDen, pdfZ: r.paperPpm || 0, isPdf: /pdf/i.test(file.type) || /\.pdf$/i.test(file.name),
-        origin: { x: 0, y: 0 }, ch: S.settings.defaultCh || 2400, shapes: [] };
+        origin: { x: 0, y: 0 }, ch: null, shapes: [] }; // 天井高は標準仕様に従う
       // 帖数から部屋を概算で置く（なぞると正確な面積に置き換わる）
       r.rooms.forEach((rm) => d.shapes.push({ type: "room", est: true, name: rm.name, jo: rm.jo, area: rm.area, x: rm.x, y: rm.y, floor: true, wall: true, ceil: true }));
       const old = p.drawings[padSide];
@@ -352,9 +380,7 @@
       msg.push(r.scaleDen ? `縮尺 1/${r.scaleDen} を読み取りました` : "縮尺は未設定です（📏で合わせてください）");
       if (r.rooms.length) msg.push(`部屋 ${r.rooms.length} 室を帖数から概算`);
       toast(msg.join("／"), 4500);
-      const otherSide = padSide === "genkyo" ? "kansei" : "genkyo";
-      if (p.drawings[otherSide]) await alignAndDiff(p, true);
-      onShapes(p, "load");
+      await autoRead(p, true);
       loadPad(p);
     } catch (e) { console.error(e); toast("読み込めませんでした：" + e.message, 5000); }
   }
@@ -371,6 +397,63 @@
     if (pad) { pad.setOverlay(diffFor(p, padSide)); pad.setGhost(Drawing.mapShapes(p.drawings[padSide === "genkyo" ? "kansei" : "genkyo"], p.drawings[padSide])); }
     onShapes(p, "align");
   }
+  // ② 図面を自動で読む：①縮尺 ②位置合わせ ③室名（帖数）の位置から部屋の形を塗りつぶしで取得
+  //   ④現況図と完成図の線の差から、撤去・新設した壁を検出 ⑤数量 → 見積明細
+  function inPolyPx(q, pts) { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const a = pts[i], b = pts[j]; if ((a.y > q.y) !== (b.y > q.y) && q.x < ((b.x - a.x) * (q.y - a.y)) / (b.y - a.y) + a.x) c = !c; } return c; }
+  async function autoRead(p, quiet) {
+    const g = p.drawings.genkyo, k = p.drawings.kansei;
+    if (!g && !k) return toast("先に図面を入れてください");
+    const rep = { rooms: [], roomFail: [], demo: 0, neu: 0, warn: [] };
+    try {
+      if (!quiet) toast("図面を読んでいます…", 8000);
+      // 縮尺：片方だけ分かっていれば、位置合わせの時にもう片方へ写す
+      if (g && k) {
+        const gu = await getImage(p.id, "genkyo"), ku = await getImage(p.id, "kansei");
+        if (!(k.originSet && g.originSet)) await Drawing.autoAlign(g, gu, k, ku);
+        if (!(g.ppm > 0) && k.ppm > 0) { g.ppm = k.ppm; }
+      }
+      // 部屋：室名＋帖数の位置から塗りつぶし
+      for (const side of ["genkyo", "kansei"]) {
+        const d = p.drawings[side]; if (!d) continue;
+        const url = await getImage(p.id, side);
+        d.shapes = d.shapes.filter((s) => !(s.auto && s.type === "wall"));
+        for (const est of d.shapes.filter((s) => s.type === "room" && s.est)) {
+          const r = await Drawing.floodRoom(url, { x: est.x, y: est.y }, d.shapes);
+          let okArea = r.ok;
+          if (r.ok && d.ppm > 0 && est.area) { const a = MQ.polyArea(r.pts) / d.ppm / d.ppm / 1e6; okArea = a > est.area * 0.6 && a < est.area * 1.6; }
+          if (okArea) {
+            d.shapes.splice(d.shapes.indexOf(est), 1, { type: "room", name: est.name, jo: est.jo, pts: r.pts, floor: est.floor !== false, wall: est.wall !== false, ceil: est.ceil !== false, auto: true });
+            if (side === "kansei" || !k) rep.rooms.push(est.name);
+          } else if (side === "kansei" || !k) rep.roomFail.push(est.name);
+        }
+      }
+      // 壁の撤去・新設
+      if (g && k) {
+        if (g.ppm > 0) {
+          const gu = await getImage(p.id, "genkyo"), ku = await getImage(p.id, "kansei");
+          const w = await Drawing.detectWallChanges(g, gu, k, ku);
+          w.removed.forEach((sg) => g.shapes.push({ type: "wall", pts: sg, auto: true }));
+          w.added.forEach((sg) => k.shapes.push({ type: "wall", pts: sg, auto: true }));
+          S.diff = { pid: p.id, df: await Drawing.diffOverlay(g, gu, k, ku) };
+        } else rep.warn.push("縮尺が分からないため壁の検出をしませんでした（📏 縮尺 を合わせてから、もう一度「図面を自動で読む」）");
+      }
+      const r = recalcAuto(p);
+      const rd = p.drawings.kansei || p.drawings.genkyo;
+      rep.rooms = rd.shapes.filter((x) => x.type === "room" && x.pts).map((x) => x.name);
+      rep.demo = r.metrics.wall_demo_len || 0; rep.neu = r.metrics.wall_new_len || 0;
+      rep.area = r.metrics.floor_area || 0;
+      saveProject(p, true);
+    } catch (e) { console.error(e); toast("自動で読めませんでした：" + e.message, 5000); return; }
+    if (pad) loadPad(p);
+    refreshHead(p);
+    modal(`<h3>図面を自動で読みました</h3>
+      <table class="mini wide"><tr><td>部屋</td><td>${rep.rooms.length ? esc(rep.rooms.join("、")) + `（床 ${rep.area}㎡）` : '<span class="muted">室名・帖数が読めた部屋はありません</span>'}</td></tr>
+      ${rep.roomFail.length ? `<tr><td>形を取れなかった部屋</td><td>${esc(rep.roomFail.join("、"))}<br><small class="muted">帖数からの概算のまま。🪣で部屋の中をクリックし直すか、▱でなぞってください</small></td></tr>` : ""}
+      ${g && k ? `<tr><td>撤去する壁</td><td>${rep.demo} m</td></tr><tr><td>新設する壁</td><td>${rep.neu} m</td></tr>` : ""}</table>
+      ${rep.warn.map((w) => `<p class="warn">⚠ ${esc(w)}</p>`).join("")}
+      <p class="muted">自動で入れた壁は破線、部屋は 🪣 と同じ扱いです。違う所は選んで削除・手直ししてください。<b>ドア・窓・照明などの建具・設備は記号から判定できないので「● 建具・設備」で置いてください。</b>写真やスキャンの図面は室名が読めないので、🪣 で部屋の中をクリックしてください。</p>
+      <div class="row-end"><a class="btn" data-close>図面に戻る</a><a class="btn pri" href="#/p/${p.id}/est" data-close>見積明細を見る →</a></div>`);
+  }
   function diffFor(p, side) {
     if (!S.diff || S.diff.pid !== p.id || !S.showDiff) return null;
     const { df } = S.diff, g = p.drawings.genkyo, k = p.drawings.kansei;
@@ -381,35 +464,40 @@
   }
   S.showDiff = true;
 
-  // 図形が変わるたびに数量を計算し直し、見積明細に自動で反映（担当者の補正は残す）
+  // ③ 標準仕様を当てはめた単価表と天井高（案件ごとの上書き p.specs を反映）
+  const eff = (p) => MQ.applySpecs(S.prices, S.settings, p.specs);
+  const measureOf = (p) => MQ.measure(p.drawings.genkyo, p.drawings.kansei, Object.assign({}, S.settings, { defaultCh: eff(p).ch }));
+  // 図面・仕様から数量を出し直して見積明細へ（担当者の補正は残す）
+  function recalcAuto(p) {
+    const r = measureOf(p);
+    p.measure = { metrics: r.metrics, warnings: r.warnings, at: Date.now() };
+    p.lines = MQ.autoLines(r.metrics, eff(p).prices, p.lines);
+    saveProject(p);
+    return r;
+  }
+  // 図形が変わるたびに数量を計算し直し、見積明細に自動で反映
   let measureT = null;
   function onShapes(p) {
     saveProject(p);
     clearTimeout(measureT);
-    measureT = setTimeout(() => {
-      const r = MQ.measure(p.drawings.genkyo, p.drawings.kansei, S.settings);
-      p.measure = { metrics: r.metrics, warnings: r.warnings, at: Date.now() };
-      p.lines = MQ.autoLines(r.metrics, S.prices, p.lines);
-      saveProject(p);
-      refreshHead(p); refreshZumenSide();
-    }, 250);
+    measureT = setTimeout(() => { recalcAuto(p); refreshHead(p); refreshZumenSide(); }, 250);
   }
   function refreshZumenSide() {
     const p = S.projects[S.route[1]]; const el = $("#zSide");
     if (!p || !el || !pad) return;
     const d = p.drawings[padSide];
     const sel = pad.P.sel >= 0 && pad.P.d && pad.P.d.shapes ? pad.P.d.shapes[pad.P.sel] : null;
-    const r = MQ.measure(p.drawings.genkyo, p.drawings.kansei, S.settings);
+    const r = measureOf(p);
     const dens = [20, 30, 50, 100, 200];
     let h = "";
     if (d) {
       h += `<div class="card sm"><h4>${padSide === "genkyo" ? "現況図" : "完成図"}：${esc(d.file || "")}</h4>
         <div class="kv"><span>縮尺</span><b>${d.ppm > 0 ? (d.scaleDen ? "1/" + d.scaleDen : "2点で設定済") : '<span class="ng">未設定</span>'}</b></div>
         ${d.isPdf && d.pdfZ ? `<label class="fld inline">縮尺を選ぶ<select id="zDen"><option value="">—</option>${dens.map((n) => `<option value="${n}" ${d.scaleDen === n ? "selected" : ""}>1/${n}</option>`).join("")}</select></label>` : ""}
-        <label class="fld inline">標準の天井高 mm<input type="number" id="zCh" value="${d.ch || 2400}"></label>
+        <label class="fld inline">この図面の天井高 mm<input type="number" id="zCh" value="${d.ch || ""}" placeholder="仕様 ${eff(p).ch}"></label>
         <label class="sw"><input type="checkbox" id="zGhost" ${pad.P.showGhost ? "checked" : ""}> もう一方の図面の図形を薄く表示</label>
         ${S.diff && S.diff.pid === p.id ? `<label class="sw"><input type="checkbox" id="zDiff" ${S.showDiff ? "checked" : ""}> 変更箇所の色（赤＝撤去・青＝新設）</label>` : ""}
-        <button class="btn sm" id="zRe">図面を差し替え</button></div>`;
+        <button class="btn sm" id="zRe">図面を差し替え</button> <button class="btn sm" id="zAutoDel" title="自動読み取りで入れた部屋・壁を消す">自動の図形を消す</button></div>`;
     }
     if (sel) h += selPanel(sel);
     h += `<div class="card sm"><h4>自動計算の結果 <small class="muted">→ ② 見積明細に自動で反映</small></h4>
@@ -420,7 +508,8 @@
     el.innerHTML = h;
     const on = (id, ev, fn) => { const x = $("#" + id); if (x) x[ev] = fn; };
     on("zDen", "onchange", (e) => { const n = num(e.target.value); if (n) { d.scaleDen = n; d.ppm = d.pdfZ / n; pad.draw(); onShapes(p); } });
-    on("zCh", "onchange", (e) => { d.ch = num(e.target.value) || 2400; onShapes(p); });
+    on("zCh", "onchange", (e) => { d.ch = num(e.target.value) || null; onShapes(p); });
+    on("zAutoDel", "onclick", () => { ["genkyo", "kansei"].forEach((k) => { const dd = p.drawings[k]; if (dd) dd.shapes = dd.shapes.filter((s) => !s.auto); }); loadPad(p); onShapes(p); toast("自動で入れた図形を消しました"); });
     on("zGhost", "onchange", (e) => pad.toggleGhost(e.target.checked));
     on("zDiff", "onchange", (e) => { S.showDiff = e.target.checked; pad.setOverlay(diffFor(p, padSide)); });
     on("zRe", "onclick", () => $("#zFile").click());
@@ -432,6 +521,7 @@
       <label class="fld inline">室名<input data-s="name" value="${esc(s.name || "")}"></label>
       ${s.est ? `<label class="fld inline">面積 ㎡<input data-s="area" type="number" step="0.01" value="${s.area}"></label><p class="muted">「▱ 部屋」でなぞると正確な面積・周長に置き換えられます（この概算は削除）。</p>` : ""}
       <label class="fld inline">天井高 mm<input data-s="ch" type="number" placeholder="図面の標準" value="${s.ch || ""}"></label>
+      <label class="fld inline">外壁に面する長さ m<input data-s="extLen" type="number" step="0.01" placeholder="断熱の重ね張り用" value="${s.extLen || ""}"></label>
       <div class="chips">${[["floor", "床を張替"], ["wall", "壁を張替"], ["ceil", "天井を張替"]].map(([k, t]) => `<label class="sw"><input type="checkbox" data-s="${k}" ${s[k] !== false ? "checked" : ""}> ${t}</label>`).join("")}</div>
       <button class="btn danger sm" id="sDel">この図形を削除</button></div>`;
     if (s.type === "wall") return `<div class="card sm sel"><h4>壁</h4><label class="fld inline">高さ mm<input data-s="ch" type="number" placeholder="図面の標準" value="${s.ch || ""}"></label><button class="btn danger sm" id="sDel">この図形を削除</button></div>`;
@@ -477,7 +567,7 @@
       <div class="bar"><h3>見積明細</h3><span class="muted">空欄＝自動（図面・単価表・利益率）。数字を入れると<b>補正</b>として残ります。</span></div>
       <div class="tscroll"><table class="est"><thead><tr><th>工種</th><th>名称・仕様</th><th>数量</th><th>単位</th><th>単価</th><th>金額</th><th>原価単価</th><th>原価</th><th>粗利率</th><th>出所</th><th></th></tr></thead>
       <tbody>${rows || '<tr><td colspan="11" class="muted pad">明細はまだありません。「① 図面から計算」で図面を入れるか、下から項目を足してください。</td></tr>'}</tbody></table></div>
-      <div class="addrow"><select id="addP"><option value="">＋ 単価表から項目を追加…</option>${priceOpts}</select><button class="btn" id="addFree">＋ 自由入力の行</button><button class="btn" id="addSup">📄 仕入見積を取り込む</button></div>
+      <div class="addrow"><select id="addP"><option value="">＋ 単価表から項目を追加…</option>${priceOpts}</select><button class="btn" id="addFree">＋ 自由入力の行</button><button class="btn" id="addSup">📄 仕入見積を取り込む</button><span class="sp"></span><button class="btn" id="custPrt">🖨 お客様用の明細を印刷</button></div>
       </div>${sumCard(p, c)}`;
     el.onchange = (e) => {
       const t = e.target, tr = t.closest("tr[data-i]");
@@ -496,6 +586,7 @@
     };
     $("#addFree").onclick = () => { p.lines.push(MQ.newLine({ name: "（項目名）", qtyAuto: 1 })); saveProject(p); tabEst(p, el); };
     $("#addSup").onclick = () => importDoc({ projectId: p.id, kind: "仕入見積" });
+    $("#custPrt").onclick = () => { p.doc = Object.assign({ showUnit: true, showPlan: true, showSpec: true, notes: {} }, p.doc || {}, { style: "customer" }); saveProject(p); go(`#/p/${p.id}/doc`); };
   }
   function sumCard(p, c) {
     const tg = S.settings.targetMargin;
@@ -565,7 +656,19 @@
       const l = r.line, h = l.koushu !== lastK ? `<tr class="kh"><td colspan="6">${esc(l.koushu)}</td></tr>` : ""; lastK = l.koushu;
       return h + `<tr><td>${esc(l.name)}</td><td>${esc(l.spec)}</td><td class="r">${r.qty}</td><td>${esc(l.unit)}</td><td class="r">${yen(r.unitPrice)}</td><td class="r">${yen(r.amount)}</td></tr>`;
     }).join("");
-    el.innerHTML = `<div class="row-end noprint"><button class="btn" id="csv">明細をCSVで保存</button><button class="btn pri" id="prt">🖨 印刷・PDF保存</button></div>
+    const D = (p.doc = p.doc || { style: "formal", showUnit: true, showPlan: true, showSpec: true, notes: {} });
+    D.notes = D.notes || {};
+    const ks = Object.keys(c.byKoushu);
+    const opts = `<div class="card noprint"><div class="row"><b>書式</b>
+        <label class="radio"><input type="radio" name="dstyle" value="formal" ${D.style !== "customer" ? "checked" : ""}> 御見積書＋内訳明細書（正式）</label>
+        <label class="radio"><input type="radio" name="dstyle" value="customer" ${D.style === "customer" ? "checked" : ""}> お客様向け明細（図面・説明つき）</label></div>
+      ${D.style === "customer" ? `<div class="row"><label class="sw"><input type="checkbox" data-dopt="showPlan" ${D.showPlan !== false ? "checked" : ""}> 図面（工事の場所）を載せる</label>
+        <label class="sw"><input type="checkbox" data-dopt="showUnit" ${D.showUnit !== false ? "checked" : ""}> 単価を載せる</label>
+        <label class="sw"><input type="checkbox" data-dopt="showSpec" ${D.showSpec !== false ? "checked" : ""}> 主な仕様を載せる</label></div>
+        <details><summary>工事ごとの説明文を変える（空欄なら標準の説明）</summary><div class="grid2">${ks.map((k) => `<label class="fld">${esc(k)}<textarea rows="2" data-note="${esc(k)}" placeholder="${esc(KOUSHU_DESC[k] || "")}">${esc(D.notes[k] || "")}</textarea></label>`).join("")}</div></details>` : ""}
+      <div class="row-end"><button class="btn" id="csv">明細をCSVで保存</button><button class="btn pri" id="prt">🖨 印刷・PDF保存</button></div></div>`;
+    if (D.style === "customer") { el.innerHTML = opts + customerSheets(p, c, D); bindDoc(p, el, c); drawPlanImg(p); return; }
+    el.innerHTML = `${opts}
     <div class="paper" id="paper">
       <section class="sheet"><h1>御 見 積 書</h1>
         <div class="doc-top"><div><div class="to">${esc(p.client || "")}　様</div><p>下記のとおり御見積申し上げます。</p>
@@ -587,8 +690,111 @@
       <section class="sheet"><h2>内 訳 明 細 書</h2><p>工事名：${esc(p.name)}</p>
         <table class="dt det"><tr><th>名称</th><th>仕様・規格</th><th class="r">数量</th><th>単位</th><th class="r">単価</th><th class="r">金額</th></tr>${detail}
         <tr class="t"><td colspan="5">直接工事費 計</td><td class="r">${yen(c.direct)}</td></tr></table></section></div>`;
+    bindDoc(p, el, c);
+  }
+  function bindDoc(p, el, c) {
+    const D = p.doc;
+    $$("input[name=dstyle]", el).forEach((r) => (r.onchange = () => { D.style = r.value; saveProject(p); tabDoc(p, el); }));
+    $$("[data-dopt]", el).forEach((i) => (i.onchange = () => { D[i.dataset.dopt] = i.checked; saveProject(p); tabDoc(p, el); }));
+    $$("[data-note]", el).forEach((i) => (i.onchange = () => { D.notes[i.dataset.note] = i.value; saveProject(p); tabDoc(p, el); }));
     $("#prt").onclick = () => window.print();
     $("#csv").onclick = () => downloadCsv(`${p.no}_${p.name}_明細.csv`, [["工種", "名称", "仕様", "数量", "単位", "単価", "金額", "原価単価", "原価", "出所", "補正"]].concat(c.rows.map((r) => [r.line.koushu, r.line.name, r.line.spec, r.qty, r.line.unit, r.unitPrice, r.amount, r.unitCost, r.costAmt, r.line.src, r.corrected ? "補正" : ""])));
+  }
+  // ---------- ① お客様向け明細（図面・説明つき。原価・粗利は載せない） ----------
+  const KOUSHU_DESC = {
+    仮設工事: "工事中にお住まいの床や壁を傷つけないよう養生し、工事で出た廃材を処分します。",
+    解体工事: "新しくする部分の既存の床・壁・建具などを取り外します。",
+    木工事: "大工が床や壁の下地、新しい間仕切り壁などをつくります。",
+    屋根工事: "屋根の葺き替え・補修を行います。",
+    外装工事: "外壁や外まわりの仕上げを行います。",
+    内装工事: "床・壁・天井の仕上げを新しくします。",
+    建具工事: "ドアや窓（内窓など）を新しく取り付けます。",
+    電気設備工事: "照明やコンセントなどの電気工事を行います。",
+    給排水設備工事: "水まわりの配管や水栓を取り替えます。",
+    その他: "そのほかの工事・費用です。"
+  };
+  function customerSheets(p, c, D) {
+    const pr = S.profile, pay = p.pay || [0.3, 0.4, 0.3];
+    const valid = p.date ? addDays(p.date, num(p.validDays || 30)) : "";
+    const hasPlan = D.showPlan !== false && (p.drawings.kansei || p.drawings.genkyo);
+    const specs = MQ.specList(S.settings).map((cat) => {
+      const v = MQ.specValue(cat, p.specs);
+      return [cat.label, cat.type === "number" ? `${v.toLocaleString()} ${cat.unit || ""}` : (cat.options[v] || {}).name || ""];
+    }).filter(([, v]) => v && !/^なし|張替えない/.test(v));
+    let no = 0;
+    const blocks = Object.entries(c.byKoushu).map(([k, v]) => {
+      const rows = c.rows.filter((r) => r.line.koushu === k && r.qty);
+      if (!rows.length) return "";
+      no++;
+      return `<div class="cblock"><h3><span class="cno">${no}</span>${esc(k)}<span class="camt">¥${yen(v.amount)}</span></h3>
+        <p class="cdesc">${esc(D.notes[k] || KOUSHU_DESC[k] || "")}</p>
+        <table class="dt det"><tr><th>項目</th><th>内容・仕様</th><th class="r">数量</th>${D.showUnit !== false ? '<th class="r">単価</th>' : ""}<th class="r">金額</th></tr>
+        ${rows.map((r) => `<tr><td>${esc(r.line.name)}</td><td>${esc(r.line.spec)}</td><td class="r">${r.qty} ${esc(r.line.unit)}</td>${D.showUnit !== false ? `<td class="r">${yen(r.unitPrice)}</td>` : ""}<td class="r">${yen(r.amount)}</td></tr>`).join("")}</table></div>`;
+    }).join("");
+    return `<div class="paper" id="paper">
+      <section class="sheet cust"><div class="ctop"><div><small>リフォームのご提案</small><h1>お見積明細書</h1></div><div class="r small">見積番号 ${esc(p.no)}<br>見積日 ${jdate(p.date)}</div></div>
+        <div class="cto">${esc(p.client || "")} 様</div>
+        <div class="cname">${esc(p.name)}</div>
+        ${p.summary ? `<p class="csum">${esc(p.summary)}</p>` : ""}
+        ${hasPlan ? `<figure class="cplan"><img id="planImg" alt="工事の場所"><figcaption><span class="lg g"></span>内装を新しくするお部屋　<span class="lg b"></span>新しくつくる壁　<span class="lg r"></span>撤去する壁　<span class="lg p"></span>新しく付ける設備・建具　<span class="lg o"></span>交換するもの</figcaption></figure>` : ""}
+        <div class="cbox"><div><span>お見積金額（税込）</span><b>¥${yen(c.total)}</b><small>うち消費税 ¥${yen(c.tax)}</small></div>
+          ${c.subsidy ? `<div><span>補助金（予定）</span><b>−¥${yen(c.subsidy)}</b><small>${esc(p.subsidy.map((x) => x.name).join("・"))}</small></div><div class="hi"><span>実質のご負担（目安）</span><b>¥${yen(c.burden)}</b></div>` : ""}</div>
+        <table class="dt"><tr><th>工期（予定）</th><td>${jdate(p.start)} ～ ${jdate(p.end)}</td></tr><tr><th>お支払</th><td>契約時${Math.round(pay[0] * 100)}%・中間${Math.round(pay[1] * 100)}%・完成時${Math.round(pay[2] * 100)}%</td></tr><tr><th>見積有効期限</th><td>${jdate(valid)}</td></tr></table>
+        ${D.showSpec !== false && specs.length ? `<h3 class="ch3">主な仕様</h3><table class="dt">${specs.map(([a, b]) => `<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</table>` : ""}
+        <div class="cfrom"><b>${esc(pr.name || "")}</b>　${esc(pr.address || "")}　${pr.tel ? "TEL " + esc(pr.tel) : ""}　担当 ${esc(p.staff || "")}<br><small>登録番号 ${esc(pr.regNo || "T－－－－－－－－－－－－－")}</small></div></section>
+      <section class="sheet cust"><h2>工事の内容とお見積</h2>${blocks}
+        <table class="dt sum"><tr><td>工事費 計</td><td class="r">${yen(c.direct)}</td></tr><tr><td>諸経費（現場管理・運搬など）</td><td class="r">${yen(c.keihi)}</td></tr>
+          ${c.nebiki ? `<tr><td>お値引き</td><td class="r">−${yen(c.nebiki)}</td></tr>` : ""}
+          <tr class="t"><td>工事価格（税抜）</td><td class="r">${yen(c.net)}</td></tr><tr><td>消費税（${pct(c.taxRate)}）</td><td class="r">${yen(c.tax)}</td></tr>
+          <tr class="t big"><td>お見積金額（税込）</td><td class="r">${yen(c.total)}</td></tr>
+          ${c.subsidy ? `<tr><td>補助金（予定）</td><td class="r">−${yen(c.subsidy)}</td></tr><tr class="t"><td>実質のご負担（目安）</td><td class="r">${yen(c.burden)}</td></tr>` : ""}</table>
+        <p class="small">※ 図面・現地調査に基づくお見積です。解体後に下地の腐朽等が見つかった場合は、ご相談のうえ別途お見積いたします。${c.subsidy ? "補助金は申請・審査の結果により変わり、交付後のお受け取りとなります。" : ""}</p></section></div>`;
+  }
+  // 図面に工事の場所を色付けした絵（完成図。なければ現況図）
+  async function drawPlanImg(p) {
+    const img = $("#planImg"); if (!img) return;
+    const side = p.drawings.kansei ? "kansei" : "genkyo", d = p.drawings[side], url = await getImage(p.id, side);
+    if (!url) { img.closest("figure").remove(); return; }
+    const im = await Drawing.loadImg(url);
+    const k = 1; // 元の解像度で描いてから切り出す
+    const cv = document.createElement("canvas"); cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
+    const x = cv.getContext("2d"); x.drawImage(im, 0, 0, cv.width, cv.height); x.scale(k, k);
+    const lw = 1 / k, path = (pts, close) => { x.beginPath(); pts.forEach((q, i) => (i ? x.lineTo(q.x, q.y) : x.moveTo(q.x, q.y))); if (close) x.closePath(); };
+    const shapes = d.shapes || [];
+    const other = side === "kansei" ? Drawing.mapShapes(p.drawings.genkyo, d) || [] : [];
+    shapes.filter((s) => s.type === "room" && s.pts && (s.floor !== false || s.wall !== false || s.ceil !== false)).forEach((s) => {
+      x.fillStyle = "rgba(22,163,74,.20)"; x.strokeStyle = "#15803d"; x.lineWidth = 2 * lw; path(s.pts, true); x.fill(); x.stroke();
+      const cx = s.pts.reduce((a, q) => a + q.x, 0) / s.pts.length, cy = s.pts.reduce((a, q) => a + q.y, 0) / s.pts.length;
+      const area = d.ppm > 0 ? ` ${(MQ.polyArea(s.pts) / d.ppm / d.ppm / 1e6).toFixed(1)}㎡` : "";
+      x.font = `bold ${16 * lw}px sans-serif`; x.textAlign = "center"; x.textBaseline = "middle";
+      const t = s.name + area, tw = x.measureText(t).width;
+      x.fillStyle = "rgba(255,255,255,.9)"; x.fillRect(cx - tw / 2 - 4 * lw, cy - 11 * lw, tw + 8 * lw, 22 * lw); x.fillStyle = "#14532d"; x.fillText(t, cx, cy);
+    });
+    // 相手の図面にも同じ位置の壁があれば「残す壁」なので色を付けない（新設＝完成図だけ、撤去＝現況図だけ）
+    const tol = d.ppm > 0 ? 150 * d.ppm : 6;
+    const segD = (q, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, L = dx * dx + dy * dy; let t = L ? ((q.x - a.x) * dx + (q.y - a.y) * dy) / L : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(q.x - a.x - t * dx, q.y - a.y - t * dy); };
+    const only = (w, others) => { const os = others.filter((o) => o.type === "wall"); if (!os.length) return true; let hit = 0, n = 0;
+      for (let i = 0; i < w.pts.length - 1; i++) for (let j = 0; j <= 10; j++) { const a = w.pts[i], b = w.pts[i + 1], q = { x: a.x + ((b.x - a.x) * j) / 10, y: a.y + ((b.y - a.y) * j) / 10 }; n++;
+        if (os.some((o) => o.pts.some((_, m) => m < o.pts.length - 1 && segD(q, o.pts[m], o.pts[m + 1]) <= tol))) hit++; }
+      return hit / n < 0.5; };
+    other.filter((s) => s.type === "wall" && only(s, shapes)).forEach((s) => { x.strokeStyle = "#dc2626"; x.lineWidth = 6 * lw; x.setLineDash([12 * lw, 7 * lw]); path(s.pts); x.stroke(); x.setLineDash([]); });
+    shapes.filter((s) => s.type === "wall" && (side === "kansei" ? only(s, other) : s.auto)).forEach((s) => { x.strokeStyle = side === "kansei" ? "#2563eb" : "#dc2626"; x.lineWidth = 6 * lw; path(s.pts); x.stroke(); });
+    shapes.filter((s) => s.type === "pt" && !s.keep).forEach((s) => { x.fillStyle = s.replace ? "#ea580c" : "#7c3aed"; x.beginPath(); x.arc(s.x, s.y, 9 * lw, 0, 7); x.fill(); x.strokeStyle = "#fff"; x.lineWidth = 2 * lw; x.stroke(); });
+    // 図形のまわりだけ切り出す（A3 の図面でも建物が大きく写るように）
+    const all = shapes.concat(other).flatMap((s2) => (s2.pts ? s2.pts : s2.type === "pt" || s2.est ? [{ x: s2.x, y: s2.y }] : []));
+    let out = cv;
+    if (all.length) {
+      let x0 = Math.min(...all.map((q) => q.x)), x1 = Math.max(...all.map((q) => q.x)), y0 = Math.min(...all.map((q) => q.y)), y1 = Math.max(...all.map((q) => q.y));
+      const m = Math.max(x1 - x0, y1 - y0) * 0.12 + 20;
+      x0 = Math.max(0, (x0 - m) * k); y0 = Math.max(0, (y0 - m) * k); x1 = Math.min(cv.width, (x1 + m) * k); y1 = Math.min(cv.height, (y1 + m) * k);
+      if (x1 - x0 > 40 && y1 - y0 > 40) {
+        const z = Math.min(3, 1400 / Math.max(x1 - x0, y1 - y0));
+        out = document.createElement("canvas"); out.width = Math.round((x1 - x0) * z); out.height = Math.round((y1 - y0) * z);
+        const oc = out.getContext("2d"); oc.fillStyle = "#fff"; oc.fillRect(0, 0, out.width, out.height); oc.imageSmoothingQuality = "high";
+        oc.drawImage(cv, x0, y0, x1 - x0, y1 - y0, 0, 0, out.width, out.height);
+      }
+    }
+    img.src = out.toDataURL("image/jpeg", 0.88);
   }
   // ---------- 契約書 ----------
   const DEFAULT_CLAUSES = [
@@ -946,6 +1152,48 @@
     $("#csv").onclick = () => downloadCsv(`見積一覧_${today()}.csv`, [["見積番号", "工事名", "施主", "担当", "見積日", "状況", "税抜", "消費税", "税込", "原価", "粗利", "粗利率", "補助金", "実行金額"]].concat(rows.map(({ p, c, a }) => [p.no, p.name, p.client, p.staff, p.date, p.status, c.net, c.tax, c.total, c.cost, c.gross, (c.grossRate * 100).toFixed(1) + "%", c.subsidy, a])));
     $("#bk").onclick = backup;
   }
+  // ③ 標準仕様の編集（管理者）。項目ごとに選択肢＝単価表の項目、図面のどの数量を使うか、標準をどれにするか
+  function specEditor() {
+    const el = $("#specEd"); if (!el) return;
+    let specs = JSON.parse(JSON.stringify(MQ.specList(S.settings)));
+    const priceOpts = (sel) => `<option value="">（費用なし）</option>` + Object.entries(S.prices).sort((a, b) => MQ.KOUSHU.indexOf(a[1].koushu) - MQ.KOUSHU.indexOf(b[1].koushu) || num(a[1].order) - num(b[1].order))
+      .map(([id, x]) => `<option value="${id}" ${id === sel ? "selected" : ""}>${esc(x.koushu)}｜${esc(x.name)} ${esc(x.spec)}（${yen(x.std)}/${esc(x.unit)}）</option>`).join("");
+    const qtyOpts = (sel) => Object.entries(MQ.AUTO_KEYS).filter(([k]) => !/^pt_/.test(k)).map(([k, t]) => `<option value="${k}" ${k === sel ? "selected" : ""}>${esc(t)}</option>`).join("");
+    const draw = () => {
+      el.innerHTML = `<h4>標準仕様（全案件の初期値）</h4>
+        <p class="muted">見積で使う標準の仕様です。選択式の項目は、標準にした選択肢の単価項目が、図面から出た数量（右の「数量」）で見積に入ります。案件ごとの変更は各案件の「基本情報」で。</p>
+        ${specs.map((c, ci) => `<div class="spec-cat" data-ci="${ci}">
+          <div class="row"><input data-cf="label" value="${esc(c.label)}" class="lbl"> ${c.type === "number" ? `<input type="number" data-cf="value" value="${num(c.value)}" class="num"> ${esc(c.unit || "")}` : `数量 <select data-cf="qty">${qtyOpts(c.qty)}</select>`}
+            <span class="sp"></span>${c.key === "ch" ? "" : `<button class="lnk del" data-cdel="${ci}">項目を削除</button>`}</div>
+          ${c.type === "number" ? "" : `<table class="mini wide">${c.options.map((o, oi) => `<tr><td><label class="sw"><input type="radio" name="sel${ci}" data-osel="${oi}" ${c.sel === oi ? "checked" : ""}> 標準</label></td>
+            <td><input data-of="name" data-oi="${oi}" value="${esc(o.name)}"></td><td><select data-of="priceId" data-oi="${oi}">${priceOpts(o.priceId)}</select></td><td><button class="lnk del" data-odel="${oi}">✕</button></td></tr>`).join("")}</table>
+            <button class="btn sm" data-oadd="${ci}">＋ 選択肢を追加</button>`}</div>`).join("")}
+        <div class="row-end"><button class="btn sm" id="sAddCat">＋ 仕様の項目を追加</button><button class="btn sm" id="sReset">初期の標準仕様に戻す</button><button class="btn pri" id="sSave">標準仕様を保存</button></div>`;
+    };
+    draw();
+    el.onchange = (e) => {
+      const t = e.target, box = t.closest("[data-ci]"); if (!box) return;
+      const c = specs[+box.dataset.ci];
+      if (t.dataset.cf) c[t.dataset.cf] = t.dataset.cf === "value" ? num(t.value) : t.value;
+      if (t.dataset.osel) c.sel = +t.dataset.osel;
+      if (t.dataset.of) c.options[+t.dataset.oi][t.dataset.of] = t.value;
+    };
+    el.onclick = (e) => {
+      const t = e.target, box = t.closest("[data-ci]"), c = box ? specs[+box.dataset.ci] : null;
+      if (t.dataset.oadd != null && c) { c.options.push({ name: "新しい選択肢", priceId: "" }); draw(); }
+      if (t.dataset.odel != null && c) { if (c.options.length <= 1) return toast("選択肢は1つ以上必要です"); c.options.splice(+t.dataset.odel, 1); c.sel = Math.min(c.sel, c.options.length - 1); draw(); }
+      if (t.dataset.cdel != null && confirm("この仕様の項目を削除しますか？")) { specs.splice(+t.dataset.cdel, 1); draw(); }
+      if (t.id === "sAddCat") { specs.push({ key: MQ.uid("sp"), label: "新しい仕様", qty: "floor_area", sel: 0, options: [{ name: "なし", priceId: "" }] }); draw(); }
+      if (t.id === "sReset" && confirm("標準仕様を初期の内容に戻しますか？")) { specs = MQ.defaultSpecs(); draw(); }
+      if (t.id === "sSave") { DB.set(`${S.base}/settings/specs`, specs); toast("標準仕様を保存しました（作成中の見積は、図面・仕様を触ったときに計算し直されます）", 4000); }
+    };
+  }
+  // 標準仕様が使う単価項目が単価表に無ければ足す（管理者・お試し）
+  function ensureSpecPrices() {
+    if (!(ADMIN || DB.mode !== "firebase")) return;
+    const add = MQ.missingSpecPrices(S.prices);
+    if (Object.keys(add).length) DB.update(S.base + "/prices", add);
+  }
   async function backup() {
     const all = await DB.get(S.base);
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(all)], { type: "application/json" })); a.download = `見積帳バックアップ_${today()}.json`; a.click();
@@ -969,6 +1217,7 @@
         <label class="fld">仕入品の掛率（上代×掛率＝売価。0なら目標粗利率から）<input data-se="listRate" type="number" step="0.01" value="${st.listRate}"></label>
         <label class="fld">廃材量の目安（㎥／解体㎡）<input data-se="wastePerM2" type="number" step="0.005" value="${st.wastePerM2}"></label>
         <label class="fld">標準の天井高 mm<input data-se="defaultCh" type="number" value="${st.defaultCh}"></label></div>
+      <div class="card" id="specEd"></div>
       <div class="card"><h4>契約書の条文（全案件の共通の書式）</h4>
         <p class="muted">「第◯条（見出し）」で始まる行ごとに1条。案件ごとの特約は各案件の「契約書」タブで足せます。</p>
         <textarea id="clauses" rows="14" style="width:100%">${esc(clausesText(clauses()))}</textarea>
@@ -987,6 +1236,7 @@
     $("#sAdd").onclick = () => { const n = $("#sn").value.trim(); if (n) DB.set(`${S.base}/staff/${MQ.uid("s")}`, { name: n, role: "staff" }); };
     $$("[data-sdel]").forEach((b) => (b.onclick = () => confirm("名簿から外しますか？（案件は残ります）") && DB.remove(`${S.base}/staff/${b.dataset.sdel}`)));
     $("#bk").onclick = backup;
+    specEditor();
     $("#clSave").onclick = () => { DB.set(`${S.base}/profile/clauses`, parseClauses($("#clauses").value)); toast("条文を保存しました"); };
     $("#clReset").onclick = () => { if (confirm("条文を初期の文面に戻しますか？")) { DB.set(`${S.base}/profile/clauses`, null); $("#clauses").value = clausesText(DEFAULT_CLAUSES); } };
     $("#rs").onchange = async (e) => { const f = e.target.files[0]; if (!f) return; if (!confirm("いまのデータを、ファイルの内容で置き換えます。よろしいですか？")) return; const j = JSON.parse(await f.text()); await DB.set(S.base, j); toast("復元しました"); location.reload(); };
@@ -996,7 +1246,7 @@
   // ---------- 体験版・お試しの初期データ ----------
   async function seed(demo) {
     const base = S.base;
-    const prices = MQ.defaultPrices();
+    const prices = Object.assign(MQ.defaultPrices(), MQ.missingSpecPrices({}));
     await DB.set(base + "/profile", { name: "有限会社栗駒建業（サンプル）", address: "宮城県栗原市", tel: "", regNo: "", rep: "", bank: "サンプル銀行 栗原支店 普通 0000000 ユ）クリコマケンギョウ", created: Date.now(), pinHash: "" });
     await DB.set(base + "/settings", MQ.DEFAULT_SETTINGS);
     await DB.set(base + "/prices", prices);
@@ -1004,13 +1254,13 @@
     if (!demo) return;
     // 1) LDK 改修：自動で作った現況図・完成図
     const plan = demoPlans();
-    const g = { file: "現況図（サンプル）.png", w: plan.w, h: plan.h, ppm: plan.ppm, scaleDen: 100, origin: { x: 0, y: 0 }, originSet: true, ch: 2400, shapes: plan.gShapes };
-    const k = { file: "完成図（サンプル）.png", w: plan.w, h: plan.h, ppm: plan.ppm, scaleDen: 100, origin: { x: 0, y: 0 }, originSet: true, ch: 2400, shapes: plan.kShapes };
+    const g = { file: "現況図（サンプル）.png", w: plan.w, h: plan.h, ppm: plan.ppm, scaleDen: 100, origin: { x: 0, y: 0 }, originSet: true, ch: null, shapes: plan.gShapes };
+    const k = { file: "完成図（サンプル）.png", w: plan.w, h: plan.h, ppm: plan.ppm, scaleDen: 100, origin: { x: 0, y: 0 }, originSet: true, ch: null, shapes: plan.kShapes };
     const p1 = normProject({ id: "Pdemo1", no: "M-2026-0142", name: "サンプル様邸 LDK改修工事", client: "サンプル 一郎", address: "宮城県仙台市青葉区○○町1-2-3", site: "宮城県仙台市青葉区○○町1-2-3", kind: "リフォーム",
       date: "2026-10-05", validDays: 30, start: "2026-11-09", end: "2026-11-27", summary: "LDKの床・壁・天井の内装改修、パントリー間仕切壁の新設、照明・コンセント工事、室内ドア交換", staff: "佐藤", status: "提出済",
       created: Date.now() - 86400000 * 3, lines: [], subsidy: [], nebiki: 0, margin: { mode: "std", rate: 0.25 }, pay: [0.3, 0.4, 0.3], drawings: { genkyo: g, kansei: k } });
     const r = MQ.measure(g, k, MQ.DEFAULT_SETTINGS);
-    p1.lines = MQ.autoLines(r.metrics, prices, []);
+    p1.lines = MQ.autoLines(r.metrics, MQ.applySpecs(prices, MQ.DEFAULT_SETTINGS, {}).prices, []);
     const lab = MQ.newLine({ priceId: "p008", koushu: "木工事", name: "大工手間", spec: "造作工事", unit: "人工", qtyAuto: 2, priceStd: 28000, costStd: 20000, src: "手入力" });
     p1.lines = MQ.sortLines(p1.lines.concat([lab]));
     await DB.set(base + "/images/Pdemo1", { genkyo: plan.gUrl, kansei: plan.kUrl });

@@ -17,7 +17,7 @@
     ["解体工事", "内壁解体撤去", "石膏ボード", "㎡", 2000, 1200, "wall_demo_area"],
     ["解体工事", "建具撤去", "枠共", "箇所", 8000, 5000, "pt_rm_door"],
     ["木工事", "床下地調整", "合板増し張り t12", "㎡", 3500, 2100, "floor_area"],
-    ["木工事", "間仕切壁新設", "LGS下地・PB両面", "m", 18000, 11000, "wall_new_len"],
+    ["木工事", "間仕切壁新設", "LGS下地（石膏ボードは仕様で別計上）", "m", 12000, 7500, "wall_new_len"],
     ["木工事", "大工手間", "造作工事", "人工", 28000, 20000, ""],
     ["内装工事", "複合フローリング張り", "t12 303幅", "㎡", 9800, 6200, "floor_area"],
     ["内装工事", "壁ビニールクロス張り", "量産品", "㎡", 1500, 950, "wall_area"],
@@ -46,14 +46,16 @@
     lump: "1式（工事があれば）",
     waste: "廃材量 ㎥（解体面積から）",
     floor_area: "床の張替面積 ㎡",
-    wall_area: "壁の張替面積 ㎡（周長×天井高＋新設壁の両面）",
+    wall_area: "壁の張替面積 ㎡（部屋の周長×天井高。部屋が無ければ新設壁の両面）",
     ceil_area: "天井の張替面積 ㎡",
     baseboard: "巾木の長さ m",
     floor_demo: "既存床の解体面積 ㎡",
     wall_demo_area: "撤去する壁の面積 ㎡",
     wall_demo_len: "撤去する壁の長さ m",
     wall_new_len: "新設する壁の長さ m",
-    wall_new_area: "新設する壁の面積 ㎡（片面）"
+    wall_new_area: "新設する壁の面積 ㎡（片面）",
+    wall_new_both: "新設する壁の面積 ㎡（両面）",
+    ext_wall_area: "外壁側の壁面積 ㎡（部屋の「外壁に面する長さ」×天井高）"
   };
   Object.keys(PT_KINDS).forEach((k) => {
     AUTO_KEYS["pt_new_" + k] = PT_KINDS[k] + "：新設 箇所";
@@ -104,10 +106,10 @@
   }
 
   // 図面1枚 → 部屋・壁・点（mm 座標）
-  function readDrawing(d) {
+  function readDrawing(d, defCh) {
     const out = { rooms: [], walls: [], pts: [], ok: !!(d && d.ppm > 0) };
     if (!d || !d.shapes) return out;
-    const ch = num(d.ch) || DEFAULT_SETTINGS.defaultCh;
+    const ch = num(d.ch) || num(defCh) || DEFAULT_SETTINGS.defaultCh; // 部屋 → 図面 → 標準仕様の天井高
     d.shapes.forEach((s) => {
       if (s.type === "room") {
         let area, per, poly = null, c = null;
@@ -121,10 +123,10 @@
         }
         out.rooms.push({
           name: s.name || "部屋", area, per, poly, c, ch: num(s.ch) || ch,
-          floor: s.floor !== false, wall: s.wall !== false, ceil: s.ceil !== false, est: !!s.est
+          floor: s.floor !== false, wall: s.wall !== false, ceil: s.ceil !== false, est: !!s.est, extLen: num(s.extLen)
         });
       } else if (s.type === "wall" && out.ok && s.pts && s.pts.length > 1) {
-        out.walls.push({ pts: s.pts.map((p) => toMm(d, p)), ch: num(s.ch) || ch });
+        out.walls.push({ pts: s.pts.map((p) => toMm(d, p)), ch: num(s.ch) || ch, auto: !!s.auto });
       } else if (s.type === "pt" && out.ok) {
         out.pts.push(Object.assign({ kind: s.kind || "other", replace: !!s.replace, keep: !!s.keep }, toMm(d, s)));
       }
@@ -135,7 +137,7 @@
   // ① 現況図(genkyo)と完成図(kansei)を比べて数量を出す
   function measure(genkyo, kansei, settings) {
     const S = Object.assign({}, DEFAULT_SETTINGS, settings || {});
-    const G0 = readDrawing(genkyo), K = readDrawing(kansei);
+    const G0 = readDrawing(genkyo, S.defaultCh), K = readDrawing(kansei, S.defaultCh);
     const m = {}, det = {}, warn = [];
     const add = (k, v, why) => { if (!v) return; m[k] = r2((m[k] || 0) + v); (det[k] = det[k] || []).push(why); };
 
@@ -146,8 +148,10 @@
     const rooms = K.rooms.length ? K.rooms : G0.rooms;
     rooms.forEach((r) => {
       const tag = r.name + (r.est ? "（帖数から概算）" : "");
+      // 既存の部屋と重なっていれば既存の床（中心だけでなく、中心と各角の中間点でも判定。撤去した壁の上に中心が来ても拾える）
+      const probes = r.poly ? [r.c].concat(r.poly.map((q) => ({ x: (q.x + r.c.x) / 2, y: (q.y + r.c.y) / 2 }))) : r.c ? [r.c] : [];
       const existed = !G0.rooms.length || rooms === G0.rooms ||
-        G0.rooms.some((g) => g.name === r.name || (g.poly && r.c && inPoly(r.c, g.poly)));
+        G0.rooms.some((g) => g.name === r.name || (g.poly && probes.some((q) => inPoly(q, g.poly))));
       if (r.floor) {
         add("floor_area", r.area, `${tag} ${r2(r.area)}㎡`);
         add("baseboard", r.per, `${tag} 周長 ${r2(r.per)}m`);
@@ -155,6 +159,7 @@
       }
       if (r.wall) add("wall_area", r.per * r.ch / 1000, `${tag} 周長${r2(r.per)}m×天井高${r.ch / 1000}m`);
       if (r.ceil) add("ceil_area", r.area, `${tag} ${r2(r.area)}㎡`);
+      if (r.extLen > 0) add("ext_wall_area", r.extLen * r.ch / 1000, `${tag} 外壁側${r2(r.extLen)}m×${r.ch / 1000}m`);
     });
 
     // 壁：現況にあって完成にない＝撤去、完成にあって現況にない＝新設
@@ -162,7 +167,8 @@
     const gS = [], kS = [];
     G0.walls.forEach((w) => segs(w.pts).forEach((s) => gS.push(s)));
     K.walls.forEach((w) => segs(w.pts).forEach((s) => kS.push(s)));
-    if (G0.walls.length && !K.walls.length) warn.push("現況図にだけ壁があります。完成図に「残す壁」も描かないと、全部撤去として計算されます");
+    // 自動検出の壁は「変わった所」だけなので、この注意は手で描いた壁だけで判断
+    if (G0.walls.some((w) => !w.auto) && !K.walls.some((w) => !w.auto)) warn.push("現況図にだけ壁があります。完成図に「残す壁」も描かないと、全部撤去として計算されます");
     G0.walls.forEach((w) => segs(w.pts).forEach(([a, b]) => {
       const L = Math.hypot(b.x - a.x, b.y - a.y), keep = coveredLen(a, b, kS, TOL), gone = (L - keep) / 1000;
       if (gone > 0.1) { add("wall_demo_len", gone, `撤去 ${r2(gone)}m`); add("wall_demo_area", gone * w.ch / 1000, `撤去 ${r2(gone)}m×${w.ch / 1000}m`); }
@@ -172,7 +178,9 @@
       if (nw > 0.1) {
         add("wall_new_len", nw, `新設 ${r2(nw)}m`);
         add("wall_new_area", nw * w.ch / 1000, `新設 ${r2(nw)}m×${w.ch / 1000}m`);
-        add("wall_area", nw * w.ch / 1000 * 2, `新設壁の両面 ${r2(nw)}m×${w.ch / 1000}m×2`);
+        add("wall_new_both", nw * w.ch / 1000 * 2, `新設 ${r2(nw)}m×${w.ch / 1000}m×両面`);
+        // 部屋をなぞってあれば、新設壁の面は部屋の周長に入っているので二重に足さない
+        if (!K.rooms.some((x) => x.poly)) add("wall_area", nw * w.ch / 1000 * 2, `新設壁の両面 ${r2(nw)}m×${w.ch / 1000}m×2`);
       }
     }));
 
@@ -196,6 +204,62 @@
     if (demo > 0) add("waste", Math.max(1, Math.round(demo * S.wastePerM2 * 10) / 10), `解体 ${r2(demo)}㎡×${S.wastePerM2}㎥`);
     if (Object.keys(m).length) { m.lump = 1; det.lump = ["工事あり"]; }
     return { metrics: m, detail: det, warnings: warn };
+  }
+
+  // ---------- ③ 標準仕様 ----------
+  // 会社の標準（settings.specs）を案件ごとに上書き（project.specs = { key: 選んだ番号 or 数値 }）。
+  // 選択式の項目は「選んだ単価項目」だけを図面の数量（qty のキー）に連動させ、同じ項目の他の選択肢は連動を外す。
+  const SPEC_PRICES = {
+    ps01: ["木工事", "床下地 構造用合板張り", "t15", "㎡", 4200, 2600],
+    ps02: ["内装工事", "クッションフロア張り", "t1.8 住宅用", "㎡", 4500, 2800],
+    ps03: ["内装工事", "フロアタイル張り", "t2.5", "㎡", 7500, 4800],
+    ps04: ["木工事", "壁 石膏ボード張り", "t9.5", "㎡", 2300, 1400],
+    ps05: ["木工事", "壁 石膏ボード張り", "t12.5", "㎡", 2600, 1600],
+    ps06: ["木工事", "壁 強化石膏ボード張り", "t15", "㎡", 3400, 2100],
+    ps07: ["木工事", "天井 石膏ボード張り", "t9.5", "㎡", 2700, 1700],
+    ps08: ["木工事", "天井 石膏ボード張り", "t12.5", "㎡", 3000, 1900],
+    ps09: ["木工事", "断熱材 重ね張り", "押出法ポリスチレンフォーム t30", "㎡", 5800, 3700],
+    ps10: ["木工事", "断熱材 重ね張り", "高性能グラスウール t50＋防湿シート", "㎡", 4800, 3000],
+    ps11: ["木工事", "断熱材 重ね張り", "フェノールフォーム t25", "㎡", 7800, 5000],
+    ps12: ["内装工事", "壁ビニールクロス張り", "1000番台", "㎡", 1900, 1250],
+    ps13: ["内装工事", "壁 塗装", "EP（水性つや消し）", "㎡", 2800, 1800],
+    ps14: ["内装工事", "天井ビニールクロス張り", "1000番台", "㎡", 1900, 1250]
+  };
+  const DEFAULT_SPECS = [
+    { key: "ch", label: "天井の高さ", type: "number", unit: "mm", value: 2400 },
+    { key: "floorBase", label: "床に張る下地材", qty: "floor_area", sel: 0, options: [{ name: "構造用合板 t12（増し張り）", priceId: "p006" }, { name: "構造用合板 t15", priceId: "ps01" }, { name: "下地なし（既存床に直張り）", priceId: "" }] },
+    { key: "floorFinish", label: "床の仕上げ", qty: "floor_area", sel: 0, options: [{ name: "複合フローリング t12", priceId: "p009" }, { name: "クッションフロア", priceId: "ps02" }, { name: "フロアタイル", priceId: "ps03" }] },
+    { key: "wallBoard", label: "壁の石膏ボードの厚さ（新設する壁）", qty: "wall_new_both", sel: 2, options: [{ name: "なし（下地込みの単価で計上）", priceId: "" }, { name: "9.5mm", priceId: "ps04" }, { name: "12.5mm", priceId: "ps05" }, { name: "15mm 強化", priceId: "ps06" }] },
+    { key: "ceilBoard", label: "天井の石膏ボードの厚さ（張替える天井）", qty: "ceil_area", sel: 0, options: [{ name: "張替えない（既存のまま）", priceId: "" }, { name: "9.5mm", priceId: "ps07" }, { name: "12.5mm", priceId: "ps08" }] },
+    { key: "insul", label: "重ね張り断熱材（外壁側）", qty: "ext_wall_area", sel: 0, options: [{ name: "なし", priceId: "" }, { name: "押出法ポリスチレンフォーム t30", priceId: "ps09" }, { name: "高性能グラスウール t50＋防湿シート", priceId: "ps10" }, { name: "フェノールフォーム t25", priceId: "ps11" }] },
+    { key: "wallFinish", label: "壁の仕上げ", qty: "wall_area", sel: 0, options: [{ name: "ビニールクロス 量産品", priceId: "p010" }, { name: "ビニールクロス 1000番台", priceId: "ps12" }, { name: "塗装（EP）", priceId: "ps13" }] },
+    { key: "ceilFinish", label: "天井の仕上げ", qty: "ceil_area", sel: 0, options: [{ name: "ビニールクロス 量産品", priceId: "p011" }, { name: "ビニールクロス 1000番台", priceId: "ps14" }] }
+  ];
+  function defaultSpecs() { return JSON.parse(JSON.stringify(DEFAULT_SPECS)); }
+  // 標準仕様が使う単価項目のうち、単価表にまだ無いもの
+  function missingSpecPrices(prices) {
+    const o = {};
+    Object.keys(SPEC_PRICES).forEach((id, i) => { if (!(prices || {})[id]) { const r = SPEC_PRICES[id]; o[id] = { koushu: r[0], name: r[1], spec: r[2], unit: r[3], std: r[4], cost: r[5], auto: "", order: 100 + i }; } });
+    return o;
+  }
+  function specList(settings) { const s = settings && settings.specs; return Array.isArray(s) && s.length ? s : DEFAULT_SPECS; }
+  // 案件で効いている値（選択肢の番号 or 数値）
+  function specValue(cat, projSpecs) {
+    const v = projSpecs && has(projSpecs[cat.key]) ? projSpecs[cat.key] : cat.type === "number" ? cat.value : cat.sel;
+    return cat.type === "number" ? num(v) : Math.min(Math.max(0, num(v)), (cat.options || []).length - 1);
+  }
+  // 単価表に仕様を当てはめた「実際に使う単価表」と、天井高
+  function applySpecs(prices, settings, projSpecs) {
+    const out = {};
+    Object.keys(prices || {}).forEach((id) => (out[id] = Object.assign({}, prices[id])));
+    let ch = num((settings || {}).defaultCh) || DEFAULT_SETTINGS.defaultCh;
+    specList(settings).forEach((cat) => {
+      if (cat.type === "number") { if (cat.key === "ch") ch = specValue(cat, projSpecs) || ch; return; }
+      (cat.options || []).forEach((o) => { if (o.priceId && out[o.priceId]) out[o.priceId].auto = ""; });
+      const o = (cat.options || [])[specValue(cat, projSpecs)];
+      if (o && o.priceId && out[o.priceId]) out[o.priceId].auto = cat.qty || "";
+    });
+    return { prices: out, ch };
   }
 
   function autoQty(key, metrics) {
@@ -518,7 +582,7 @@
     return b.stages[bill.kind] || b.stages["全額"];
   }
 
-  const API = { KOUSHU, stampDuty, BILL_KINDS, billStages, billAmount, DEFAULT_SETTINGS, AUTO_KEYS, PT_KINDS, JO_M2, defaultPrices, uid, r2, ceilTo, num, has,
+  const API = { SPEC_PRICES, DEFAULT_SPECS, defaultSpecs, missingSpecPrices, specList, specValue, applySpecs, KOUSHU, stampDuty, BILL_KINDS, billStages, billAmount, DEFAULT_SETTINGS, AUTO_KEYS, PT_KINDS, JO_M2, defaultPrices, uid, r2, ceilTo, num, has,
     polyArea, polyLen, readDrawing, measure, autoQty, autoLines, newLine, sortLines,
     lineQty, lineCost, unitPrice, calc, solveRate, actuals, learn, parseDocText, parseItemLine, normText, similarity, matchPrice,
     detectScale, detectRooms, supplierLine };

@@ -146,12 +146,34 @@ table.dt.sub { margin-top: 10px; } table.dt .r, .sheet .r { text-align: right; }
 .contract .sign .in { display: inline-block; margin-left: 12px; border: 1px solid #999; border-radius: 50%; width: 22px; height: 22px; line-height: 20px; text-align: center; font-size: 11px; color: #777; }
 tr.selrow td { background: #fffbeb; }
 
+/* お客様向け明細 */
+.sheet.cust { font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif; font-size: 12.5px; }
+.cust .ctop { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #1e3a5f; padding-bottom: 6px; }
+.cust .ctop small { color: #b45309; font-weight: bold; letter-spacing: .1em; } .cust .ctop h1 { border: none; margin: 0; padding: 0; text-align: left; letter-spacing: .15em; font-size: 26px; color: #1e3a5f; }
+.cust .cto { font-size: 20px; margin: 12px 0 2px; } .cust .cname { font-size: 17px; font-weight: bold; } .cust .csum { margin: 6px 0; color: #333; }
+.cust .cplan { margin: 10px 0; text-align: center; } .cust .cplan img { max-width: 100%; max-height: 105mm; border: 1px solid #ccc; }
+.cust figcaption { font-size: 10.5px; color: #444; margin-top: 4px; } .lg { display: inline-block; width: 12px; height: 12px; vertical-align: middle; margin-right: 3px; border-radius: 2px; }
+.lg.g { background: rgba(22,163,74,.35); border: 1px solid #15803d; } .lg.b { background: #2563eb; height: 4px; } .lg.r { background: repeating-linear-gradient(90deg,#dc2626 0 4px,transparent 4px 6px); height: 4px; } .lg.p { background: #7c3aed; border-radius: 50%; } .lg.o { background: #ea580c; border-radius: 50%; }
+.cust .cbox { display: flex; gap: 10px; margin: 10px 0; } .cust .cbox div { flex: 1; border: 2px solid #1e3a5f; border-radius: 8px; padding: 8px 12px; display: flex; flex-direction: column; }
+.cust .cbox span { font-size: 11px; color: #555; } .cust .cbox b { font-size: 22px; } .cust .cbox small { font-size: 10px; color: #555; } .cust .cbox .hi { background: #fff7ed; border-color: #b45309; } .cust .cbox .hi b { color: #b45309; }
+.cust .ch3 { font-size: 14px; margin: 12px 0 0; color: #1e3a5f; } .cust .cfrom { margin-top: 14px; border-top: 1px solid #999; padding-top: 6px; font-size: 11.5px; }
+.cust h2 { color: #1e3a5f; border-bottom: 3px solid #1e3a5f; padding-bottom: 4px; letter-spacing: .1em; }
+.cust .cblock { margin: 12px 0; break-inside: avoid; } .cust .cblock h3 { display: flex; align-items: center; gap: 8px; font-size: 15px; margin: 0 0 4px; border-bottom: 1px solid #1e3a5f; padding-bottom: 3px; }
+.cust .cno { background: #1e3a5f; color: #fff; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; } .cust .camt { margin-left: auto; }
+.cust .cdesc { margin: 2px 0 4px; color: #333; }
+/* 仕様 */
+.fld.chg select, .fld.chg input { border-color: var(--brown); background: #fffbeb; }
+.spec-cat { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; overflow-x: auto; } .spec-cat .lbl { font-weight: bold; min-width: 260px; } .spec-cat .num { width: 100px; }
+.spec-cat table.mini input { width: 100%; } .spec-cat table.mini select { max-width: 420px; }
+
 @media (max-width: 900px) {
   .zumen { grid-template-columns: 1fr; } .z-canvas { height: 60vh; }
   .kin { grid-template-columns: 1fr; }
   .ph-sum { margin-left: 0; }
   .sheet { width: 100%; min-height: 0; padding: 14px; }
   .doc-top { flex-direction: column; } .doc-top .from { text-align: left; }
+  .cust .cbox { flex-direction: column; }
+  .spec-cat .lbl { min-width: 0; width: 100%; } .spec-cat table.mini select { max-width: 160px; } .spec-cat select { max-width: 100%; }
   .contract .stamp, .contract .copy { position: static; display: inline-block; margin: 0 6px 6px 0; } .contract h1 { margin-top: 4px; } .contract .sign { grid-template-columns: 1fr; }
 }
 @media print {

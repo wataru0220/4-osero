@@ -1,5 +1,5 @@
 // ===== 栗駒見積帳 Service Worker =====
-// SW_VERSION: 2026-10-05j（このファイルを更新したら版を変える）
+// SW_VERSION: 2026-10-06f（このファイルを更新したら版を変える）
 // 役割：ホーム画面アプリ化（PWA・担当者/管理の両方）と、本体ファイルを常に最新で取得すること。
 
 self.addEventListener('install', function () { self.skipWaiting(); });
