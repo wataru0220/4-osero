@@ -3406,7 +3406,7 @@ function partySVG(){
   return `<g class="party">${h}</g>`;
 }
 /* =========================================================
-   RPG SYSTEMS: gold and an item shop, a mental gauge (0 = 人生リタイヤ, back to the last rest spot),
+   RPG SYSTEMS: gold and an item shop, a mental gauge (0 = 人生リタイヤ, back to the start square: ふりだし),
    fate crossroads that decide one of ten goals, jobs with their own allies, and a job hall
    ========================================================= */
 /* allies look and are named after your job (their skills stay the same) */
@@ -3435,8 +3435,9 @@ function hurt(n, why, monster){
   Q.beats = [{k: 'retire'}]; Q.retire = 1; Q.qs = 'story'; Q.duel = null; save(); refresh(); return true;
 }
 function respawn(){
-  const Q = rpgQ(); Q.retire = 0; Q.mental = 50; Q.pts = Math.floor(Q.pts / 2); Q.pos = Q.rest || 'start'; Q.qs = 'roll';
-  qlog('休憩地点で目をさました。メンタル50で再出発（夢ポイントは半分）'); sfx.next(); save(); renderBoard(); refresh();
+  /* 人生リタイヤ: back to ふりだし (the start square). Answers, cleared gates and items are kept */
+  const Q = rpgQ(); Q.retire = 0; Q.mental = 50; Q.pts = Math.floor(Q.pts / 2); Q.pos = 'start'; Q.qs = 'roll'; Q.fight = null; Q.chest = null; Q.spot = null;
+  qlog('ふりだしにもどった…。メンタル50で再出発（夢ポイントは半分）'); toast('↩ ふりだしにもどった！ メンタル50で再出発'); sfx.next(); save(); renderBoard(); refresh();
 }
 
 /* ---------- items ---------- */
@@ -5788,7 +5789,7 @@ function storyHTML(){
   if (b.k === 'retire'){
     tag = 'GAME OVER'; title = '人生リタイヤ…'; pic = heroPic(heroLevel());
     text = 'メンタルが0になってしまった…。';
-    sub = 'でも大丈夫。休憩地点（最後に通った関所かお店）で目をさました。メンタル50で再出発しよう。これまでの答えはそのまま、夢ポイントは半分になります。';
+    sub = 'ふりだし（スタート）にもどって、メンタル50で再出発しよう。これまでの答えと通った関所はそのまま、夢ポイントは半分になります。';
   } else if (b.k === 'ending'){
     const g = goalBy(S.goal) || goalOf(S); tag = 'YOUR GOAL'; title = `${g.ic} ${g.n}`;
     pic = `<svg class="story-pic" viewBox="-110 -84 220 92" aria-hidden="true"><g transform="translate(-40 0) scale(1.3)">${pxPerson(heroLevel())}</g><text x="44" y="-12" font-size="62" text-anchor="middle">${g.ic}</text></svg>`;
@@ -5828,7 +5829,7 @@ function storyHTML(){
   return `
     <div class="p-head"><p class="kicker">${tag}</p><span class="p-count">${more > 0 ? `あと${more}つ` : ''}</span></div>
     <div class="story">${pic}<h2>${esc(title)}</h2><p>${esc(text)}</p>${sub ? `<p class="story-sub">${esc(sub)}</p>` : ''}</div>
-    <div class="p-foot"><span class="grow"></span><button class="btn primary lg" type="button" data-act="story-ok">${b.k === 'intro' || b.k === 'chapter' ? '旅に出る' : 'つづける'}</button></div>`;
+    <div class="p-foot"><span class="grow"></span><button class="btn primary lg" type="button" data-act="story-ok">${b.k === 'intro' || b.k === 'chapter' ? '旅に出る' : b.k === 'retire' ? '↩ ふりだしにもどる' : 'つづける'}</button></div>`;
 }
 function heroCardHTML(){
   const lv = heroLevel(), party = (S.quest.party || []), next = LV_STEP[lv + 1];
