@@ -962,6 +962,9 @@ body.mg-lock{overflow:hidden}
 .examples{display:flex;flex-wrap:wrap;gap:8px}
 .purpose,.job-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .course-pick{display:grid;gap:6px}
+.prof-row{display:grid;gap:6px}.prof-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pchip{padding:7px 12px;border-radius:999px;border:1.5px solid var(--line2);background:#fff;font-size:13px;font-weight:700;color:var(--ink2)}
+.pchip.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .pr-call{display:grid;gap:6px;padding:14px;border-radius:16px;background:linear-gradient(135deg,#1B2140,#3A2A6A);color:#fff;box-shadow:0 10px 24px -14px #3A2A6A}.pr-call b{font-size:17px}.pr-call span{font-size:13px;line-height:1.6;color:#DCE0F5}.pr-call .btn{justify-self:start}
 .pr-home{display:grid;justify-items:start;text-align:left;border-color:#3A2A6A;background:#F4F1FF}.pr-home small{font-size:11.5px;color:var(--muted);font-weight:600}
 .sheet.practice{display:flex;flex-direction:column;gap:12px;max-width:640px}
@@ -1423,6 +1426,9 @@ body.mg-lock{overflow:hidden}
       <input id="themeInput" class="theme-input" maxlength="24" placeholder="例：科学者になりたい" aria-label="真ん中のテーマ" autocomplete="off">
       <div class="examples" id="examples"></div>
     </div>
+    <div class="prof-row" data-hs="1"><small class="tb-l">あなたの立場（えらぶと、問いの内容が合わせて変わります・任意）</small>
+      <div class="prof-chips" id="roleCtl" role="group" aria-label="あなたの立場"></div>
+      <div class="prof-chips" id="marCtl" role="group" aria-label="結婚"></div></div>
     <div class="age-row" data-hs="1"><label for="ageInput">あなたの年齢<input id="ageInput" type="number" min="3" max="110" inputmode="numeric" placeholder="例：15">歳</label><small>入れると、最後に「何歳で何をするか」の人生のタイムスケジュールを作ります（任意）</small></div>
 
     <div class="step" data-hs="2"><i>STEP 2</i>あそび方<small class="step-note">いちばん楽しいのはクエスト！</small></div>
@@ -5348,7 +5354,7 @@ function padSVG(q){
     if (st.monster){
       const boss = st.monster === 'boss', sc = boss ? 1.7 : 1.35;
       h += `<g transform="translate(${(q.x + (boss ? 78 : 56)).toFixed(0)} ${(q.y + 12).toFixed(0)}) scale(${sc})"><g class="mon-bob">${pxSprite(`<use href="#mon-${monKind(st)}" style="--mc:${st.mcol || '#7C4DDB'}"/>`)}</g></g>`;
-      if (q.p.s === bossStage(S) && !hasMember('princess')) h += `<g transform="translate(${(q.x - 70).toFixed(0)} ${(q.y + 14).toFixed(0)}) scale(1.3)"><circle cy="-26" r="34" fill="#FFD66B" opacity=".18"/>${pxSprite('<use href="#pm-princess"/><use href="#cage"/>')}<text y="20" text-anchor="middle" font-size="12" fill="#FFF3C4" ${F}>たすけて！</text></g>`;
+      if (q.p.s === bossStage(S) && !(hasMember('princess') || (S.quest && S.quest.key))) h += `<g transform="translate(${(q.x - 70).toFixed(0)} ${(q.y + 14).toFixed(0)}) scale(1.3)"><circle cy="-26" r="34" fill="#FFD66B" opacity=".18"/>${pxSprite(rescueArt() + '<use href="#cage"/>')}<text y="20" text-anchor="middle" font-size="12" fill="#FFF3C4" ${F}>${rescueKey() ? 'しあわせの鍵' : 'たすけて！'}</text></g>`;
     }
     else h += `<g transform="translate(${(q.x + 40).toFixed(0)} ${(q.y + 8).toFixed(0)}) scale(1.2)">${pxSprite(`<use href="#npc" style="--hat:${col}"/>`)}</g>`;
   }
@@ -5717,6 +5723,7 @@ function land(T, i, trigger){
     Q.place = racers ? place : 0; Q.pts += 30 + (racers ? pb : 0);
     qlog(racers ? `${W().names.castle}に${place}着でゴール！ +${30 + pb}pt` : `${W().names.castle}に到着！ +30pt`);
     if (hasMember('princess')){ Q.pts += 50; qlog('お姫さまを城へ送り届けた！ +50pt'); }
+    if (Q.key){ Q.pts += 50; qlog(`「しあわせの鍵」で${W().names.castle}の扉をひらいた！ +50pt`); }
     if (hasMember('fairy')){ Q.pts += 20; qlog('星の妖精ピピの祝福 +20pt'); }
     if (racers) toast(place === 1 ? 'ライバルに勝って1着でゴール！' : `${place}着でゴール！`);
     if (!S.goal) S.goal = goalOf(S).k;
@@ -5801,9 +5808,9 @@ function storyHTML(){
     sub = `${g.d} 旅で集めた運命の力：${tagLine(S)}。職業：${CLASSES[curCls()].n}。`;
   } else if (b.k === 'intro'){
     title = 'ものがたりのはじまり';
-    pic = `<svg class="story-pic" viewBox="-110 -96 220 104" aria-hidden="true"><g transform="translate(-44 0) scale(1.3)">${pxSprite('<use href="#pm-princess"/><use href="#cage"/>')}</g><g transform="translate(46 2) scale(1.05)">${pxSprite(`<use href="#mon-${bossKind()}" style="--mc:#C8362F"/>`)}</g></svg>`;
-    text = `${W().names.castle}のお姫さまが、${boss}にさらわれてしまった！`;
-    sub = `${heroName() ? `勇者${heroName()}よ、` : ''}関所で問いに答えて力をつけ、${W().names.cave}の奥にいる${boss}をたおして姫を助け出そう。答えるたびにレベルが上がり、${gearList().map(g => g[0].replace(/「.*」/, '')).slice(0, 3).join('・')}…と装備がそろって「${lvName(5)}」になれる。道中では家来も増えるぞ。ライバルも城をめざしている…関所でライバルと出くわしたら、ミニゲームで勝負だ！`;
+    pic = `<svg class="story-pic" viewBox="-110 -96 220 104" aria-hidden="true"><g transform="translate(-44 0) scale(1.3)">${pxSprite(rescueArt() + '<use href="#cage"/>')}</g><g transform="translate(46 2) scale(1.05)">${pxSprite(`<use href="#mon-${bossKind()}" style="--mc:#C8362F"/>`)}</g></svg>`;
+    text = rescueKey() ? `${boss}が、${S.coop ? 'ふたり' : 'あなたの家族'}の「しあわせの鍵」をうばって、${W().names.cave}の奥にかくしてしまった！` : `${W().names.castle}のお姫さまが、${boss}にさらわれてしまった！`;
+    sub = `${S.coop ? `${S.coop.n[0]}と${S.coop.n[1]}よ、` : heroName() ? `勇者${heroName()}よ、` : ''}関所で問いに答えて力をつけ、${W().names.cave}の奥にいる${boss}をたおして${rescueKey() ? '「しあわせの鍵」を取りもどそう' : '姫を助け出そう'}。答えるたびにレベルが上がり、${gearList().map(g => g[0].replace(/「.*」/, '')).slice(0, 3).join('・')}…と装備がそろって「${lvName(5)}」になれる。道中では家来も増えるぞ。ライバルも城をめざしている…関所でライバルと出くわしたら、ミニゲームで勝負だ！`;
   } else if (b.k === 'lv'){
     tag = 'LEVEL UP'; title = `${heroName() ? heroName() + 'は' : ''}Lv.${b.lv} ${lvName(b.lv)}になった！`;
     pic = heroPic(b.lv, `<g transform="translate(40 -54)"><use href="#w-spark" transform="scale(1.4)" style="--sp:#FFD66B"/></g><g transform="translate(-42 -30)"><use href="#w-spark" style="--sp:#FFD66B"/></g>`);
@@ -5825,6 +5832,10 @@ function storyHTML(){
     pic = `<svg class="story-pic" viewBox="-110 -100 220 108" aria-hidden="true">${bg}<g transform="translate(-58 0) scale(1.25)">${pxPerson(heroLevel())}</g><g transform="translate(40 2) scale(1.05)">${pxSprite(`<use href="#mon-${bossKind()}" style="--mc:${b.ch === 3 ? '#6B2FA0' : '#2E6FD8'}"/>`)}</g><g transform="translate(92 -70)"><path d="M0 -12 L7 0 L0 12 L-7 0Z" fill="${b.ch === 3 ? '#FFD84D' : '#7FE7F2'}" stroke="#fff" stroke-width="1.5"/></g></svg>`;
     text = C.story.replace('{t}', S.theme);
     sub = `${B ? `舞台は「${B.n}」。${W().names.town}から${W().names.river}をこえ、${W().names.cave}へ──道のかたちも変わったぞ。` : ''}${heroName() ? `勇者${heroName()}よ、` : ''}前の章の答えをもとに、もっと深い問いが待っている。答えはマインドマップに書き足され、どんどん広がっていくぞ。`;
+  } else if (b.k === 'key'){
+    tag = 'RESCUE'; title = '「しあわせの鍵」を取りもどした！';
+    pic = `<svg class="story-pic" viewBox="-80 -96 160 104" aria-hidden="true"><g transform="translate(-26 0) scale(1.25)">${pxPerson(heroLevel())}</g>${S.coop ? `<g transform="translate(26 0) scale(1.25)">${pxPerson(heroLevel(), undefined, S.coop.av)}</g>` : `<g transform="translate(30 -10) scale(1.6)">${KEY_ART}</g>`}<g transform="translate(0 -70) scale(1.3)">${KEY_ART}</g></svg>`;
+    text = `${boss}をたおし、うばわれていた「しあわせの鍵」を取りもどした！`; sub = `この鍵で、${W().names.castle}の扉がひらく。ゴールへ向かおう（とどけると +50pt）`;
   } else if (b.k === 'princess'){
     tag = 'RESCUE'; title = 'お姫さまを助け出した！';
     pic = `<svg class="story-pic" viewBox="-80 -96 160 104" aria-hidden="true"><g transform="translate(-26 0) scale(1.25)">${pxPerson(heroLevel())}</g><g transform="translate(28 0) scale(1.3)">${pxSprite(`<use href="#pm-princess"/>`)}</g><g transform="translate(2 -64)"><use href="#ic-heart" transform="scale(1.3)"/></g></svg>`;
@@ -5880,7 +5891,8 @@ async function clearGate(){
     const move = isPlan(st) ? av(fieldsOf(st)[0][0]) : (answersFor(S, p)[0] || {}).t || '';
     if (move){ const sub = isPlan(st) ? fieldsOf(st).slice(1).map(f => av(f[0])).filter(Boolean).join('・') : ''; beats.push({k: 'finish', move, sub, l: st.l, ch: S.chapter || 1}); qlog(`${st.l}「${move}」がさくれつ！`); }
   }
-  if (p.s === bossStage(S) && !Q.party.includes('princess')){ Q.party.push('princess'); beats.push({k: 'princess'}); qlog('とらわれていた姫を助け出した！'); }
+  if (p.s === bossStage(S) && rescueKey() && !Q.key){ Q.key = 1; beats.push({k: 'key'}); qlog('「しあわせの鍵」を取りもどした！'); }
+  else if (p.s === bossStage(S) && !rescueKey() && !Q.party.includes('princess')){ Q.party.push('princess'); beats.push({k: 'princess'}); qlog('とらわれていた姫を助け出した！'); }
   if (lv1 > lv0){ rollGear(lv1); beats.push({k: 'lv', lv: lv1}); qlog(`レベルアップ！ Lv.${lv1} ${lvName(lv1)}（${gearOf(lv1).n}）`); }
   if (!Q.party.includes('cat') && clearedN(S) >= 1){ Q.party.push('cat'); beats.push({k: 'join', m: 'cat'}); qlog('ネコのミケが家来になった'); }
   if (beats.length){ Q.beats = beats; Q.after = bonus; Q.qs = 'story'; sfx.good(); refresh(); return; }
@@ -6380,7 +6392,7 @@ const FUN_ALT = {
   pick: ['候補の中で、考えるだけで顔がにやけるのはどれ？', 'コインを投げて「表は〇〇」と決めたとき、本当は表が出てほしいのは？']
 };
 function funAlt(x, st, si, base){
-  if (x.coop || !st || st.p >= 0 || st.monster || isPlan(st)) return base;
+  if (x.coop || (st && st.ad) || !st || st.p >= 0 || st.monster || isPlan(st)) return base;
   const L = FUN_ALT[st.o]; if (!L) return base;
   const h = hash(`${x.theme}|${x.vseed || 0}|fun|${si}`);
   return h % 3 === 0 ? L[(h >> 3) % L.length] : base;
@@ -6404,7 +6416,7 @@ function playHTML(){
   const hp = st.monster ? battleHP(p) : null;
   const sub = plan ? `「${flds.map(f => f[2]).join('」「')}」を決めよう。` : '';
   const qBlock = quest
-    ? `<div class="rpg${st.monster ? ' mon' : ''}" style="--c:${col}"><span class="rpg-name">${esc(st.npc || '旅人')}</span>${st.monster ? `<svg class="mon-pic${st.monster === 'boss' ? ' boss' : ''}" viewBox="-66 -88 132 96" aria-hidden="true"><g class="mon-bob">${pxSprite(`<use href="#mon-${monKind(st)}" style="--mc:${st.mcol || '#7C4DDB'}"/>`)}</g>${p.s === bossStage(S) && !hasMember('princess') ? '<g transform="translate(-52 4) scale(.8)">' + pxSprite('<use href="#pm-princess"/><use href="#cage"/>') + '</g>' : ''}</svg>` : ''}<p>${qText}</p>${sub ? `<p class="rpg-sub">${sub}</p>` : ''}${hp != null ? `<div class="hpbar"><span>HP</span><span class="hpt"><i style="width:${hp}%"></i></span><b>${hp ? hp + '/100' : 'たおした！'}</b></div>` : ''}</div>`
+    ? `<div class="rpg${st.monster ? ' mon' : ''}" style="--c:${col}"><span class="rpg-name">${esc(st.npc || '旅人')}</span>${st.monster ? `<svg class="mon-pic${st.monster === 'boss' ? ' boss' : ''}" viewBox="-66 -88 132 96" aria-hidden="true"><g class="mon-bob">${pxSprite(`<use href="#mon-${monKind(st)}" style="--mc:${st.mcol || '#7C4DDB'}"/>`)}</g>${p.s === bossStage(S) && !(hasMember('princess') || (S.quest && S.quest.key)) ? '<g transform="translate(-52 4) scale(.8)">' + pxSprite(rescueArt() + '<use href="#cage"/>') + '</g>' : ''}</svg>` : ''}<p>${qText}</p>${sub ? `<p class="rpg-sub">${sub}</p>` : ''}${hp != null ? `<div class="hpbar"><span>HP</span><span class="hpt"><i style="width:${hp}%"></i></span><b>${hp ? hp + '/100' : 'たおした！'}</b></div>` : ''}</div>`
     : `<h2 class="question" style="--c:${col}">${qText}</h2>${sub ? `<p class="hint" style="margin:-6px 0 0">${sub}</p>` : ''}`;
   S.seen = S.seen || {}; S.seen[p.s] = 1;
   const hintText = (S.tq && S.tq[p.s] && S.tq[p.s].hint) || st.hint;
@@ -7958,11 +7970,58 @@ function coupleStages(course, stages, rel){
     return n;
   });
 }
+/* ---------- questions that fit the player: the theme (what kind of dream), the player's situation (student, worker…)
+   and marriage. Applied once when a journey starts; stages changed here keep their wording (no random variants) ---------- */
+const ROLE = {student: ['🎒', '学生'], worker: ['💼', '社会人'], home: ['🏠', '主婦・主夫'], owner: ['🏪', '経営者・自営業'], senior: ['🌿', 'シニア（定年後）']};
+const ROLE_Q = {
+  student: {when: '明日の休み時間や放課後', stop: '{M}が「宿題が終わってからでいいよ」とささやく…。ゲームやスマホなど、夢のじゃまをしている習慣や、つい言ってしまう言い訳は？', hint: '学校や部活と両立できる形で考えてみよう。'},
+  worker: {when: '明日の出勤前・昼休み・仕事帰り', stop: '{M}が「仕事で疲れたから、今日はいいよ」とささやく…。夢のじゃまをしている習慣や、つい言ってしまう言い訳は？', hint: '仕事と両立できる時間（朝・昼休み・週末）で考えてみよう。'},
+  home: {when: '明日の家事の合間や家族が寝たあと', stop: '{M}が「家族のことが先でしょ」とささやく…。自分の夢を後回しにしてしまう習慣や言い訳は？', hint: '家事や家族の予定の合間でできる形で考えてみよう。'},
+  owner: {when: '明日、お店や事業の中で', stop: '{M}が「忙しいから後回しでいいよ」とささやく…。夢のじゃまをしている習慣や、つい言ってしまう言い訳は？', hint: '事業や仕事の中で、いっしょに進められる形で考えてみよう。'},
+  senior: {when: '明日、体に無理のない範囲で', stop: '{M}が「もう年だから」とささやく…。夢をあきらめさせようとする習慣や言い訳は？', hint: 'これまでの経験や人とのつながりを生かして、体に無理のない形で考えてみよう。'}
+};
+/* question per theme kind and question type (o) */
+const KIND_Q = {
+  exam: {need: '「{t}」の合格に向けて、いまの自分に足りないもの（知識・勉強時間・環境）は何？', expert: '「{t}」の試験で、合格者が必ずおさえている分野やコツは何だと思う？', wall: '{M}がささやく…「どうせ落ちるよ」。「{t}」の合格をあきらめたくなるとしたら、それはどんな時？', vision: '「{t}」に合格したら、誰がどんなふうに喜ぶ？'},
+  lang: {need: '「{t}」のために、いまの自分に足りない力（単語・聞く力・話す力・時間）は何？', expert: '「{t}」が得意な人が、必ずやっている勉強法は何だと思う？', wall: '{M}がささやく…「どうせ話せるようにならないよ」。「{t}」をあきらめたくなるとしたら、それはどんな時？', vision: '「{t}」がかなったら、誰とどんな話をしたい？'},
+  sport: {need: '「{t}」のために必要な体力・技術・練習の環境は何？', expert: '「{t}」で結果を出している人の練習法やコツは何だと思う？', wall: '{M}がささやく…「どうせ続かないよ」。ケガやつらさで「{t}」をあきらめたくなるとしたら、それはどんな時？', vision: '「{t}」を達成した日、誰に見てほしい？ その人はどんな顔をする？'},
+  shop: {need: '「{t}」のために必要なもの（資金・場所・商品・お客さま）は何？', expert: '「{t}」の分野で成功しているお店や会社が、やっている工夫は何だと思う？', wall: '{M}がささやく…「お客さんなんて来ないよ」。「{t}」がうまくいかないとしたら、原因は何？', vision: '「{t}」がかなったら、どんなお客さまが笑顔になる？'},
+  create: {need: '「{t}」のために必要な技術・道具・作品を見てもらう場所は何？', expert: '「{t}」の分野で、プロが大切にしている技や考え方は何だと思う？', wall: '{M}がささやく…「才能なんてないよ」。「{t}」で手が止まってしまうとしたら、それはどんな時？', vision: '「{t}」で、誰のどんな心を動かしたい？'},
+  money: {need: '「{t}」のために必要なもの（収入・支出の見直し・お金の知識）は何？', expert: '「{t}」を実現している人が守っている、お金のルールは何だと思う？', wall: '{M}がささやく…「どうせ貯まらないよ」。「{t}」の計画がくずれるとしたら、それはどんな時？', vision: '「{t}」がかなったら、そのお金で誰をどう喜ばせたい？'},
+  people: {need: '「{t}」のために必要な仲間・関係・場づくりは何？', expert: '人やチームをまとめるのが上手な人が、やっていることは何だと思う？', wall: '{M}がささやく…「誰もついてこないよ」。「{t}」で人間関係につまずくとしたら、それはどんな時？', vision: '「{t}」がかなったら、まわりの人はどんな顔をしている？'},
+  job: {need: '「{t}」のために、仕事で必要な力や経験は何？', expert: '「{t}」の仕事で、一流の人がやっていることは何だと思う？', wall: '{M}がささやく…「向いていないよ」。「{t}」でくじけそうになるとしたら、それはどんな時？', vision: '「{t}」がかなったら、仕事で誰の役に立てる？'},
+  house: {need: '「{t}」のために必要なもの（資金・土地・情報・家族の話し合い）は何？', expert: '家づくりで後悔しなかった人が、事前にやっていたことは何だと思う？', wall: '{M}がささやく…「ローンが払えなくなるよ」。「{t}」で、いちばん心配なことは何？', vision: '「{t}」がかなったら、新しい家で誰とどんな時間を過ごしたい？'}
+};
+const profRole = x => { const p = x.prof || {}; if (ROLE[p.role]) return p.role; const a = x.age || p.age; return a && a <= 18 ? 'student' : a && a >= 65 ? 'senior' : ''; };
+const isPair = x => !!x && !!(x.coop || (x.prof && x.prof.married));
+function adaptStages(x){
+  const kind = themeKind(x), K = !LIFE_C.has(x.course) && kind && KIND_Q[kind.k], role = profRole(x), RQ = ROLE_Q[role];
+  let st = x.stages.map(s => {
+    if (s.wild || s.ch > 1) return s;
+    let n = s;
+    const set = o => { n = {...n, ...o, vq: undefined, alt: undefined, ad: 1}; };
+    if (K && !isPlan(s) && K[s.o]) set({q: K[s.o], qf: undefined});
+    if (RQ){
+      if (s.o === 'stop' && !isPlan(s)) set({q: RQ.stop});
+      if (s.o === 'first' && !isPlan(s)) set({q: `${(s.q.match(/^[^。]*合言葉は「[^」]+」。/) || ['門をひらく合言葉は「最初の一歩」。'])[0]}必殺技「{@what}」のために、${RQ.when}にできることは？`, qf: `${(s.q.match(/^[^。]*合言葉は「[^」]+」。/) || ['門をひらく合言葉は「最初の一歩」。'])[0]}${RQ.when}にできる最初の一歩は？`});
+      if (!isPlan(s) && ['need', 'act', 'first', 'tm', 'what'].includes(s.o) || s.o === 'tm' || s.o === 'what') n = {...n, hint: [n.hint, RQ.hint].filter(Boolean).join(' ')};
+    }
+    return n;
+  });
+  /* married players (alone or with the partner) get the married-couple questions in the life courses */
+  if (!x.coop && x.prof && x.prof.married && LIFE_C.has(x.course)) st = coupleStages(x.course, st, 'fuu');
+  return st;
+}
+/* the rescue story: a princess for a lone hero, "the key to happiness" when there is a partner */
+const rescueKey = () => isPair(S);
+const KEY_ART = `<g transform="translate(0 -22)"><circle r="8" fill="#FFD84D" stroke="#B07A00" stroke-width="2.4"/><circle r="3.2" fill="#B07A00"/><rect x="-2.4" y="7" width="4.8" height="18" rx="1.5" fill="#FFD84D" stroke="#B07A00" stroke-width="2"/><rect x="2.4" y="15" width="6" height="3.4" fill="#FFD84D" stroke="#B07A00" stroke-width="1.6"/><rect x="2.4" y="20.5" width="4.5" height="3.4" fill="#FFD84D" stroke="#B07A00" stroke-width="1.6"/></g>`;
+const rescueArt = () => rescueKey() ? KEY_ART : '<use href="#pm-princess"/>';
 function newSession(theme, stages, timed, mode, level, keep){
   stages = addWild(stages.filter(st => !st.wild), (keep && keep.course) || presetKey);
   keep = keep || {world: homeWorld, avatar: clone(homeAvatar), heroName: ($('#heroNameInput').value || '').trim().slice(0, 8), age: parseAge($('#ageInput').value)};
   S = {v: 4, theme, stages: clone(stages), world: keep.world, avatar: cleanAvatar(keep.avatar), heroName: keep.heroName || '', age: keep.age, course: keep.course || presetKey, cls: keep.cls || homeCls, tags: {[CLASSES[keep.cls || homeCls].tag]: 1}, goal: null, vseed: rnd(1e9), chapter: 1, lvCarry: 0, chapters: [], forks: clone((PRESETS[presetKey] || {}).forks || {}), routes: {}, timed, mode, level, ans: [], seq: 1, cur: '0:r', stat: {}, phase: 'play', result: null, aiopts: {},
     quest: mode === 'quest' ? {mental: 100, gold: 0, items: {}, fx: {}, vis: {}, rest: 'start', magic: (keep.cls || homeCls) === 'mage' ? 3 : 0, pos: 'start', pts: 0, rolls: 0, done: {}, qs: 'roll', ev: null, timeMod: 0, log: [], last: 1, rivals: null, finN: 0, place: 0, free: false} : null};
+  S.prof = {...homeProf, age: S.age || null}; S.stages = adaptStages(S);
   if (S.quest && $('#chkCoop').checked && LIFE_C.has(S.course)){ const a = cleanAvatar(S.avatar), life = true;
     S.coop = {n: [S.heroName || 'プレイヤー1', ($('#p2Name').value || '').trim().slice(0, 8) || (life ? 'パートナー' : 'プレイヤー2')], cur: 0, turn: 0, last: 0,
       av: cleanAvatar(homeAvatar2 || partnerOf(a))}; S.coop.rel = REL[homeRel] ? homeRel : 'kou'; S.stages = coupleStages(S.course, S.stages, S.coop.rel); }
@@ -7979,7 +8038,7 @@ function openHome(){
   $('#btnResume').hidden = !S; $('#resumeNote').hidden = !S;
   if (S){ $('#btnResume').textContent = `続きから：「${S.theme}」`; if (view !== S){ view = S; clearMap(); setStageView(stageView); renderMap(); if (S.mode === 'quest') renderBoard(); } }
   else { view = sampleSession(); clearMap(); setStageView('map'); renderMap(); }
-  renderHomePractice(); renderRadios(); renderPurpose(); renderPresets(); renderExamples(); renderQList(); renderInstall(); setHomeStep(1);
+  renderHomePractice(); renderProf(); renderRadios(); renderPurpose(); renderPresets(); renderExamples(); renderQList(); renderInstall(); setHomeStep(1);
   setTimeout(() => { if (matchMedia('(pointer:fine)').matches) $('#themeInput').focus({preventScroll: true}); }, 60);
 }
 /* phone: the home screen is split into steps (theme → how to play → hero → course), one screen each */
@@ -8015,6 +8074,13 @@ function renderPreview0(){
 }
 $('#clsCtl').addEventListener('click', e => { const b = e.target.closest('[data-cls]'); if (!b) return; homeCls = b.dataset.cls; saveHome(); renderMaker(); });
 let homeAvatar2 = null, homeRel = 'kou';
+let homeProf = (() => { const p = store.get('mindquest-prof', null) || {}; return {role: ROLE[p.role] ? p.role : '', married: !!p.married}; })();
+function renderProf(){
+  $('#roleCtl').innerHTML = Object.entries(ROLE).map(([k, [ic, n]]) => `<button type="button" class="pchip${homeProf.role === k ? ' on' : ''}" data-role="${k}" aria-pressed="${homeProf.role === k}">${ic} ${n}</button>`).join('');
+  $('#marCtl').innerHTML = [['', '独身'], ['1', '既婚']].map(([v, n]) => `<button type="button" class="pchip${String(homeProf.married ? '1' : '') === v ? ' on' : ''}" data-mar="${v}" aria-pressed="${String(homeProf.married ? '1' : '') === v}">${v ? '💍 ' : '🙂 '}${n}</button>`).join('');
+}
+$('#roleCtl').addEventListener('click', e => { const b = e.target.closest('[data-role]'); if (!b) return; homeProf.role = homeProf.role === b.dataset.role ? '' : b.dataset.role; store.set('mindquest-prof', homeProf); renderProf(); });
+$('#marCtl').addEventListener('click', e => { const b = e.target.closest('[data-mar]'); if (!b) return; homeProf.married = !!b.dataset.mar; if (homeProf.married) homeRel = 'fuu'; store.set('mindquest-prof', homeProf); renderProf(); if (typeof renderVs === 'function') renderVs(); });
 function renderRel(){ $('#relCtl').innerHTML = Object.entries(REL).map(([k, [ic, n, d]]) => `<button type="button" role="radio" data-rel="${k}" aria-checked="${k === homeRel}"><i class="ci" style="--ic:${{kon: '#FFE0EC', kou: '#FFE7A8', fuu: '#E3E9FF'}[k]}">${ic}</i><b>${n}</b><small>${d}</small></button>`).join(''); }
 const partnerOf = a => cleanAvatar({...a, sex: a.sex === 'm' ? 'f' : 'm', hair: a.sex === 'm' ? 'long' : 'short', shirt: (a.shirt + 3) % SHIRTS.length});
 function renderMaker2(){
