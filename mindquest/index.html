@@ -6294,9 +6294,41 @@ function qsBank(p, list){
   return shuffleR(pool, rng(hash(p.key + '|' + (S.vseed || 0) + '|' + (QS && QS.key === p.key ? QS.n || 0 : 0))));
 }
 function qsHead(sty){ const d = QSTYLE[sty]; return `<div class="qsty"><b>${d.i} ${d.n}</b><span>${d.d}</span></div>`; }
+/* the chat partner answers what you actually talked about: a reply that fits the kind of question, then a follow-up on the same topic */
+const CHAT_O = {
+  memory: {re: ['「{t}」がふたりの出会いだったんだね。すてきだなあ！', '「{t}」、いい思い出だね。思い出すと、ふたりとも笑顔になるね', 'へえ、「{t}」！ そのときのこと、ずっと覚えていてね'], more: ['ほかにも、ふたりの思い出はある？', 'はじめてのデートや、忘れられない言葉はある？', 'その日、相手のどんなところが心に残った？']},
+  impress: {re: ['「{t}」…それが第一印象だったんだね', '「{t}」、いい印象だね！ 話してみてどうだった？'], more: ['話してみて、意外だったことは？', '相手のどんなところを、もっと知りたい？']},
+  meet: {re: ['「{t}」なら、すてきな出会いがありそうだね！', '「{t}」、いいね。自然に話せそうな場所だ', '「{t}」か。気の合う人に会えそう！'], more: ['ほかに出会えそうな場所はある？', '友だちや家族にたのめそうなことはある？']},
+  need: {re: ['「{t}」がそろうと、ぐっと前に進めそうだね', 'なるほど、「{t}」が必要なんだね', '「{t}」、大事なポイントだね！'], more: ['ほかに必要なものはある？', 'お金・時間・人・知識…ほかに足りないものは？']},
+  act: {re: ['「{t}」、動きが見えるね！ いつからやる？', 'いいね、「{t}」。小さく始めるのがコツだよ', '「{t}」なら、明日からでもできそうだね'], more: ['ほかにやってみたいことは？', 'もっと小さく始められることはある？']},
+  expert: {re: ['「{t}」を知っていると、プロに一歩近づくね', '「{t}」、いいところに目をつけたね'], more: ['ほかに知っておきたいことは？', '本や人に聞いて調べたいことはある？']},
+  wall: {re: ['「{t}」が心配なんだね。正直に話してくれてありがとう', '「{t}」…そう感じるのは自然なことだよ'], more: ['ほかに心配なことはある？', 'いちばん怖いのはどれ？']},
+  over: {re: ['「{t}」なら、乗りこえられそうだね！', 'いい作戦だね、「{t}」。前もって決めておくと強いよ'], more: ['ほかの手も考えておこう。何かある？', '誰かに助けてもらうなら、誰にたのむ？']},
+  stop: {re: ['「{t}」に気づけたのがえらい！', '「{t}」を減らせたら、時間が生まれるね'], more: ['ほかにやめたい習慣はある？', 'それをやめたら、何に時間を使いたい？']},
+  vision: {re: ['「{t}」…その顔を思い浮かべると、がんばれるね', 'すてきだね、「{t}」。それが夢の力になるよ'], more: ['ほかに喜んでくれる人はいる？', 'その人は、どんな言葉をかけてくれそう？']},
+  future: {re: ['未来の自分から「{t}」…心にひびくね', '「{t}」、いい言葉だね。メモしておこう'], more: ['未来の自分は、ほかに何と言いそう？', '今の自分に、ひとつアドバイスするなら？']},
+  thanks: {re: ['「{t}」のおかげで、ここまで来られたんだね', '「{t}」、きっと喜ぶよ。感謝を伝えたいね'], more: ['ほかにお世話になった人はいる？', 'その人と、どんな思い出がある？']},
+  repay: {re: ['「{t}」、きっと伝わるよ！', 'いい恩返しだね、「{t}」'], more: ['ほかにできることはある？', 'いつ伝えにいこうか？']},
+  first: {re: ['「{t}」、それなら今日からできるね！', 'いいね、「{t}」。最初の一歩が一番大事だよ'], more: ['もっと小さな一歩もある？', 'それは何曜日にやる？']},
+  talk: {re: ['「{t}」は、ちゃんと話しておくと安心だね', '大事なテーマだね、「{t}」'], more: ['ほかに話し合っておきたいことは？', 'それについて、相手の考えも聞いてみた？']},
+  prep: {re: ['「{t}」、準備が着々と進むね！', 'いいね、「{t}」から始めよう'], more: ['ほかに準備しておきたいことは？']},
+  keep: {re: ['「{t}」を続けたら、きっと元気でいられるね', 'いい習慣だね、「{t}」'], more: ['ほかに続けたいことはある？']},
+  like: {re: ['「{t}」に夢中になれるって、すてきだね！', '「{t}」、楽しそう！'], more: ['ほかに時間を忘れることはある？']},
+  job: {re: ['「{t}」、気になる仕事なんだね', 'いいね、「{t}」。調べてみる価値がありそう'], more: ['ほかに気になる仕事はある？']},
+  praise: {re: ['「{t}」って、立派な強みだよ！', 'まわりはちゃんと見てくれているね、「{t}」'], more: ['ほかにほめられたことはある？']},
+  value: {re: ['「{t}」を大切にしているんだね', 'いい軸だね、「{t}」'], more: ['ほかに大切にしたいことは？']},
+  wild: {re: ['おもしろい！「{t}」かあ', '「{t}」…なるほど、意外な発見だね！'], more: ['ほかにも思いつく？', 'ちょっと視点を変えると、どう？']}
+};
+function chatTopic(st){ if (st.o === 'meet' && S && S.coop && S.coop.rel === 'kon') return 'impress'; if (st.o === 'meet' && S && isPair(S)) return 'memory'; return CHAT_O[st.o] ? st.o : ''; }
 function chatLine(st, a, k){
-  const c = qsSpec(a.t) ? 'spec' : wordCat(a.t), pool = CHAT_RE[c] || CHAT_RE.gen;
-  return qsPick(pool, hash(a.t) + k).replace(/\{t\}/g, esc(a.t.slice(0, 20)));
+  const tp = chatTopic(st), T = CHAT_O[tp], t = esc(a.t.slice(0, 20));
+  if (tp === 'memory'){ const met = /出会|紹介|知り合|はじめて会|初めて会/.test(a.t); return qsPick(met ? ['「{t}」がふたりの出会いだったんだね。すてきだなあ！', '「{t}」から始まったんだね。運命みたい！'] : ['「{t}」、すてきな思い出だね！', 'いいなあ、「{t}」。思い出すと、ふたりとも笑顔になるね', '「{t}」…その日のこと、ずっと覚えていてね'], k).replace(/\{t\}/g, t); }
+  if (T) return qsPick(T.re, k + hash(st.l || '')).replace(/\{t\}/g, t);
+  return qsPick(['「{t}」だね。教えてくれてありがとう！', '「{t}」、いいね。ちゃんと書き留めておくよ', 'なるほど、「{t}」！'], hash(a.t) + k).replace(/\{t\}/g, t);
+}
+function chatMore(st, n, key){
+  const T = CHAT_O[chatTopic(st)];
+  return T ? qsPick(T.more, hash(key) + n) : qsPick([`ほかにも「${esc(st.l)}」で思いつくことはある？`, '小さなことでもいいよ。もう1つ聞かせて！'], hash(key) + n);
 }
 function styleHTML(p, st, list, col, entry){
   const sty = qStyle(S, p.s); if (sty === 'text') return entry;
@@ -6317,7 +6349,7 @@ function styleHTML(p, st, list, col, entry){
     else body = `<p class="qvs-t">第${s.round}回戦：どっちが自分に近い？</p><div class="qvs" style="--c:${col}"><button type="button" class="qvs-c" data-qs="pick" data-v="0">${esc(s.champ)}</button><i>VS</i><button type="button" class="qvs-c" data-qs="pick" data-v="1">${esc(s.pool[0])}</button></div>
       <button class="btn link sm" type="button" data-qs="skip" style="align-self:flex-start">どっちもちがう →</button>`;
   } else if (sty === 'chat'){
-    const who = esc(st.npc || '旅人'), more = list.length >= st.min ? qsPick(CHAT_ENOUGH, list.length) : list.length ? qsPick(CHAT_MORE, hash(p.key) + list.length) : 'さあ、聞かせて！';
+    const who = esc(st.npc || '旅人'), more = list.length >= st.min ? qsPick(CHAT_ENOUGH, list.length) : list.length ? chatMore(st, list.length, p.key) : 'さあ、聞かせて！';
     body = `<div class="qchat" style="--c:${col}">${list.map((a, k) => `<div class="cb me"><span>${esc(a.t)}</span><button type="button" data-del="${a.id}" aria-label="「${esc(a.t)}」を消す">×</button></div><div class="cb npc"><i>${who}</i><span>${chatLine(st, a, k)}</span></div>`).join('')}<div class="cb npc"><i>${who}</i><span>${more}</span></div></div>`;
     entry = entry.replace('placeholder="', 'placeholder="返事を書く… ').replace(/(data-act="add">)[^<]*/, '$1送る');
   } else if (sty === 'quick'){
@@ -7947,7 +7979,7 @@ const COUPLE_REL = {
     },
     lifeup: {...FUU_COMMON,
       '理想のパートナー': {l: 'ふたりの歩み', q: '出会いの町の長老が聞く。ふたりはこれからどんな夫婦でいたい？ 相手の好きなところ、大切にしたい価値観、いっしょにしたいこと、相手にしてあげたいことは？', fl: {pkind: ['相手のどんなところが好き？', '好きなところ', '例：いつも味方でいてくれるところ'], pvalue: ['夫婦で大切にしたい価値観は？', '価値観', '例：ありがとうを言葉にする'], pdo: ['これからふたりでしたいことは？', 'したいこと', '例：年に一度の夫婦旅行'], pgive: ['相手にしてあげたいことは？', 'してあげたいこと', '例：体を気づかう']}},
-      '出会い方': {l: 'ふたりの思い出', q: '町の案内人が聞く。ふたりの出会いは？ これまでで一番の思い出は？'},
+      '出会い方': {l: 'ふたりの思い出', q: '町の案内人が聞く。ふたりの出会いは？ これまでで一番の思い出は？', hint: '出会った日、結婚式、家族の記念日、忘れられない言葉。ふたりで思い出しながら書こう。'},
       'やること': {bk: 'memact', q: '「{a}」のような思い出を、これからも作っていくために、ふたりで何をする？'},
       '理想の結婚': {l: '夫婦の約束', q: '川の精が聞く。これからも仲よくいるための、ふたりの約束は？', fl: {wwhen: ['次の記念日はいつ？ どう祝う？', '記念日', '例：結婚記念日にふたりで食事'], wstyle: ['ふたりの時間の過ごし方は？', '過ごし方', '例：毎晩お茶を飲みながら話す'], wrule: ['ふたりのルールは？', 'ルール', '例：けんかはその日のうちに仲直り'], wpromise: ['いちばん大切にしたい約束は？', '約束', '例：ありがとうを毎日言う']}},
       '話し合うこと': {q: '川の渡し守が聞く。これからのために、ふたりで話し合っておきたいことは？（お金・健康・仕事・家族・住まい…）'},
