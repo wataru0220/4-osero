@@ -1858,7 +1858,7 @@ PRESETS.lifeup = {name: 'ライフ成長コース',
     {l: '理想のパートナー', type: 'plan', fields: [['pkind', 'どんな人柄の人？', '人柄', '例：思いやりがあって、よく笑う人', 'pkind'], ['pvalue', 'いっしょに大切にしたい価値観は？', '価値観', '例：家族の時間を大切にする', 'pvalue'], ['pdo', 'その人とどんなことをしたい？', 'したいこと', '例：休日にいっしょに料理をする', 'pdo'], ['pgive', 'あなたは相手に何をしてあげたい？', 'してあげたいこと', '例：疲れているときに話を聞く', 'pgive']],
       q: '出会いの町の長老が聞く。あなたの「理想のパートナー」はどんな人？ いっしょに何を大切にして、何をしたい？ あなたは相手に何をしてあげたい？', p: -1, min: 4, sec: 150, v: 1, o: 'partner', npc: '出会いの町の長老', seg: 'town', hint: '「してもらいたいこと」だけでなく「してあげたいこと」も書くと、理想の関係が見えてきます。'},
     {l: '出会い方', q: '町の案内人が聞く。理想のパートナーとは、どこで・どうやって出会えそう？', p: -1, min: 2, sec: 100, o: 'meet', npc: '町の案内人', seg: 'town', hint: '趣味の集まり・友だちの紹介・地域の行事・結婚相談所など。思いつくだけ書こう。'},
-    {l: 'やること', q: '「{a}」で出会うために、具体的に何をする？', alt: ['「{a}」に、今月まず何から動く？', '「{a}」で出会いのチャンスを増やすには？'], p: 1, min: 1, sec: 70, o: 'act', npc: '恋の師匠', seg: 'town', hint: '「月1回〇〇に参加する」のように、動きと回数がわかる言葉で。'},
+    {l: 'やること', bk: 'meetact', q: '「{a}」で出会うために、具体的に何をする？', alt: ['「{a}」に、今月まず何から動く？', '「{a}」で出会いのチャンスを増やすには？'], p: 1, min: 1, sec: 70, o: 'act', npc: '恋の師匠', seg: 'town', hint: '「月1回〇〇に参加する」のように、動きと回数がわかる言葉で。'},
     {l: '支えてくれる人', type: 'plan', route: 'A1', fields: [['who', '誰に支えてもらう？', '支えてくれる人', '例：仲のいい先輩夫婦', 'ally'], ['ask', 'その人に何をお願いする？', 'お願い', '例：出会いや結婚生活の話を聞かせてもらう', 'ask']], q: '森の奥は、ひとりでは進めない。これからの人生の旅で、誰に支えてもらう？', p: -1, min: 2, sec: 90, o: 'ally', npc: '森の案内人', seg: 'A1', hint: '家族・友だち・先輩・専門家（相談窓口など）。お願いは具体的に。'},
     {l: 'あなたの魅力', type: 'plan', route: 'B1', fields: [['str', 'あなたの魅力（いいところ）は？', '魅力', '例：まわりを笑顔にできる', 'str'], ['use', 'それをどう生かす？', '生かし方', '例：初めて会う人にも自分から笑顔であいさつする', 'use']], q: '丘の上から、自分を見つめてみよう。パートナーや家族を幸せにできる、あなたの魅力は？', p: -1, min: 2, sec: 90, o: 'str', npc: '丘の羊飼い', seg: 'B1', hint: '人から「ありがとう」と言われたことを思い出してみよう。'},
     {l: '理想の結婚', type: 'plan', fields: [['wwhen', 'いつごろ結婚したい？', '時期', '例：30歳までに', 'wwhen'], ['wstyle', 'どんな形で？（式・写真だけ・家族だけ など）', '形', '例：家族だけの小さな式', 'wstyle'], ['wrule', 'ふたりのルールは？', 'ルール', '例：けんかしたらその日のうちに仲直り', 'wrule'], ['wpromise', 'いちばん大切にしたい約束は？', '約束', '例：ありがとうを毎日言う', 'wpromise']],
@@ -1921,6 +1921,9 @@ function chapterStages(x, ch){
 }
 
 const BANKS = {
+  meetact: ['趣味のサークルに入る', '友だちに紹介をお願いする', '地域のイベントに参加する', '結婚相談所に登録する', '習いごとを始める', '自分から話しかけてみる'],
+  memact: ['記念日をふたりで祝う', '月に1回デートの日を決める', '思い出の場所にまた行く', '写真やアルバムに残す', '新しいことにふたりで挑戦する', '感謝を手紙で伝える'],
+  knowact: ['好きなお店を教え合う', '次に会う日を決める', 'おたがいの趣味を体験する', '聞いてみたいことを3つ用意する', '家族の話をしてみる', 'ゆっくり話せる場所に行く'],
   pkind: ['思いやりがある人', 'よく笑う人', '誠実な人', '話をよく聞いてくれる人', '努力家の人', 'おだやかな人'],
   pvalue: ['家族の時間', 'お金の使い方', '健康', '仕事への向き合い方', '趣味を大切にすること', '感謝を伝えること'],
   pdo: ['いっしょに料理をする', '旅行に行く', '散歩をする', '趣味を楽しむ', 'ゆっくり話す', '季節の行事を楽しむ'],
@@ -2234,13 +2237,14 @@ const CAT_Q = {
   }
 };
 /* the word-fit pool for a follow-up question, or null to use the question's own wording */
-function catPool(st, par){
-  const T = st && par ? CAT_Q[st.o] : null; if (!T) return null;
+function catPool(st, par, x){
+  const T = st && par ? CAT_Q[st.o] : null; if (!T || st.bk) return null;
+  if (x && st.o === 'act'){ const ps = x.stages[par.s]; if (ps && ps.o !== 'need') return null; }
   const c = wordCat(par.t);
   return T[c] === null ? null : T[c] || T.gen || null;
 }
 function tplOf(x, st, par, p){
-  const si = x.stages.indexOf(st), tq = x.tq && x.tq[si], cp = catPool(st, par), pool = cp || (!(tq && tq.q) ? variantPool(x, st) : null);
+  const si = x.stages.indexOf(st), tq = x.tq && x.tq[si], cp = catPool(st, par, x), pool = cp || (!(tq && tq.q) ? variantPool(x, st) : null);
   let base = tq && tq.q && !cp ? tq.q : tplFor(st, par);
   if (pool){ const sib = p && st.p >= 0 ? Math.max(0, prompts(x).filter(q => q.s === p.s).findIndex(q => q.key === p.key)) : 0; base = pool[(hash(`${x.theme}|${x.vseed || 0}|${si}`) + sib) % pool.length]; }
   if (!cp && !(tq && tq.q)) base = funAlt(x, st, si, base);
@@ -2264,7 +2268,7 @@ function progress(x){
   return Math.round(P.filter(p => answersFor(x, p).length >= x.stages[p.s].min).length / (P.length + extra) * 100);
 }
 const hashOf = x => JSON.stringify([x.theme, x.ans.map(a => [a.id, a.t, a.s, a.par])]);
-const bankFor = (x, p) => { const st = x.stages[p.s], o = BANKS[st.o] ? st.o : st.p >= 0 ? 'act' : 'need'; return withKind(x, KIND_KEY[st.o] ? st.o : o, BANKS[o]); };
+const bankFor = (x, p) => { const st = x.stages[p.s]; if (st.bk && BANKS[st.bk]) return BANKS[st.bk]; const o = BANKS[st.o] ? st.o : st.p >= 0 ? 'act' : 'need'; return withKind(x, KIND_KEY[st.o] ? st.o : o, BANKS[o]); };
 const isPlan = st => st && st.type === 'plan';
 
 /* ---------- sound ---------- */
@@ -6274,7 +6278,7 @@ let QS = null;
 const qsState = (p, kind, make) => { if (!QS || QS.key !== p.key || QS.kind !== kind) QS = Object.assign({key: p.key, kind}, make()); return QS; };
 function qsBank(p, list){
   const have = new Set(list.map(a => a.t));
-  const pool = [...new Set([...kindBank(S, S.stages[p.s].o), ...bankFor(S, p)])].filter(o => o && !have.has(o));
+  const pool = [...new Set([...(S.stages[p.s].bk ? [] : kindBank(S, S.stages[p.s].o)), ...bankFor(S, p)])].filter(o => o && !have.has(o));
   return shuffleR(pool, rng(hash(p.key + '|' + (S.vseed || 0) + '|' + (QS && QS.key === p.key ? QS.n || 0 : 0))));
 }
 function qsHead(sty){ const d = QSTYLE[sty]; return `<div class="qsty"><b>${d.i} ${d.n}</b><span>${d.d}</span></div>`; }
@@ -6404,8 +6408,8 @@ function playHTML(){
     : `<h2 class="question" style="--c:${col}">${qText}</h2>${sub ? `<p class="hint" style="margin:-6px 0 0">${sub}</p>` : ''}`;
   S.seen = S.seen || {}; S.seen[p.s] = 1;
   const hintText = (S.tq && S.tq[p.s] && S.tq[p.s].hint) || st.hint;
-  const K = themeKind(S), kex = S.level === 'beginner' ? [] : kindBank(S, st.o).slice(0, 3);
-  const hint = (hintText ? `<p class="qhint">ヒント：${esc(hintText)}</p>` : '') + (kex.length ? `<p class="qhint kind"><b>${esc(K.n)}なら、たとえば</b>${kex.map(t => `「${esc(t)}」`).join('')}</p>` : '') + sageBtn(st.o === 'expert' ? '専門家の賢者に質問してから答える' : '迷ったら賢者に質問');
+  const K = themeKind(S), kex = S.level === 'beginner' ? [] : (st.bk && BANKS[st.bk] ? BANKS[st.bk] : kindBank(S, st.o)).slice(0, 3);
+  const hint = (hintText ? `<p class="qhint">ヒント：${esc(hintText)}</p>` : '') + (kex.length ? `<p class="qhint kind"><b>${st.bk ? 'たとえば' : `${esc(K.n)}なら、たとえば`}</b>${kex.map(t => `「${esc(t)}」`).join('')}</p>` : '') + sageBtn(st.o === 'expert' ? '専門家の賢者に質問してから答える' : '迷ったら賢者に質問');
   let entry = '';
   if (locked) entry = `<p class="timeup">時間切れです。この問いの答えは確定しました。${quest ? '関所を通って先へ進みましょう。' : '次の問いへ進みましょう。'}</p>`;
   else if (plan){
@@ -7880,7 +7884,7 @@ const COUPLE_Q = {
   lifeup: {...CP_COMMON,
     '理想のパートナー': {l: 'ふたりの関係', q: '出会いの町の長老が聞く。ふたりはどんな関係でいたい？ 相手の好きなところ、大切にしたい価値観、いっしょにしたいこと、相手にしてあげたいことを書こう。', fl: {pkind: ['相手のどんなところが好き？', '好きなところ', '例：やさしくて、よく笑うところ'], pvalue: ['ふたりで大切にしたい価値観は？', '価値観', '例：家族の時間を大切にする'], pdo: ['ふたりでしたいことは？', 'したいこと', '例：毎年ひとつ、新しい場所へ旅行する'], pgive: ['相手にしてあげたいことは？', 'してあげたいこと', '例：疲れているときに話を聞く']}},
     '出会い方': {l: 'ふたりの思い出', q: '町の案内人が聞く。ふたりはどこで出会った？ 心に残っているふたりの思い出は？', hint: '出会った日、はじめてのデート、忘れられない言葉。ふたりで思い出しながら書こう。'},
-    'やること': {q: '「{a}」のような思い出を、これからも作っていくために、ふたりで何をする？', alt: ['「{a}」の気持ちを忘れないために、ふたりで続けることは？']},
+    'やること': {bk: 'memact', q: '「{a}」のような思い出を、これからも作っていくために、ふたりで何をする？', alt: ['「{a}」の気持ちを忘れないために、ふたりで続けることは？']},
     '理想の結婚': {q: '結婚の川のほとりで、川の精が聞く。ふたりの理想の結婚は？ いつごろ、どんな形で、どんなルールと約束を大切にする？'},
     '話し合うこと': {q: '川の渡し守が聞く。ふたりで話し合っておきたいことは？（お金・仕事・家事・家族・住む場所…）'},
     '理想の家族': {q: '子育ての洞窟の入口で、家族の守り神が聞く。ふたりで作りたい理想の家族は？ 何人で、どんな家族で、どんな習慣を大切にする？'},
@@ -7914,7 +7918,7 @@ const COUPLE_REL = {
     lifeup: {...KON_COMMON,
       '理想のパートナー': {l: 'おたがいの理想', q: '出会いの町の長老が聞く。おたがいの「理想のパートナー像」を教え合おう。人柄・価値観・いっしょにしたいこと・相手にしてあげたいことは？', fl: {pkind: ['理想のパートナーの人柄は？', '人柄', '例：思いやりがある人'], pvalue: ['結婚して大切にしたい価値観は？', '価値観', '例：家族の時間を大切にする'], pdo: ['パートナーといっしょにしたいことは？', 'したいこと', '例：休日に料理をする'], pgive: ['パートナーにしてあげたいことは？', 'してあげたいこと', '例：疲れているときに話を聞く']}},
       '出会い方': {l: 'ふたりの第一印象', q: '町の案内人が聞く。はじめて会ったとき、相手の第一印象は？ 話してみて意外だったことは？', hint: 'いいところを中心に。おたがいに書くと話がはずみます。'},
-      'やること': {q: '「{a}」をきっかけに、ふたりがもっと知り合うために何をする？', alt: ['「{a}」のような話を、次はどこでしてみたい？']},
+      'やること': {bk: 'knowact', q: '「{a}」をきっかけに、ふたりがもっと知り合うために何をする？', alt: ['「{a}」のような話を、次はどこでしてみたい？']},
       '理想の結婚': {q: '結婚の川のほとりで、川の精が聞く。おたがいの理想の結婚は？ いつごろ、どんな形で、どんなルールと約束を大切にしたい？', hint: '答えがちがっても大丈夫。ちがいをすり合わせるのが婚活。'},
       '話し合うこと': {l: 'おたがいに聞きたいこと', q: '川の渡し守が聞く。結婚を考えるうえで、相手に聞いてみたいことは？（仕事・お金・家事・住む場所・家族…）'},
       '理想の家族': {q: '家族の守り神が聞く。おたがいの理想の家族は？ 何人で、どんな家族で、どんな習慣を大切にしたい？'},
@@ -7932,7 +7936,7 @@ const COUPLE_REL = {
     lifeup: {...FUU_COMMON,
       '理想のパートナー': {l: 'ふたりの歩み', q: '出会いの町の長老が聞く。ふたりはこれからどんな夫婦でいたい？ 相手の好きなところ、大切にしたい価値観、いっしょにしたいこと、相手にしてあげたいことは？', fl: {pkind: ['相手のどんなところが好き？', '好きなところ', '例：いつも味方でいてくれるところ'], pvalue: ['夫婦で大切にしたい価値観は？', '価値観', '例：ありがとうを言葉にする'], pdo: ['これからふたりでしたいことは？', 'したいこと', '例：年に一度の夫婦旅行'], pgive: ['相手にしてあげたいことは？', 'してあげたいこと', '例：体を気づかう']}},
       '出会い方': {l: 'ふたりの思い出', q: '町の案内人が聞く。ふたりの出会いは？ これまでで一番の思い出は？'},
-      'やること': {q: '「{a}」のような思い出を、これからも作っていくために、ふたりで何をする？'},
+      'やること': {bk: 'memact', q: '「{a}」のような思い出を、これからも作っていくために、ふたりで何をする？'},
       '理想の結婚': {l: '夫婦の約束', q: '川の精が聞く。これからも仲よくいるための、ふたりの約束は？', fl: {wwhen: ['次の記念日はいつ？ どう祝う？', '記念日', '例：結婚記念日にふたりで食事'], wstyle: ['ふたりの時間の過ごし方は？', '過ごし方', '例：毎晩お茶を飲みながら話す'], wrule: ['ふたりのルールは？', 'ルール', '例：けんかはその日のうちに仲直り'], wpromise: ['いちばん大切にしたい約束は？', '約束', '例：ありがとうを毎日言う']}},
       '話し合うこと': {q: '川の渡し守が聞く。これからのために、ふたりで話し合っておきたいことは？（お金・健康・仕事・家族・住まい…）'},
       '理想の家族': {l: '家族のこれから', q: '家族の守り神が聞く。ふたりの家族を、これからどんな家族にしたい？ 大切にしたい習慣や、次の世代に伝えたいことは？'},
@@ -7949,7 +7953,7 @@ function coupleStages(course, stages, rel){
   return stages.map(st => {
     const o = M[st.l]; if (!o || st.wild) return st;
     const n = {...st, q: o.q, vq: undefined, alt: o.alt || undefined};
-    if (o.qf) n.qf = o.qf; if (o.l) n.l = o.l; if (o.hint) n.hint = o.hint;
+    if (o.qf) n.qf = o.qf; if (o.bk) n.bk = o.bk; if (o.l) n.l = o.l; if (o.hint) n.hint = o.hint;
     if (o.fl && st.fields) n.fields = st.fields.map(f => o.fl[f[0]] ? [f[0], o.fl[f[0]][0], o.fl[f[0]][1], o.fl[f[0]][2], f[4]] : f);
     return n;
   });
