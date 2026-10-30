@@ -962,6 +962,34 @@ body.mg-lock{overflow:hidden}
 .examples{display:flex;flex-wrap:wrap;gap:8px}
 .purpose,.job-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .course-pick{display:grid;gap:6px}
+.vo-home{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}.vo-home .pchip{font-size:14px;padding:8px 14px}
+.vo-bar{display:grid;gap:8px;padding:10px 12px;border-radius:14px;background:#EEF4FF;border:2px solid #9DB8F0}
+.vo-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.vo-mic{padding:10px 18px;border-radius:999px;border:0;background:#2D6BB4;color:#fff;font-weight:800;font-size:15px;box-shadow:0 3px 0 #173F70}
+.vo-mic.on{background:#D93A3F;box-shadow:0 3px 0 #7A1A1D;animation:voPulse 1s infinite}
+@keyframes voPulse{50%{transform:scale(1.05)}}
+.vo-live{margin:0;font-weight:700;color:#2D4A7A}
+.vo-auto{display:flex;gap:6px;align-items:flex-start;font-size:12.5px;color:var(--ink2)}
+.vo-note{margin:0;font-size:12.5px;color:#9A3412;font-weight:700}.vo-note.s{color:var(--ink2);font-weight:600}
+.vo-h{margin:0;font-weight:800;display:grid}.vo-h small{font-weight:600;font-size:11.5px;color:var(--ink2)}
+.vo-edit{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:2px solid #2D6BB4;font-size:17px;font-weight:700;background:#fff;color:var(--ink)}
+.vo-fix{margin:0;font-size:12.5px;color:#15603E;font-weight:700}
+.vo-alts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.vo-alts small{width:100%;font-size:11.5px;color:var(--ink2)}
+.vo-alts button{padding:6px 10px;border-radius:999px;border:1.5px solid #9DB8F0;background:#fff;font-size:13px;color:var(--ink)}
+.mg-duo.vo button[data-fight="quiz"]{background:linear-gradient(180deg,#2E8A5E,#123D29)}.mg-duo.vo button[data-fight="riddle"]{background:linear-gradient(180deg,#8A4FD0,#3A1B66)}
+.vq{display:grid;gap:10px;justify-items:center;width:100%;max-width:520px;margin:0 auto;padding:14px 16px;box-sizing:border-box;color:#fff;text-align:center}
+.vq-top{display:flex;justify-content:space-between;width:100%;font-size:13px}.vq-top b{color:#FFD84D}
+.vq-mon{width:120px;height:auto;overflow:visible}.vq-mon.hit g{animation:btHit .5s steps(2)}
+.vq-q{margin:0;font-size:20px;font-weight:800;line-height:1.5;text-wrap:balance}
+.vq-time{width:100%;height:8px;border-radius:4px;background:#3A3350;overflow:hidden}.vq-time i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#FFD84D,#FF7A3D);transition:width .1s linear}
+.vq-hint{margin:0;font-size:14px;color:#FFF3C4}
+.vq-ch{display:grid;gap:8px;width:100%}
+.vq-ch button{display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:12px;border:2px solid #fff;background:#2A2050;color:#fff;font-weight:800;font-size:16px;text-align:left}
+.vq-ch button i{font-style:normal;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#FFD84D;color:#1B1430;flex:none}
+.vq-ch button.ok{background:#15A37C}.vq-ch button.ng{background:#D93A3F}.vq-ch button:disabled{cursor:default}
+.vq-mic{display:grid;gap:6px;justify-items:center}.vq-heard{font-size:14px;color:#C9D0E6;min-height:1.4em}
+.vq-res{margin:0;font-weight:800;font-size:15px;min-height:1.4em}.vq-res.ok{color:#7ED3A8}.vq-res.ng{color:#FF9A8A}
+.vq.shake{animation:btShake .35s}
 .prof-row{display:grid;gap:6px}.prof-chips{display:flex;flex-wrap:wrap;gap:6px}
 .pchip{padding:7px 12px;border-radius:999px;border:1.5px solid var(--line2);background:#fff;font-size:13px;font-weight:700;color:var(--ink2)}
 .pchip.on{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -1339,6 +1367,7 @@ body.mg-lock{overflow:hidden}
       <button class="btn sm" type="button" id="btnCopyTop">テキスト</button>
       <button class="btn sm" type="button" id="btnSound" aria-pressed="true">音 ON</button>
       <button class="btn sm" type="button" id="btnBgm" aria-pressed="true">BGM ON</button>
+      <button class="btn sm" type="button" id="btnVoice" aria-pressed="false">🎙 音声 OFF</button>
       <button class="btn sm" type="button" id="btnMenu">ホーム</button>
     </div>
   </header>
@@ -1426,6 +1455,7 @@ body.mg-lock{overflow:hidden}
       <input id="themeInput" class="theme-input" maxlength="24" placeholder="例：科学者になりたい" aria-label="真ん中のテーマ" autocomplete="off">
       <div class="examples" id="examples"></div>
     </div>
+    <div class="vo-home" data-hs="1"><button type="button" class="pchip" id="voHome" aria-pressed="false">🎙 音声会話モード OFF</button><small class="tb-l">問いを読み上げ、声で答えます（聞きとった答えは確認してから入ります）。魔物とのバトルはクイズとなぞなぞに。</small></div>
     <div class="prof-row" data-hs="1"><small class="tb-l">あなたの立場（えらぶと、問いの内容が合わせて変わります・任意）</small>
       <div class="prof-chips" id="roleCtl" role="group" aria-label="あなたの立場"></div>
       <div class="prof-chips" id="marCtl" role="group" aria-label="結婚"></div></div>
@@ -3799,7 +3829,7 @@ function battleHTML(p, st, hp){
       <svg viewBox="-75 -100 150 108" aria-hidden="true"><g class="bt-body">${pxSprite(`<use href="#mon-${monKind(st)}" style="--mc:${st.mcol || '#7C4DDB'}"/>`)}</g></svg></div>
     <div class="bt-hero${awake() ? ' awake' : ''}"><svg viewBox="-55 -80 110 88" aria-hidden="true"><g class="bt-body" transform="scale(1.1)">${pxPerson(lv)}</g></svg>${heroTagHTML(`答え1つで${per}`)}</div>
     ${won ? winHTML('', 'VICTORY!', `${esc(nm)}をたおした！`, [`💰 ${st.monster === 'boss' ? 100 : 50}G ＋ 答え1つにつき10G`, '⭐ 夢ポイント', '🚪 関所を通れる'], '<button type="button" data-act="next">🎉 関所を通る →</button>')
-      : logHTML(sx.blog) + `<div class="bt-cmd five"><button type="button" data-bt="atk">⚔️ こうげき<small>答えを書く</small></button><button type="button" data-rpg="fire" ${fireOk ? '' : 'disabled'}>🔥 まほう<small>ファイア ×${Q.magic}</small></button><button type="button" data-bt="guard">🛡️ ぼうぎょ<small>ダメージ半分</small></button><button type="button" data-bt="item">🎒 どうぐ<small>もちもの</small></button><button type="button" data-bt="run">🏃 にげる<small>${sx.flee ? 'もう一度で逃げる' : 'ごほうびなし'}</small></button></div>`}
+      : logHTML(sx.blog) + `<div class="bt-cmd five"><button type="button" data-bt="atk">⚔️ こうげき<small>${VOICE_ON ? '声で答える' : '答えを書く'}</small></button><button type="button" data-rpg="fire" ${fireOk ? '' : 'disabled'}>🔥 まほう<small>ファイア ×${Q.magic}</small></button><button type="button" data-bt="guard">🛡️ ぼうぎょ<small>ダメージ半分</small></button><button type="button" data-bt="item">🎒 どうぐ<small>もちもの</small></button><button type="button" data-bt="run">🏃 にげる<small>${sx.flee ? 'もう一度で逃げる' : 'ごほうびなし'}</small></button></div>`}
     <div class="bt-fx"></div>`;
 }
 /* the monster's turn at a gate: sometimes it charges up (the next hit is double, so guard!), sometimes it misses */
@@ -3832,7 +3862,7 @@ function foeOf(k){
 const heroAtk = () => { const lv = heroLevel(); return Math.round((12 + lv * 6 + Math.random() * 8 + gearBonus() * 3 + petAtk()) * (curCls() === 'warrior' ? 1.3 : 1)); };
 const fireDmg = () => 40 + heroLevel() * 10 + (curCls() === 'mage' ? 15 : 0);
 const MG_FIGHT = ['shoot', 'kick'];
-const fightPick = (F, cls) => `<div class="mg-duo${cls ? ' ' + cls : ''}">${MG_FIGHT.map(k => { const [ic, n, d] = MG[k]; return `<button type="button" data-fight="${k}" ${F.busy ? 'disabled' : ''}><i>${ic}</i><b>${n}で戦う</b><small>${d}</small></button>`; }).join('')}<button type="button" class="mg-run" data-fight="run" ${F.busy ? 'disabled' : ''}>🏃 にげる<small>${F.gold ? '9割で成功' : '6割で成功'}</small></button></div>`;
+const fightPick = (F, cls) => `<div class="mg-duo${cls ? ' ' + cls : ''}${VOICE_ON ? ' vo' : ''}">${(VOICE_ON ? ['quiz', 'riddle'] : MG_FIGHT).map(k => { const [ic, n, d] = MG[k]; return `<button type="button" data-fight="${k}" ${F.busy ? 'disabled' : ''}><i>${ic}</i><b>${n}で戦う</b><small>${d}</small></button>`; }).join('')}<button type="button" class="mg-run" data-fight="run" ${F.busy ? 'disabled' : ''}>🏃 にげる<small>${F.gold ? '9割で成功' : '6割で成功'}</small></button></div>`;
 const fightCmds = (F, Q, panelMode) => `<button type="button" data-fight="atk" ${F.busy ? 'disabled' : ''}>⚔️ こうげき<small>約${heroAtk()}</small></button><button type="button" data-fight="fire" ${F.busy || !Q.magic ? 'disabled' : ''}>🔥 まほう<small>ファイア ×${Q.magic}</small></button><button type="button" data-fight="guard" ${F.busy ? 'disabled' : ''}>🛡️ ぼうぎょ<small>ダメージ半分</small></button>${panelMode ? '' : `<button type="button" data-bt="item">🎒 どうぐ<small>もちもの</small></button>`}<button type="button" data-fight="run" ${F.busy ? 'disabled' : ''}>🏃 にげる<small>${F.gold ? '9割で成功' : '6割で成功'}</small></button>`;
 function fightOverHTML(F){
   if (F.won) return winHTML('', 'VICTORY!', `${esc(F.n)}をたおした！`, F.rew || [], '<button type="button" data-fight="end">ごほうびを受け取って進む →</button>');
@@ -3855,8 +3885,8 @@ function fightPanelHTML(){
     <p class="bt-rule">⚔️ ${BT_RULE}</p>
     ${statBarHTML()}${itemBarHTML('fight')}
     ${F.mg ? '<p class="hint" style="text-align:center">🎮 ミニゲーム中…（画面いっぱいで遊べます）</p>' : ''}
-    ${over ? `<div class="bt-cmd panel one"><button type="button" data-fight="end">${F.won ? 'ごほうびを受け取って進む →' : '先へ進む →'}</button></div>` : F.mg ? '' : `<p class="mg-duo-h">🎮 どちらで戦う？（魔物のHPを0にすれば勝ち。たおせなければ、もう一度えらべます）</p>${fightPick(F, '')}`}
-    <p class="hint">シューティングは弾幕をよけて撃ちまくる、格闘はパンチ・キック・ガードで戦う。レベルが上がるほど魔物も強くなります。</p>`;
+    ${over ? `<div class="bt-cmd panel one"><button type="button" data-fight="end">${F.won ? 'ごほうびを受け取って進む →' : '先へ進む →'}</button></div>` : F.mg ? '' : `<p class="mg-duo-h">${VOICE_ON ? '🎙 クイズとなぞなぞ、どちらで戦う？' : '🎮 どちらで戦う？'}（魔物のHPを0にすれば勝ち。たおせなければ、もう一度えらべます）</p>${fightPick(F, '')}`}
+    <p class="hint">${VOICE_ON ? 'クイズは3択を3問、なぞなぞは2問。問題を読み上げるので、声で答えよう（ボタンでも答えられます）。' : 'シューティングは弾幕をよけて撃ちまくる、格闘はパンチ・キック・ガードで戦う。'}レベルが上がるほど魔物も強くなります。</p>`;
 }
 function fightWin(F){
   const Q = rpgQ(), g = gainGold(F.gold ? 300 : 20 + F.lv * 10, ''), pts = F.gold ? 50 : 10 + F.lv * 5; Q.pts += pts; F.won = 1; F.busy = 0; F.mg = null;
@@ -4262,6 +4292,7 @@ function newGamePlus(){
 const MG = {shoot: ['🚀', 'シューティング', '弾幕をよけて撃ちまくれ！ パワーアップとボムで逆転'], kick: ['🥊', '格闘', 'パンチ・キックでコンボ！ ガード・ジャンプ・必殺技'], rhythm: ['🎵', 'リズム', '線に重なった音符をタップ！']};
 function spriteImg(inner){ const m = pxSprite(inner).match(/href="(data:[^"]+)"/); if (!m) return null; const im = new Image(); im.src = m[1]; return im; }
 function runMG(el, kind, F, end){
+  if (kind === 'quiz' || kind === 'riddle') return runQuiz(el, kind, F, end);
   const atk = heroAtk(), mAtk = F.atk, mkMon = () => spriteImg(`<use href="#mon-${F.kind}" style="--mc:${F.col}"/>`), mkHero = () => spriteImg(`<g class="lv${heroLevel()}">${heroPerson()}</g>`);
   let monImg = mkMon(), heroImg = mkHero();
   /* the pixel sprites are drawn in the background the first time: pick them up as soon as they are ready */
@@ -4583,6 +4614,7 @@ $('#battle').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.rpg){ rpgAct(b.dataset.rpg, b.dataset.v); return; }
   if (b.dataset.fight){ fightAct(b.dataset.fight); return; }
+  if (b.dataset.bt === 'atk' && VOICE_ON){ setScreen && setScreen('panel'); voListen(); return; }
   if (b.dataset.bt === 'atk'){ setScreen && setScreen('panel'); const i = $('#ans') || panel.querySelector('input[data-field]:not([value])') || panel.querySelector('input[data-field]') || panel.querySelector('.choice'); if (i) i.focus(); toast('答えを書くと攻撃できます'); }
   if (b.dataset.act === 'next'){ next(); return; }
   if (b.dataset.bt === 'guard' || b.dataset.bt === 'run'){
@@ -6284,7 +6316,7 @@ function assignStyles(x){
   });
   return out;
 }
-const qStyle = (x, k) => { if (!x || x.level === 'beginner') return 'text'; if (!x.qstyle) x.qstyle = assignStyles(x); return x.qstyle[k] || 'text'; };
+const qStyle = (x, k) => { if (!x || x.level === 'beginner') return 'text'; if (VOICE_ON) return 'chat'; if (!x.qstyle) x.qstyle = assignStyles(x); return x.qstyle[k] || 'text'; };
 /* per-question play state (not saved: a reload starts the little game again) */
 let QS = null;
 const qsState = (p, kind, make) => { if (!QS || QS.key !== p.key || QS.kind !== kind) QS = Object.assign({key: p.key, kind}, make()); return QS; };
@@ -8432,6 +8464,356 @@ const setSoundLabel = () => { $('#btnSound').textContent = soundOn ? '音 ON' : 
 $('#btnSound').onclick = () => { soundOn = !soundOn; store.set('mindquest-sound', soundOn); setSoundLabel(); };
 const setBgmLabel = () => { $('#btnBgm').textContent = bgmOn ? 'BGM ON' : 'BGM OFF'; $('#btnBgm').setAttribute('aria-pressed', String(bgmOn)); };
 $('#btnBgm').onclick = () => { bgmOn = !bgmOn; store.set('mindquest-bgm', bgmOn); setBgmLabel(); bgmUpdate(); };
+/* =========================================================
+   VOICE MODE: the question is read aloud and you answer by talking. What was heard is shown before it goes in, so a wrong
+   kanji can be caught: the recognizer's guesses are ranked by the words this question uses, common homophone slips are
+   fixed (and can be undone), and the text can be edited by hand. Road-monster battles become quizzes and riddles.
+   ========================================================= */
+var VOICE_ON = !!store.get('mindquest-voice', false);
+const SRC = window.SpeechRecognition || window.webkitSpeechRecognition;
+const VO = {rec: null, listening: false, heard: null, interim: '', note: '', auto: !!store.get('mindquest-voauto', false), spoken: ''};
+const voHasTTS = 'speechSynthesis' in window;
+let voJa = null;
+function voPickVoice(){ const v = speechSynthesis.getVoices().filter(x => /^ja/i.test(x.lang)); voJa = v.find(x => /Nanami|Kyoko|O-ren|Google/i.test(x.name)) || v[0] || null; }
+if (voHasTTS){ voPickVoice(); speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', voPickVoice); }
+const voSpeech = t => String(t || '').replace(/<[^>]+>/g, '').replace(/&[a-z#0-9]+;/gi, ' ').replace(/[\u{1F000}-\u{1FAFF}←-⇿⌀-➿️]/gu, '').replace(/[〇○]{2}/g, 'なになに').replace(/△△/g, 'なになに').replace(/[「」『』（）()…→]/g, ' ').replace(/\s+/g, ' ').trim();
+function say(text, then){
+  const t = voSpeech(text); let done = false; const fin = () => { if (done) return; done = true; then && then(); };
+  if (!voHasTTS || !t){ setTimeout(fin, 50); return; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(t); u.lang = 'ja-JP'; if (voJa) u.voice = voJa; u.rate = 1.05;
+  u.onend = fin; u.onerror = fin; setTimeout(fin, 1500 + t.length * 330);
+  speechSynthesis.speak(u);
+}
+function voStop(){ if (VO.rec){ const r = VO.rec; VO.rec = null; try { r.abort(); } catch (e){} } VO.listening = false; VO.interim = ''; }
+/* one utterance: onFinal gets every guess the recognizer has (best first), onState(on, error) follows the microphone */
+function listen(onFinal, onInterim, onState){
+  if (!SRC){ onState && onState(false, 'none'); return false; }
+  voStop(); if (voHasTTS) speechSynthesis.cancel();
+  const r = new SRC(); r.lang = 'ja-JP'; r.interimResults = true; r.maxAlternatives = 5; r.continuous = false;
+  let got = false, err = '';
+  r.onresult = e => { const res = e.results[e.results.length - 1]; if (!res.isFinal){ onInterim && onInterim(res[0].transcript); return; } got = true; onFinal([...res].map(a => a.transcript).filter(Boolean)); };
+  r.onerror = e => { err = e.error || 'error'; };
+  r.onend = () => { if (VO.rec === r){ VO.rec = null; VO.listening = false; } onState && onState(false, got ? '' : err || 'no-speech'); };
+  VO.rec = r; VO.listening = true;
+  try { r.start(); } catch (e){ VO.rec = null; VO.listening = false; onState && onState(false, 'error'); return false; }
+  onState && onState(true, '');
+  return true;
+}
+const VO_ERR = {none: 'この端末・ブラウザでは音声認識が使えません。キーボードのマイク（音声入力）で話して、答えの欄に入れてください。', 'not-allowed': 'マイクが使えません。ブラウザの設定でマイクを許可してください（Claude の画面の中では使えません。公開アプリで遊んでください）。', 'service-not-allowed': 'マイクが使えません。ブラウザの設定でマイクを許可してください。', 'no-speech': '声が聞こえませんでした。もう一度 🎤 を押して話してね。', 'audio-capture': 'マイクが見つかりません。', network: '音声認識につながりませんでした（インターネット接続が必要です）。'};
+
+/* ---- wrong kanji: tidy the text, fix homophone slips this game is likely to meet, rank the guesses ---- */
+const voClean = t => String(t || '').normalize('NFKC').replace(/([^\x00-\x7F])\s+(?=[^\x00-\x7F])/g, '$1').replace(/[。．.、,]+$/, '').trim().slice(0, 60);
+const VO_FIX = [
+  [/血痕/g, '結婚'], [/(視覚|死角)(を(取|とる|とり|とっ)|の(勉強|試験|取得)|試験|取得)/g, '資格$2'], [/企業(し|す|を(する|した|したい))/g, '起業$1'],
+  [/(今|混|根|昆)活/g, '婚活'], [/一個建て/g, '一戸建て'], [/良心(に|を|と|へ|の(介護|ため|家))/g, '両親$1'], [/音返し/g, '恩返し'],
+  [/性交/g, '成功'], [/自身(が|を|に)(ない|無い|つけ|付け|持|もて|ある)/g, '自信$1$2'], [/火事(を|の)(分担|手伝|お手伝|やる|する)/g, '家事$1$2'],
+  [/(親|両親|父|母|祖父|祖母)の解雇/g, '$1の介護'], [/出合い/g, '出会い'], [/老語/g, '老後'], [/(早起き|運動|読書|貯金|勉強|日記)の週間/g, '$1の習慣'],
+  [/資格を撮/g, '資格を取'], [/夢を可能/g, '夢をかなえる'], [/子(掃除|そだて)/g, '子育て'], [/貯金を貯め/g, '貯金をため']
+];
+const VO_WORDS = ['結婚', '婚活', '資格', '起業', '家族', '老後', '両親', '貯金', '健康', '仕事', '趣味', '自信', '成功', '習慣', '介護', '家事', '子育て', 'マイホーム', '一戸建て', '夫婦', '恩返し', '出会い', '目標', '勉強', '転職', '副業', '旅行', '運動'];
+function voFix(t){
+  const fx = [];
+  for (const [re, to] of VO_FIX) t = t.replace(re, s => { const r = s.replace(new RegExp(re.source), to); if (r !== s) fx.push([s, r]); return r; });
+  return {t, fx};
+}
+function voWords(){
+  let src = [];
+  try { const p = current(), st = S.stages[p.s]; src = bankFor(S, p).slice(); src.push(st.l || '', S.theme || ''); } catch (e){}
+  return [...new Set(src.join(' ').match(/[一-鿿゠-ヿー]{2,}/g) || [])].concat(VO_WORDS);
+}
+function voRank(alts){
+  const words = voWords(), seen = new Set(), out = [];
+  alts.map(voClean).filter(Boolean).forEach((raw, i) => {
+    const f = voFix(raw); if (seen.has(f.t)) return; seen.add(f.t);
+    out.push({raw, t: f.t, fx: f.fx, i, sc: words.reduce((n, w) => n + (f.t.includes(w) ? w.length : 0), 0)});
+  });
+  return out.sort((a, b) => b.sc - a.sc || a.i - b.i);
+}
+
+/* ---- the voice bar in the answer panel ---- */
+const VO_YES = /^(はい|ハイ|はーい|うん|ok|okay|オーケー|オッケー|おけ|いいよ|いいです|それで|それでいい|イエス|yes|そう)/i;
+const VO_NO = /(いいえ|いや|ちがう|違う|言い直|いいなお|やり直|だめ|ダメ|もう一度|もういちど|ノー|^no)/i;
+const VO_NEXT = /^(次|つぎ)(へ|に)?(進|すす|いく|行)?|^(すすむ|進む|進んで|おわり|終わり|以上です|以上)$/;
+function voBarHTML(){
+  if (VO.heard){
+    const H = VO.heard, c = H.cands[H.pick];
+    return `<p class="vo-h">🎧 聞きとった答え<small>漢字がちがうときは、文字を直してから「これで答える」</small></p>
+      <input id="voEdit" class="vo-edit" value="${esc(c.t)}" maxlength="60" aria-label="聞きとった答え（直せます）" autocomplete="off">
+      ${c.fx.length ? `<p class="vo-fix">🔧 ${c.fx.map(([a, b]) => `「${esc(a)}」→「${esc(b)}」`).join('・')}に直しました <button type="button" class="btn link sm" data-vo="undo">もとに戻す</button></p>` : ''}
+      ${H.cands.length > 1 ? `<div class="vo-alts"><small>ほかの聞きとり候補（押すと入れかわる）</small>${H.cands.map((x, i) => i === H.pick ? '' : `<button type="button" data-vo="alt" data-v="${i}">${esc(x.t)}</button>`).join('')}</div>` : ''}
+      <div class="vo-row"><button type="button" class="btn primary" data-vo="ok">✅ これで答える</button><button type="button" class="btn" data-vo="again">🎤 言いなおす</button><button type="button" class="btn link sm" data-vo="cancel">やめる</button></div>
+      ${VO.auto ? '<p class="vo-note s">声で「はい」→ 答える／「いいえ」→ 言いなおし</p>' : ''}`;
+  }
+  return `<div class="vo-row"><button type="button" class="vo-mic${VO.listening ? ' on' : ''}" data-vo="mic">${VO.listening ? '🎙 きいています…' : '🎤 話して答える'}</button><button type="button" class="btn sm" data-vo="read">🔊 もう一度読む</button></div>
+    <p class="vo-live"${VO.interim ? '' : ' hidden'}>「${esc(VO.interim)}」</p>
+    <label class="vo-auto"><input type="checkbox" data-vo="auto"${VO.auto ? ' checked' : ''}> ハンズフリー（読み終わったら自動で聞く。「はい」「いいえ」「次へ」も声で）</label>
+    ${VO.note ? `<p class="vo-note">${esc(VO.note)}</p>` : ''}`;
+}
+function voBar(){ const b = panel.querySelector('.vo-bar'); if (b) b.innerHTML = voBarHTML(); }
+function voAfter(){
+  if (!VOICE_ON || !S || S.phase !== 'play' || !canAnswer()){ if (!VOICE_ON || !S || S.phase !== 'play') VO.heard = null; return; }
+  const host = panel.querySelector('.qchat') || panel.querySelector('.pform') || panel.querySelector('.choices') || panel.querySelector('.entry');
+  if (!host) return;
+  const bar = document.createElement('div'); bar.className = 'vo-bar'; bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', '声で答える'); bar.innerHTML = voBarHTML();
+  host.before(bar);
+  const k = `${S.theme}|${S.mode}|${current().key}`;
+  if (VO.spoken !== k){ VO.spoken = k; VO.heard = null; voBar(); setTimeout(() => voRead(), 350); }
+}
+function voQText(){
+  const p = current(), st = S.stages[p.s], par = p.par != null ? byId(S, p.par) : null;
+  let t = fillQ(S, st, par, p);
+  if (isPlan(st)) t += '。' + fieldsOf(st).map(f => f[2]).join('、') + 'を決めよう';
+  return t;
+}
+function voRead(){
+  if (!VOICE_ON || !canAnswer()) return;
+  const key = current().key;
+  say(voQText(), () => { if (VO.auto && VOICE_ON && canAnswer() && current().key === key && !VO.heard) voListen(); });
+}
+function voListen(){
+  VO.note = ''; VO.heard = null;
+  listen(alts => {
+    VO.interim = '';
+    if (VO_NEXT.test(voClean(alts[0]))){ const b = panel.querySelector('[data-act="next"]'); if (b){ say('次へ進むよ'); b.click(); return; } }
+    voHeard(alts);
+  }, t => { VO.interim = t; const l = panel.querySelector('.vo-live'); if (l){ l.hidden = false; l.textContent = `「${t}」`; } },
+  (on, err) => { if (!on && err) VO.note = VO_ERR[err] || ''; if (!VO.heard) voBar(); });
+}
+function voHeard(alts){
+  const cands = voRank(alts); if (!cands.length){ VO.note = VO_ERR['no-speech']; voBar(); return; }
+  VO.heard = {cands, pick: 0}; voBar();
+  const e = $('#voEdit'); if (e && !VO.auto) e.focus();
+  if (VO.auto) say(`${cands[0].t}、で、いい？`, () => {
+    if (!VO.heard) return;
+    listen(a => {
+      const t = voClean(a[0]);
+      if (VO_YES.test(t)) voOk(); else if (VO_NO.test(t)){ VO.heard = null; voBar(); say('もう一度、どうぞ', voListen); } else voHeard(a);
+    }, null, (on, err) => { if (!on && err && VO.heard) voBar(); });
+  });
+}
+function voOk(){
+  const e = $('#voEdit'), text = voClean(e ? e.value : '');
+  if (!text || !canAnswer()) return;
+  VO.heard = null; voStop();
+  const p = current(), st = S.stages[p.s], key = p.key;
+  if (isPlan(st)){
+    const f = [...panel.querySelectorAll('input[data-field]')].find(i => !i.value.trim());
+    if (!f){ toast('ぜんぶの項目が決まっています'); voBar(); return; }
+    f.value = text; if (saveFields()) refresh();
+  } else {
+    if (!addText(text)){ voBar(); return; }
+    const msg = coachOf(S, st, text); S.coach = msg ? {key: p.key, msg, id: S.seq - 1} : null;
+    qsAfterAdd(); refresh();
+  }
+  const npc = [...panel.querySelectorAll('.qchat .cb.npc span')].slice(-2).map(x => x.textContent).join('。');
+  say(npc || `${text}、を入れたよ`, () => { if (VO.auto && VOICE_ON && canAnswer() && current().key === key && !VO.heard) voListen(); });
+}
+panel.addEventListener('click', e => {
+  const b = e.target.closest('[data-vo]'); if (!b || b.type === 'checkbox') return;
+  const a = b.dataset.vo;
+  if (a === 'mic'){ if (VO.listening){ voStop(); voBar(); } else voListen(); }
+  else if (a === 'read') voRead();
+  else if (a === 'ok') voOk();
+  else if (a === 'again'){ VO.heard = null; voListen(); voBar(); }
+  else if (a === 'cancel'){ VO.heard = null; voStop(); voBar(); }
+  else if (a === 'alt'){ VO.heard.pick = +b.dataset.v; voBar(); }
+  else if (a === 'undo'){ const c = VO.heard.cands[VO.heard.pick]; c.t = c.raw; c.fx = []; voBar(); }
+});
+panel.addEventListener('change', e => { if (e.target.dataset && e.target.dataset.vo === 'auto'){ VO.auto = e.target.checked; store.set('mindquest-voauto', VO.auto); if (VO.auto && !VO.listening && !VO.heard) voRead(); } });
+panel.addEventListener('keydown', e => { if (e.target.id === 'voEdit' && e.key === 'Enter' && !e.isComposing){ e.preventDefault(); voOk(); } });
+renderPanel = (base => function(){ base.apply(this, arguments); try { voAfter(); } catch (e){} })(renderPanel);
+
+/* ---- on / off: the home switch and the header button ---- */
+function setVoice(on){
+  VOICE_ON = !!on; store.set('mindquest-voice', VOICE_ON);
+  const h = $('#voHome'), b = $('#btnVoice');
+  if (h){ h.classList.toggle('on', VOICE_ON); h.setAttribute('aria-pressed', String(VOICE_ON)); h.textContent = VOICE_ON ? '🎙 音声会話モード ON' : '🎙 音声会話モード OFF'; }
+  if (b){ b.textContent = VOICE_ON ? '🎙 音声 ON' : '🎙 音声 OFF'; b.setAttribute('aria-pressed', String(VOICE_ON)); }
+  if (!VOICE_ON){ voStop(); VO.heard = null; if (voHasTTS) speechSynthesis.cancel(); }
+  VO.spoken = '';
+  if (S && S.phase === 'play') refresh();
+}
+$('#voHome') && $('#voHome').addEventListener('click', () => { setVoice(!VOICE_ON); if (VOICE_ON) say(SRC ? '音声会話モードにしたよ。問いを読み上げるから、声で答えてね' : '音声会話モードにしたよ。問いを読み上げるね。この端末では声の聞きとりが使えないので、キーボードのマイクで話してね'); });
+$('#btnVoice') && $('#btnVoice').addEventListener('click', () => { setVoice(!VOICE_ON); if (VOICE_ON) say('音声会話モード'); });
+setVoice(VOICE_ON);
+
+/* ---- voice battles: quiz (3 choices) and riddles, read aloud and answered by voice or by tapping ----
+   each choice is 'shown|other ways to say it|…'; a: the right one; e: a short note */
+const VO_QUIZ = [
+  {q: '日本でいちばん高い山は？', c: ['富士山|ふじさん|富士', '北岳|きただけ', '槍ヶ岳|やりがたけ|槍'], a: 0},
+  {q: 'うるう年ではない1年は、何日？', c: ['365日|365|三百六十五|さんびゃくろくじゅうご', '360日|360|三百六十|さんびゃくろくじゅう', '366日|366|三百六十六|さんびゃくろくじゅうろく'], a: 0},
+  {q: '日本では、虹の色はいくつと言われている？', c: ['5色|5|五|いつつ|ごしょく', '7色|7|七|ななつ|なないろ|なな', '9色|9|九|ここのつ|きゅう'], a: 1},
+  {q: '日本の首都は？', c: ['東京|とうきょう', '大阪|おおさか', '京都|きょうと'], a: 0},
+  {q: 'パンダが主に食べるものは？', c: ['竹|たけ|笹|ささ', 'バナナ', '魚|さかな'], a: 0},
+  {q: '1時間は何分？', c: ['60分|60|六十|ろくじゅう', '100分|100|百|ひゃく', '30分|30|三十|さんじゅう'], a: 0},
+  {q: '太陽がのぼってくる方角は？', c: ['東|ひがし', '西|にし', '北|きた'], a: 0},
+  {q: 'クモの足は何本？', c: ['6本|6|六|ろっぽん|ろく', '8本|8|八|はっぽん|はち', '10本|10|十|じゅっぽん|じゅう'], a: 1},
+  {q: '日本でいちばん大きい湖は？', c: ['琵琶湖|びわこ|琵琶', '霞ヶ浦|かすみがうら', '猪苗代湖|いなわしろこ|猪苗代'], a: 0},
+  {q: '信号で「止まれ」の色は？', c: ['赤|あか', '青|あお', '黄色|きいろ|黄'], a: 0},
+  {q: '「いろはにほへと」の次に続くのは？', c: ['ちりぬるを|散りぬるを', 'わかよたれそ', 'つねならむ'], a: 0},
+  {q: '水がこおりはじめる温度は？', c: ['0度|0|ゼロ|零|れいど', '10度|10|十|じゅう', '100度|100|百|ひゃく'], a: 0},
+  {q: 'ふつうの気圧で、水がふっとうする温度は？', c: ['50度|50|五十|ごじゅう', '100度|100|百|ひゃく', '200度|200|二百|にひゃく'], a: 1},
+  {q: 'お正月に家の門に飾る、松と竹の飾りは？', c: ['門松|かどまつ', 'しめ縄|しめなわ', '鏡もち|かがみもち|鏡餅'], a: 0},
+  {q: '3月3日は何の日？', c: ['ひな祭り|ひなまつり|雛祭り|桃の節句', 'こどもの日|子供の日|こどものひ', '七夕|たなばた'], a: 0},
+  {q: '七夕は何月何日？', c: ['7月7日|しちがつなのか|七月七日', '8月8日|はちがつようか|八月八日', '5月5日|ごがついつか|五月五日'], a: 0},
+  {q: '1月7日に食べる、春の七草を入れたものは？', c: ['七草がゆ|ななくさがゆ|七草粥|七草', 'おせち|お節', '年越しそば|としこしそば'], a: 0},
+  {q: '地球のまわりを回っている星は？', c: ['月|つき', '太陽|たいよう', '火星|かせい'], a: 0},
+  {q: '日本の国旗のまん中の丸は、何色？', c: ['赤|あか', '青|あお', '黄色|きいろ|黄'], a: 0},
+  {q: 'サッカーは、1チーム何人で試合をする？', c: ['11人|11|十一|じゅういち', '9人|9|九|きゅうにん', '5人|5|五|ごにん'], a: 0},
+  {q: '野球で、守るのは1チーム何人？', c: ['9人|9|九|きゅうにん|くにん', '11人|11|十一|じゅういち', '7人|7|七|しちにん|ななにん'], a: 0},
+  {q: '世界でいちばん大きい海は？', c: ['太平洋|たいへいよう', '大西洋|たいせいよう', 'インド洋|いんどよう|インド'], a: 0},
+  {q: '1ダースは、いくつ？', c: ['12|十二|じゅうに', '10|十|じゅう', '20|二十|にじゅう'], a: 0},
+  {q: 'ことわざ。「ちりも積もれば…」', c: ['山となる|やまとなる|山', '川となる|かわとなる|川', '雪となる|ゆきとなる|雪'], a: 0},
+  {q: 'ことわざ。「急がば…」', c: ['回れ|まわれ', '走れ|はしれ', '止まれ|とまれ'], a: 0},
+  {q: 'ことわざ。「石の上にも…」', c: ['三年|3年|さんねん', '十年|10年|じゅうねん', '一年|1年|いちねん'], a: 0},
+  {q: 'ことわざ。「花より…」', c: ['だんご|団子|ダンゴ', 'おにぎり|お握り', 'おもち|お餅|もち'], a: 0},
+  {q: 'ことわざ。「七転び…」', c: ['八起き|やおき|8起き', '九起き|くおき|9起き', '七起き|ななおき|しちおき|7起き'], a: 0},
+  {q: '1週間は何日？', c: ['5日|いつか|五日', '7日|なのか|七日|7', '10日|とおか|十日|10'], a: 1},
+  {q: '日本の都道府県は、全部でいくつ？', c: ['43|四十三|よんじゅうさん', '47|四十七|よんじゅうなな|よんじゅうしち', '50|五十|ごじゅう'], a: 1},
+  {q: '夏至は、1年でいちばん何が長い日？', c: ['昼|ひる|昼間', '夜|よる', '朝|あさ'], a: 0},
+  {q: 'おにぎりに巻く「のり」は、何から作る？', c: ['海藻|かいそう|海草', '木の葉|このは|葉っぱ', '紙|かみ'], a: 0},
+  {q: '三角形の3つの角を合わせると、何度？', c: ['90度|90|九十|きゅうじゅう', '180度|180|百八十|ひゃくはちじゅう', '360度|360|三百六十|さんびゃくろくじゅう'], a: 1},
+  {q: '北海道の道庁があるまちは？', c: ['札幌|さっぽろ', '函館|はこだて', '旭川|あさひかわ'], a: 0},
+  {q: '沖縄県の県庁があるまちは？', c: ['那覇|なは', '石垣|いしがき', '名護|なご'], a: 0},
+  {q: '時計の短い針が1周するのは、何時間？', c: ['6時間|6|六|ろくじかん', '12時間|12|十二|じゅうに', '24時間|24|二十四|にじゅうよ'], a: 1},
+  {q: '日本でいちばん長い川は？', c: ['信濃川|しなのがわ|信濃', '利根川|とねがわ|利根', '石狩川|いしかりがわ|石狩'], a: 0},
+  {q: '富士山がまたがっている2つの県は？', c: ['静岡と山梨|静岡県と山梨県|しずおかとやまなし', '長野と山梨|長野県と山梨県|ながのとやまなし', '静岡と神奈川|静岡県と神奈川県|しずおかとかながわ'], a: 0},
+  {q: 'ホタルが光るのは、体のどこ？', c: ['おしり|お尻|尻|しっぽ', '頭|あたま', '羽|はね'], a: 0},
+  {q: '「ありがとう」を英語で言うと？', c: ['サンキュー|thankyou|thanks|センキュー', 'ハロー|hello', 'グッバイ|goodbye|バイバイ'], a: 0},
+  {q: '5月5日は何の日？', c: ['こどもの日|子供の日|こどものひ|端午の節句', 'ひな祭り|ひなまつり', '敬老の日|けいろうのひ'], a: 0},
+  {q: 'リンゴ、バナナ、キャベツ。この中で野菜はどれ？', c: ['キャベツ', 'リンゴ|りんご|林檎', 'バナナ'], a: 0}
+];
+const VO_RIDDLE = [
+  {q: 'パンはパンでも、食べられないパンは、なーんだ？', c: ['フライパン', 'メロンパン', 'あんパン|アンパン'], a: 0, h: '台所で、料理に使うよ'},
+  {q: '上は大水、下は大火事。これなーんだ？', c: ['お風呂|おふろ|風呂|ふろ', 'やかん|ヤカン', '火山|かざん'], a: 0, h: '毎日、入るところ'},
+  {q: 'トラはトラでも、音楽をかなでるトラは？', c: ['オーケストラ', 'トラック', 'トランプ'], a: 0, h: 'たくさんの楽器がいっしょに演奏するよ'},
+  {q: 'トラはトラでも、荷物を運ぶトラは？', c: ['トラック', 'トランク', 'トラクター'], a: 0, h: 'タイヤがついている、大きな車'},
+  {q: 'カメはカメでも、写真をとるカメは？', c: ['カメラ', 'カメレオン', 'ウミガメ|海亀'], a: 0, h: 'パシャッ！'},
+  {q: 'イスはイスでも、冷たくて甘いイスは？', c: ['アイス|アイスクリーム', 'スイス', 'ジュース'], a: 0, h: '夏に食べたくなるよ'},
+  {q: 'サイはサイでも、ころころ転がすサイは？', c: ['サイコロ|さいころ', 'サイダー', 'さいふ|財布'], a: 0, h: 'すごろくで使う'},
+  {q: 'ハムはハムでも、小さくてかわいい動物のハムは？', c: ['ハムスター', 'ハムエッグ', 'ハンバーグ'], a: 0, h: 'ほっぺに、えさをためる'},
+  {q: 'お父さんがきらいな果物は、なーんだ？', c: ['パパイヤ', 'パイナップル', 'マンゴー'], a: 0, h: 'パパは、いや！'},
+  {q: '逆立ちすると、軽くなる動物は？', c: ['イルカ|いるか', 'クジラ|くじら|鯨', 'カバ|かば'], a: 0, h: '名前を、うしろから読んでみて'},
+  {q: 'くちはくちでも、外へ出るくちは？', c: ['出口|でぐち', '入口|入り口|いりぐち', '窓口|まどぐち'], a: 0, h: '入口の反対'},
+  {q: '水に入っても、ぜったいにぬれないものは？', c: ['影|かげ', '魚|さかな', '石|いし'], a: 0, h: 'お日さまがあると、足もとにできる'},
+  {q: '足が4本、背中もあるのに、歩かないものは？', c: ['椅子|いす|イス', '机|つくえ', '犬|いぬ'], a: 0, h: 'すわるときに使うよ'},
+  {q: '目が3つあって、道に立っているものは？', c: ['信号|しんごう|信号機', '電柱|でんちゅう', 'ポスト'], a: 0, h: '赤・黄・青'},
+  {q: '朝は4本足、昼は2本足、夜は3本足。これなーんだ？', c: ['人間|にんげん|人|ひと', '犬|いぬ', '鳥|とり'], a: 0, h: '赤ちゃん → おとな → つえをつくお年寄り'},
+  {q: 'あなたが笑うと笑いかえし、のぞくとあなたが見えるものは？', c: ['鏡|かがみ|カガミ', '窓|まど', 'テレビ'], a: 0, h: '朝、顔を見るときに使う'},
+  {q: '使えば使うほど、小さくなっていくものは？', c: ['消しゴム|けしごむ|せっけん|石けん|石鹸|えんぴつ|鉛筆|ろうそく', 'ノート', 'ハサミ|はさみ'], a: 0, h: '文房具やお風呂にもあるよ'},
+  {q: '目があるのに、何も見えない大きな風は？', c: ['台風|たいふう', '北風|きたかぜ', 'そよ風|そよかぜ'], a: 0, h: '夏から秋にやってくる'},
+  {q: '体じゅう穴だらけなのに、水をたくさん吸いこむものは？', c: ['スポンジ', 'バケツ', 'コップ'], a: 0, h: 'お皿あらいに使うよ'},
+  {q: 'キはキでも、甘くておいしいキは？', c: ['ケーキ|クッキー', 'ほうき', 'たぬき'], a: 0, h: 'お誕生日に食べるかも'},
+  {q: '歯がたくさんあるのに、ものを食べないものは？', c: ['くし|櫛|のこぎり|ノコギリ|げた|下駄|歯車|はぐるま', 'スプーン', 'おはし|箸|はし'], a: 0, h: '髪をとかすときに使うよ'},
+  {q: '夜になると出てきて、朝になると消える、空のものは？', c: ['星|ほし|月|つき', '雲|くも', '虹|にじ'], a: 0, h: 'キラキラ光るよ'},
+  {q: 'たたかれるほど、よろこばれるものは？', c: ['太鼓|たいこ', '布団|ふとん', 'ドア'], a: 0, h: 'ドンドン！ お祭りで鳴る'},
+  {q: 'いつも頭の上に乗っているのに、重くないものは？', c: ['空|そら', '帽子|ぼうし', '雲|くも'], a: 0, h: '見上げると、いつもそこにある'},
+  {q: '切っても切っても、切れないものは？', c: ['水|みず|縁|えん', '紙|かみ', 'ひも|紐'], a: 0, h: '包丁で切ろうとしても、すぐにくっつく'}
+];
+const MG_VOICE = ['quiz', 'riddle'];
+MG.quiz = ['❓', 'クイズ', '3択クイズに声で答えろ！ 正解でこうげき'];
+MG.riddle = ['🤔', 'なぞなぞ', 'なぞなぞを解いて大ダメージ！'];
+MG_HOW.quiz = ['❓ クイズバトル', ['魔物がクイズを出す（読み上げます）', '🎤 で答えを話す。1・2・3の番号でも、ボタンを押してもOK', '正解すると魔物にダメージ、まちがえると魔物のこうげき', '1問15秒。3問ぜんぶ正解で、たおせる！']];
+MG_HOW.riddle = ['🤔 なぞなぞバトル', ['魔物がなぞなぞを出す（読み上げます）', '🎤 で答えを話す。10秒でヒント、15秒で答えの候補が出る', '正解すると大ダメージ、まちがえると魔物のこうげき', '1問30秒。2問ぜんぶ正解で、たおせる！']];
+const voUsed = {};
+function voDeal(list, key, n){
+  const used = voUsed[key] = voUsed[key] || new Set();
+  let idx = list.map((_, i) => i).filter(i => !used.has(i)); if (idx.length < n){ used.clear(); idx = list.map((_, i) => i); }
+  for (let i = idx.length - 1; i > 0; i--){ const j = rnd(i + 1); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+  return idx.slice(0, n).map(i => { used.add(i); return list[i]; });
+}
+const voNorm = t => String(t || '').normalize('NFKC').toLowerCase().replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)).replace(/[\s、。，．,.!?！？「」『』・~〜]/g, '');
+const voShown = c => c.split('|')[0];
+const VO_NUM = [/^(1|一|いち|ひとつ)(ばん|番|つめ|つ目|個目)?(です)?$/, /^(2|二|に|ふたつ)(ばん|番|つめ|つ目|個目)?(です)?$/, /^(3|三|さん|みっつ)(ばん|番|つめ|つ目|個目)?(です)?$/];
+/* which choice was said: the longest match of any way to say it wins; a bare number picks by position when the choices are shown */
+function voMatch(q, alts, order){
+  for (const raw of alts){
+    const t = voNorm(raw); if (!t) continue;
+    let best = -1, len = 0;
+    q.c.forEach((c, j) => c.split('|').forEach(f => { const n = voNorm(f); if (n && t.includes(n) && n.length > len){ best = j; len = n.length; } }));
+    if (best >= 0) return best;
+    if (order){ const k = VO_NUM.findIndex(re => re.test(t)); if (k >= 0 && k < order.length) return order[k]; }
+  }
+  return null;
+}
+function runQuiz(el, kind, F, end){
+  const riddle = kind === 'riddle', N = riddle ? 2 : 3, lim = riddle ? 30 : 15, hp0 = Math.max(1, F.hp), per = Math.ceil(hp0 / N);
+  const qs = voDeal(riddle ? VO_RIDDLE : VO_QUIZ, kind, N);
+  let i = 0, dealt = 0, taken = 0, over = false, t0 = 0, state = '', shown = false, hinted = false, tries = 0;
+  el.innerHTML = `<div class="vq${riddle ? ' rd' : ''}"><div class="vq-top"><b class="vq-n"></b><span class="vq-sc"></span></div>
+    <svg class="vq-mon" viewBox="-75 -100 150 108" aria-hidden="true"><g>${pxSprite(`<use href="#mon-${F.kind}" style="--mc:${F.col}"/>`)}</g></svg>
+    <p class="vq-q"></p><div class="vq-time"><i></i></div><p class="vq-hint" hidden></p><div class="vq-ch"></div>
+    <div class="vq-mic"><button type="button" class="vo-mic">🎤 話して答える</button><span class="vq-heard"></span></div><p class="vq-res" aria-live="polite"></p></div>`;
+  const $q = s => el.querySelector(s), q = () => qs[i];
+  const tick = setInterval(() => {
+    if (over || state !== 'ask' || !t0) return;
+    const left = lim - (Date.now() - t0) / 1000;
+    $q('.vq-time i').style.width = Math.max(0, left / lim * 100) + '%';
+    if (riddle && !hinted && left <= lim - 10){ hinted = true; const h = $q('.vq-hint'); h.hidden = false; h.textContent = '💡 ヒント：' + q().h; }
+    if (riddle && !shown && left <= lim - 15) showCh();
+    if (left <= 0) judge(-1, true);
+  }, 100);
+  const showCh = () => {
+    shown = true;
+    const order = riddle ? q().c.map((_, j) => j).sort(() => Math.random() - .5) : q().c.map((_, j) => j);
+    $q('.vq-ch').innerHTML = order.map((j, k) => `<button type="button" data-j="${j}"><i>${k + 1}</i>${esc(voShown(q().c[j]))}</button>`).join('');
+    q().order = order;
+  };
+  const micLbl = on => { const b = $q('.vo-mic'); if (b){ b.classList.toggle('on', on); b.textContent = on ? '🎙 きいています…' : '🎤 話して答える'; } };
+  const hear = () => {
+    if (over || state !== 'ask') return;
+    listen(alts => {
+      if (over || state !== 'ask') return;
+      const j = voMatch(q(), alts, shown ? q().order : null);
+      if (j == null){ $q('.vq-heard').textContent = `「${alts[0]}」…？ ${riddle ? 'ちがうみたい。もう一度！' : 'もう一度！'}`; return; }
+      $q('.vq-heard').textContent = `「${alts[0]}」`; judge(j, false);
+    }, t => { $q('.vq-heard').textContent = `「${t}」`; }, (on, err) => {
+      micLbl(on);
+      if (on || over || state !== 'ask') return;
+      if (err && VO_ERR[err] && err !== 'no-speech' && err !== 'network'){ $q('.vq-heard').textContent = VO_ERR[err]; if (!shown) showCh(); return; }
+      if (++tries < 12) setTimeout(hear, 250);
+    });
+  };
+  const ask = () => {
+    state = 'ask'; t0 = 0; shown = false; hinted = false; tries = 0;
+    $q('.vq-n').textContent = `${riddle ? 'なぞなぞ' : 'クイズ'} 第${i + 1}問 / ${N}`;
+    $q('.vq-sc').textContent = `⚔️ ${dealt}　💔 ${taken}`;
+    $q('.vq-q').textContent = q().q; $q('.vq-hint').hidden = true; $q('.vq-ch').innerHTML = ''; $q('.vq-res').textContent = ''; $q('.vq-res').className = 'vq-res'; $q('.vq-heard').textContent = '';
+    $q('.vq-time i').style.width = '100%';
+    if (!riddle || !SRC) showCh();
+    const read = riddle ? q().q : `${q().q}　${q().c.map((c, k) => `${k + 1}、${voShown(c)}`).join('。')}`;
+    say(read, () => { if (over || state !== 'ask') return; t0 = Date.now(); if (SRC) hear(); });
+  };
+  const judge = (j, timeout) => {
+    if (state !== 'ask') return; state = 'done'; voStop(); micLbl(false);
+    const ok = j === q().a, ans = voShown(q().c[q().a]);
+    el.querySelectorAll('.vq-ch button').forEach(b => { b.disabled = true; if (+b.dataset.j === q().a) b.classList.add('ok'); else if (+b.dataset.j === j) b.classList.add('ng'); });
+    const res = $q('.vq-res'), mon = $q('.vq-mon');
+    if (ok){
+      dealt += per; sfx.slash(); setTimeout(() => sfx.hit(), 160);
+      res.className = 'vq-res ok'; res.textContent = `⭕ 正解！ ${F.n}に${per}のダメージ`;
+      mon.classList.remove('hit'); void mon.getBoundingClientRect(); mon.classList.add('hit');
+    } else {
+      const d = Math.max(1, Math.round(F.atk * .9) + (S.ng || 0) * 2); taken += d; sfx.enemy();
+      res.className = 'vq-res ng'; res.textContent = `❌ ${timeout ? '時間切れ…' : 'ざんねん！'} 答えは「${ans}」。${F.n}のこうげき！ ${d}のダメージ`;
+      el.querySelector('.vq').classList.remove('shake'); setTimeout(() => el.querySelector('.vq') && el.querySelector('.vq').classList.add('shake'), 10);
+      if (!shown) showCh(), el.querySelectorAll('.vq-ch button').forEach(b => { b.disabled = true; if (+b.dataset.j === q().a) b.classList.add('ok'); });
+    }
+    $q('.vq-sc').textContent = `⚔️ ${dealt}　💔 ${taken}`;
+    say(ok ? '正解！' : `ざんねん。答えは、${ans}`, () => setTimeout(() => {
+      if (over) return; i++;
+      if (i >= N || dealt >= hp0){ stopAll(); setTimeout(() => end(dealt, taken), 300); } else ask();
+    }, 700));
+  };
+  el.addEventListener('click', e => {
+    const b = e.target.closest('.vq-ch button'); if (b && state === 'ask'){ judge(+b.dataset.j, false); return; }
+    if (e.target.closest('.vo-mic') && state === 'ask'){ if (!SRC){ $q('.vq-heard').textContent = VO_ERR.none.replace('答えの欄', 'ボタン'); return; } if (VO.listening) voStop(), micLbl(false); else { tries = 0; hear(); } }
+  });
+  function stopAll(){ over = true; clearInterval(tick); voStop(); if (voHasTTS) speechSynthesis.cancel(); }
+  ask();
+  return stopAll;
+}
 setBgmLabel();
 setSoundLabel();
 let rz = 0;
