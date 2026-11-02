@@ -481,6 +481,7 @@ details.own[open] summary{margin-bottom:8px}
 .dice{width:104px;height:104px}
 .dice svg{width:100%;height:100%;display:block}
 .dice.rolling{animation:shake .35s linear infinite}
+.dice .rw{transform-origin:50px 50px;transform-box:view-box}
 @keyframes shake{0%{transform:rotate(0)}25%{transform:rotate(-14deg) scale(1.05)}50%{transform:rotate(10deg)}75%{transform:rotate(-6deg) scale(.97)}100%{transform:rotate(0)}}
 .gate-next{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
 .gate-next b{color:var(--ink)}
@@ -962,6 +963,8 @@ body.mg-lock{overflow:hidden}
 .examples{display:flex;flex-wrap:wrap;gap:8px}
 .purpose,.job-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .course-pick{display:grid;gap:6px}
+.vo-fab{position:fixed;right:12px;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:1200;width:54px;height:54px;border-radius:50%;border:3px solid #fff;background:#2D6BB4;color:#fff;font-size:24px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.vo-fab.on{background:#D93A3F;animation:voPulse 1s infinite}.vo-fab.say{background:#15A37C}.vo-fab.off{background:#6B7280}
 .vo-home{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}.vo-home .pchip{font-size:14px;padding:8px 14px}
 .vo-bar{display:grid;gap:8px;padding:10px 12px;border-radius:14px;background:#EEF4FF;border:2px solid #9DB8F0}
 .vo-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -1397,9 +1400,9 @@ body.mg-lock{overflow:hidden}
         <button type="button" data-zoom="in" aria-label="拡大">＋</button>
       </div>
       <div class="rolldock" id="rollDock" hidden>
-        <button class="dice" type="button" id="dockDice" aria-label="サイコロをふる"></button>
-        <div class="rd-txt"><b id="dockMsg">サイコロをふって進もう</b><small id="dockInfo"></small></div>
-        <button class="btn primary" type="button" id="dockRoll">サイコロをふる</button>
+        <button class="dice" type="button" id="dockDice" aria-label="ルーレットを回す"></button>
+        <div class="rd-txt"><b id="dockMsg">ルーレットを回して進もう</b><small id="dockInfo"></small></div>
+        <button class="btn primary" type="button" id="dockRoll">ルーレットを回す</button>
       </div>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </section>
@@ -1498,7 +1501,7 @@ body.mg-lock{overflow:hidden}
         </div>
       </div>
       <div class="vs-sec coop-sec"><label class="switch"><input type="checkbox" id="chkCoop"> <b id="coopLbl">ふたりで協力プレー</b></label>
-        <small id="coopNote">1台を2人で使います。サイコロは交代でふり、関所の問いには2人とも答えます。ふたりそろって答えると「協力ボーナス」！</small>
+        <small id="coopNote">1台を2人で使います。ルーレットは交代で回し、関所の問いには2人とも答えます。ふたりそろって答えると「協力ボーナス」！</small>
         <div class="coop-box" id="coopBox" hidden>
           <b class="rel-h">ふたりの関係（問いの内容が変わります）</b>
           <div class="purpose rel-ctl" id="relCtl" role="radiogroup" aria-label="ふたりの関係"></div>
@@ -2123,7 +2126,7 @@ const EVENTS = [
   {id:'detour', s:'迷い道', t:'迷い道', d:'道をまちがえて、少しもどってしまった。', move:-2, tone:'bad', ic:'down'},
   {id:'oversleep', s:'寝坊', t:'寝坊した', d:'あわてて出発。次の問いの持ち時間が15秒へる。', time:-15, tone:'bad', ic:'moon'},
   {id:'expense', s:'出費', t:'思わぬ出費', d:'旅の途中で予定外の出費。夢ポイントが減った。', pts:-10, tone:'bad', ic:'coin'},
-  {id:'chance', s:'追い風', t:'追い風', d:'風が背中を押してくれる！ もう一度サイコロをふれる。', again:true, tone:'good', ic:'clover'},
+  {id:'chance', s:'追い風', t:'追い風', d:'風が背中を押してくれる！ もう一度ルーレットを回せる。', again:true, tone:'good', ic:'clover'},
   {id:'friend', s:'仲間', t:'仲間ができた', d:'同じ夢を持つ仲間と出会った。', pts:15, tone:'good', ic:'smile'},
   {id:'slump', s:'にわか雨', t:'にわか雨', d:'雨で足止め。次の問いの持ち時間が10秒へる。', pts:-5, time:-10, tone:'bad', ic:'cloud'},
   {id:'rest', s:'休けい', t:'休けい所', d:'ベンチでひと休み。気持ちを整えた。', pts:5, tone:'calm', ic:'bench'}
@@ -3491,7 +3494,7 @@ const ITEMS = {
   sand: {n: '時の砂時計', ic: '⌛', g: 60, tier: 2, d: 'いまの問いの持ち時間が60秒ふえる（時間制限ありのとき）'},
   megaphone: {n: 'やじのメガホン', ic: '📣', g: 70, tier: 2, d: 'ライバル1人のメンタルをけずって、1回休みにする'},
   crystal: {n: 'AIの水晶玉', ic: '🔮', g: 80, tier: 3, d: 'いまの問いのヒントを、有力なAIが教えてくれる'},
-  boots: {n: 'ワープの靴', ic: '👟', g: 90, tier: 3, d: '次のサイコロの目を、自分で選べる'},
+  boots: {n: 'ワープの靴', ic: '👟', g: 90, tier: 3, d: '次のルーレットの目を、自分で選べる'},
   mirror: {n: '鏡の盾', ic: '🪞', g: 100, tier: 3, d: 'ライバル勝負に負けても、ダメージを相手にはね返す（相手は1回休み）'},
   egg: {n: 'ふしぎなたまご', ic: '🥚', g: 100, tier: 2, d: '6マス歩くと、おともが生まれる（N・R・SR、何が出るかはお楽しみ）'},
   book: {n: '魔法の書', ic: '📕', g: 120, tier: 3, d: '魔法「ファイア」を3回使えるようになる（魔物に大ダメージ、ごほうび2倍）'}
@@ -4254,7 +4257,7 @@ function collectHTML(){
   if (collectTab === 'mon') body = `<p class="cl-n">${nM} / ${DEXL().length} 体（${Math.round(nM / DEXL().length * 100)}%）</p><div class="cl-grid">${DEXL().map(e => { const ok = META.mons[dexKey(e)], wn = e[0] === 'any' ? 'どこかに' : WORLDS[e[0]].short; return ok ? `<div class="cl ok"><svg viewBox="-66 -100 132 108">${pxSprite(`<use href="#mon-${e[1]}" style="--mc:#7C4DDB"/>`)}</svg><b>${e[2]}</b><small>${wn}</small></div>` : `<div class="cl"><i>❓</i><b>？？？</b><small>${wn}</small></div>`; }).join('')}</div>`;
   if (collectTab === 'pet'){ const all = Object.entries(PETS).flatMap(([r, L]) => L.map(([ic, n]) => [r, ic, n])); body = `<p class="cl-n">${all.filter(p => META.pets[p[2]]).length} / ${all.length}　たまごはお店（山の市場）や宝箱で手に入ります</p><div class="cl-grid">${all.map(([r, ic, n]) => META.pets[n] ? `<div class="cl ok"><i>${ic}</i><b>${n}</b><small>${r}・${PET_FX[r]}</small></div>` : `<div class="cl"><i>❓</i><b>？？？</b><small>${r}</small></div>`).join('')}</div>`; }
   if (collectTab === 'badge') body = `<p class="cl-n">${nB} / ${Object.keys(BADGES).length}</p><div class="cl-grid">${Object.entries(BADGES).map(([id, b]) => META.badges[id] ? `<div class="cl ok"><i>${b[0]}</i><b>${b[1]}</b><small>${b[2]}</small></div>` : `<div class="cl"><i>🔒</i><b>？？？</b><small>${b[2]}</small></div>`).join('')}</div>`;
-  if (collectTab === 'best'){ const B = META.best, T = META.tot; body = `<dl class="cl-best"><dt>クリア回数</dt><dd>${T.clears || 0}回</dd><dt>最短クリア</dt><dd>${B.fast != null ? `サイコロ${B.fast}回` : '—'}</dd><dt>最高ダメージ</dt><dd>${B.dmg || 0}</dd><dt>1回の冒険で集めたゴールド</dt><dd>${B.gold || 0}G</dd><dt>たおした魔物</dt><dd>${T.kills || 0}体</dd><dt>会心の一撃</dt><dd>${T.crit || 0}回</dd><dt>あけた宝箱</dt><dd>${T.chest || 0}個</dd><dt>書いた答え</dt><dd>${T.ans || 0}個</dd><dt>現実の修行</dt><dd>${META.pdays.length}日</dd></dl>`; }
+  if (collectTab === 'best'){ const B = META.best, T = META.tot; body = `<dl class="cl-best"><dt>クリア回数</dt><dd>${T.clears || 0}回</dd><dt>最短クリア</dt><dd>${B.fast != null ? `ルーレット${B.fast}回` : '—'}</dd><dt>最高ダメージ</dt><dd>${B.dmg || 0}</dd><dt>1回の冒険で集めたゴールド</dt><dd>${B.gold || 0}G</dd><dt>たおした魔物</dt><dd>${T.kills || 0}体</dd><dt>会心の一撃</dt><dd>${T.crit || 0}回</dd><dt>あけた宝箱</dt><dd>${T.chest || 0}個</dd><dt>書いた答え</dt><dd>${T.ans || 0}個</dd><dt>現実の修行</dt><dd>${META.pdays.length}日</dd></dl>`; }
   if (collectTab === 'daily') body = dailyHTML() + '<p class="hint">今日のクエストは毎日かわります。達成するたびに +50G（冒険中のとき）。3つ全部で称号も。</p>';
   return `<button class="close" type="button" data-cl="close" aria-label="とじる">×</button><p class="kicker">COLLECTION</p><h2>図鑑と記録</h2>
     <div class="cl-tabs">${tabs.map(([k, n]) => `<button type="button" data-cl="${k}" aria-pressed="${k === collectTab}">${n}</button>`).join('')}</div>${body}`;
@@ -5487,7 +5490,12 @@ $('#stageTabs').addEventListener('click', e => { const b = e.target.closest('but
 
 /* dice */
 const PIPS = {1: [[50, 50]], 2: [[30, 30], [70, 70]], 3: [[28, 28], [50, 50], [72, 72]], 4: [[30, 30], [70, 30], [30, 70], [70, 70]], 5: [[28, 28], [72, 28], [50, 50], [28, 72], [72, 72]], 6: [[30, 26], [70, 26], [30, 50], [70, 50], [30, 74], [70, 74]]};
-const diceSVG = v => `<svg viewBox="0 0 100 100" role="img" aria-label="サイコロの目 ${v}"><rect x="5" y="5" width="90" height="90" rx="22" fill="#fff" stroke="#1B2140" stroke-width="3.5"/>${PIPS[v].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${v === 1 ? 12 : 8.5}" fill="${v === 1 ? '#F2554E' : '#1B2140'}"/>`).join('')}</svg>`;
+/* the roulette: six squares 1-6, the pointer at the top, the wheel turned so that v sits under it */
+const RW_COL = ['#F2554E', '#FFAE45', '#F5C518', '#3FB27F', '#3E8EDE', '#8A5BD6'];
+const rwPt = (a, r) => [50 + r * Math.sin(a * Math.PI / 180), 50 - r * Math.cos(a * Math.PI / 180)].map(n => n.toFixed(2)).join(' ');
+const RW_FACE = [1, 2, 3, 4, 5, 6].map(k => { const a = (k - 1) * 60; return `<path d="M50 50 L${rwPt(a - 30, 45)} A45 45 0 0 1 ${rwPt(a + 30, 45)} Z" fill="${RW_COL[k - 1]}" stroke="#fff" stroke-width="2"/><text x="${rwPt(a, 30).split(' ')[0]}" y="${rwPt(a, 30).split(' ')[1]}" transform="rotate(${a} ${rwPt(a, 30)})" text-anchor="middle" dominant-baseline="central" font-size="17" font-weight="900" fill="#fff" stroke="#1B2140" stroke-width="3" paint-order="stroke" font-family="system-ui,sans-serif">${k}</text>`; }).join('');
+const rwRot = v => -(v - 1) * 60;
+const diceSVG = v => `<svg viewBox="0 0 100 100" role="img" aria-label="ルーレットの目 ${v}"><circle cx="50" cy="50" r="48" fill="#1B2140"/><g class="rw" style="transform:rotate(${rwRot(v)}deg)">${RW_FACE}</g><circle cx="50" cy="50" r="8" fill="#fff" stroke="#1B2140" stroke-width="2.5"/><path d="M41 1 H59 L50 17 Z" fill="#fff" stroke="#1B2140" stroke-width="2.5" stroke-linejoin="round"/></svg>`;
 
 function qlog(msg){ S.quest.log.unshift(msg); S.quest.log = S.quest.log.slice(0, 20); }
 async function roll(){
@@ -5497,10 +5505,16 @@ async function roll(){
   if (stageView !== 'board'){ setStageView('board'); renderBoard(); }
   renderPanel(); setScreen('stage');
   const ds = [$('#dice'), $('#dockDice')].filter(Boolean), dm = $('#dockMsg'); let v = 1;
-  if (dm) dm.textContent = 'ころころ…';
-  if (ds.length){ ds.forEach(d => d.classList.add('rolling')); for (let k = 0; k < 9; k++){ v = 1 + Math.floor(Math.random() * 6); ds.forEach(d => { d.innerHTML = diceSVG(v); }); sfx.dice(); await sleep(70); } ds.forEach(d => d.classList.remove('rolling')); }
+  if (dm) dm.textContent = 'くるくる…';
   v = 1 + Math.floor(Math.random() * 6);
   if (S.quest.pickDie){ v = S.quest.pickDie; S.quest.pickDie = 0; }
+  if (ds.length){
+    /* spin 4-5 turns and stop with v under the pointer; the clicks slow down with the wheel */
+    const from = rwRot(S.quest.last || 1), to = from + (4 + rnd(2)) * 360 + (((rwRot(v) - from) % 360) + 360) % 360, T = 2200;
+    ds.forEach(d => { d.innerHTML = diceSVG(S.quest.last || 1); const g = d.querySelector('.rw'); g.style.transition = 'none'; g.style.transform = `rotate(${from}deg)`; void g.getBoundingClientRect(); g.style.transition = `transform ${T}ms cubic-bezier(.12,.75,.2,1)`; g.style.transform = `rotate(${to}deg)`; });
+    for (let t = 0, gap = 45; t < T - 150; t += gap, gap *= 1.13){ setTimeout(() => sfx.dice(), t); }
+    await sleep(T + 120);
+  }
   { const Q = rpgQ(); if (Q.eggs && Q.eggs.length){ Q.eggs = Q.eggs.map(e => e - v); const h = Q.eggs.filter(e => e <= 0).length; Q.eggs = Q.eggs.filter(e => e > 0); for (let i = 0; i < h; i++) hatch(); } }
   S.quest.last = v; ds.forEach(d => { d.innerHTML = diceSVG(v); });
   const lbl = $('#diceMsg'); if (lbl) lbl.textContent = `${v} が出た！`;
@@ -5668,7 +5682,7 @@ function rivalsPlan(){
     else {
       const boost = rv.boost || 0; rv.boost = 0;
       roll = rvRoll(); walk(roll + boost); rv.last = roll;
-      say.push(`サイコロ ${roll}${boost ? `（勝負に勝った勢いで+${boost}）` : ''}`);
+      say.push(`ルーレット ${roll}${boost ? `（勝負に勝った勢いで+${boost}）` : ''}`);
       if (sq[i].type === 'q' && stopAt(sq[i])) answer();
     }
     const lv1 = rvLevel(rv);
@@ -5696,8 +5710,8 @@ function animateRivals(plan){
   const gen = rvGen, cave = $('#boardView').classList.contains('cave');
   plan.forEach(m => {
     const el = document.getElementById('rv-' + m.id); if (!el || !m.roll) return;
-    const c = rvInfo(m.id).c, pip = PIPS[m.roll].map(([x, y]) => `<circle cx="${(x - 50) * .2}" cy="${(y - 50) * .2}" r="${m.roll === 1 ? 2.6 : 2}" fill="${m.roll === 1 ? '#F2554E' : '#1B2140'}"/>`).join('');
-    el.insertAdjacentHTML('beforeend', `<g class="rv-die" transform="translate(0 -108)"><rect x="-12" y="-12" width="24" height="24" rx="6" fill="#fff" stroke="${c}" stroke-width="3"/>${pip}</g>`);
+    const c = rvInfo(m.id).c;
+    el.insertAdjacentHTML('beforeend', `<g class="rv-die" transform="translate(0 -108)"><circle r="13" fill="${RW_COL[m.roll - 1]}" stroke="${c}" stroke-width="3"/><text text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="900" fill="#fff" stroke="#1B2140" stroke-width="3" paint-order="stroke" font-family="system-ui,sans-serif">${m.roll}</text></g>`);
   });
   return Promise.all(plan.map(async m => {
     const pts = m.path.filter(q => (q.part === 2) === cave), off = RV_OFF[m.idx % 3];
@@ -5773,7 +5787,7 @@ function land(T, i, trigger){
     const fresh = !S.stat[s.p.key], st = statOf(S, s.p.key), stg = S.stages[s.p.s];
     if (fresh && S.quest.timeMod){ st.left = Math.max(15, st.left + S.quest.timeMod); S.quest.timeMod = 0; }
     qlog(stg.monster ? `${stg.npc}があらわれた！` : `${stg.npc || '旅人'}に出会った`);
-    const rv = duelRival(s);
+    const rv = VOICE_ON ? null : duelRival(s);
     if (rv){ S.quest.duel = {rv: rv.id, stage: 'pick'}; S.quest.qs = 'duel'; S.quest.duelN = clearedN(S); qlog(`関所の前で${rvInfo(rv.id).n}とばったり！ 勝負だ`); sfx.good(); refresh(); return; }
     stg.monster ? sfx.bad() : sfx.next(); lastTick = performance.now(); refresh(); return;
   }
@@ -5967,13 +5981,13 @@ function duelHTML(){
   const head = `<div class="p-head"><p class="kicker">RIVAL MATCH</p><span class="p-count">${gate ? `関所「${esc(gate)}」の前` : 'ライバル勝負'}</span></div>`;
   const vs = `<div class="duel-vs" style="--c:${R.c}"><div class="side"><svg viewBox="-26 -80 52 84" aria-hidden="true"><g>${pxPerson(heroLevel())}</g></svg><span>${esc(heroName() || 'あなた')}</span></div><em class="vs">VS</em><div class="side"><svg viewBox="-32 -90 64 94" aria-hidden="true">${pxSprite(rivalArt(R, lv, false))}</svg><span class="rn">${R.n}</span></div></div>`;
   if (d.stage === 'pick') return `${head}${vs}
-    <div class="rpg"><span class="rpg-name">${R.n}</span><p>${esc(DUEL_TAUNT[R.id] || '「勝負だ！」')}</p><p class="rpg-sub">勝つと夢ポイント+20、${R.n}は1回休み。負けると${R.n}の次のサイコロが+2。すぐ終わるミニゲームで勝負しよう。</p></div>
+    <div class="rpg"><span class="rpg-name">${R.n}</span><p>${esc(DUEL_TAUNT[R.id] || '「勝負だ！」')}</p><p class="rpg-sub">勝つと夢ポイント+20、${R.n}は1回休み。負けると${R.n}の次のルーレットが+2。すぐ終わるミニゲームで勝負しよう。</p></div>
     <p class="duel-ask">どれで勝負する？</p>
     <div class="duel-games">${Object.entries(DUEL_GAMES).map(([k, g]) => `<button type="button" class="duel-game" data-duel="${k}">${g.icon}<b>${g.n}</b><span>${g.d}</span></button>`).join('')}</div>
     <div class="p-foot"><button class="btn link" type="button" data-duel="skip">勝負しないで関所へ</button><span class="grow"></span><button class="btn dark" type="button" data-duel="random">おまかせで勝負</button></div>`;
   if (d.stage === 'play') return `${head}<p class="duel-ask">${G.n}　<small>${G.d}</small></p><div class="duel-area" id="duelArea" style="--c:${R.c}"></div>`;
   const word = {win: '勝ち！', lose: '負け…', draw: '引き分け'}[d.res] || '';
-  const reward = d.res === 'win' ? `夢ポイント +20。${R.n}は次のターン1回休み。` : d.res === 'lose' ? `${R.n}の次のサイコロが +2。次は勝とう！` : '夢ポイント +5。';
+  const reward = d.res === 'win' ? `夢ポイント +20。${R.n}は次のターン1回休み。` : d.res === 'lose' ? `${R.n}の次のルーレットが +2。次は勝とう！` : '夢ポイント +5。';
   return `${head}${vs}<div class="duel-res ${d.res}"><small>${G.n}</small><b>${word}</b><span>${esc(d.detail || '')}</span><p>${reward}</p></div>
     <div class="p-foot"><span class="grow"></span><button class="btn primary lg" type="button" data-duel="ok">関所へ進む →</button></div>`;
 }
@@ -6014,7 +6028,7 @@ function duelFinish(d, res, detail){
   d.stage = 'done'; d.res = res; d.detail = detail;
   Q.duels = Q.duels || {w: 0, l: 0, d: 0};
   if (res === 'win'){ Q.pts += 20; Q.duels.w++; if (rv) rv.rest = 1; gainGold(30, '勝負のごほうび'); qlog(`${G.n}で${R.n}に勝った！ +20pt（${R.n}は1回休み）`); sfx.done(); }
-  else if (res === 'lose'){ Q.duels.l++; if (rv) rv.boost = 2; qlog(`${G.n}で${R.n}に負けた…（${R.n}の次のサイコロ+2）`); sfx.bad();
+  else if (res === 'lose'){ Q.duels.l++; if (rv) rv.boost = 2; qlog(`${G.n}で${R.n}に負けた…（${R.n}の次のルーレット+2）`); sfx.bad();
     if (rpgQ().fx.mirror){ Q.fx.mirror = 0; if (rv){ rv.boost = 0; rv.rest = 1; } qlog('鏡の盾でダメージをはね返した！ ライバルは1回休み'); }
     else if (hurt(20, `${R.n}に負けて落ちこんだ…`)) return; }
   else { Q.pts += 5; Q.duels.d++; qlog(`${G.n}で${R.n}と引き分け +5pt`); sfx.clear(); }
@@ -6229,7 +6243,7 @@ function syncScreen(){
   if (dock){
     const moving = S.quest.qs === 'moving', g = [...panel.querySelectorAll('.gate-next')].pop();
     $('#dockRoll').disabled = $('#dockDice').disabled = moving;
-    if (!moving) $('#dockMsg').textContent = S.coop ? `${S.coop.n[S.coop.turn]}の番！ サイコロをふろう` : 'サイコロをふって進もう';
+    if (!moving) $('#dockMsg').textContent = S.coop ? `${S.coop.n[S.coop.turn]}の番！ ルーレットを回そう` : 'ルーレットを回して進もう';
     /* "next gate" line from the status panel: 次の関所「〇〇」まで あと5マス */
     const pill = g && g.querySelector('.stage-pill'), left = g && g.querySelector('b') ? g.querySelector('b').textContent : '';
     const name = pill ? [...pill.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() : '';
@@ -6559,8 +6573,8 @@ function rollHTML(){
     ${statBarHTML()}${itemBarHTML('roll')}
     <div class="dice-zone">
       <div class="dice" id="dice">${diceSVG(q.last || 1)}</div>
-      <p class="hint" id="diceMsg" style="margin:0">${moving ? '進んでいます…' : 'サイコロをふって進もう'}</p>
-      ${rpgQ().fx.boots && !moving ? `<div class="pick-die">${[1, 2, 3, 4, 5, 6].map(n => `<button class="btn" type="button" data-rpg="die" data-v="${n}">${n}</button>`).join('')}</div><small>👟 ワープの靴：進みたい目をえらぼう</small>` : `<button class="btn primary lg" type="button" data-act="roll" ${moving ? 'disabled' : ''}>サイコロをふる</button>`}
+      <p class="hint" id="diceMsg" style="margin:0">${moving ? '進んでいます…' : 'ルーレットを回して進もう'}</p>
+      ${rpgQ().fx.boots && !moving ? `<div class="pick-die">${[1, 2, 3, 4, 5, 6].map(n => `<button class="btn" type="button" data-rpg="die" data-v="${n}">${n}</button>`).join('')}</div><small>👟 ワープの靴：進みたい目をえらぼう</small>` : `<button class="btn primary lg" type="button" data-act="roll" ${moving ? 'disabled' : ''}>ルーレットを回す</button>`}
       <p class="hint" style="margin:0"><kbd>Space</kbd> キーでもふれます</p>
     </div>
     ${heroCardHTML()}${petsHTML()}${pracHTML()}${dailyHTML()}
@@ -7278,7 +7292,7 @@ function renderResult(){
           <div><span>条件クリア</span><b>${st.met}/${st.P}</b></div>
           <div><span>答えの数</span><b>${st.N}</b></div>
           <div><span>時間切れ</span><b>${st.to}</b></div>
-          ${quest ? `<div><span>夢ポイント</span><b>${S.quest.pts}</b></div><div><span>サイコロ</span><b>${S.quest.rolls}回</b></div>${S.quest.place ? `<div><span>レース</span><b>${S.quest.place}着</b></div>` : ''}<div><span>レベル</span><b>Lv.${heroLevel()}</b></div>${(S.quest.party || []).length ? `<div><span>家来</span><b>${S.quest.party.length}人</b></div>` : ''}${S.quest.duels ? `<div><span>ライバル勝負</span><b>${S.quest.duels.w}勝${S.quest.duels.l}敗</b></div>` : ''}` : `<div><span>かかった時間</span><b>${fmt(st.used)}</b></div>`}
+          ${quest ? `<div><span>夢ポイント</span><b>${S.quest.pts}</b></div><div><span>ルーレット</span><b>${S.quest.rolls}回</b></div>${S.quest.place ? `<div><span>レース</span><b>${S.quest.place}着</b></div>` : ''}<div><span>レベル</span><b>Lv.${heroLevel()}</b></div>${(S.quest.party || []).length ? `<div><span>家来</span><b>${S.quest.party.length}人</b></div>` : ''}${S.quest.duels ? `<div><span>ライバル勝負</span><b>${S.quest.duels.w}勝${S.quest.duels.l}敗</b></div>` : ''}` : `<div><span>かかった時間</span><b>${fmt(st.used)}</b></div>`}
         </div>
         ${(() => { const E = expertOf(S); return E.advice.length ? `<div class="advice expert"><h3>専門家からのアドバイス${E.field ? `（${esc(E.field)}）` : ''}</h3><ol>${E.advice.map(a => `<li>${esc(a)}</li>`).join('')}</ol>${r.source !== 'ai' ? '<p class="ex-note">AI採点のときは、専門分野に合わせたアドバイスになります。</p>' : ''}</div>` : ''; })()}
         ${r.advice && r.advice.length ? `<div class="advice"><h3>実現に近づくためのアドバイス</h3><ol>${r.advice.map(a => `<li>${esc(a)}</li>`).join('')}</ol></div>` : ''}
@@ -8175,7 +8189,7 @@ function renderVs(){
   document.querySelectorAll('#cpuCtl [data-cpu]').forEach(b => b.setAttribute('aria-checked', String(+b.dataset.cpu === homeCpu)));
   $('#onlineBox').hidden = !$('#chkOnline').checked;
   { const life = LIFE_C.has(presetKey); $('.coop-sec').hidden = !life; if (!life) $('#chkCoop').checked = false; $('#coopBox').hidden = !$('#chkCoop').checked; if (!$('#coopBox').hidden){ renderRel(); renderMaker2(); } $('#coopLbl').textContent = '💑 パートナーと協力プレー';
-    $('#coopNote').textContent = 'ふたりの理想の暮らしを、いっしょに作る冒険。1台を2人で使い、サイコロは交代、問いは「ふたり」向けの内容になり、関所では2人とも答えます。ふたりそろって答えると「協力ボーナス」！'; }
+    $('#coopNote').textContent = 'ふたりの理想の暮らしを、いっしょに作る冒険。1台を2人で使い、ルーレットは交代、問いは「ふたり」向けの内容になり、関所では2人とも答えます。ふたりそろって答えると「協力ボーナス」！'; }
   if (!inViewer) $('#onlineNote').textContent = '通信対戦は、Claudeで共有したこのページを開いて遊ぶときに使えます（アプリ版ではCPU対戦のみ）。';
 }
 $('#cpuCtl').addEventListener('click', e => { const b = e.target.closest('[data-cpu]'); if (b){ homeCpu = +b.dataset.cpu; renderVs(); } });
@@ -8287,7 +8301,7 @@ function begin(){
   newSession(theme, draftStages(), homeMode === 'quest' && $('#chkTimed').checked, homeMode, homeLevel);
   tailorQuestions();
   $('#ovHome').hidden = true; sfx.next(); lastTick = performance.now(); refresh();
-  toast(homeMode === 'quest' ? (S.online ? `通信対戦「${S.online.code}」スタート！ サイコロをふろう` : homeCpu ? `ライバル${homeCpu}人とレース開始！ サイコロをふろう` : 'ひとりで冒険スタート！ サイコロをふろう') : '問いに答えて、枝を伸ばしていきましょう（時間制限なし）');
+  toast(homeMode === 'quest' ? (S.online ? `通信対戦「${S.online.code}」スタート！ ルーレットを回そう` : homeCpu ? `ライバル${homeCpu}人とレース開始！ ルーレットを回そう` : 'ひとりで冒険スタート！ ルーレットを回そう') : '問いに答えて、枝を伸ばしていきましょう（時間制限なし）');
 }
 $('#btnBegin').onclick = begin;
 $('#btnResume').onclick = () => { $('#ovHome').hidden = true; lastTick = performance.now(); refresh(); };
@@ -8471,21 +8485,21 @@ $('#btnBgm').onclick = () => { bgmOn = !bgmOn; store.set('mindquest-bgm', bgmOn)
    ========================================================= */
 var VOICE_ON = !!store.get('mindquest-voice', false);
 const SRC = window.SpeechRecognition || window.webkitSpeechRecognition;
-const VO = {rec: null, listening: false, heard: null, interim: '', note: '', auto: !!store.get('mindquest-voauto', false), spoken: ''};
+const VO = {rec: null, listening: false, heard: null, interim: '', note: '', auto: store.get('mindquest-voauto', true) !== false, spoken: '', miss: 0, paused: false, speaking: false};
 const voHasTTS = 'speechSynthesis' in window;
 let voJa = null;
 function voPickVoice(){ const v = speechSynthesis.getVoices().filter(x => /^ja/i.test(x.lang)); voJa = v.find(x => /Nanami|Kyoko|O-ren|Google/i.test(x.name)) || v[0] || null; }
 if (voHasTTS){ voPickVoice(); speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', voPickVoice); }
 const voSpeech = t => String(t || '').replace(/<[^>]+>/g, '').replace(/&[a-z#0-9]+;/gi, ' ').replace(/[\u{1F000}-\u{1FAFF}←-⇿⌀-➿️]/gu, '').replace(/[〇○]{2}/g, 'なになに').replace(/△△/g, 'なになに').replace(/[「」『』（）()…→]/g, ' ').replace(/\s+/g, ' ').trim();
 function say(text, then){
-  const t = voSpeech(text); let done = false; const fin = () => { if (done) return; done = true; then && then(); };
+  const t = voSpeech(text); let done = false; const fin = () => { if (done) return; done = true; VO.speaking = false; voFab(); then ? then() : voKick(); };
   if (!voHasTTS || !t){ setTimeout(fin, 50); return; }
-  speechSynthesis.cancel();
+  voStop(); speechSynthesis.cancel(); VO.speaking = true; voFab();
   const u = new SpeechSynthesisUtterance(t); u.lang = 'ja-JP'; if (voJa) u.voice = voJa; u.rate = 1.05;
   u.onend = fin; u.onerror = fin; setTimeout(fin, 1500 + t.length * 330);
   speechSynthesis.speak(u);
 }
-function voStop(){ if (VO.rec){ const r = VO.rec; VO.rec = null; try { r.abort(); } catch (e){} } VO.listening = false; VO.interim = ''; }
+function voStop(){ if (VO.rec){ const r = VO.rec; VO.rec = null; try { r.abort(); } catch (e){} } VO.listening = false; VO.interim = ''; if (typeof voFab === 'function') voFab(); }
 /* one utterance: onFinal gets every guess the recognizer has (best first), onState(on, error) follows the microphone */
 function listen(onFinal, onInterim, onState){
   if (!SRC){ onState && onState(false, 'none'); return false; }
@@ -8494,10 +8508,10 @@ function listen(onFinal, onInterim, onState){
   let got = false, err = '';
   r.onresult = e => { const res = e.results[e.results.length - 1]; if (!res.isFinal){ onInterim && onInterim(res[0].transcript); return; } got = true; onFinal([...res].map(a => a.transcript).filter(Boolean)); };
   r.onerror = e => { err = e.error || 'error'; };
-  r.onend = () => { if (VO.rec === r){ VO.rec = null; VO.listening = false; } onState && onState(false, got ? '' : err || 'no-speech'); };
+  r.onend = () => { if (VO.rec === r){ VO.rec = null; VO.listening = false; voFab(); } onState && onState(false, got ? '' : err || 'no-speech'); };
   VO.rec = r; VO.listening = true;
   try { r.start(); } catch (e){ VO.rec = null; VO.listening = false; onState && onState(false, 'error'); return false; }
-  onState && onState(true, '');
+  voFab(); onState && onState(true, '');
   return true;
 }
 const VO_ERR = {none: 'この端末・ブラウザでは音声認識が使えません。キーボードのマイク（音声入力）で話して、答えの欄に入れてください。', 'not-allowed': 'マイクが使えません。ブラウザの設定でマイクを許可してください（Claude の画面の中では使えません。公開アプリで遊んでください）。', 'service-not-allowed': 'マイクが使えません。ブラウザの設定でマイクを許可してください。', 'no-speech': '声が聞こえませんでした。もう一度 🎤 を押して話してね。', 'audio-capture': 'マイクが見つかりません。', network: '音声認識につながりませんでした（インターネット接続が必要です）。'};
@@ -8535,6 +8549,8 @@ function voRank(alts){
 const VO_YES = /^(はい|ハイ|はーい|うん|ok|okay|オーケー|オッケー|おけ|いいよ|いいです|それで|それでいい|イエス|yes|そう)/i;
 const VO_NO = /(いいえ|いや|ちがう|違う|言い直|いいなお|やり直|だめ|ダメ|もう一度|もういちど|ノー|^no)/i;
 const VO_NEXT = /^(次|つぎ)(へ|に)?(進|すす|いく|行)?|^(すすむ|進む|進んで|おわり|終わり|以上です|以上)$/;
+const VO_READ = /よんで|読んで|もう一回読|もういちどよ|なにができ|何ができ|へるぷ|help|どうするの|なんて言/;
+const VO_REST = /^(やすむ|休む|休んで|すとっぷ|ストップ|とめて|止めて|おやすみ|しずかに|静かに)/;
 function voBarHTML(){
   if (VO.heard){
     const H = VO.heard, c = H.cands[H.pick];
@@ -8547,7 +8563,7 @@ function voBarHTML(){
   }
   return `<div class="vo-row"><button type="button" class="vo-mic${VO.listening ? ' on' : ''}" data-vo="mic">${VO.listening ? '🎙 きいています…' : '🎤 話して答える'}</button><button type="button" class="btn sm" data-vo="read">🔊 もう一度読む</button></div>
     <p class="vo-live"${VO.interim ? '' : ' hidden'}>「${esc(VO.interim)}」</p>
-    <label class="vo-auto"><input type="checkbox" data-vo="auto"${VO.auto ? ' checked' : ''}> ハンズフリー（読み終わったら自動で聞く。「はい」「いいえ」「次へ」も声で）</label>
+    <label class="vo-auto"><input type="checkbox" data-vo="auto"${VO.auto ? ' checked' : ''}> 声だけで操作（ハンズフリー）：読み終わったら自動で聞く。「次へ」「回して」「もう一回読んで」なども声で</label>
     ${VO.note ? `<p class="vo-note">${esc(VO.note)}</p>` : ''}`;
 }
 function voBar(){ const b = panel.querySelector('.vo-bar'); if (b) b.innerHTML = voBarHTML(); }
@@ -8566,37 +8582,56 @@ function voQText(){
   if (isPlan(st)) t += '。' + fieldsOf(st).map(f => f[2]).join('、') + 'を決めよう';
   return t;
 }
-function voRead(){
-  if (!VOICE_ON || !canAnswer()) return;
-  const key = current().key;
-  say(voQText(), () => { if (VO.auto && VOICE_ON && canAnswer() && current().key === key && !VO.heard) voListen(); });
+function voRead(){ if (VOICE_ON && canAnswer()) say(voQText(), voKick); }
+/* the microphone's end: count silences (a long silence pauses hands-free), show real errors */
+function voEnded(err){
+  if (!err || err === 'aborted') return;
+  if (err === 'no-speech'){ if (++VO.miss >= 6){ VO.paused = true; VO.note = '声の操作をひと休みしています。🎤 を押すと、また聞きはじめます。'; } }
+  else if (VO_ERR[err]){ VO.note = VO_ERR[err]; if (err !== 'network') VO.paused = true; else VO.miss += 2; }
+  voFab();
 }
+/* in the answer panel: an answer, unless it is one of the few commands */
 function voListen(){
   VO.note = ''; VO.heard = null;
   listen(alts => {
-    VO.interim = '';
-    if (VO_NEXT.test(voClean(alts[0]))){ const b = panel.querySelector('[data-act="next"]'); if (b){ say('次へ進むよ'); b.click(); return; } }
+    VO.interim = ''; VO.miss = 0;
+    if (voAnswerCmd(alts[0])) return;
     voHeard(alts);
   }, t => { VO.interim = t; const l = panel.querySelector('.vo-live'); if (l){ l.hidden = false; l.textContent = `「${t}」`; } },
-  (on, err) => { if (!on && err) VO.note = VO_ERR[err] || ''; if (!VO.heard) voBar(); });
+  (on, err) => { if (!on){ voEnded(err); voKick(); } if (!VO.heard) voBar(); });
+}
+function voAnswerCmd(raw){
+  const t = voClean(raw), n = voNorm(t), p = current(), st = S.stages[p.s];
+  const press = sel => { const b = document.querySelector(sel); if (b && !b.disabled){ b.click(); voKick(600); return true; } return false; };
+  if (VO_NEXT.test(t)){ const b = panel.querySelector('[data-act="next"]'); if (b){ say('次へ進むよ'); b.click(); return true; } }
+  if (VO_READ.test(n)){ voRead(); return true; }
+  if (VO_REST.test(n)){ voRest(); return true; }
+  if (st.monster){
+    if (/^(まほう|魔法|ふぁいあ|ファイア)(を(つかう|使う))?$/.test(n)) return press('#battle [data-rpg="fire"]');
+    if (/^(ぼうぎょ|防御|まもる|守る)(する)?$/.test(n)) return press('#battle [data-bt="guard"]');
+    if (/^(にげる|逃げる|にげて|逃げて)$/.test(n)) return press('#battle [data-bt="run"]');
+  }
+  return false;
 }
 function voHeard(alts){
   const cands = voRank(alts); if (!cands.length){ VO.note = VO_ERR['no-speech']; voBar(); return; }
   VO.heard = {cands, pick: 0}; voBar();
   const e = $('#voEdit'); if (e && !VO.auto) e.focus();
-  if (VO.auto) say(`${cands[0].t}、で、いい？`, () => {
-    if (!VO.heard) return;
-    listen(a => {
-      const t = voClean(a[0]);
-      if (VO_YES.test(t)) voOk(); else if (VO_NO.test(t)){ VO.heard = null; voBar(); say('もう一度、どうぞ', voListen); } else voHeard(a);
-    }, null, (on, err) => { if (!on && err && VO.heard) voBar(); });
-  });
+  if (VO.auto) say(`${cands[0].t}、で、いい？`, voKick);
+}
+/* hands-free, after "…, OK?": yes puts it in, no asks again, anything else is a new answer */
+function voConfirmListen(){
+  listen(a => {
+    VO.miss = 0;
+    const t = voClean(a[0]);
+    if (VO_YES.test(t)) voOk(); else if (VO_NO.test(t)){ VO.heard = null; voBar(); say('もう一度、どうぞ', voKick); } else voHeard(a);
+  }, null, (on, err) => { if (!on){ voEnded(err); voKick(); } });
 }
 function voOk(){
   const e = $('#voEdit'), text = voClean(e ? e.value : '');
   if (!text || !canAnswer()) return;
   VO.heard = null; voStop();
-  const p = current(), st = S.stages[p.s], key = p.key;
+  const p = current(), st = S.stages[p.s];
   if (isPlan(st)){
     const f = [...panel.querySelectorAll('input[data-field]')].find(i => !i.value.trim());
     if (!f){ toast('ぜんぶの項目が決まっています'); voBar(); return; }
@@ -8607,12 +8642,97 @@ function voOk(){
     qsAfterAdd(); refresh();
   }
   const npc = [...panel.querySelectorAll('.qchat .cb.npc span')].slice(-2).map(x => x.textContent).join('。');
-  say(npc || `${text}、を入れたよ`, () => { if (VO.auto && VOICE_ON && canAnswer() && current().key === key && !VO.heard) voListen(); });
+  say(npc || `${text}、を入れたよ`, voKick);
+}
+
+/* ---- hands-free: one loop decides what the microphone listens for next ---- */
+function voKick(ms){ clearTimeout(VO.kt); VO.kt = setTimeout(voLoop, ms == null ? 350 : ms); }
+function voLoop(){
+  if (!VOICE_ON || !VO.auto || !SRC || VO.paused || VO.listening || VO.speaking || document.hidden) return;
+  if (voHasTTS && speechSynthesis.speaking){ voKick(500); return; }
+  const ov = document.querySelector('.mg-ov');
+  if (ov){
+    if (!ov.querySelector('.mg-go')) return;
+    const k = ov.querySelector('.mg-intro') ? 'intro' : 'res';
+    if (VO.ovk !== ov.innerHTML.length + k){ VO.ovk = ov.innerHTML.length + k; const t = k === 'intro' ? `${(ov.querySelector('.mg-intro h3') || {}).textContent || ''}。「スタート」と言うと始まるよ` : `${(ov.querySelector('.mg-res p') || {}).textContent || ''}。「もどる」と言ってね`; say(t, voKick); return; }
+    voCmdListen(); return;
+  }
+  if (!S || S.phase !== 'play' || (S.mode === 'quest' && S.quest.qs === 'moving')) return;
+  if (VO.heard) voConfirmListen(); else if (canAnswer()) voListen(); else voCmdListen();
+}
+function voRest(){ VO.paused = true; voStop(); voFab(); say('声の操作をお休みするね。また使うときは、マイクのボタンを押してね', () => {}); }
+/* the buttons on screen, named the way people say them (hiragana, no icons) */
+const voTxt = b => { const m = b.querySelector(':scope > b'); return (m ? m.textContent : [...b.childNodes].filter(n => n.nodeType === 3 || (n.nodeType === 1 && !/^(SMALL|EM|SPAN|I|SVG|KBD)$/i.test(n.tagName))).map(n => n.textContent).join('')).replace(/[^\p{L}\p{N}ー]/gu, ''); };
+function voButtons(){
+  const ov = document.querySelector('.mg-ov'), bt = $('#battle');
+  const roots = ov ? [ov] : [panel, bt && !bt.hidden ? bt : null, document.querySelector('.rolldock')];
+  const seen = new Set(), out = [];
+  roots.filter(Boolean).forEach(r => r.querySelectorAll('button').forEach(b => {
+    if (b.disabled || b.closest('[hidden]') || b.closest('.vo-bar') || b.dataset.vo || b.id === 'dockDice') return;
+    const raw = voTxt(b) || b.getAttribute('aria-label') || ''; if (!raw || seen.has(raw)) return; seen.add(raw);
+    const sm = b.querySelector(':scope > small');
+    out.push({b, raw, ls: [voNorm(raw), sm ? voNorm(sm.textContent) : ''].filter(l => l.length >= 2)});
+  }));
+  return out;
+}
+const VO_SYN = [
+  [/るーれっと|まわ|回|さいころ|ふって|振|ころが/, /ルーレット/],
+  [/にげ|逃げ/, /にげ/],
+  [/こうげき|攻撃|たたかう|戦う|たたかって/, /こうげき|戦う/],
+  [/^(つぎ|次|すす|進|いく|行|おっけー|ok|はい|うん|とじ|閉じ|もど|戻|うけと|受け取|とおる|通る|たび|旅|すたーと|はじめ|始め|いいよ|わかった|けってい|決定|よし|あける|開け|ひらく|開く)/, /→|次|進|OK|とじる|閉じる|もどる|受け取|通る|旅に出|スタート|はじめ|つづける|わかった|決定|関所へ|ひらく|開ける|あける/]
+];
+function voPress(b){ sfx.next && sfx.next(); b.click(); voKick(700); }
+function voCmd(alts){
+  const B = voButtons();
+  for (const raw of alts){
+    const n = voNorm(raw); if (!n) continue;
+    if (VO_READ.test(n)){ VO.scr = ''; voScreen(true); return; }
+    if (VO_REST.test(n)){ voRest(); return; }
+    let best = null, bl = 0;
+    for (const x of B) for (const l of x.ls) if (n.includes(l) || (n.length >= 2 && l.includes(n))){ const len = Math.min(l.length, n.length); if (len > bl){ best = x; bl = len; } }
+    if (best){ voPress(best.b); return; }
+    for (const [re, lre] of VO_SYN) if (re.test(n)){
+      const hit = B.filter(x => lre.test(x.raw)).sort((a, b) => (/primary|dark|lg/.test(b.b.className) ? 1 : 0) - (/primary|dark|lg/.test(a.b.className) ? 1 : 0))[0];
+      if (hit){ voPress(hit.b); return; }
+    }
+  }
+  const ls = B.map(x => x.raw).slice(0, 4);
+  say(`${alts[0]}、は、わからなかった。${ls.length ? '言えるのは、' + ls.join('、') : ''}`, voKick);
+}
+function voCmdListen(){ listen(alts => { VO.miss = 0; voCmd(alts); }, null, (on, err) => { if (!on){ voEnded(err); voKick(); } }); }
+/* what the screen is about, said once when it changes (roulette, battle, crossroads, story…) */
+function voScreenText(){
+  if (!S || S.mode !== 'quest') return '';
+  const Q = S.quest, F = Q.fight, ls = voButtons().map(x => x.raw).slice(0, 4);
+  if (Q.qs === 'roll') return `${S.coop ? S.coop.n[S.coop.turn] + 'の番。' : ''}ルーレットを回してね。「回して」と言うと回るよ`;
+  let head = '';
+  if (Q.qs === 'fight' && F) head = F.won ? `${F.n}をたおした！ ${(F.rew || []).join('、')}` : F.ran ? F.runMsg || '' : `${F.n}があらわれた！ クイズとなぞなぞ、どっちで戦う？`;
+  else head = [...panel.querySelectorAll('h2, h3, p')].filter(e => !e.closest('.vo-bar, .p-head, button, .stats, .herocard') && !e.classList.contains('hint') && e.textContent.trim()).slice(0, 3).map(e => e.textContent.trim()).join('。').slice(0, 180);
+  return head + (ls.length ? `。言えるのは、${ls.join('、')}` : '');
+}
+function voScreen(force){
+  if (!VOICE_ON || !S || S.phase !== 'play' || S.mode !== 'quest' || canAnswer()) return;
+  const Q = S.quest; if (Q.qs === 'moving' || (Q.fight && Q.fight.mg)) return;
+  const F = Q.fight, k = [Q.qs, Q.pos, F ? `${F.turn || 0}${F.won ? 'w' : ''}${F.ran ? 'r' : ''}` : '', (Q.beats || []).length, Q.spot || '', Q.tf || ''].join('|');
+  if (!force && VO.scr === k) return; VO.scr = k;
+  setTimeout(() => say(voScreenText(), voKick), 300);
+}
+/* a round button in the corner: what the voice is doing now, tap to resume or rest */
+function voFab(){
+  let f = $('#voFab');
+  if (!VOICE_ON){ if (f) f.hidden = true; return; }
+  if (!f){ f = document.createElement('button'); f.type = 'button'; f.id = 'voFab'; f.className = 'vo-fab'; document.body.appendChild(f);
+    f.onclick = () => { if (VO.listening || (!VO.paused && VO.auto)){ voRest(); return; } VO.paused = false; VO.miss = 0; VO.note = ''; VO.auto = true; store.set('mindquest-voauto', true); voBar(); voFab(); VO.scr = ''; voScreen(true); voKick(100); }; }
+  f.hidden = false;
+  const st = VO.speaking ? 'say' : VO.listening ? 'on' : VO.paused || !VO.auto ? 'off' : 'wait';
+  f.className = 'vo-fab ' + st;
+  f.textContent = {say: '🔊', on: '🎙', off: '🎤', wait: '🎙'}[st];
+  f.setAttribute('aria-label', {say: '読み上げ中', on: '聞いています（押すとお休み）', off: '声の操作を始める', wait: '声の操作中（押すとお休み）'}[st]);
 }
 panel.addEventListener('click', e => {
   const b = e.target.closest('[data-vo]'); if (!b || b.type === 'checkbox') return;
   const a = b.dataset.vo;
-  if (a === 'mic'){ if (VO.listening){ voStop(); voBar(); } else voListen(); }
+  if (a === 'mic'){ if (VO.listening){ voStop(); voBar(); } else { VO.paused = false; VO.miss = 0; voListen(); } }
   else if (a === 'read') voRead();
   else if (a === 'ok') voOk();
   else if (a === 'again'){ VO.heard = null; voListen(); voBar(); }
@@ -8620,9 +8740,10 @@ panel.addEventListener('click', e => {
   else if (a === 'alt'){ VO.heard.pick = +b.dataset.v; voBar(); }
   else if (a === 'undo'){ const c = VO.heard.cands[VO.heard.pick]; c.t = c.raw; c.fx = []; voBar(); }
 });
-panel.addEventListener('change', e => { if (e.target.dataset && e.target.dataset.vo === 'auto'){ VO.auto = e.target.checked; store.set('mindquest-voauto', VO.auto); if (VO.auto && !VO.listening && !VO.heard) voRead(); } });
+panel.addEventListener('change', e => { if (e.target.dataset && e.target.dataset.vo === 'auto'){ VO.auto = e.target.checked; store.set('mindquest-voauto', VO.auto); VO.paused = false; VO.miss = 0; voFab(); if (VO.auto && !VO.listening && !VO.heard) voRead(); } });
 panel.addEventListener('keydown', e => { if (e.target.id === 'voEdit' && e.key === 'Enter' && !e.isComposing){ e.preventDefault(); voOk(); } });
-renderPanel = (base => function(){ base.apply(this, arguments); try { voAfter(); } catch (e){} })(renderPanel);
+document.addEventListener('visibilitychange', () => { if (document.hidden) voStop(); else voKick(); });
+renderPanel = (base => function(){ base.apply(this, arguments); try { voAfter(); voScreen(); if (VOICE_ON) voKick(600); } catch (e){} })(renderPanel);
 
 /* ---- on / off: the home switch and the header button ---- */
 function setVoice(on){
@@ -8631,10 +8752,10 @@ function setVoice(on){
   if (h){ h.classList.toggle('on', VOICE_ON); h.setAttribute('aria-pressed', String(VOICE_ON)); h.textContent = VOICE_ON ? '🎙 音声会話モード ON' : '🎙 音声会話モード OFF'; }
   if (b){ b.textContent = VOICE_ON ? '🎙 音声 ON' : '🎙 音声 OFF'; b.setAttribute('aria-pressed', String(VOICE_ON)); }
   if (!VOICE_ON){ voStop(); VO.heard = null; if (voHasTTS) speechSynthesis.cancel(); }
-  VO.spoken = '';
+  VO.spoken = ''; VO.scr = ''; VO.paused = false; VO.miss = 0; voFab();
   if (S && S.phase === 'play') refresh();
 }
-$('#voHome') && $('#voHome').addEventListener('click', () => { setVoice(!VOICE_ON); if (VOICE_ON) say(SRC ? '音声会話モードにしたよ。問いを読み上げるから、声で答えてね' : '音声会話モードにしたよ。問いを読み上げるね。この端末では声の聞きとりが使えないので、キーボードのマイクで話してね'); });
+$('#voHome') && $('#voHome').addEventListener('click', () => { setVoice(!VOICE_ON); if (VOICE_ON) say(SRC ? '音声会話モードにしたよ。問いを読み上げるから、声で答えてね。「回して」「次へ」「もう一回読んで」など、声だけで遊べるよ' : '音声会話モードにしたよ。問いを読み上げるね。この端末では声の聞きとりが使えないので、キーボードのマイクで話してね'); });
 $('#btnVoice') && $('#btnVoice').addEventListener('click', () => { setVoice(!VOICE_ON); if (VOICE_ON) say('音声会話モード'); });
 setVoice(VOICE_ON);
 
@@ -8810,7 +8931,7 @@ function runQuiz(el, kind, F, end){
     const b = e.target.closest('.vq-ch button'); if (b && state === 'ask'){ judge(+b.dataset.j, false); return; }
     if (e.target.closest('.vo-mic') && state === 'ask'){ if (!SRC){ $q('.vq-heard').textContent = VO_ERR.none.replace('答えの欄', 'ボタン'); return; } if (VO.listening) voStop(), micLbl(false); else { tries = 0; hear(); } }
   });
-  function stopAll(){ over = true; clearInterval(tick); voStop(); if (voHasTTS) speechSynthesis.cancel(); }
+  function stopAll(){ over = true; clearInterval(tick); voStop(); if (voHasTTS) speechSynthesis.cancel(); VO.speaking = false; voKick(900); }
   ask();
   return stopAll;
 }
