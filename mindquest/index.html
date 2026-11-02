@@ -482,6 +482,8 @@ details.own[open] summary{margin-bottom:8px}
 .dice svg{width:100%;height:100%;display:block}
 .dice.rolling{animation:shake .35s linear infinite}
 .dice .rw{transform-origin:50px 50px;transform-box:view-box}
+.story-pic.god{animation:godIn .8s ease-out}
+@keyframes godIn{from{opacity:0;transform:translateY(-16px) scale(.9)}to{opacity:1;transform:none}}
 @keyframes shake{0%{transform:rotate(0)}25%{transform:rotate(-14deg) scale(1.05)}50%{transform:rotate(10deg)}75%{transform:rotate(-6deg) scale(.97)}100%{transform:rotate(0)}}
 .gate-next{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
 .gate-next b{color:var(--ink)}
@@ -5493,11 +5495,48 @@ const PIPS = {1: [[50, 50]], 2: [[30, 30], [70, 70]], 3: [[28, 28], [50, 50], [7
 /* the roulette: six squares 1-6, the pointer at the top, the wheel turned so that v sits under it */
 const RW_COL = ['#F2554E', '#FFAE45', '#F5C518', '#3FB27F', '#3E8EDE', '#8A5BD6'];
 const rwPt = (a, r) => [50 + r * Math.sin(a * Math.PI / 180), 50 - r * Math.cos(a * Math.PI / 180)].map(n => n.toFixed(2)).join(' ');
-const RW_FACE = [1, 2, 3, 4, 5, 6].map(k => { const a = (k - 1) * 60; return `<path d="M50 50 L${rwPt(a - 30, 45)} A45 45 0 0 1 ${rwPt(a + 30, 45)} Z" fill="${RW_COL[k - 1]}" stroke="#fff" stroke-width="2"/><text x="${rwPt(a, 30).split(' ')[0]}" y="${rwPt(a, 30).split(' ')[1]}" transform="rotate(${a} ${rwPt(a, 30)})" text-anchor="middle" dominant-baseline="central" font-size="17" font-weight="900" fill="#fff" stroke="#1B2140" stroke-width="3" paint-order="stroke" font-family="system-ui,sans-serif">${k}</text>`; }).join('');
-const rwRot = v => -(v - 1) * 60;
-const diceSVG = v => `<svg viewBox="0 0 100 100" role="img" aria-label="ルーレットの目 ${v}"><circle cx="50" cy="50" r="48" fill="#1B2140"/><g class="rw" style="transform:rotate(${rwRot(v)}deg)">${RW_FACE}</g><circle cx="50" cy="50" r="8" fill="#fff" stroke="#1B2140" stroke-width="2.5"/><path d="M41 1 H59 L50 17 Z" fill="#fff" stroke="#1B2140" stroke-width="2.5" stroke-linejoin="round"/></svg>`;
+const RW_LUCKY = 7, RW_W = {n: 57, l: 18};
+const rwMid = v => v === RW_LUCKY ? 6 * RW_W.n - RW_W.n / 2 + RW_W.l / 2 : (v - 1) * RW_W.n;
+const rwSec = (a, w, fill) => `<path d="M50 50 L${rwPt(a - w / 2, 45)} A45 45 0 0 1 ${rwPt(a + w / 2, 45)} Z" fill="${fill}" stroke="#fff" stroke-width="2"/>`;
+const rwLbl = (a, r, t, fs) => { const [x, y] = rwPt(a, r).split(' '); return `<text x="${x}" y="${y}" transform="rotate(${a} ${x} ${y})" text-anchor="middle" dominant-baseline="central" font-size="${fs}" font-weight="900" fill="#fff" stroke="#1B2140" stroke-width="3" paint-order="stroke" font-family="system-ui,sans-serif">${t}</text>`; };
+const RW_FACE = '<defs><linearGradient id="rwGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF3B0"/><stop offset=".5" stop-color="#FFD84D"/><stop offset="1" stop-color="#E0A21B"/></linearGradient></defs>'
+  + [1, 2, 3, 4, 5, 6].map(k => rwSec(rwMid(k), RW_W.n, RW_COL[k - 1]) + rwLbl(rwMid(k), 30, k, 17)).join('')
+  + rwSec(rwMid(RW_LUCKY), RW_W.l, 'url(#rwGold)') + rwLbl(rwMid(RW_LUCKY), 33, '★', 12);
+const rwRot = v => -rwMid(v);
+const diceSVG = v => `<svg viewBox="0 0 100 100" role="img" aria-label="${v === RW_LUCKY ? 'ルーレット：ラッキー' : 'ルーレットの目 ' + v}"><circle cx="50" cy="50" r="48" fill="#1B2140"/><g class="rw" style="transform:rotate(${rwRot(v)}deg)">${RW_FACE}</g><circle cx="50" cy="50" r="8" fill="#fff" stroke="#1B2140" stroke-width="2.5"/><path d="M41 1 H59 L50 17 Z" fill="#fff" stroke="#1B2140" stroke-width="2.5" stroke-linejoin="round"/></svg>`;
 
 function qlog(msg){ S.quest.log.unshift(msg); S.quest.log = S.quest.log.slice(0, 20); }
+/* the god of luck: appears on the LUCKY square and gives one gift */
+const GOD_ART = `<g><circle cx="0" cy="-44" r="40" fill="#FFF3B0" opacity=".35"/><ellipse cx="0" cy="-74" rx="14" ry="4" fill="none" stroke="#FFD84D" stroke-width="3.5"/>
+  <path d="M-24 2 L-17 -34 Q0 -44 17 -34 L24 2 Z" fill="#FBF7FF" stroke="#8A7BB5" stroke-width="2"/><path d="M-17 -34 Q0 -26 17 -34" fill="none" stroke="#D9C9FF" stroke-width="3"/>
+  <circle cx="0" cy="-52" r="12" fill="#FFD9B8" stroke="#C9926B" stroke-width="1.5"/><path d="M-12 -55 Q-12 -66 0 -66 Q12 -66 12 -55" fill="#fff" stroke="#D5D5E0" stroke-width="1.5"/>
+  <path d="M-11 -50 Q-12 -28 0 -22 Q12 -28 11 -50 Q6 -44 0 -45 Q-6 -44 -11 -50 Z" fill="#fff" stroke="#D5D5E0" stroke-width="1.5"/>
+  <path d="M-7 -55 h4 M3 -55 h4" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="-5" cy="-52" r="1.4" fill="#3A2A1A"/><circle cx="5" cy="-52" r="1.4" fill="#3A2A1A"/>
+  <path d="M28 -66 V4" stroke="#8A5A2B" stroke-width="4" stroke-linecap="round"/><circle cx="28" cy="-68" r="7" fill="#FFD84D" stroke="#E0A21B" stroke-width="2"/>
+  <ellipse cx="0" cy="6" rx="42" ry="10" fill="#fff"/><ellipse cx="-28" cy="0" rx="18" ry="10" fill="#fff"/><ellipse cx="28" cy="0" rx="18" ry="10" fill="#fff"/>
+  <path d="M-46 -60 l3 -7 l3 7 l7 3 l-7 3 l-3 7 l-3 -7 l-7 -3 Z M44 -30 l2 -5 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 Z" fill="#FFD84D"/></g>`;
+const GOD_GIFTS = [
+  {id: 'wind', n: '神さまの追い風', d: '6マス先へ、ふわりと運んでもらえる'},
+  {id: 'gold', n: '黄金のつぼ', d: '300ゴールドをさずかった'},
+  {id: 'heal', n: 'いやしの光', d: 'メンタルが100まで回復した'},
+  {id: 'pts', n: '夢のかがやき', d: '夢ポイント +50'},
+  {id: 'magic', n: '炎のさずかりもの', d: '魔法「ファイア」が3回ぶん増えた'},
+  {id: 'again', n: 'もう一回！', d: 'もう一度ルーレットを回せる（ライバルは動かない）'},
+  {id: 'item', n: '神さまの宝物', d: ''}
+];
+function luckyGod(){
+  const Q = rpgQ(), g = {...GOD_GIFTS[rnd(GOD_GIFTS.length)]};
+  if (g.id === 'wind') Q.after = 6;
+  else if (g.id === 'gold') gainGold(300, '');
+  else if (g.id === 'heal') Q.mental = 100;
+  else if (g.id === 'pts') Q.pts += 50;
+  else if (g.id === 'magic') Q.magic = (Q.magic || 0) + 3;
+  else if (g.id === 'again') S.quest.free = true;
+  else { const ks = ['boots', 'book', 'crystal', 'mirror', 'clover', 'egg'].filter(k => ITEMS[k]), k = ks[rnd(ks.length)]; Q.items[k] = (Q.items[k] || 0) + 1; g.d = `${ITEMS[k].ic} ${ITEMS[k].n}をさずかった（${ITEMS[k].d}）`; }
+  qlog(`★ ラッキー！ 幸運の神さまから「${g.n}」`);
+  S.quest.beats = [{k: 'god', n: g.n, d: g.d}]; S.quest.qs = 'story';
+  sfx.fanfare(); save(); refresh();
+}
 async function roll(){
   if (!S || S.mode !== 'quest' || S.phase !== 'play' || S.quest.qs !== 'roll') return;
   S.quest.qs = 'moving'; S.quest.rolls++;
@@ -5508,13 +5547,15 @@ async function roll(){
   if (dm) dm.textContent = 'くるくる…';
   v = 1 + Math.floor(Math.random() * 6);
   if (S.quest.pickDie){ v = S.quest.pickDie; S.quest.pickDie = 0; }
+  else if (Math.random() < 1 / 20) v = RW_LUCKY;
   if (ds.length){
     /* spin 4-5 turns and stop with v under the pointer; the clicks slow down with the wheel */
-    const from = rwRot(S.quest.last || 1), to = from + (4 + rnd(2)) * 360 + (((rwRot(v) - from) % 360) + 360) % 360, T = 2200;
+    const jit = (Math.random() - .5) * (v === RW_LUCKY ? RW_W.l - 8 : RW_W.n - 14), from = rwRot(S.quest.last || 1), to = from + (4 + rnd(2)) * 360 + (((rwRot(v) + jit - from) % 360) + 360) % 360, T = 2200;
     ds.forEach(d => { d.innerHTML = diceSVG(S.quest.last || 1); const g = d.querySelector('.rw'); g.style.transition = 'none'; g.style.transform = `rotate(${from}deg)`; void g.getBoundingClientRect(); g.style.transition = `transform ${T}ms cubic-bezier(.12,.75,.2,1)`; g.style.transform = `rotate(${to}deg)`; });
     for (let t = 0, gap = 45; t < T - 150; t += gap, gap *= 1.13){ setTimeout(() => sfx.dice(), t); }
     await sleep(T + 120);
   }
+  if (v === RW_LUCKY){ S.quest.last = v; if (dm) dm.textContent = '★ ラッキー！'; const lbl = $('#diceMsg'); if (lbl) lbl.textContent = '★ ラッキー！'; await sleep(500); luckyGod(); return; }
   { const Q = rpgQ(); if (Q.eggs && Q.eggs.length){ Q.eggs = Q.eggs.map(e => e - v); const h = Q.eggs.filter(e => e <= 0).length; Q.eggs = Q.eggs.filter(e => e > 0); for (let i = 0; i < h; i++) hatch(); } }
   S.quest.last = v; ds.forEach(d => { d.innerHTML = diceSVG(v); });
   const lbl = $('#diceMsg'); if (lbl) lbl.textContent = `${v} が出た！`;
@@ -5644,7 +5685,7 @@ function pushPresence(){
   try {
     const T = track(S), q = T.sq[sqIndex(T.sq, S.quest.pos)] || T.sq[0], st = standings().find(r => r.id === 'me') || {rem: 0};
     roomNS.presence({race: S.online.code, nick: S.online.nick, ci: S.online.ci, lv: heroLevel(), x: Math.round(q.x), y: Math.round(q.y), part: q.part, rem: st.rem,
-      fin: !!S.quest.place, finAt: S.quest.finAt || 0, die: S.quest.rolls ? S.quest.last : 0, party: (S.quest.party || []).length, where: segName(q.seg), av: avCode(curAvatar()), ch: S.chapter || 1}).catch(() => {});
+      fin: !!S.quest.place, finAt: S.quest.finAt || 0, die: S.quest.rolls && S.quest.last <= 6 ? S.quest.last : 0, party: (S.quest.party || []).length, where: segName(q.seg), av: avCode(curAvatar()), ch: S.chapter || 1}).catch(() => {});
   } catch (e) {}
 }
 function opArt(o){ return `<g transform="scale(1.2)">${pxSprite(`<g class="lv${o.lv}" style="--shirt:${o.c}"><ellipse cx="0" cy="0" rx="13" ry="3.8" fill="#000" opacity=".18"/>${heroPerson(curWorld(), o.av || {skin: 1})}</g>`)}</g><text y="-80" text-anchor="middle" font-size="13" font-weight="800" fill="${o.c}" stroke="#fff" stroke-width="4" paint-order="stroke" font-family="${FONT}">${esc(o.nick)} Lv.${o.lv}</text>`; }
@@ -5878,6 +5919,10 @@ function storyHTML(){
     pic = `<svg class="story-pic" viewBox="-110 -100 220 108" aria-hidden="true">${bg}<g transform="translate(-58 0) scale(1.25)">${pxPerson(heroLevel())}</g><g transform="translate(40 2) scale(1.05)">${pxSprite(`<use href="#mon-${bossKind()}" style="--mc:${b.ch === 3 ? '#6B2FA0' : '#2E6FD8'}"/>`)}</g><g transform="translate(92 -70)"><path d="M0 -12 L7 0 L0 12 L-7 0Z" fill="${b.ch === 3 ? '#FFD84D' : '#7FE7F2'}" stroke="#fff" stroke-width="1.5"/></g></svg>`;
     text = C.story.replace('{t}', S.theme);
     sub = `${B ? `舞台は「${B.n}」。${W().names.town}から${W().names.river}をこえ、${W().names.cave}へ──道のかたちも変わったぞ。` : ''}${heroName() ? `勇者${heroName()}よ、` : ''}前の章の答えをもとに、もっと深い問いが待っている。答えはマインドマップに書き足され、どんどん広がっていくぞ。`;
+  } else if (b.k === 'god'){
+    tag = '★ LUCKY'; title = '幸運の神さまがあらわれた！';
+    pic = `<svg class="story-pic god" viewBox="-110 -96 220 104" aria-hidden="true"><g transform="translate(-50 0) scale(.95)">${pxPerson(heroLevel())}</g><g transform="translate(36 -4) scale(1.15)">${GOD_ART}</g></svg>`;
+    text = `「ほっほっほ。よくぞラッキーのマスを引いたのう。おぬしに「${b.n}」をさずけよう」`; sub = b.d;
   } else if (b.k === 'key'){
     tag = 'RESCUE'; title = '「しあわせの鍵」を取りもどした！';
     pic = `<svg class="story-pic" viewBox="-80 -96 160 104" aria-hidden="true"><g transform="translate(-26 0) scale(1.25)">${pxPerson(heroLevel())}</g>${S.coop ? `<g transform="translate(26 0) scale(1.25)">${pxPerson(heroLevel(), undefined, S.coop.av)}</g>` : `<g transform="translate(30 -10) scale(1.6)">${KEY_ART}</g>`}<g transform="translate(0 -70) scale(1.3)">${KEY_ART}</g></svg>`;
